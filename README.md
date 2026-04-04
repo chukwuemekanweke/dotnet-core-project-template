@@ -41,6 +41,14 @@ dotnet new backend-template --organizationName CN --clientName Acme --clientProj
 
 The generated root name becomes `{OrganizationName}.{ClientName}.{ClientProjectName}` and is applied to the solution, projects, folders, and namespaces.
 
+If you want an interactive prompt instead of typing the parameters yourself, run:
+
+```powershell
+.\scripts\New-BackendProject.ps1
+```
+
+The script prompts for organization abbreviation, client name, and client project name, then installs the local template and creates the solution for you. If you leave organization blank, it defaults to `CN`.
+
 ## Local Development
 
 Restore, build, and test:
