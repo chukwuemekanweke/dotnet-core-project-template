@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "OpenAI",
+  "classifications": [
+    "Web",
+    "API",
+    "Backend",
+    "Vertical Slice",
+    "Clean Architecture"
+  ],
+  "identity": "BackendProjectTemplate.Template",
+  "name": "Backend Project Template",
+  "shortName": "backend-template",
+  "sourceName": "BackendProjectTemplate",
+  "preferNameDirectory": true,
+  "primaryOutputs": [
+    {
+      "path": "BackendProjectTemplate.slnx"
+    }
+  ],
+  "sources": [
+    {
+      "exclude": [
+        ".vs/**/*",
+        ".dotnet/**/*",
+        "**/bin/**/*",
+        "**/obj/**/*",
+        "**/*.user",
+        "**/*.suo"
+      ]
+    }
+  ]
+}

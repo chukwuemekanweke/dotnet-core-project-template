@@ -1,0 +1,35 @@
+@BackendProjectTemplate.WebAPI_HostAddress = http://localhost:5140
+
+POST {{BackendProjectTemplate.WebAPI_HostAddress}}/api/identity/sign-up
+Content-Type: application/json
+
+{
+  "email": "ada@example.com",
+  "password": "P@ssw0rd123!",
+  "firstName": "Ada",
+  "lastName": "Lovelace"
+}
+
+###
+
+POST {{BackendProjectTemplate.WebAPI_HostAddress}}/api/identity/sign-up/otp
+Content-Type: application/json
+
+{
+  "email": "ada@example.com",
+  "otp": "123456"
+}
+
+###
+
+POST {{BackendProjectTemplate.WebAPI_HostAddress}}/api/identity/sign-in
+Content-Type: application/json
+
+{
+  "email": "ada@example.com",
+  "password": "P@ssw0rd123!"
+}
+
+###
+
+GET {{BackendProjectTemplate.WebAPI_HostAddress}}/api/reference-data/countries
