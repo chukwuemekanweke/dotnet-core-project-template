@@ -36,10 +36,10 @@ dotnet new install .
 Create a new solution:
 
 ```powershell
-dotnet new backend-template --organizationName CN --clientName Acme --clientProjectName Ordering -o .\CN.Acme.Ordering
+dotnet new backend-template --organizationAbbreviation CN --clientName Acme --clientProjectName Ordering -o .\CN.Acme.Ordering
 ```
 
-The generated root name becomes `{OrganizationName}.{ClientName}.{ClientProjectName}` and is applied to the solution, projects, folders, and namespaces.
+The generated root name becomes `{OrganizationAbbreviation}.{ClientName}.{ClientProjectName}` and is applied to the solution, projects, folders, and namespaces. The organization abbreviation is intended for short forms such as `CN` and should be at most 3 characters.
 
 If you want an interactive prompt instead of typing the parameters yourself, run:
 

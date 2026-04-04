@@ -18,11 +18,11 @@
     }
   ],
   "symbols": {
-    "organizationName": {
+    "organizationAbbreviation": {
       "type": "parameter",
       "dataType": "string",
       "defaultValue": "CN",
-      "description": "Organization abbreviation or initialism, for example CN"
+      "description": "Organization abbreviation or initialism, maximum 3 characters, for example CN"
     },
     "clientName": {
       "type": "parameter",
@@ -45,7 +45,7 @@
         "symbols": [
           {
             "type": "ref",
-            "value": "organizationName"
+            "value": "organizationAbbreviation"
           },
           {
             "type": "ref",

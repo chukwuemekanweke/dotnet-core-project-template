@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$OrganizationName,
+    [string]$OrganizationAbbreviation,
     [string]$ClientName,
     [string]$ClientProjectName,
     [string]$OutputDirectory
@@ -40,7 +40,11 @@ function Convert-ToOrganizationAbbreviation {
 
     $normalized = ($Value -replace '[^A-Za-z0-9]', '').Trim()
     if ([string]::IsNullOrWhiteSpace($normalized)) {
-        throw "Organization name must contain letters or digits."
+        throw "Organization abbreviation must contain letters or digits."
+    }
+
+    if ($normalized.Length -gt 3) {
+        throw "Organization abbreviation cannot be longer than 3 characters."
     }
 
     return $normalized.ToUpperInvariant()
@@ -71,11 +75,19 @@ if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $templateRoot = Split-Path -Parent $scriptRoot
 
-$rawOrganizationName = if ([string]::IsNullOrWhiteSpace($OrganizationName)) {
+if ([string]::IsNullOrWhiteSpace($env:DOTNET_CLI_HOME)) {
+    $env:DOTNET_CLI_HOME = Join-Path $templateRoot ".dotnet"
+}
+
+if ([string]::IsNullOrWhiteSpace($env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE)) {
+    $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1"
+}
+
+$rawOrganizationAbbreviation = if ([string]::IsNullOrWhiteSpace($OrganizationAbbreviation)) {
     Read-TemplateValue -Prompt "Organization abbreviation" -DefaultValue "CN"
 }
 else {
-    $OrganizationName
+    $OrganizationAbbreviation
 }
 
 $rawClientName = if ([string]::IsNullOrWhiteSpace($ClientName)) {
@@ -92,7 +104,7 @@ else {
     $ClientProjectName
 }
 
-$organizationSegment = Convert-ToOrganizationAbbreviation -Value $rawOrganizationName
+$organizationSegment = Convert-ToOrganizationAbbreviation -Value $rawOrganizationAbbreviation
 $clientSegment = Convert-ToNameSegment -Value $rawClientName
 $projectSegment = Convert-ToNameSegment -Value $rawClientProjectName
 $rootName = "$organizationSegment.$clientSegment.$projectSegment"
@@ -123,7 +135,8 @@ Write-Host ""
 $installArgs = @(
     "new",
     "install",
-    $templateRoot
+    $templateRoot,
+    "--force"
 )
 
 Write-Host "Installing template from $templateRoot"
@@ -135,7 +148,7 @@ if ($LASTEXITCODE -ne 0) {
 $createArgs = @(
     "new",
     "backend-template",
-    "--organizationName", $organizationSegment,
+    "--organizationAbbreviation", $organizationSegment,
     "--clientName", $clientSegment,
     "--clientProjectName", $projectSegment,
     "--output", $resolvedOutputDirectory
