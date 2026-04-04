@@ -1,18 +1,51 @@
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace BackendProjectTemplate.DatabaseMigrator.Healthcheck;
 
-public sealed class DatabaseMigratorReadinessHealthCheck(DatabaseMigrationState state) : IHealthCheck
+public sealed class DatabaseMigratorReadinessHealthCheck(
+    IConfiguration configuration,
+    DatabaseMigrationState state) : IHealthCheck
 {
-    public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) =>
-        Task.FromResult(state.Status switch
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        if (state.Status == DatabaseMigrationStatus.Failed)
         {
-            DatabaseMigrationStatus.Failed => HealthCheckResult.Unhealthy(
+            return HealthCheckResult.Unhealthy(
                 "Database migrator failed before completing deployment.",
-                state.Failure),
-            DatabaseMigrationStatus.Pending => HealthCheckResult.Healthy("Database migrator is ready to start deployment work."),
-            DatabaseMigrationStatus.Running => HealthCheckResult.Healthy("Database migrator is currently running deployment work."),
-            DatabaseMigrationStatus.Succeeded => HealthCheckResult.Healthy("Database migrator completed deployment work successfully."),
-            _ => HealthCheckResult.Unhealthy("Database migrator is in an unknown state.")
-        });
+                state.Failure);
+        }
+
+        var sqlConnectionString = configuration.GetConnectionString("SqlServer");
+        if (string.IsNullOrWhiteSpace(sqlConnectionString))
+        {
+            return HealthCheckResult.Unhealthy("Database migrator SQL Server connection string is not configured.");
+        }
+
+        try
+        {
+            await using var sqlConnection = new SqlConnection(sqlConnectionString);
+            await sqlConnection.OpenAsync(cancellationToken);
+
+            await using var sqlCommand = new SqlCommand("SELECT 1", sqlConnection);
+            await sqlCommand.ExecuteScalarAsync(cancellationToken);
+
+            return state.Status switch
+            {
+                DatabaseMigrationStatus.Succeeded => HealthCheckResult.Healthy("Database migrator completed deployment work successfully."),
+                DatabaseMigrationStatus.Pending => HealthCheckResult.Unhealthy("Database migrator has not started deployment work yet."),
+                DatabaseMigrationStatus.Running => HealthCheckResult.Unhealthy("Database migrator is still running deployment work."),
+                _ => HealthCheckResult.Unhealthy("Database migrator is in an unknown state.")
+            };
+        }
+        catch (Exception exception)
+        {
+            return HealthCheckResult.Unhealthy(
+                "Database migrator cannot connect to SQL Server.",
+                exception);
+        }
+    }
 }
