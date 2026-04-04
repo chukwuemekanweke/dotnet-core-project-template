@@ -3,10 +3,10 @@ using System.Net.Http.Json;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
-using BackendProjectTemplate.IntegrationTests.Infrastructure;
+using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Shouldly;
 
-namespace BackendProjectTemplate.IntegrationTests;
+namespace BackendProjectTemplate.WebAPI.IntegrationTests;
 
 public sealed class AuthenticationEndpointsTests(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
 {

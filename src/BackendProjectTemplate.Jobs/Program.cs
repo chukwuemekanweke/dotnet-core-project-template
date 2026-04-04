@@ -60,3 +60,5 @@ app.MapGet("/", () => Results.Ok(new
 .ExcludeFromDescription();
 
 await app.RunAsync();
+
+public partial class Program;

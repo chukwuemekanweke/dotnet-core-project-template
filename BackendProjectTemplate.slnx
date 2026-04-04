@@ -6,6 +6,13 @@
   <Project Path="src/BackendProjectTemplate.WebAPI/BackendProjectTemplate.WebAPI.csproj" />
   <Project Path="src/BackendProjectTemplate.Consumer/BackendProjectTemplate.Consumer.csproj" />
   <Project Path="src/BackendProjectTemplate.Jobs/BackendProjectTemplate.Jobs.csproj" />
-  <Project Path="tests/BackendProjectTemplate.UnitTests/BackendProjectTemplate.UnitTests.csproj" />
-  <Project Path="tests/BackendProjectTemplate.IntegrationTests/BackendProjectTemplate.IntegrationTests.csproj" />
+  <Project Path="tests/BackendProjectTemplate.Application.UnitTests/BackendProjectTemplate.Application.UnitTests.csproj" />
+  <Project Path="tests/BackendProjectTemplate.Domain.UnitTests/BackendProjectTemplate.Domain.UnitTests.csproj" />
+  <Project Path="tests/BackendProjectTemplate.Infrastructure.UnitTests/BackendProjectTemplate.Infrastructure.UnitTests.csproj" />
+  <Project Path="tests/BackendProjectTemplate.WebAPI.UnitTests/BackendProjectTemplate.WebAPI.UnitTests.csproj" />
+  <Project Path="tests/BackendProjectTemplate.Consumer.UnitTests/BackendProjectTemplate.Consumer.UnitTests.csproj" />
+  <Project Path="tests/BackendProjectTemplate.Jobs.UnitTests/BackendProjectTemplate.Jobs.UnitTests.csproj" />
+  <Project Path="tests/BackendProjectTemplate.WebAPI.IntegrationTests/BackendProjectTemplate.WebAPI.IntegrationTests.csproj" />
+  <Project Path="tests/BackendProjectTemplate.Consumer.IntegrationTests/BackendProjectTemplate.Consumer.IntegrationTests.csproj" />
+  <Project Path="tests/BackendProjectTemplate.Jobs.IntegrationTests/BackendProjectTemplate.Jobs.IntegrationTests.csproj" />
 </Solution>

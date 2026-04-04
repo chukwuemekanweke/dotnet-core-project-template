@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using NSubstitute;
 using Shouldly;
 
-namespace BackendProjectTemplate.UnitTests;
+namespace BackendProjectTemplate.Application.UnitTests;
 
 public sealed class AuthenticationFlowTests
 {

@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.MsSql;
 using Testcontainers.Redis;
 
-namespace BackendProjectTemplate.IntegrationTests.Infrastructure;
+namespace BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 
 public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
