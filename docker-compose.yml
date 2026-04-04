@@ -4,14 +4,13 @@ services:
       context: .
       dockerfile: src/BackendProjectTemplate.DatabaseMigrator/Dockerfile
     environment:
+      ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__SqlServer: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
-      Healthcheck__ReadyFilePath: /tmp/database-migrator/ready
-      Healthcheck__FailedFilePath: /tmp/database-migrator/failed
     depends_on:
       mssql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "test -f /tmp/database-migrator/ready"]
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health/liveness || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 60

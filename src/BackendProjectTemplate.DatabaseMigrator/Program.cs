@@ -1,13 +1,41 @@
 using BackendProjectTemplate.DatabaseMigrator.Healthcheck;
 using BackendProjectTemplate.Infrastructure.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<DatabaseMigratorHealthcheckOptions>(
-    builder.Configuration.GetSection(DatabaseMigratorHealthcheckOptions.SectionName));
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddSingleton<DatabaseMigrationState>();
 builder.Services.AddHostedService<DatabaseMigrationWorker>();
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<DatabaseMigratorReadinessHealthCheck>(
+        "database-migrator-readiness",
+        tags: ["readiness"])
+    .AddCheck<DatabaseMigratorLivenessHealthCheck>(
+        "database-migrator-liveness",
+        tags: ["liveness"]);
 
-await builder.Build().RunAsync();
+var app = builder.Build();
+
+app.MapHealthChecks("/health/readiness", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("readiness")
+});
+
+app.MapHealthChecks("/health/liveness", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("liveness")
+});
+
+app.MapGet("/", () => Results.Ok(new
+{
+    Service = "BackendProjectTemplate.DatabaseMigrator",
+    Status = "Running"
+}))
+.ExcludeFromDescription();
+
+await app.RunAsync();
