@@ -52,6 +52,8 @@ services:
       dockerfile: src/BackendProjectTemplate.Consumer/Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__SqlServer: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
+      ConnectionStrings__Redis: redis:6379
       OpenTelemetry__OtlpEndpoint: http://tempo:4317
     depends_on:
       database-migrator:
@@ -75,6 +77,8 @@ services:
       dockerfile: src/BackendProjectTemplate.Jobs/Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__SqlServer: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
+      ConnectionStrings__Redis: redis:6379
       OpenTelemetry__OtlpEndpoint: http://tempo:4317
     depends_on:
       database-migrator:
