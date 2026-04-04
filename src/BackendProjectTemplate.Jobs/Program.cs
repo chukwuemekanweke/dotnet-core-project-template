@@ -1,11 +1,25 @@
 using BackendProjectTemplate.Jobs;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<WorkerReadinessState>();
 builder.Services.AddHostedService<Worker>();
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<JobsReadinessHealthCheck>(
+        "jobs-readiness",
+        tags: ["readiness"])
+    .AddCheck<JobsLivenessHealthCheck>(
+        "jobs-liveness",
+        tags: ["liveness"]);
 builder.Services
     .AddOpenTelemetry()
     .ConfigureResource(resource => resource.AddService("BackendProjectTemplate.Jobs"))
@@ -26,5 +40,23 @@ builder.Services
             .AddRuntimeInstrumentation();
     });
 
-var host = builder.Build();
-host.Run();
+var app = builder.Build();
+
+app.MapHealthChecks("/health/readiness", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("readiness")
+});
+
+app.MapHealthChecks("/health/liveness", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("liveness")
+});
+
+app.MapGet("/", () => Results.Ok(new
+{
+    Service = "BackendProjectTemplate.Jobs",
+    Status = "Running"
+}))
+.ExcludeFromDescription();
+
+await app.RunAsync();

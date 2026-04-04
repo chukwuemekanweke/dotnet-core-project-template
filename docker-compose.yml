@@ -46,6 +46,52 @@ services:
     ports:
       - "8080:8080"
 
+  consumer:
+    build:
+      context: .
+      dockerfile: src/BackendProjectTemplate.Consumer/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      OpenTelemetry__OtlpEndpoint: http://tempo:4317
+    depends_on:
+      database-migrator:
+        condition: service_healthy
+      mssql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      tempo:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
+  jobs:
+    build:
+      context: .
+      dockerfile: src/BackendProjectTemplate.Jobs/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      OpenTelemetry__OtlpEndpoint: http://tempo:4317
+    depends_on:
+      database-migrator:
+        condition: service_healthy
+      mssql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      tempo:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:

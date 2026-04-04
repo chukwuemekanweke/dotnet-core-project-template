@@ -9,8 +9,8 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - `src/BackendProjectTemplate.Infrastructure`: EF Core, Redis cache, JWT, OTP delivery, telemetry, and other implementations
 - `src/BackendProjectTemplate.DatabaseMigrator`: dedicated deployment-time migrator that runs pre-deploy SQL, EF Core migrations, seed data, and post-deploy SQL
 - `src/BackendProjectTemplate.WebAPI`: controller-based HTTP host and presentation layer
-- `src/BackendProjectTemplate.Consumer`: worker placeholder for async message consumption
-- `src/BackendProjectTemplate.Jobs`: worker placeholder for scheduled work
+- `src/BackendProjectTemplate.Consumer`: worker placeholder for async message consumption with readiness and liveness endpoints
+- `src/BackendProjectTemplate.Jobs`: worker placeholder for scheduled work with readiness and liveness endpoints
 - `tests/BackendProjectTemplate.UnitTests`: unit tests for the authentication flow
 - `tests/BackendProjectTemplate.IntegrationTests`: end-to-end endpoint tests using SQL Server and Redis testcontainers
 
@@ -72,7 +72,7 @@ The migrator health endpoints are:
 
 `/health/readiness` returns healthy while the migrator is available to execute the deployment work. `/health/liveness` only returns healthy after pre-deploy SQL, EF migrations, seed data, and post-deploy SQL have all completed successfully.
 
-Start the web application and local infrastructure:
+Start the local stack:
 
 ```powershell
 docker compose up --build
@@ -87,6 +87,8 @@ Useful endpoints:
 - Grafana: `http://localhost:3000`
 - Prometheus: `http://localhost:9090`
 - Tempo: `http://localhost:3200`
+
+The `consumer` and `jobs` containers expose internal `/health/readiness` and `/health/liveness` endpoints for orchestration. In `docker compose`, both services wait for the database migrator to complete successfully before starting.
 
 Default SQL Server credentials in the template:
 
