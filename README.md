@@ -7,6 +7,7 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - `src/BackendProjectTemplate.Domain`: entities, repository/specification abstractions, and infrastructure-facing interfaces
 - `src/BackendProjectTemplate.Application`: vertical slices for use cases, DTOs, handlers, and specifications
 - `src/BackendProjectTemplate.Infrastructure`: EF Core, Redis cache, JWT, OTP delivery, telemetry, and other implementations
+- `src/BackendProjectTemplate.DatabaseMigrator`: dedicated deployment-time migrator that runs pre-deploy SQL, EF Core migrations, seed data, and post-deploy SQL
 - `src/BackendProjectTemplate.WebAPI`: controller-based HTTP host and presentation layer
 - `src/BackendProjectTemplate.Consumer`: worker placeholder for async message consumption
 - `src/BackendProjectTemplate.Jobs`: worker placeholder for scheduled work
@@ -18,6 +19,7 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - Domain owns entities plus contracts such as repositories, cache interfaces, token generation, and OTP delivery
 - Application keeps vertical slices by feature and depends only on the domain
 - Infrastructure contains EF Core persistence, Redis caching, JWT generation, observability, and other implementation details
+- Database changes are applied by a separate migrator service before the other services are deployed
 - WebAPI is only the presentation host and endpoint mapping layer
 - Schemas are separated by domain using `authentication` and `reference_data`
 - `TimeProvider` is the standard time abstraction used across handlers and infrastructure
@@ -48,6 +50,17 @@ dotnet restore
 dotnet build
 dotnet test
 ```
+
+Run the database migrator on its own:
+
+```powershell
+dotnet run --project src/BackendProjectTemplate.DatabaseMigrator
+```
+
+The migrator executes scripts in:
+
+- `src/BackendProjectTemplate.DatabaseMigrator/Scripts/PreDeploy`
+- `src/BackendProjectTemplate.DatabaseMigrator/Scripts/PostDeploy`
 
 Start the web application and local infrastructure:
 

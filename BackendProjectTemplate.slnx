@@ -2,6 +2,7 @@
   <Project Path="src/BackendProjectTemplate.Domain/BackendProjectTemplate.Domain.csproj" />
   <Project Path="src/BackendProjectTemplate.Application/BackendProjectTemplate.Application.csproj" />
   <Project Path="src/BackendProjectTemplate.Infrastructure/BackendProjectTemplate.Infrastructure.csproj" />
+  <Project Path="src/BackendProjectTemplate.DatabaseMigrator/BackendProjectTemplate.DatabaseMigrator.csproj" />
   <Project Path="src/BackendProjectTemplate.WebAPI/BackendProjectTemplate.WebAPI.csproj" />
   <Project Path="src/BackendProjectTemplate.Consumer/BackendProjectTemplate.Consumer.csproj" />
   <Project Path="src/BackendProjectTemplate.Jobs/BackendProjectTemplate.Jobs.csproj" />

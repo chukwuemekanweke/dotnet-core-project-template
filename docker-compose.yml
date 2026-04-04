@@ -1,4 +1,15 @@
 services:
+  database-migrator:
+    build:
+      context: .
+      dockerfile: src/BackendProjectTemplate.DatabaseMigrator/Dockerfile
+    environment:
+      ConnectionStrings__SqlServer: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
+    depends_on:
+      mssql:
+        condition: service_healthy
+    restart: "no"
+
   webapi:
     build:
       context: .
@@ -13,8 +24,10 @@ services:
       Jwt__SigningKey: super-secret-template-signing-key-change-me
       OpenTelemetry__ServiceName: BackendProjectTemplate.WebAPI
       OpenTelemetry__OtlpEndpoint: http://tempo:4317
-      Database__InitializeOnStartup: "true"
+      Database__InitializeOnStartup: "false"
     depends_on:
+      database-migrator:
+        condition: service_completed_successfully
       mssql:
         condition: service_healthy
       redis:
