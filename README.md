@@ -20,6 +20,7 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - Application keeps vertical slices by feature and depends only on the domain
 - Infrastructure contains EF Core persistence, Redis caching, JWT generation, observability, and other implementation details
 - Database changes are applied by a separate migrator service before the other services are deployed
+- The migrator remains unhealthy until pre-deploy SQL, EF migrations, seed data, and post-deploy SQL have all completed successfully
 - WebAPI is only the presentation host and endpoint mapping layer
 - Schemas are separated by domain using `authentication` and `reference_data`
 - `TimeProvider` is the standard time abstraction used across handlers and infrastructure
@@ -61,6 +62,8 @@ The migrator executes scripts in:
 
 - `src/BackendProjectTemplate.DatabaseMigrator/Scripts/PreDeploy`
 - `src/BackendProjectTemplate.DatabaseMigrator/Scripts/PostDeploy`
+
+In `docker compose`, the migrator stays running and only becomes healthy after the database work completes. The other services depend on that health state and will not start while the migrator is still unhealthy or has failed.
 
 Start the web application and local infrastructure:
 
