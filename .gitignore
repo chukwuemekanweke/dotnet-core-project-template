@@ -415,3 +415,4 @@ FodyWeavers.xsd
 *.msm
 *.msp
 /.dotnet/.dotnet
+/.dotnet/.templateengine

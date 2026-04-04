@@ -36,10 +36,10 @@ dotnet new install .
 Create a new solution:
 
 ```powershell
-dotnet new backend-template -n Acme.Ordering -o .\Acme.Ordering
+dotnet new backend-template --organizationName CN --clientName Acme --clientProjectName Ordering -o .\CN.Acme.Ordering
 ```
 
-The `-n` value becomes the solution, project, and namespace prefix.
+The generated root name becomes `{OrganizationName}.{ClientName}.{ClientProjectName}` and is applied to the solution, projects, folders, and namespaces.
 
 ## Local Development
 

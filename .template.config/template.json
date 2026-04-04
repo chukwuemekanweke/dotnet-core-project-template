@@ -11,13 +11,56 @@
   "identity": "BackendProjectTemplate.Template",
   "name": "Backend Project Template",
   "shortName": "backend-template",
-  "sourceName": "BackendProjectTemplate",
   "preferNameDirectory": true,
   "primaryOutputs": [
     {
       "path": "BackendProjectTemplate.slnx"
     }
   ],
+  "symbols": {
+    "organizationName": {
+      "type": "parameter",
+      "dataType": "string",
+      "defaultValue": "CN",
+      "description": "Organization abbreviation or initialism, for example CN"
+    },
+    "clientName": {
+      "type": "parameter",
+      "dataType": "string",
+      "isRequired": true,
+      "description": "Client name segment used in the root namespace and project names"
+    },
+    "clientProjectName": {
+      "type": "parameter",
+      "dataType": "string",
+      "isRequired": true,
+      "description": "Client project name segment used in the root namespace and project names"
+    },
+    "projectRootName": {
+      "type": "generated",
+      "generator": "join",
+      "replaces": "BackendProjectTemplate",
+      "fileRename": "BackendProjectTemplate",
+      "parameters": {
+        "symbols": [
+          {
+            "type": "ref",
+            "value": "organizationName"
+          },
+          {
+            "type": "ref",
+            "value": "clientName"
+          },
+          {
+            "type": "ref",
+            "value": "clientProjectName"
+          }
+        ],
+        "separator": ".",
+        "removeEmptyValues": true
+      }
+    }
+  },
   "sources": [
     {
       "exclude": [
