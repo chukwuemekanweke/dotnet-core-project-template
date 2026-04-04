@@ -1,150 +1,135 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
-using BackendProjectTemplate.Infrastructure.Authentication;
-using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Identity;
+using NSubstitute;
+using Shouldly;
 
 namespace BackendProjectTemplate.UnitTests;
 
 public sealed class AuthenticationFlowTests
 {
     [Fact]
-    public async Task SignUp_CreatesPendingUserAndOtp()
+    public async Task SignUp_CreatesIdentityUser_AndSendsOtp()
     {
-        var clock = new Fakes.FakeTimeProvider(new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero));
-        var users = new Fakes.FakeRepository<AppUser>();
-        var otps = new Fakes.FakeRepository<SignUpOtp>();
-        var unitOfWork = new Fakes.FakeUnitOfWork();
-        var delivery = new Fakes.FakeOtpDeliveryService();
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero));
+        var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var otpDeliveryService = Substitute.For<IOtpDeliveryService>();
 
-        var handler = new SignUpHandler(
-            users,
-            otps,
-            unitOfWork,
-            new PasswordHasher(),
-            new OtpCodeService(),
-            delivery,
-            clock);
+        identityService.FindByEmailAsync("ada@example.com").Returns((AppUser?)null);
+        identityService.CreateAsync(Arg.Any<AppUser>(), "P@ssw0rd123!").Returns(IdentityResult.Success);
+        identityService.GenerateSignUpOtpAsync(Arg.Any<AppUser>()).Returns("123456");
 
+        var handler = new SignUpHandler(identityService, otpDeliveryService, clock);
         var result = await handler.HandleAsync(new SignUpRequest
         {
             Email = "ada@example.com",
             Password = "P@ssw0rd123!",
+            ConfirmPassword = "P@ssw0rd123!",
             FirstName = "Ada",
             LastName = "Lovelace"
         }, CancellationToken.None);
 
-        Assert.Equal(SignUpStatus.Accepted, result.Status);
-        Assert.Single(users.Items);
-        Assert.Single(otps.Items);
-        Assert.NotNull(delivery.GetCode("ada@example.com"));
-        Assert.Equal(1, unitOfWork.SaveChangesCallCount);
+        result.Status.ShouldBe(SignUpStatus.Accepted);
+        result.OtpExpiresAtUtc.ShouldBe(clock.GetUtcNow().AddMinutes(3));
+        await identityService.Received(1).CreateAsync(
+            Arg.Is<AppUser>(user =>
+                user.Email == "ada@example.com" &&
+                user.UserName == "ada@example.com" &&
+                user.FirstName == "Ada" &&
+                user.LastName == "Lovelace"),
+            "P@ssw0rd123!");
+        await otpDeliveryService.Received(1).SendSignUpOtpAsync(
+            Arg.Is<AppUser>(user => user.Email == "ada@example.com"),
+            "123456",
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task SignUp_ReturnsDuplicateEmail_WhenUserAlreadyExists()
+    public async Task SignUp_ReturnsValidationFailure_WhenIdentityRejectsThePassword()
     {
-        var clock = new Fakes.FakeTimeProvider(new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero));
-        var existingUser = AppUser.Create(
-            "ada@example.com",
-            "Ada",
-            "Lovelace",
-            "hash",
-            "salt",
-            clock.GetUtcNow());
+        var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var otpDeliveryService = Substitute.For<IOtpDeliveryService>();
 
-        var handler = new SignUpHandler(
-            new Fakes.FakeRepository<AppUser>([existingUser]),
-            new Fakes.FakeRepository<SignUpOtp>(),
-            new Fakes.FakeUnitOfWork(),
-            new PasswordHasher(),
-            new OtpCodeService(),
-            new Fakes.FakeOtpDeliveryService(),
-            clock);
+        identityService.FindByEmailAsync("ada@example.com").Returns((AppUser?)null);
+        identityService.CreateAsync(Arg.Any<AppUser>(), "weakpass").Returns(
+            IdentityResult.Failed(new IdentityError
+            {
+                Code = nameof(IdentityErrorDescriber.PasswordRequiresDigit),
+                Description = "Passwords must have at least one digit ('0'-'9')."
+            }));
 
+        var handler = new SignUpHandler(identityService, otpDeliveryService, TimeProvider.System);
         var result = await handler.HandleAsync(new SignUpRequest
         {
             Email = "ada@example.com",
-            Password = "P@ssw0rd123!",
+            Password = "weakpass",
+            ConfirmPassword = "weakpass",
             FirstName = "Ada",
             LastName = "Lovelace"
         }, CancellationToken.None);
 
-        Assert.Equal(SignUpStatus.DuplicateEmail, result.Status);
+        result.Status.ShouldBe(SignUpStatus.ValidationFailed);
+        result.ValidationErrors.ShouldNotBeNull();
+        result.ValidationErrors.ShouldContainKey(nameof(SignUpRequest.Password));
+        await otpDeliveryService.DidNotReceive().SendSignUpOtpAsync(Arg.Any<AppUser>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task VerifyOtp_MarksUserAsVerified()
     {
-        var clock = new Fakes.FakeTimeProvider(new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero));
-        var users = new Fakes.FakeRepository<AppUser>();
-        var otps = new Fakes.FakeRepository<SignUpOtp>();
-        var unitOfWork = new Fakes.FakeUnitOfWork();
-        var delivery = new Fakes.FakeOtpDeliveryService();
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero));
+        var user = AppUser.Create("grace@example.com", "Grace", "Hopper", clock.GetUtcNow());
+        var identityService = Substitute.For<IAuthenticationIdentityService>();
 
-        var signUpHandler = new SignUpHandler(
-            users,
-            otps,
-            unitOfWork,
-            new PasswordHasher(),
-            new OtpCodeService(),
-            delivery,
-            clock);
+        identityService.FindByEmailAsync("grace@example.com").Returns(user);
+        identityService.VerifySignUpOtpAsync(user, "123456").Returns(true);
+        identityService.UpdateAsync(Arg.Is<AppUser>(candidate => candidate.EmailConfirmed)).Returns(IdentityResult.Success);
 
-        await signUpHandler.HandleAsync(new SignUpRequest
+        var handler = new SignUpOtpHandler(identityService, clock);
+        var result = await handler.HandleAsync(new SignUpOtpRequest
         {
             Email = "grace@example.com",
-            Password = "P@ssw0rd123!",
-            FirstName = "Grace",
-            LastName = "Hopper"
+            Otp = "123456"
         }, CancellationToken.None);
 
-        var verifyHandler = new SignUpOtpHandler(
-            users,
-            otps,
-            unitOfWork,
-            new OtpCodeService(),
-            clock);
-
-        var result = await verifyHandler.HandleAsync(new SignUpOtpRequest
-        {
-            Email = "grace@example.com",
-            Otp = delivery.GetCode("grace@example.com")!
-        }, CancellationToken.None);
-
-        Assert.Equal(SignUpOtpStatus.Success, result.Status);
-        Assert.Single(users.Items, user => user.IsEmailVerified);
+        result.Status.ShouldBe(SignUpOtpStatus.Success);
+        user.EmailConfirmed.ShouldBeTrue();
+        user.UpdatedAtUtc.ShouldBe(clock.GetUtcNow());
     }
 
     [Fact]
-    public async Task SignIn_ReturnsAccessToken_ForVerifiedUser()
+    public async Task SignIn_ReturnsAccessToken_ForConfirmedIdentityUser()
     {
-        var clock = new Fakes.FakeTimeProvider(new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero));
-        var passwordHasher = new PasswordHasher();
-        var (hash, salt) = passwordHasher.HashPassword("P@ssw0rd123!");
-        var user = AppUser.Create("linus@example.com", "Linus", "Torvalds", hash, salt, clock.GetUtcNow());
-        user.MarkEmailVerified(clock.GetUtcNow());
+        var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
+        var user = AppUser.Create("linus@example.com", "Linus", "Torvalds", now);
+        user.MarkEmailVerified(now);
 
-        var handler = new SignInHandler(
-            new Fakes.FakeRepository<AppUser>([user]),
-            passwordHasher,
-            new JwtTokenGenerator(
-                Options.Create(new JwtOptions
-                {
-                    Issuer = "tests",
-                    Audience = "tests",
-                    SigningKey = "super-secret-template-signing-key-change-me"
-                }),
-                clock));
+        var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var accessTokenService = Substitute.For<IAccessTokenService>();
+        var expectedToken = new AccessToken("signed-jwt", now.AddHours(1));
 
+        identityService.FindByEmailAsync("linus@example.com").Returns(user);
+        identityService.CheckPasswordAsync(user, "P@ssw0rd123!").Returns(true);
+        accessTokenService.Generate(user).Returns(expectedToken);
+
+        var handler = new SignInHandler(identityService, accessTokenService);
         var result = await handler.HandleAsync(new SignInRequest
         {
             Email = "linus@example.com",
             Password = "P@ssw0rd123!"
         }, CancellationToken.None);
 
-        Assert.Equal(SignInStatus.Success, result.Status);
-        Assert.False(string.IsNullOrWhiteSpace(result.AccessToken?.Value));
+        result.Status.ShouldBe(SignInStatus.Success);
+        result.AccessToken.ShouldBe(expectedToken);
+    }
+
+    private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        private readonly DateTimeOffset _utcNow = utcNow;
+
+        public override DateTimeOffset GetUtcNow() => _utcNow;
     }
 }

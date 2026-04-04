@@ -33,6 +33,8 @@ public sealed class SignUpController(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "Email already exists",
                 detail: "An account with this email address already exists."),
+            SignUpStatus.ValidationFailed => BadRequest(new ValidationProblemDetails(
+                new Dictionary<string, string[]>(result.ValidationErrors ?? new Dictionary<string, string[]>()))),
             _ => Accepted((string?)null, new SignUpResponse(
                 request.Email,
                 result.OtpExpiresAtUtc!.Value,

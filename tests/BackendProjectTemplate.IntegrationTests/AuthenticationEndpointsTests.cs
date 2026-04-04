@@ -4,6 +4,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.IntegrationTests.Infrastructure;
+using Shouldly;
 
 namespace BackendProjectTemplate.IntegrationTests;
 
@@ -19,12 +20,13 @@ public sealed class AuthenticationEndpointsTests(CustomWebApplicationFactory fac
         {
             Email = email,
             Password = "P@ssw0rd123!",
+            ConfirmPassword = "P@ssw0rd123!",
             FirstName = "Ada",
             LastName = "Lovelace"
         });
 
-        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        Assert.NotNull(factory.OtpDeliveryService.GetCode(email));
+        response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+        factory.OtpDeliveryService.GetCode(email).ShouldNotBeNull();
     }
 
     [Fact]
@@ -37,6 +39,7 @@ public sealed class AuthenticationEndpointsTests(CustomWebApplicationFactory fac
         {
             Email = email,
             Password = "P@ssw0rd123!",
+            ConfirmPassword = "P@ssw0rd123!",
             FirstName = "Grace",
             LastName = "Hopper"
         });
@@ -47,7 +50,7 @@ public sealed class AuthenticationEndpointsTests(CustomWebApplicationFactory fac
             Otp = factory.OtpDeliveryService.GetCode(email)!
         });
 
-        Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
+        verifyResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -61,6 +64,7 @@ public sealed class AuthenticationEndpointsTests(CustomWebApplicationFactory fac
         {
             Email = email,
             Password = password,
+            ConfirmPassword = password,
             FirstName = "Linus",
             LastName = "Torvalds"
         });
@@ -79,7 +83,7 @@ public sealed class AuthenticationEndpointsTests(CustomWebApplicationFactory fac
 
         var payload = await signInResponse.Content.ReadFromJsonAsync<SignInResponse>();
 
-        Assert.Equal(HttpStatusCode.OK, signInResponse.StatusCode);
-        Assert.False(string.IsNullOrWhiteSpace(payload?.AccessToken));
+        signInResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        string.IsNullOrWhiteSpace(payload?.AccessToken).ShouldBeFalse();
     }
 }

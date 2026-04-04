@@ -2,11 +2,13 @@ using System.Text;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Caching;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,13 +25,28 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("SqlServer")));
 
+        services
+            .AddIdentityCore<AppUser>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+                options.SignIn.RequireConfirmedEmail = true;
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+            })
+            .AddRoles<IdentityRole<Guid>>()
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddSignInManager()
+            .AddDefaultTokenProviders();
+
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
 
         services.AddSingleton<TimeProvider>(TimeProvider.System);
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        services.AddSingleton<IOtpCodeService, OtpCodeService>();
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
+        services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
         services.AddScoped<IOtpDeliveryService, LoggingOtpDeliveryService>();
         services.AddSingleton<IJsonCache, DistributedJsonCache>();
         services.AddStackExchangeRedisCache(options =>

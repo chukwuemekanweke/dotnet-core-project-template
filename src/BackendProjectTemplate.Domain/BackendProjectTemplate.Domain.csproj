@@ -2,4 +2,8 @@
   <PropertyGroup>
     <RootNamespace>BackendProjectTemplate.Domain</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 </Project>

@@ -9,7 +9,7 @@ public sealed class TestOtpDeliveryService : IOtpDeliveryService
 
     public Task SendSignUpOtpAsync(AppUser user, string otpCode, CancellationToken cancellationToken)
     {
-        _codes[user.Email] = otpCode;
+        _codes[user.Email ?? throw new InvalidOperationException("The user email is required for OTP delivery.")] = otpCode;
         return Task.CompletedTask;
     }
 

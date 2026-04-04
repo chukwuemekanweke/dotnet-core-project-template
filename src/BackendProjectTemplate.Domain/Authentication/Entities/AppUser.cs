@@ -1,55 +1,38 @@
-using BackendProjectTemplate.Domain.Common.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace BackendProjectTemplate.Domain.Authentication.Entities;
 
-public sealed class AppUser : Entity
+public sealed class AppUser : IdentityUser<Guid>
 {
-    private readonly List<SignUpOtp> _signUpOtps = [];
-
     private AppUser()
     {
     }
 
-    private AppUser(
-        string email,
-        string firstName,
-        string lastName,
-        string passwordHash,
-        string passwordSalt,
-        DateTimeOffset utcNow)
+    private AppUser(string email, string firstName, string lastName, DateTimeOffset utcNow)
     {
-        Email = email.Trim();
-        NormalizedEmail = NormalizeEmail(email);
+        var normalizedEmail = email.Trim();
+
+        UserName = normalizedEmail;
+        Email = normalizedEmail;
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
-        PasswordHash = passwordHash;
-        PasswordSalt = passwordSalt;
-        SetAuditDates(utcNow);
+        CreatedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
     }
 
-    public string Email { get; private set; } = string.Empty;
-    public string NormalizedEmail { get; private set; } = string.Empty;
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
-    public string PasswordHash { get; private set; } = string.Empty;
-    public string PasswordSalt { get; private set; } = string.Empty;
-    public bool IsEmailVerified { get; private set; }
-    public IReadOnlyCollection<SignUpOtp> SignUpOtps => _signUpOtps;
+    public DateTimeOffset CreatedAtUtc { get; private set; }
+    public DateTimeOffset UpdatedAtUtc { get; private set; }
 
-    public static AppUser Create(
-        string email,
-        string firstName,
-        string lastName,
-        string passwordHash,
-        string passwordSalt,
-        DateTimeOffset utcNow) =>
-        new(email, firstName, lastName, passwordHash, passwordSalt, utcNow);
-
-    public static string NormalizeEmail(string email) => email.Trim().ToUpperInvariant();
+    public static AppUser Create(string email, string firstName, string lastName, DateTimeOffset utcNow) =>
+        new(email, firstName, lastName, utcNow);
 
     public void MarkEmailVerified(DateTimeOffset utcNow)
     {
-        IsEmailVerified = true;
-        Touch(utcNow);
+        EmailConfirmed = true;
+        UpdatedAtUtc = utcNow;
     }
+
+    public void Touch(DateTimeOffset utcNow) => UpdatedAtUtc = utcNow;
 }

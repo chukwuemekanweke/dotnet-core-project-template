@@ -1,64 +1,38 @@
-using BackendProjectTemplate.Application.Authentication.Specifications;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Authentication.Entities;
-using SignUpOtpEntity = BackendProjectTemplate.Domain.Authentication.Entities.SignUpOtp;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 
 public sealed class SignUpOtpHandler(
-    IRepository<AppUser> users,
-    IRepository<SignUpOtpEntity> signUpOtps,
-    IUnitOfWork unitOfWork,
-    IOtpCodeService otpCodeService,
+    IAuthenticationIdentityService identityService,
     TimeProvider timeProvider)
 {
     public async Task<SignUpOtpResult> HandleAsync(SignUpOtpRequest request, CancellationToken cancellationToken)
     {
-        var normalizedEmail = AppUser.NormalizeEmail(request.Email);
-        var otpHash = otpCodeService.HashCode(normalizedEmail, request.Otp);
-        var now = timeProvider.GetUtcNow();
-
-        var otp = await signUpOtps.FirstOrDefaultAsync(
-            new SignUpOtpByEmailAndHashSpecification(normalizedEmail, otpHash),
-            cancellationToken);
-
-        if (otp is null || !otp.IsAvailable(now))
-        {
-            return new SignUpOtpResult(SignUpOtpStatus.InvalidOtp);
-        }
-
-        var user = await users.FirstOrDefaultAsync(
-            new UserByNormalizedEmailSpecification(normalizedEmail, tracked: true),
-            cancellationToken);
-
+        var user = await identityService.FindByEmailAsync(request.Email);
         if (user is null)
         {
             return new SignUpOtpResult(SignUpOtpStatus.InvalidOtp);
         }
 
-        if (user.IsEmailVerified)
+        if (user.EmailConfirmed)
         {
             return new SignUpOtpResult(SignUpOtpStatus.AlreadyVerified);
         }
 
-        otp.MarkConsumed(now);
+        if (!await identityService.VerifySignUpOtpAsync(user, request.Otp))
+        {
+            return new SignUpOtpResult(SignUpOtpStatus.InvalidOtp);
+        }
+
+        var now = timeProvider.GetUtcNow();
         user.MarkEmailVerified(now);
 
-        signUpOtps.Update(otp);
-        users.Update(user);
-
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        var updateResult = await identityService.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+        {
+            throw new InvalidOperationException("Failed to update the user after OTP verification.");
+        }
 
         return new SignUpOtpResult(SignUpOtpStatus.Success);
     }
-}
-
-public sealed record SignUpOtpResult(SignUpOtpStatus Status);
-
-public enum SignUpOtpStatus
-{
-    Success = 1,
-    InvalidOtp = 2,
-    AlreadyVerified = 3
 }

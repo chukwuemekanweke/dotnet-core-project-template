@@ -1,59 +1,40 @@
-using BackendProjectTemplate.Application.Authentication.Specifications;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Authentication.Entities;
-using SignUpOtpEntity = BackendProjectTemplate.Domain.Authentication.Entities.SignUpOtp;
+using Microsoft.AspNetCore.Identity;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignUp;
 
 public sealed class SignUpHandler(
-    IRepository<AppUser> users,
-    IRepository<SignUpOtpEntity> signUpOtps,
-    IUnitOfWork unitOfWork,
-    IPasswordHasher passwordHasher,
-    IOtpCodeService otpCodeService,
+    IAuthenticationIdentityService identityService,
     IOtpDeliveryService otpDeliveryService,
     TimeProvider timeProvider)
 {
-    private static readonly TimeSpan OtpLifetime = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan OtpLifetime = TimeSpan.FromMinutes(3);
 
     public async Task<SignUpResult> HandleAsync(SignUpRequest request, CancellationToken cancellationToken)
     {
-        var normalizedEmail = AppUser.NormalizeEmail(request.Email);
-
-        if (await users.AnyAsync(new UserByNormalizedEmailSpecification(normalizedEmail), cancellationToken))
+        if (await identityService.FindByEmailAsync(request.Email) is not null)
         {
             return new SignUpResult(SignUpStatus.DuplicateEmail, null);
         }
 
         var now = timeProvider.GetUtcNow();
-        var (passwordHash, passwordSalt) = passwordHasher.HashPassword(request.Password);
+        var user = AppUser.Create(request.Email, request.FirstName, request.LastName, now);
+        var createResult = await identityService.CreateAsync(user, request.Password);
 
-        var user = AppUser.Create(
-            request.Email,
-            request.FirstName,
-            request.LastName,
-            passwordHash,
-            passwordSalt,
-            now);
+        if (!createResult.Succeeded)
+        {
+            if (createResult.Errors.Any(error => error.Code is nameof(IdentityErrorDescriber.DuplicateEmail) or nameof(IdentityErrorDescriber.DuplicateUserName)))
+            {
+                return new SignUpResult(SignUpStatus.DuplicateEmail, null);
+            }
 
-        var otpCode = otpCodeService.GenerateCode();
-        var otpHash = otpCodeService.HashCode(normalizedEmail, otpCode);
-        var otp = SignUpOtpEntity.Create(user.Id, normalizedEmail, otpHash, now.Add(OtpLifetime), now);
+            return new SignUpResult(SignUpStatus.ValidationFailed, null, createResult.ToValidationDictionary());
+        }
 
-        await users.AddAsync(user, cancellationToken);
-        await signUpOtps.AddAsync(otp, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        var otpCode = await identityService.GenerateSignUpOtpAsync(user);
         await otpDeliveryService.SendSignUpOtpAsync(user, otpCode, cancellationToken);
 
-        return new SignUpResult(SignUpStatus.Accepted, otp.ExpiresAtUtc);
+        return new SignUpResult(SignUpStatus.Accepted, now.Add(OtpLifetime));
     }
-}
-
-public sealed record SignUpResult(SignUpStatus Status, DateTimeOffset? OtpExpiresAtUtc);
-
-public enum SignUpStatus
-{
-    Accepted = 1,
-    DuplicateEmail = 2
 }
