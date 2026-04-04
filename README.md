@@ -49,6 +49,14 @@ If you want an interactive prompt instead of typing the parameters yourself, run
 
 The script prompts for organization abbreviation, client name, and client project name, then installs the local template and creates the solution for you. If you leave organization blank, it defaults to `CN`.
 
+There is also a bash version:
+
+```bash
+./scripts/New-BackendProject.sh
+```
+
+It supports the same inputs and generated naming convention.
+
 ## Local Development
 
 Restore, build, and test:
