@@ -2,7 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Identity.Entities;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 

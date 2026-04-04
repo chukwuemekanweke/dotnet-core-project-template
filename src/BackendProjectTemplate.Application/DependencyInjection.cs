@@ -1,6 +1,6 @@
-using BackendProjectTemplate.Application.Identity.Features.SignIn;
-using BackendProjectTemplate.Application.Identity.Features.SignUp;
-using BackendProjectTemplate.Application.Identity.Features.SignUpOtp;
+using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Application.Authentication.Features.SignUp;
+using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;

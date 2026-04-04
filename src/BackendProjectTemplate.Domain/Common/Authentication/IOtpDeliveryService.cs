@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Domain.Identity.Entities;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 
 namespace BackendProjectTemplate.Domain.Common.Authentication;
 

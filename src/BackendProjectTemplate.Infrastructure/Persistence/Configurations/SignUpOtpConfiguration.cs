@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Domain.Identity.Entities;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -8,7 +8,7 @@ public sealed class SignUpOtpConfiguration : IEntityTypeConfiguration<SignUpOtp>
 {
     public void Configure(EntityTypeBuilder<SignUpOtp> builder)
     {
-        builder.ToTable("SignUpOtps", SchemaNames.Identity);
+        builder.ToTable("SignUpOtps", SchemaNames.Authentication);
         builder.HasKey(otp => otp.Id);
 
         builder.Property(otp => otp.NormalizedEmail).HasMaxLength(256).IsRequired();

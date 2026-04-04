@@ -10,7 +10,7 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - `src/BackendProjectTemplate.WebAPI`: controller-based HTTP host and presentation layer
 - `src/BackendProjectTemplate.Consumer`: worker placeholder for async message consumption
 - `src/BackendProjectTemplate.Jobs`: worker placeholder for scheduled work
-- `tests/BackendProjectTemplate.UnitTests`: unit tests for the auth flow
+- `tests/BackendProjectTemplate.UnitTests`: unit tests for the authentication flow
 - `tests/BackendProjectTemplate.IntegrationTests`: end-to-end endpoint tests using SQL Server and Redis testcontainers
 
 ## Architecture Notes
@@ -19,7 +19,7 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - Application keeps vertical slices by feature and depends only on the domain
 - Infrastructure contains EF Core persistence, Redis caching, JWT generation, observability, and other implementation details
 - WebAPI is only the presentation host and endpoint mapping layer
-- Schemas are separated by domain using `identity` and `reference_data`
+- Schemas are separated by domain using `authentication` and `reference_data`
 - `TimeProvider` is the standard time abstraction used across handlers and infrastructure
 
 ## Template Usage

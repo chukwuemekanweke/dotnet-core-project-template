@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Domain.Identity.Entities;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -8,7 +8,7 @@ public sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 {
     public void Configure(EntityTypeBuilder<AppUser> builder)
     {
-        builder.ToTable("Users", SchemaNames.Identity);
+        builder.ToTable("Users", SchemaNames.Authentication);
         builder.HasKey(user => user.Id);
 
         builder.Property(user => user.Email).HasMaxLength(256).IsRequired();

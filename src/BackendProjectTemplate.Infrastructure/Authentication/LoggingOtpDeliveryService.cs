@@ -1,5 +1,5 @@
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Identity.Entities;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
