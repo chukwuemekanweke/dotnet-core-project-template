@@ -39,22 +39,6 @@ public abstract class JobsIntegrationTestBase
 
     protected IServiceScope CreateScope() => _factory.Services.CreateScope();
 
-    protected static async Task WaitForHealthyAsync(Func<Task<HttpResponseMessage>> probe)
-    {
-        for (var attempt = 0; attempt < 20; attempt++)
-        {
-            using var response = await probe();
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                return;
-            }
-
-            await Task.Delay(TimeSpan.FromMilliseconds(250));
-        }
-
-        throw new InvalidOperationException("The health endpoint did not become healthy in time.");
-    }
-
     protected static async Task WaitForConditionAsync(Func<Task<bool>> condition)
     {
         for (var attempt = 0; attempt < 20; attempt++)
@@ -68,5 +52,14 @@ public abstract class JobsIntegrationTestBase
         }
 
         throw new InvalidOperationException("The expected condition was not met in time.");
+    }
+
+    protected static async Task WaitForHealthyAsync(Func<Task<HttpResponseMessage>> probe)
+    {
+        await WaitForConditionAsync(async () =>
+        {
+            using var response = await probe();
+            return response.StatusCode == System.Net.HttpStatusCode.OK;
+        });
     }
 }

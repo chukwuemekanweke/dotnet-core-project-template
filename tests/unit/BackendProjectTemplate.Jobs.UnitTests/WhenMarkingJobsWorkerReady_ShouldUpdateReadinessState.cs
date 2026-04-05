@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using Shouldly;
 
 namespace BackendProjectTemplate.Jobs.UnitTests;
@@ -7,9 +8,10 @@ public sealed class WhenMarkingJobsWorkerReady_ShouldUpdateReadinessState
     [Fact]
     public void Verify()
     {
-        var state = new WorkerReadinessState();
+        var state = new BackgroundServiceReadinessState(
+            [new BackgroundServiceDescriptor("OutboxMessageProcessor")]);
 
-        state.MarkReady();
+        state.MarkReady("OutboxMessageProcessor");
 
         state.IsReady.ShouldBeTrue();
     }

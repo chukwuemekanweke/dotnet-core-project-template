@@ -1,19 +1,22 @@
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using Microsoft.Extensions.Options;
 
-namespace BackendProjectTemplate.Jobs;
+namespace BackendProjectTemplate.Jobs.OutboxProcessing;
 
-public sealed class Worker(
-    ILogger<Worker> logger,
+public sealed class OutboxMessageProcessor(
+    ILogger<OutboxMessageProcessor> logger,
     IServiceScopeFactory serviceScopeFactory,
     TimeProvider timeProvider,
     IOptions<OutboxProcessingOptions> options,
-    WorkerReadinessState readinessState) : BackgroundService
+    BackgroundServiceReadinessState readinessState) : BackgroundService
 {
+    public const string ServiceName = nameof(OutboxMessageProcessor);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        readinessState.MarkReady();
+        readinessState.MarkReady(ServiceName);
 
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds));
 

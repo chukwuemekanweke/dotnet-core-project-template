@@ -14,7 +14,7 @@ public sealed class WhenCheckingReadinessWithAvailableDependencies_ShouldReturnH
     public async Task InitializeAsync()
     {
         await InitializeClientAsync();
-        await GivenSqlServerAndRedisAreAvailable();
+        await WaitForDependenciesToBecomeHealthyAsync();
     }
 
     public async Task DisposeAsync()
@@ -41,6 +41,6 @@ public sealed class WhenCheckingReadinessWithAvailableDependencies_ShouldReturnH
         }
     }
 
-    private Task GivenSqlServerAndRedisAreAvailable() =>
+    private Task WaitForDependenciesToBecomeHealthyAsync() =>
         WaitForHealthyAsync(() => Client.GetAsync(ReadinessEndpoint));
 }

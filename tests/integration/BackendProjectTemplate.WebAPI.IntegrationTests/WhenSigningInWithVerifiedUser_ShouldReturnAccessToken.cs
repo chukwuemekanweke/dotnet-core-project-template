@@ -26,7 +26,7 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
     public async Task InitializeAsync()
     {
         await InitializeClientAsync();
-        await GivenAVerifiedUserAsync();
+        await CreateVerifiedUserAsync();
     }
 
     public async Task DisposeAsync()
@@ -64,7 +64,7 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
         }
     }
 
-    private async Task GivenAVerifiedUserAsync()
+    private async Task CreateVerifiedUserAsync()
     {
         _email = $"signin-{Guid.NewGuid():N}@example.com";
 

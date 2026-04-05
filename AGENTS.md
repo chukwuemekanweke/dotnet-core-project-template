@@ -108,7 +108,8 @@ Matching WebAPI controller location:
   - clearing test doubles or in-memory stores used by the test
 - Cleanup should be explicit and targeted.
 - Do not use vague global wipes when only a small set of records were touched.
-- Use `Given / When / Then` structure inside integration tests.
+- Use `Given / When / Then` structure only inside the method under test, typically as local anonymous functions inside `Verify()`.
+- Helper methods outside `Verify()` should use normal verb-based names.
 
 ### Current integration testing conventions
 

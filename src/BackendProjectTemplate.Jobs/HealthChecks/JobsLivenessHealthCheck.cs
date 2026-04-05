@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace BackendProjectTemplate.Jobs;
+namespace BackendProjectTemplate.Jobs.HealthChecks;
 
 public sealed class JobsLivenessHealthCheck : IHealthCheck
 {

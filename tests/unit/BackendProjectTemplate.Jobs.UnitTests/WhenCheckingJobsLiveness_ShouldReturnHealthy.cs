@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Jobs.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Shouldly;
 

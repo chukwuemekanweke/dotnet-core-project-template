@@ -1,12 +1,13 @@
+using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using StackExchange.Redis;
 
-namespace BackendProjectTemplate.Jobs;
+namespace BackendProjectTemplate.Jobs.HealthChecks;
 
 public sealed class JobsReadinessHealthCheck(
     IConfiguration configuration,
-    WorkerReadinessState readinessState) : IHealthCheck
+    BackgroundServiceReadinessState readinessState) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
@@ -14,7 +15,12 @@ public sealed class JobsReadinessHealthCheck(
     {
         if (!readinessState.IsReady)
         {
-            return HealthCheckResult.Unhealthy("Jobs worker has not started yet.");
+            var pendingServices = readinessState.PendingServices;
+            var description = pendingServices.Count == 0
+                ? "No Jobs background services are registered for readiness tracking."
+                : $"Jobs background services have not started yet: {string.Join(", ", pendingServices)}.";
+
+            return HealthCheckResult.Unhealthy(description);
         }
 
         var sqlConnectionString = configuration.GetConnectionString("SqlServer");
@@ -40,12 +46,12 @@ public sealed class JobsReadinessHealthCheck(
             await using var redis = await ConnectionMultiplexer.ConnectAsync(redisConnectionString);
             await redis.GetDatabase().PingAsync();
 
-            return HealthCheckResult.Healthy("Jobs worker can connect to SQL Server and Redis.");
+            return HealthCheckResult.Healthy("Jobs host can connect to SQL Server and Redis.");
         }
         catch (Exception exception)
         {
             return HealthCheckResult.Unhealthy(
-                "Jobs worker cannot connect to one or more required dependencies.",
+                "Jobs host cannot connect to one or more required dependencies.",
                 exception);
         }
     }

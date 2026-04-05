@@ -26,7 +26,7 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
     public async Task InitializeAsync()
     {
         await InitializeClientAsync();
-        await GivenASignedUpUserAsync();
+        await CreateSignedUpUserAsync();
     }
 
     public async Task DisposeAsync()
@@ -59,7 +59,7 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
         }
     }
 
-    private async Task GivenASignedUpUserAsync()
+    private async Task CreateSignedUpUserAsync()
     {
         _email = $"verify-{Guid.NewGuid():N}@example.com";
 

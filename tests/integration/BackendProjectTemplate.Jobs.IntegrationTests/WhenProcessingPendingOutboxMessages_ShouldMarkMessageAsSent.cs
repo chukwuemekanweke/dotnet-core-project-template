@@ -1,89 +1,91 @@
-using System.Text.Json;
 using BackendProjectTemplate.Contracts.Events;
-using BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
-using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
-using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
-using Chidelu.Integration.Messaging.RabbitMQ.Core;
-using Microsoft.Extensions.DependencyInjection;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using BackendProjectTemplate.Jobs.OutboxProcessing;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Text.Json;
 using System.Threading.Channels;
+using BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 
 namespace BackendProjectTemplate.Jobs.IntegrationTests;
 
 [Collection(nameof(ContainersCollection))]
 public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
-    : JobsIntegrationTestBase, IAsyncLifetime
+    : JobsWorkerIntegrationTestBase
 {
-    private readonly string _sqlConnectionString;
+    private const string EventsExchange = "x.events.backendprojecttemplate.integrationtests";
     private readonly ContainersFixture _fixture;
-    private Guid _messageId;
-    private Guid _userId;
-    private string _emailAddress = string.Empty;
+    private readonly Channel<UserCreated> _channel = Channel.CreateUnbounded<UserCreated>();
     private ServiceProvider _subscriberServices = default!;
     private ISubscriber _subscriber = default!;
-    private Channel<UserCreated> _channel = default!;
+    private Guid _outboxMessageId;
+    private Guid _userId;
+    private string _emailAddress = string.Empty;
 
     public WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent(ContainersFixture fixture)
         : base(fixture)
     {
         _fixture = fixture;
-        _sqlConnectionString = fixture.SqlConnectionString;
-    }
-
-    public async Task InitializeAsync()
-    {
-        await GivenTheJobsDatabaseIsMigrated();
-        await GivenARealRabbitMqSubscriberIsListeningForPublishedEvents();
-        await GivenAPendingOutboxEvent();
-        await InitializeClientAsync();
-    }
-
-    public async Task DisposeAsync()
-    {
-        await DeleteOutboxRecordsAsync();
-        await DisposeSubscriberAsync();
-        await DisposeClientAsync();
     }
 
     [Fact]
     public async Task Verify()
     {
         await WhenTheJobsWorkerProcessesPendingOutboxMessages();
-        await ThenThePublishedMessageIsReceivedAndTheOutboxRowIsMarkedAsSent();
+        await ThenThePublishedMessageIsReceivedAndTheOutboxMessageIsMarkedAsSent();
+
+        async Task WhenTheJobsWorkerProcessesPendingOutboxMessages()
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var received = await _channel.Reader.ReadAsync(cts.Token);
+
+            received.UserId.ShouldBe(_userId);
+            received.EmailAddress.ShouldBe(_emailAddress);
+            received.MessageId.ShouldNotBe(Guid.Empty);
+
+            await WaitForConditionAsync(async () =>
+            {
+                await using var dbContext = CreateDbContext();
+                var repository = new EfRepository<OutboxMessage>(dbContext);
+                var message = await repository.GetByIdAsync(_outboxMessageId);
+                return message?.SentAtUtc is not null;
+            });
+        }
+
+        async Task ThenThePublishedMessageIsReceivedAndTheOutboxMessageIsMarkedAsSent()
+        {
+            await using var dbContext = CreateDbContext();
+            var repository = new EfRepository<OutboxMessage>(dbContext);
+            var message = await repository.GetByIdAsync(_outboxMessageId);
+
+            message.ShouldNotBeNull();
+            message.SentAtUtc.ShouldNotBeNull();
+            message.AttemptCount.ShouldBe(0);
+            message.LastError.ShouldBeNull();
+        }
     }
 
-    private async Task GivenTheJobsDatabaseIsMigrated()
+    protected override async Task InitializeWorkerTestAsync()
     {
-        await using var dbContext = CreateDbContext();
-        await dbContext.Database.MigrateAsync();
+        await StartRabbitMqSubscriberAsync();
+        await SeedPendingUserCreatedOutboxMessageAsync();
     }
 
-    private async Task GivenAPendingOutboxEvent()
+    protected override async Task DisposeWorkerTestAsync()
     {
-        await using var dbContext = CreateDbContext();
-        var repository = new EfRepository<OutboxMessage>(dbContext);
-        _userId = Guid.CreateVersion7();
-        _emailAddress = "jobs-outbox@example.com";
-        var @event = new UserCreated(_userId, _emailAddress);
-        var outboxMessage = OutboxMessage.CreateEvent(
-            @event.MessageId,
-            typeof(UserCreated).FullName.ShouldNotBeNull(),
-            JsonSerializer.Serialize(@event),
-            @event.OccuredAt);
-
-        _messageId = outboxMessage.Id;
-        await repository.AddAsync(outboxMessage);
-        await dbContext.SaveChangesAsync();
+        await DisposeSubscriberAsync();
+        await DeleteOutboxRecordsAsync();
     }
 
-    private async Task GivenARealRabbitMqSubscriberIsListeningForPublishedEvents()
-    {
-        var subscriptionName = $"jobs-outbox-{Guid.NewGuid():N}";
-        _channel = Channel.CreateUnbounded<UserCreated>();
+    protected override void RegisterWorkers(IServiceCollection services, IConfiguration configuration) =>
+        services.AddOutboxMessageProcessing(configuration);
 
+    private async Task StartRabbitMqSubscriberAsync()
+    {
         var subscriberConfig = new SubscriberConfig
         {
             ServiceName = "BackendProjectTemplate.Jobs.IntegrationTests",
@@ -92,8 +94,8 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
             UserName = _fixture.RabbitMqUserName,
             Password = _fixture.RabbitMqPassword,
             VirtualHost = _fixture.RabbitMqVirtualHost,
-            SubscriptionName = subscriptionName,
-            ExchangeName = CustomJobsApplicationFactory.EventsExchange,
+            SubscriptionName = $"jobs-outbox-{Guid.NewGuid():N}",
+            ExchangeName = EventsExchange,
             PrefetchCount = 1,
             MaxRetryCount = 10,
             ConcurrentMessageCount = 1
@@ -109,66 +111,36 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
         await _subscriber.StartAsync(CancellationToken.None);
     }
 
-    private async Task WhenTheJobsWorkerProcessesPendingOutboxMessages()
-    {
-        var messageReceived = false;
-        var messageMarkedSent = false;
-
-        try
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            var received = await _channel.Reader.ReadAsync(cts.Token);
-            received.MessageId.ShouldNotBe(Guid.Empty);
-            received.UserId.ShouldBe(_userId);
-            received.EmailAddress.ShouldBe(_emailAddress);
-            messageReceived = true;
-
-            await WaitForConditionAsync(async () =>
-            {
-                await using var dbContext = CreateDbContext();
-                var repository = new EfRepository<OutboxMessage>(dbContext);
-                var message = await repository.GetByIdAsync(_messageId);
-                return message?.SentAtUtc is not null;
-            });
-
-            messageMarkedSent = true;
-        }
-        finally
-        {
-            if (!messageReceived || !messageMarkedSent)
-            {
-                await using var dbContext = CreateDbContext();
-                var repository = new EfRepository<OutboxMessage>(dbContext);
-                var message = await repository.GetByIdAsync(_messageId);
-
-                throw new InvalidOperationException(
-                    $"The outbox message processing did not complete. MessageReceived={messageReceived}, MessageMarkedSent={messageMarkedSent}, AttemptCount={message?.AttemptCount}, LastError={message?.LastError}, SentAtUtc={message?.SentAtUtc?.ToString("O") ?? "<null>"}.");
-            }
-        }
-    }
-
-    private async Task ThenThePublishedMessageIsReceivedAndTheOutboxRowIsMarkedAsSent()
+    private async Task SeedPendingUserCreatedOutboxMessageAsync()
     {
         await using var dbContext = CreateDbContext();
         var repository = new EfRepository<OutboxMessage>(dbContext);
-        var message = await repository.GetByIdAsync(_messageId);
 
-        message.ShouldNotBeNull();
-        message.SentAtUtc.ShouldNotBeNull();
-        message.AttemptCount.ShouldBe(0);
-        message.LastError.ShouldBeNull();
+        _userId = Guid.CreateVersion7();
+        _emailAddress = "jobs-outbox@example.com";
+
+        var @event = new UserCreated(_userId, _emailAddress);
+        var outboxMessage = OutboxMessage.CreateEvent(
+            @event.MessageId,
+            typeof(UserCreated).FullName.ShouldNotBeNull(),
+            JsonSerializer.Serialize(@event),
+            @event.OccuredAt);
+
+        _outboxMessageId = outboxMessage.Id;
+        await repository.AddAsync(outboxMessage);
+        await dbContext.SaveChangesAsync();
     }
 
     private async Task DeleteOutboxRecordsAsync()
     {
-        if (_messageId == Guid.Empty)
+        if (_outboxMessageId == Guid.Empty)
         {
             return;
         }
 
         await using var dbContext = CreateDbContext();
         var repository = new EfRepository<OutboxMessage>(dbContext);
-        var message = await repository.GetByIdAsync(_messageId);
+        var message = await repository.GetByIdAsync(_outboxMessageId);
 
         if (message is null)
         {
@@ -177,15 +149,6 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
 
         repository.Remove(message);
         await dbContext.SaveChangesAsync();
-    }
-
-    private AppDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlServer(_sqlConnectionString)
-            .Options;
-
-        return new AppDbContext(options);
     }
 
     private async Task DisposeSubscriberAsync()
