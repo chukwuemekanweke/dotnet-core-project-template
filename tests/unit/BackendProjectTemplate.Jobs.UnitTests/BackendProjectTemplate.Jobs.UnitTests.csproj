@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPackable>false</IsPackable>
-    <RootNamespace>BackendProjectTemplate.Consumer.UnitTests</RootNamespace>
+    <RootNamespace>BackendProjectTemplate.Jobs.UnitTests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\\..\\src\\BackendProjectTemplate.Consumer\\BackendProjectTemplate.Consumer.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Jobs\\BackendProjectTemplate.Jobs.csproj" />
   </ItemGroup>
 </Project>

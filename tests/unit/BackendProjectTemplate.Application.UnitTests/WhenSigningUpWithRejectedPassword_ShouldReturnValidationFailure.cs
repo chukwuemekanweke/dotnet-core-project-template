@@ -39,7 +39,7 @@ public sealed class WhenSigningUpWithRejectedPassword_ShouldReturnValidationFail
             Arg.Any<AppUser>(),
             Arg.Any<string>(),
             Arg.Any<CancellationToken>());
-        await context.OutboxWriter.DidNotReceive().AddEventAsync(
+        await context.EventPublisher.DidNotReceive().PublishAsync(
             Arg.Any<UserCreated>(),
             Arg.Any<CancellationToken>());
     }

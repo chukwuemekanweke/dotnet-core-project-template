@@ -16,6 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\\..\\src\\BackendProjectTemplate.Jobs\\BackendProjectTemplate.Jobs.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Jobs\\BackendProjectTemplate.Jobs.csproj" />
   </ItemGroup>
 </Project>

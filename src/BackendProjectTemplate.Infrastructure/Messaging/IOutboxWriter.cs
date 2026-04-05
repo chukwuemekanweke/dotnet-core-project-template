@@ -1,9 +1,9 @@
 using BackendProjectTemplate.Contracts.Commands;
 using BackendProjectTemplate.Contracts.Events;
 
-namespace BackendProjectTemplate.Domain.Common.Messaging;
+namespace BackendProjectTemplate.Infrastructure.Messaging;
 
-public interface IOutboxWriter
+internal interface IOutboxWriter
 {
     Task AddEventAsync<TEvent>(TEvent message, CancellationToken cancellationToken = default)
         where TEvent : BaseEvent;

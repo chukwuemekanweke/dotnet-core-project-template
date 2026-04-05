@@ -7,7 +7,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 
 public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
-    IOutboxWriter outboxWriter,
+    IEventPublisher eventPublisher,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -39,7 +39,7 @@ public sealed class SignUpOtpHandler(
             throw new InvalidOperationException("Failed to update the user after OTP verification.");
         }
 
-        await outboxWriter.AddEventAsync(new UserEmailConfirmed(user.Id, user.Email!)
+        await eventPublisher.PublishAsync(new UserEmailConfirmed(user.Id, user.Email!)
         {
             OccuredAt = now
         }, cancellationToken);

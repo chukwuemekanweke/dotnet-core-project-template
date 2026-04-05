@@ -15,7 +15,7 @@ internal sealed class AuthenticationFlowTestContext
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
     public IOtpDeliveryService OtpDeliveryService { get; } = Substitute.For<IOtpDeliveryService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
-    public IOutboxWriter OutboxWriter { get; } = Substitute.For<IOutboxWriter>();
+    public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public IUnitOfWorkTransaction Transaction { get; } = Substitute.For<IUnitOfWorkTransaction>();
 
@@ -25,8 +25,8 @@ internal sealed class AuthenticationFlowTestContext
             .Returns(Task.FromResult(Transaction));
     }
 
-    public SignUpHandler CreateSignUpHandler() => new(IdentityService, OtpDeliveryService, OutboxWriter, UnitOfWork, Clock);
-    public SignUpOtpHandler CreateSignUpOtpHandler() => new(IdentityService, OutboxWriter, UnitOfWork, Clock);
+    public SignUpHandler CreateSignUpHandler() => new(IdentityService, OtpDeliveryService, EventPublisher, UnitOfWork, Clock);
+    public SignUpOtpHandler CreateSignUpOtpHandler() => new(IdentityService, EventPublisher, UnitOfWork, Clock);
     public SignInHandler CreateSignInHandler() => new(IdentityService, AccessTokenService);
 
     public static SignUpRequest CreateSignUpRequest(

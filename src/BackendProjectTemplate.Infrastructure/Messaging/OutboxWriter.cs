@@ -6,7 +6,7 @@ using BackendProjectTemplate.Domain.Common.Persistence;
 
 namespace BackendProjectTemplate.Infrastructure.Messaging;
 
-public sealed class OutboxWriter(IRepository<OutboxMessage> repository) : IOutboxWriter
+internal sealed class OutboxWriter(IRepository<OutboxMessage> repository) : IOutboxWriter
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 

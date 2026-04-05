@@ -14,7 +14,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<WorkerReadinessState>();
 builder.Services.Configure<OutboxProcessingOptions>(builder.Configuration.GetSection(OutboxProcessingOptions.SectionName));
 builder.Services.AddSqlServerPersistence(builder.Configuration);
-builder.Services.AddTransactionalOutbox();
+builder.Services.AddOutboxMessageDispatching();
 builder.Services.AddHostedService<Worker>();
 builder.Services
     .AddHealthChecks()

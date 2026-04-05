@@ -11,15 +11,15 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - `src/BackendProjectTemplate.WebAPI`: controller-based HTTP host and presentation layer
 - `src/BackendProjectTemplate.Consumer`: worker placeholder for async message consumption with readiness and liveness endpoints
 - `src/BackendProjectTemplate.Jobs`: worker placeholder for scheduled work with readiness and liveness endpoints
-- `tests/BackendProjectTemplate.Application.UnitTests`: unit tests for application handlers and use cases
-- `tests/BackendProjectTemplate.Domain.UnitTests`: unit tests for domain entities and behavior
-- `tests/BackendProjectTemplate.Infrastructure.UnitTests`: unit tests for infrastructure components
-- `tests/BackendProjectTemplate.WebAPI.UnitTests`: unit tests for WebAPI-specific helpers
-- `tests/BackendProjectTemplate.Consumer.UnitTests`: unit tests for consumer worker behavior
-- `tests/BackendProjectTemplate.Jobs.UnitTests`: unit tests for scheduled jobs worker behavior
-- `tests/BackendProjectTemplate.WebAPI.IntegrationTests`: WebAPI integration tests using SQL Server and Redis testcontainers
-- `tests/BackendProjectTemplate.Consumer.IntegrationTests`: consumer host integration tests using SQL Server and Redis testcontainers
-- `tests/BackendProjectTemplate.Jobs.IntegrationTests`: jobs host integration tests using SQL Server and Redis testcontainers
+- `tests/unit/BackendProjectTemplate.Application.UnitTests`: unit tests for application handlers and use cases
+- `tests/unit/BackendProjectTemplate.Domain.UnitTests`: unit tests for domain entities and behavior
+- `tests/unit/BackendProjectTemplate.Infrastructure.UnitTests`: unit tests for infrastructure components
+- `tests/unit/BackendProjectTemplate.WebAPI.UnitTests`: unit tests for WebAPI-specific helpers
+- `tests/unit/BackendProjectTemplate.Consumer.UnitTests`: unit tests for consumer worker behavior
+- `tests/unit/BackendProjectTemplate.Jobs.UnitTests`: unit tests for scheduled jobs worker behavior
+- `tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests`: WebAPI integration tests using SQL Server and Redis testcontainers
+- `tests/integration/BackendProjectTemplate.Consumer.IntegrationTests`: consumer host integration tests using SQL Server and Redis testcontainers
+- `tests/integration/BackendProjectTemplate.Jobs.IntegrationTests`: jobs host integration tests using SQL Server and Redis testcontainers
 
 ## Architecture Notes
 

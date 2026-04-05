@@ -32,7 +32,7 @@ public sealed class WhenVerifyingOtpWithValidCode_ShouldMarkUserAsVerified
         result.Status.ShouldBe(SignUpOtpStatus.Success);
         user.EmailConfirmed.ShouldBeTrue();
         user.UpdatedAtUtc.ShouldBe(context.Clock.GetUtcNow());
-        await context.OutboxWriter.Received(1).AddEventAsync(
+        await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserEmailConfirmed>(message => message.UserId == user.Id && message.EmailAddress == email),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());

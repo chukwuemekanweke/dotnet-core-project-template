@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\\..\\src\\BackendProjectTemplate.Domain\\BackendProjectTemplate.Domain.csproj" />
-    <ProjectReference Include="..\\..\\src\\BackendProjectTemplate.WebAPI\\BackendProjectTemplate.WebAPI.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Domain\\BackendProjectTemplate.Domain.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.WebAPI\\BackendProjectTemplate.WebAPI.csproj" />
   </ItemGroup>
 </Project>

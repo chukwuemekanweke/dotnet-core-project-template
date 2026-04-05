@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\\..\\src\\BackendProjectTemplate.Domain\\BackendProjectTemplate.Domain.csproj" />
-    <ProjectReference Include="..\\..\\src\\BackendProjectTemplate.Application\\BackendProjectTemplate.Application.csproj" />
-    <ProjectReference Include="..\\..\\src\\BackendProjectTemplate.Infrastructure\\BackendProjectTemplate.Infrastructure.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Domain\\BackendProjectTemplate.Domain.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Application\\BackendProjectTemplate.Application.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Infrastructure\\BackendProjectTemplate.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

@@ -45,7 +45,7 @@ public sealed class WhenSigningUpWithNewEmail_ShouldCreateIdentityUserAndSendOtp
             Arg.Is<AppUser>(user => user.Email == email),
             otp,
             Arg.Any<CancellationToken>());
-        await context.OutboxWriter.Received(1).AddEventAsync(
+        await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserCreated>(message => message.EmailAddress == email),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());

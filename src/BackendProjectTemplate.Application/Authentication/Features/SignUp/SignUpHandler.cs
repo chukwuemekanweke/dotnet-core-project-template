@@ -10,7 +10,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignUp;
 public sealed class SignUpHandler(
     IAuthenticationIdentityService identityService,
     IOtpDeliveryService otpDeliveryService,
-    IOutboxWriter outboxWriter,
+    IEventPublisher eventPublisher,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -40,7 +40,7 @@ public sealed class SignUpHandler(
         }
 
         var otpCode = await identityService.GenerateSignUpOtpAsync(user);
-        await outboxWriter.AddEventAsync(new UserCreated(user.Id, user.Email!)
+        await eventPublisher.PublishAsync(new UserCreated(user.Id, user.Email!)
         {
             OccuredAt = now
         }, cancellationToken);
