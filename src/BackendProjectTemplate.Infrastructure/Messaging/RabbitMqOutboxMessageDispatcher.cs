@@ -3,19 +3,20 @@ using System.Text.Json;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Core;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Infrastructure.Messaging;
 
 public sealed class RabbitMqOutboxMessageDispatcher(
-    IPublisher publisher,
-    ISender sender) : IOutboxMessageDispatcher
+    [FromKeyedServices(RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey)] IPublisher publisher,
+    [FromKeyedServices(RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey)] ISender sender) : IOutboxMessageDispatcher
 {
-    internal const string DependencyInjectionKey = "backend-project-template-rabbitmq-outbox";
-
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
+
     private static readonly MethodInfo PublishMethod = typeof(IPublisher)
         .GetMethods()
         .Single(method => method.Name == nameof(IPublisher.PublishAsync) && method.IsGenericMethodDefinition);
+
     private static readonly MethodInfo SendMethod = typeof(ISender)
         .GetMethods()
         .Single(method => method.Name == nameof(ISender.SendAsync) && method.IsGenericMethodDefinition);

@@ -38,7 +38,7 @@ public static class ServiceCollectionExtensions
                 VirtualHost = options.VirtualHost,
                 EventsExchange = options.EventsExchange
             },
-            RabbitMqOutboxMessageDispatcher.DependencyInjectionKey);
+            RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey);
 
         services.AddSender(
             new SenderConfig
@@ -51,12 +51,9 @@ public static class ServiceCollectionExtensions
                 VirtualHost = options.VirtualHost,
                 CommandsExchange = options.CommandsExchange
             },
-            RabbitMqOutboxMessageDispatcher.DependencyInjectionKey);
+            RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey);
 
-        services.AddScoped<IOutboxMessageDispatcher>(serviceProvider =>
-            new RabbitMqOutboxMessageDispatcher(
-                serviceProvider.GetRequiredKeyedService<IPublisher>(RabbitMqOutboxMessageDispatcher.DependencyInjectionKey),
-                serviceProvider.GetRequiredKeyedService<ISender>(RabbitMqOutboxMessageDispatcher.DependencyInjectionKey)));
+        services.AddScoped<IOutboxMessageDispatcher, RabbitMqOutboxMessageDispatcher>();
 
         return services;
     }
