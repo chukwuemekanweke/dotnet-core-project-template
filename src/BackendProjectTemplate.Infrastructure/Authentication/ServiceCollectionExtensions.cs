@@ -1,31 +1,18 @@
 using System.Text;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Caching;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Authentication.Entities;
-using BackendProjectTemplate.Domain.Authentication.Persistence;
-using BackendProjectTemplate.Infrastructure.Authentication;
-using BackendProjectTemplate.Infrastructure.Caching;
-using BackendProjectTemplate.Infrastructure.Observability;
-using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 
-namespace BackendProjectTemplate.Infrastructure.DependencyInjection;
+namespace BackendProjectTemplate.Infrastructure.Authentication;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddIdentityUserManagement(this IServiceCollection services)
     {
-        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
-
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("SqlServer")));
-
         services
             .AddIdentityCore<AppUser>(options =>
             {
@@ -38,21 +25,25 @@ public static class ServiceCollectionExtensions
                 options.Password.RequireNonAlphanumeric = true;
             })
             .AddRoles<IdentityRole<Guid>>()
-            .AddEntityFrameworkStores<AppDbContext>()
+            .AddEntityFrameworkStores<Persistence.AppDbContext>()
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
-        services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
-        services.AddScoped<IAppUserRepository, AppUserRepository>();
-        services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
+        return services;
+    }
 
-        services.AddSingleton<TimeProvider>(TimeProvider.System);
+    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services)
+    {
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
         services.AddScoped<IOtpDeliveryService, LoggingOtpDeliveryService>();
-        services.AddSingleton<IJsonCache, DistributedJsonCache>();
-        services.AddStackExchangeRedisCache(options =>
-            options.Configuration = configuration.GetConnectionString("Redis"));
+
+        return services;
+    }
+
+    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey));
@@ -75,7 +66,6 @@ public static class ServiceCollectionExtensions
             });
 
         services.AddAuthorization();
-        services.AddBackendTelemetry(configuration);
 
         return services;
     }

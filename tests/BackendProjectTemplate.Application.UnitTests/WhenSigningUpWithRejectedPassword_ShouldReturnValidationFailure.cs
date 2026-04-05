@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
@@ -37,6 +38,9 @@ public sealed class WhenSigningUpWithRejectedPassword_ShouldReturnValidationFail
         await context.OtpDeliveryService.DidNotReceive().SendSignUpOtpAsync(
             Arg.Any<AppUser>(),
             Arg.Any<string>(),
+            Arg.Any<CancellationToken>());
+        await context.OutboxWriter.DidNotReceive().AddEventAsync(
+            Arg.Any<UserCreated>(),
             Arg.Any<CancellationToken>());
     }
 }

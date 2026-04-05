@@ -1,8 +1,9 @@
+using BackendProjectTemplate.Infrastructure.Messaging;
+using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Jobs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -11,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<WorkerReadinessState>();
+builder.Services.Configure<OutboxProcessingOptions>(builder.Configuration.GetSection(OutboxProcessingOptions.SectionName));
+builder.Services.AddSqlServerPersistence(builder.Configuration);
+builder.Services.AddTransactionalOutbox();
 builder.Services.AddHostedService<Worker>();
 builder.Services
     .AddHealthChecks()

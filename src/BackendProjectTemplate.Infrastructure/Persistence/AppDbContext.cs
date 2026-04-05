@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -11,6 +12,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>(options), IUnitOfWork
 {
     public DbSet<Country> Countries => Set<Country>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+    public async Task<IUnitOfWorkTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
+        new EfUnitOfWorkTransaction(await Database.BeginTransactionAsync(cancellationToken));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Infrastructure.Observability;
 
-public static class ObservabilityExtensions
+public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddBackendTelemetry(this IServiceCollection services, IConfiguration configuration)
     {

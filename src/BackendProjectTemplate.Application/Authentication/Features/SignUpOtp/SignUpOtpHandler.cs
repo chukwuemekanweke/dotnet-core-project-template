@@ -1,9 +1,14 @@
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Persistence;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 
 public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
+    IOutboxWriter outboxWriter,
+    IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
     public async Task<SignUpOtpResult> HandleAsync(SignUpOtpRequest request, CancellationToken cancellationToken)
@@ -26,12 +31,20 @@ public sealed class SignUpOtpHandler(
 
         var now = timeProvider.GetUtcNow();
         user.MarkEmailVerified(now);
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
         var updateResult = await identityService.UpdateAsync(user);
         if (!updateResult.Succeeded)
         {
             throw new InvalidOperationException("Failed to update the user after OTP verification.");
         }
+
+        await outboxWriter.AddEventAsync(new UserEmailConfirmed(user.Id, user.Email!)
+        {
+            OccuredAt = now
+        }, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return new SignUpOtpResult(SignUpOtpStatus.Success);
     }

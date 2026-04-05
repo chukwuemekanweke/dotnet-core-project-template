@@ -1,5 +1,5 @@
 using BackendProjectTemplate.DatabaseMigrator.Healthcheck;
-using BackendProjectTemplate.Infrastructure.DependencyInjection;
+using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
@@ -7,7 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+builder.Services.AddSqlServerPersistence(builder.Configuration);
 builder.Services.AddSingleton<DatabaseMigrationState>();
 builder.Services.AddHostedService<DatabaseMigrationWorker>();
 builder.Services

@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
@@ -44,5 +45,10 @@ public sealed class WhenSigningUpWithNewEmail_ShouldCreateIdentityUserAndSendOtp
             Arg.Is<AppUser>(user => user.Email == email),
             otp,
             Arg.Any<CancellationToken>());
+        await context.OutboxWriter.Received(1).AddEventAsync(
+            Arg.Is<UserCreated>(message => message.EmailAddress == email),
+            Arg.Any<CancellationToken>());
+        await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.Transaction.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 }

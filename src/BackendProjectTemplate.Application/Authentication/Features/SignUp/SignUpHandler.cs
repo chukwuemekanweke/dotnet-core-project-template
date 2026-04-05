@@ -1,4 +1,7 @@
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using Microsoft.AspNetCore.Identity;
 
@@ -7,6 +10,8 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignUp;
 public sealed class SignUpHandler(
     IAuthenticationIdentityService identityService,
     IOtpDeliveryService otpDeliveryService,
+    IOutboxWriter outboxWriter,
+    IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
     private static readonly TimeSpan OtpLifetime = TimeSpan.FromMinutes(3);
@@ -20,6 +25,8 @@ public sealed class SignUpHandler(
 
         var now = timeProvider.GetUtcNow();
         var user = AppUser.Create(request.Email, request.FirstName, request.LastName, now);
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
         var createResult = await identityService.CreateAsync(user, request.Password);
 
         if (!createResult.Succeeded)
@@ -33,6 +40,12 @@ public sealed class SignUpHandler(
         }
 
         var otpCode = await identityService.GenerateSignUpOtpAsync(user);
+        await outboxWriter.AddEventAsync(new UserCreated(user.Id, user.Email!)
+        {
+            OccuredAt = now
+        }, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         await otpDeliveryService.SendSignUpOtpAsync(user, otpCode, cancellationToken);
 
         return new SignUpResult(SignUpStatus.Accepted, now.Add(OtpLifetime));
