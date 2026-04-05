@@ -15,4 +15,6 @@ public sealed class TestOtpDeliveryService : IOtpDeliveryService
 
     public string? GetCode(string email) =>
         _codes.TryGetValue(email, out var code) ? code : null;
+
+    public void Clear() => _codes.Clear();
 }

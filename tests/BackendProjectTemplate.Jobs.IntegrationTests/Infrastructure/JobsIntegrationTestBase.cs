@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 
-public abstract class JobsIntegrationTestBase : IAsyncLifetime
+public abstract class JobsIntegrationTestBase
 {
     private readonly CustomJobsApplicationFactory _factory;
 
@@ -13,7 +13,7 @@ public abstract class JobsIntegrationTestBase : IAsyncLifetime
 
     protected HttpClient Client { get; private set; } = default!;
 
-    public virtual Task InitializeAsync()
+    protected Task InitializeClientAsync()
     {
         Client = _factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -23,7 +23,7 @@ public abstract class JobsIntegrationTestBase : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    public virtual async Task DisposeAsync()
+    protected async Task DisposeClientAsync()
     {
         Client.Dispose();
         await _factory.DisposeAsync();
