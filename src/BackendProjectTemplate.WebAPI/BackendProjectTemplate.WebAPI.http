@@ -1,6 +1,6 @@
 @BackendProjectTemplate.WebAPI_HostAddress = http://localhost:5140
 
-POST {{BackendProjectTemplate.WebAPI_HostAddress}}/api/authentication/sign-up
+POST {{BackendProjectTemplate.WebAPI_HostAddress}}/api/v1/authentication/sign-up
 Content-Type: application/json
 
 {
@@ -13,7 +13,7 @@ Content-Type: application/json
 
 ###
 
-POST {{BackendProjectTemplate.WebAPI_HostAddress}}/api/authentication/sign-up/otp
+POST {{BackendProjectTemplate.WebAPI_HostAddress}}/api/v1/authentication/sign-up/otp
 Content-Type: application/json
 
 {
@@ -23,7 +23,7 @@ Content-Type: application/json
 
 ###
 
-POST {{BackendProjectTemplate.WebAPI_HostAddress}}/api/authentication/sign-in
+POST {{BackendProjectTemplate.WebAPI_HostAddress}}/api/v1/authentication/sign-in
 Content-Type: application/json
 
 {
@@ -33,4 +33,4 @@ Content-Type: application/json
 
 ###
 
-GET {{BackendProjectTemplate.WebAPI_HostAddress}}/api/reference-data/countries
+GET {{BackendProjectTemplate.WebAPI_HostAddress}}/api/v1/reference-data/countries

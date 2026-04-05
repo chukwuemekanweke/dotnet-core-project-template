@@ -2,7 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
+using BackendProjectTemplate.Domain.Authentication.Persistence;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.WebAPI;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests;
@@ -28,7 +32,7 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
     public async Task DisposeAsync()
     {
         _response?.Dispose();
-        await DeleteAuthenticationUserByEmailAsync(_email);
+        await DeleteAuthenticationRecordsAsync();
         ClearOtpDeliveries();
         await DisposeClientAsync();
     }
@@ -41,7 +45,7 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
 
         async Task WhenVerifyingOtp()
         {
-            _response = await Client.PostAsJsonAsync("/api/authentication/sign-up/otp", new SignUpOtpRequest
+            _response = await Client.PostAsJsonAsync(EndpointUrl.SignUpOtp.V1, new SignUpOtpRequest
             {
                 Email = _email,
                 Otp = _otp
@@ -59,7 +63,7 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
     {
         _email = $"verify-{Guid.NewGuid():N}@example.com";
 
-        using var signUpResponse = await Client.PostAsJsonAsync("/api/authentication/sign-up", new SignUpRequest
+        using var signUpResponse = await Client.PostAsJsonAsync(EndpointUrl.SignUp.V1, new SignUpRequest
         {
             Email = _email,
             Password = Password,
@@ -70,5 +74,24 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
 
         signUpResponse.EnsureSuccessStatusCode();
         _otp = OtpDeliveryService.GetCode(_email) ?? throw new InvalidOperationException("Expected an OTP code to be generated.");
+    }
+
+    private async Task DeleteAuthenticationRecordsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_email))
+        {
+            return;
+        }
+
+        using var scope = CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var user = await repository.GetByEmailAsync(_email);
+
+        if (user is not null)
+        {
+            repository.Remove(user);
+            await unitOfWork.SaveChangesAsync();
+        }
     }
 }

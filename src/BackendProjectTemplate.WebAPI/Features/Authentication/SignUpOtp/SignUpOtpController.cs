@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using FluentValidation;
@@ -6,7 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace BackendProjectTemplate.WebAPI.Features.Authentication.SignUpOtp;
 
 [ApiController]
-[Route("api/authentication/sign-up/otp")]
+[ApiVersion("1.0")]
+[Route(EndpointUrl.SignUpOtp.Route)]
 public sealed class SignUpOtpController(
     SignUpOtpHandler handler,
     IValidator<SignUpOtpRequest> validator) : ControllerBase

@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using BackendProjectTemplate.Application;
 using BackendProjectTemplate.Infrastructure.DependencyInjection;
 using BackendProjectTemplate.Infrastructure.Persistence;
@@ -6,6 +7,19 @@ using BackendProjectTemplate.WebAPI.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services
+    .AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(1, 0);
+        options.AssumeDefaultVersionWhenUnspecified = false;
+        options.ReportApiVersions = true;
+        options.ApiVersionReader = new UrlSegmentApiVersionReader();
+    })
+    .AddApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'V";
+        options.SubstituteApiVersionInUrl = true;
+    });
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();

@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using FluentValidation;
@@ -6,7 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace BackendProjectTemplate.WebAPI.Features.Authentication.SignUp;
 
 [ApiController]
-[Route("api/authentication/sign-up")]
+[ApiVersion("1.0")]
+[Route(EndpointUrl.SignUp.Route)]
 public sealed class SignUpController(
     SignUpHandler handler,
     IValidator<SignUpRequest> validator) : ControllerBase

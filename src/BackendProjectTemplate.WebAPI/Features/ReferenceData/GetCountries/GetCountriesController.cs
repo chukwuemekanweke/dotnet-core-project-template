@@ -1,10 +1,12 @@
+using Asp.Versioning;
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BackendProjectTemplate.WebAPI.Features.ReferenceData.GetCountries;
 
 [ApiController]
-[Route("api/reference-data/countries")]
+[ApiVersion("1.0")]
+[Route(EndpointUrl.GetCountries.Route)]
 public sealed class GetCountriesController(GetCountriesHandler handler) : ControllerBase
 {
     [HttpGet]
