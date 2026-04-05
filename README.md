@@ -1,6 +1,6 @@
 # Backend Project Template
 
-A .NET 10 backend starter organized around DDD boundaries, vertical slices in the application layer, modular schemas, Redis caching, OpenTelemetry, and containerized development dependencies.
+A .NET 10 backend starter organized around DDD boundaries, vertical slices in the application layer, modular schemas, Redis caching, a transactional outbox with RabbitMQ dispatching, OpenTelemetry, and containerized development dependencies.
 
 ## Included
 
@@ -10,7 +10,7 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - `src/BackendProjectTemplate.DatabaseMigrator`: dedicated deployment-time migrator that runs pre-deploy SQL, EF Core migrations, seed data, and post-deploy SQL
 - `src/BackendProjectTemplate.WebAPI`: controller-based HTTP host and presentation layer
 - `src/BackendProjectTemplate.Consumer`: worker placeholder for async message consumption with readiness and liveness endpoints
-- `src/BackendProjectTemplate.Jobs`: worker placeholder for scheduled work with readiness and liveness endpoints
+- `src/BackendProjectTemplate.Jobs`: worker placeholder for scheduled work and transactional outbox dispatching with readiness and liveness endpoints
 - `tests/unit/BackendProjectTemplate.Application.UnitTests`: unit tests for application handlers and use cases
 - `tests/unit/BackendProjectTemplate.Domain.UnitTests`: unit tests for domain entities and behavior
 - `tests/unit/BackendProjectTemplate.Infrastructure.UnitTests`: unit tests for infrastructure components
@@ -26,6 +26,7 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - Domain owns entities plus contracts such as repositories, cache interfaces, token generation, and OTP delivery
 - Application keeps vertical slices by feature and depends only on the domain
 - Infrastructure contains EF Core persistence, Redis caching, JWT generation, observability, and other implementation details
+- Asynchronous integration messages are persisted through a transactional outbox and dispatched from the Jobs service through RabbitMQ
 - Database changes are applied by a separate migrator service before the other services are deployed
 - The migrator exposes readiness and liveness endpoints so deployment orchestration can distinguish between startup and completed database work
 - WebAPI is only the presentation host and endpoint mapping layer
@@ -107,6 +108,8 @@ Useful endpoints:
 - OpenAPI: `http://localhost:8080/openapi/v1.json`
 - Metrics: `http://localhost:8080/metrics`
 - Health: `http://localhost:8080/health`
+- RabbitMQ: `amqp://localhost:5672`
+- RabbitMQ Management: `http://localhost:15672`
 - Grafana: `http://localhost:3000`
 - Prometheus: `http://localhost:9090`
 - Tempo: `http://localhost:3200`

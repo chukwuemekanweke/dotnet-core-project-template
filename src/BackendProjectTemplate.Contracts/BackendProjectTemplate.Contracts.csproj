@@ -7,4 +7,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Chidelu.Integration.Messaging.RabbitMQ.Core" />
+  </ItemGroup>
+
 </Project>

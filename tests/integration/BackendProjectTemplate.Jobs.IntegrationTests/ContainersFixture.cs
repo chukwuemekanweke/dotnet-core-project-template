@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using Testcontainers.MsSql;
+using Testcontainers.RabbitMq;
 using Testcontainers.Redis;
 using Xunit.Sdk;
 
@@ -11,9 +12,15 @@ public sealed class ContainersCollection : ICollectionFixture<ContainersFixture>
 public sealed class ContainersFixture : IAsyncLifetime
 {
     public MsSqlContainer SqlServer { get; private set; } = default!;
+    public RabbitMqContainer RabbitMq { get; private set; } = default!;
     public RedisContainer Redis { get; private set; } = default!;
     public string SqlConnectionString { get; private set; } = string.Empty;
     public string RedisConnectionString { get; private set; } = string.Empty;
+    public string RabbitMqHostName { get; private set; } = string.Empty;
+    public int RabbitMqPort { get; private set; }
+    public string RabbitMqUserName => RabbitMqBuilder.DefaultUsername;
+    public string RabbitMqPassword => RabbitMqBuilder.DefaultPassword;
+    public string RabbitMqVirtualHost => "/";
 
     public async Task InitializeAsync()
     {
@@ -23,9 +30,13 @@ public sealed class ContainersFixture : IAsyncLifetime
                 .WithPassword("Your_strong_Password123!")
                 .Build();
 
+            RabbitMq = new RabbitMqBuilder()
+                .WithImage("rabbitmq:3.13-management")
+                .WithEnvironment("RABBITMQ_DEFAULT_VHOST", RabbitMqVirtualHost)
+                .Build();
             Redis = new RedisBuilder().Build();
 
-            await Task.WhenAll(SqlServer.StartAsync(), Redis.StartAsync());
+            await Task.WhenAll(SqlServer.StartAsync(), RabbitMq.StartAsync(), Redis.StartAsync());
 
             SqlConnectionString = new SqlConnectionStringBuilder(SqlServer.GetConnectionString())
             {
@@ -35,6 +46,9 @@ public sealed class ContainersFixture : IAsyncLifetime
 
             await EnsureDatabaseExistsAsync(SqlConnectionString);
             RedisConnectionString = Redis.GetConnectionString();
+            var rabbitMqConnectionString = new Uri(RabbitMq.GetConnectionString());
+            RabbitMqHostName = rabbitMqConnectionString.Host;
+            RabbitMqPort = rabbitMqConnectionString.Port;
         }
         catch (Exception exception) when (exception.GetType().FullName?.Contains("DockerUnavailableException", StringComparison.Ordinal) == true)
         {
@@ -49,6 +63,11 @@ public sealed class ContainersFixture : IAsyncLifetime
         if (Redis is not null)
         {
             tasks.Add(Redis.DisposeAsync().AsTask());
+        }
+
+        if (RabbitMq is not null)
+        {
+            tasks.Add(RabbitMq.DisposeAsync().AsTask());
         }
 
         if (SqlServer is not null)

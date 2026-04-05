@@ -79,6 +79,14 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__SqlServer: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
       ConnectionStrings__Redis: redis:6379
+      Messaging__RabbitMq__ServiceName: BackendProjectTemplate.Jobs
+      Messaging__RabbitMq__HostName: rabbitmq
+      Messaging__RabbitMq__Port: 5672
+      Messaging__RabbitMq__UserName: guest
+      Messaging__RabbitMq__Password: guest
+      Messaging__RabbitMq__VirtualHost: /
+      Messaging__RabbitMq__EventsExchange: x.events.backendprojecttemplate
+      Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
       OpenTelemetry__OtlpEndpoint: http://tempo:4317
     depends_on:
       database-migrator:
@@ -87,6 +95,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
       tempo:
         condition: service_started
     healthcheck:
@@ -113,6 +123,20 @@ services:
     image: redis:7.4-alpine
     ports:
       - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
   prometheus:
     image: prom/prometheus:v3.4.1
