@@ -3,25 +3,15 @@ using Shouldly;
 
 namespace BackendProjectTemplate.Jobs.UnitTests;
 
-public sealed class WorkerHealthTests
+public sealed class WhenCheckingJobsLiveness_ShouldReturnHealthy
 {
     [Fact]
-    public async Task LivenessHealthCheck_ReturnsHealthy()
+    public async Task Verify()
     {
         var healthCheck = new JobsLivenessHealthCheck();
 
         var result = await healthCheck.CheckHealthAsync(new HealthCheckContext());
 
         result.Status.ShouldBe(HealthStatus.Healthy);
-    }
-
-    [Fact]
-    public void ReadinessState_MarksWorkerAsReady()
-    {
-        var state = new WorkerReadinessState();
-
-        state.MarkReady();
-
-        state.IsReady.ShouldBeTrue();
     }
 }

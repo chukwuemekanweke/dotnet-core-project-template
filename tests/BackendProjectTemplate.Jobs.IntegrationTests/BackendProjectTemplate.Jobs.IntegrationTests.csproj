@@ -18,8 +18,4 @@
   <ItemGroup>
     <ProjectReference Include="..\\..\\src\\BackendProjectTemplate.Jobs\\BackendProjectTemplate.Jobs.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
 </Project>

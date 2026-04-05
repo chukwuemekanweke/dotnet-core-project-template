@@ -5,23 +5,28 @@ using Shouldly;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 
-public sealed class SpecificationEvaluatorTests
+public sealed class WhenApplyingSpecification_ShouldFilterOrderAndPage
 {
     [Fact]
-    public void GetQuery_AppliesCriteriaOrderingAndPaging()
+    public void Verify()
     {
+        const string firstEmail = "linus@example.com";
+        const string secondEmail = "ada@example.com";
+        const string thirdEmail = "grace@example.com";
+        var createdAt = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
+
         var users = new[]
         {
-            AppUser.Create("linus@example.com", "Linus", "Torvalds", DateTimeOffset.UtcNow),
-            AppUser.Create("ada@example.com", "Ada", "Lovelace", DateTimeOffset.UtcNow),
-            AppUser.Create("grace@example.com", "Grace", "Hopper", DateTimeOffset.UtcNow)
+            AppUser.Create(firstEmail, "Linus", "Torvalds", createdAt),
+            AppUser.Create(secondEmail, "Ada", "Lovelace", createdAt),
+            AppUser.Create(thirdEmail, "Grace", "Hopper", createdAt)
         }.AsQueryable();
 
         var specification = new OrderedPagedUsersSpecification();
 
         var result = SpecificationEvaluator.GetQuery(users, specification).ToList();
 
-        result.Select(user => user.Email).ShouldBe(["linus@example.com", "grace@example.com"]);
+        result.Select(user => user.Email).ShouldBe([firstEmail, thirdEmail]);
     }
 
     private sealed class OrderedPagedUsersSpecification : Specification<AppUser>

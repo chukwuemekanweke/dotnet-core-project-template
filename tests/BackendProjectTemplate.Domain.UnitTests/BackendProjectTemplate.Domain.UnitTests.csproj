@@ -15,8 +15,4 @@
   <ItemGroup>
     <ProjectReference Include="..\\..\\src\\BackendProjectTemplate.Domain\\BackendProjectTemplate.Domain.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
 </Project>
