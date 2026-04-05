@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="src/BackendProjectTemplate.Domain/BackendProjectTemplate.Domain.csproj" />
+  <Project Path="src/BackendProjectTemplate.Contracts/BackendProjectTemplate.Contracts.csproj" />
   <Project Path="src/BackendProjectTemplate.Application/BackendProjectTemplate.Application.csproj" />
   <Project Path="src/BackendProjectTemplate.Infrastructure/BackendProjectTemplate.Infrastructure.csproj" />
   <Project Path="src/BackendProjectTemplate.DatabaseMigrator/BackendProjectTemplate.DatabaseMigrator.csproj" />
