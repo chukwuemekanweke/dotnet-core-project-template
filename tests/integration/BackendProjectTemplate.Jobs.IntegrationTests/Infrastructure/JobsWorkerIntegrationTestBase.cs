@@ -19,7 +19,7 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         _fixture = fixture;
     }
 
-    protected async Task StartWorkerHostAsync(Action<IServiceCollection, IConfiguration> registerWorkers)
+    private void InitializeWorkerHost(Action<IServiceCollection, IConfiguration> registerWorkers)
     {
         var configuration = BuildConfiguration();
         var builder = Host.CreateApplicationBuilder();
@@ -30,9 +30,18 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddBackgroundServiceReadinessTracking();
         builder.Services.AddSqlServerPersistence(configuration);
         builder.Services.AddRabbitMqOutboxDispatching(configuration);
-        RegisterWorkers(builder.Services, configuration);
+        registerWorkers(builder.Services, configuration);
 
         _workerHost = builder.Build();
+    }
+
+    protected async Task StartWorkerHostAsync()
+    {
+        if (_workerHost is null)
+        {
+            throw new InvalidOperationException("The worker host has not been initialized.");
+        }
+
         await _workerHost.StartAsync();
     }
 
@@ -49,17 +58,19 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
 
     protected async Task MigrateJobsDatabaseAsync()
     {
-        await using var dbContext = CreateDbContext();
+        await using var scope = CreateDbContextScope();
+        var dbContext = scope.DbContext;
         await dbContext.Database.MigrateAsync();
     }
 
-    protected AppDbContext CreateDbContext()
+    protected ScopedDbContext CreateDbContextScope()
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlServer(_fixture.SqlConnectionString)
-            .Options;
+        if (_workerHost is null)
+        {
+            throw new InvalidOperationException("The worker host has not been initialized.");
+        }
 
-        return new AppDbContext(options);
+        return new ScopedDbContext(_workerHost.Services.CreateAsyncScope());
     }
 
     protected static async Task WaitForConditionAsync(Func<Task<bool>> condition)
@@ -79,9 +90,10 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
 
     public virtual async Task InitializeAsync()
     {
+        InitializeWorkerHost(RegisterWorkers);
         await MigrateJobsDatabaseAsync();
         await InitializeWorkerTestAsync();
-        await StartWorkerHostAsync(RegisterWorkers);
+        await StartWorkerHostAsync();
     }
 
     public virtual async Task DisposeAsync()

@@ -2,7 +2,7 @@ using BackendProjectTemplate.Jobs.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Shouldly;
 
-namespace BackendProjectTemplate.Jobs.UnitTests;
+namespace BackendProjectTemplate.Jobs.UnitTests.HealthChecks;
 
 public sealed class WhenCheckingJobsLiveness_ShouldReturnHealthy
 {

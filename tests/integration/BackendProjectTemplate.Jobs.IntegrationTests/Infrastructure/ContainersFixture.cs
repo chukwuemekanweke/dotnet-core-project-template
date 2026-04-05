@@ -4,7 +4,7 @@ using Testcontainers.RabbitMq;
 using Testcontainers.Redis;
 using Xunit.Sdk;
 
-namespace BackendProjectTemplate.Jobs.IntegrationTests;
+namespace BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 
 [CollectionDefinition(nameof(ContainersCollection))]
 public sealed class ContainersCollection : ICollectionFixture<ContainersFixture>;

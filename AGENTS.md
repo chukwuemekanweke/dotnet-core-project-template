@@ -82,6 +82,8 @@ Matching WebAPI controller location:
   - `WebAPI`
   - `Consumer`
   - `Jobs`
+- Within a test project, mirror the production project structure where practical.
+- Example: `Jobs` tests should group scenarios under folders like `HealthChecks`, `OutboxProcessing`, and `Infrastructure` instead of keeping all files flat.
 
 ### Unit test rules
 

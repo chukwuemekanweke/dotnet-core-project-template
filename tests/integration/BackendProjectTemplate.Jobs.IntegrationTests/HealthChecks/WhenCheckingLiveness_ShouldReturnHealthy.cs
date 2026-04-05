@@ -2,7 +2,7 @@ using System.Net;
 using BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 using Shouldly;
 
-namespace BackendProjectTemplate.Jobs.IntegrationTests;
+namespace BackendProjectTemplate.Jobs.IntegrationTests.HealthChecks;
 
 [Collection(nameof(ContainersCollection))]
 public sealed class WhenCheckingLiveness_ShouldReturnHealthy(ContainersFixture fixture)

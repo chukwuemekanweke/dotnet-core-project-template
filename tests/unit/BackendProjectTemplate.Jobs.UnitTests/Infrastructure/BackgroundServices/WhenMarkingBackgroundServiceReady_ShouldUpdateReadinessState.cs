@@ -1,9 +1,9 @@
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using Shouldly;
 
-namespace BackendProjectTemplate.Jobs.UnitTests;
+namespace BackendProjectTemplate.Jobs.UnitTests.Infrastructure.BackgroundServices;
 
-public sealed class WhenMarkingJobsWorkerReady_ShouldUpdateReadinessState
+public sealed class WhenMarkingBackgroundServiceReady_ShouldUpdateReadinessState
 {
     [Fact]
     public void Verify()

@@ -1,14 +1,13 @@
-using System.Net;
-using System.Net.Http.Json;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.WebAPI;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests;
 

@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Infrastructure.Persistence;
+using BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 using BackendProjectTemplate.Jobs.OutboxProcessing;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
@@ -9,9 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using System.Text.Json;
 using System.Threading.Channels;
-using BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 
-namespace BackendProjectTemplate.Jobs.IntegrationTests;
+namespace BackendProjectTemplate.Jobs.IntegrationTests.OutboxProcessing;
 
 [Collection(nameof(ContainersCollection))]
 public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
@@ -49,7 +49,8 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
 
             await WaitForConditionAsync(async () =>
             {
-                await using var dbContext = CreateDbContext();
+                await using var scope = CreateDbContextScope();
+                var dbContext = scope.DbContext;
                 var repository = new EfRepository<OutboxMessage>(dbContext);
                 var message = await repository.GetByIdAsync(_outboxMessageId);
                 return message?.SentAtUtc is not null;
@@ -58,7 +59,8 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
 
         async Task ThenThePublishedMessageIsReceivedAndTheOutboxMessageIsMarkedAsSent()
         {
-            await using var dbContext = CreateDbContext();
+            await using var scope = CreateDbContextScope();
+            var dbContext = scope.DbContext;
             var repository = new EfRepository<OutboxMessage>(dbContext);
             var message = await repository.GetByIdAsync(_outboxMessageId);
 
@@ -113,9 +115,6 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
 
     private async Task SeedPendingUserCreatedOutboxMessageAsync()
     {
-        await using var dbContext = CreateDbContext();
-        var repository = new EfRepository<OutboxMessage>(dbContext);
-
         _userId = Guid.CreateVersion7();
         _emailAddress = "jobs-outbox@example.com";
 
@@ -127,6 +126,10 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
             @event.OccuredAt);
 
         _outboxMessageId = outboxMessage.Id;
+
+        await using var scope = CreateDbContextScope();
+        var dbContext = scope.DbContext;
+        var repository = new EfRepository<OutboxMessage>(dbContext);
         await repository.AddAsync(outboxMessage);
         await dbContext.SaveChangesAsync();
     }
@@ -138,7 +141,8 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
             return;
         }
 
-        await using var dbContext = CreateDbContext();
+        await using var scope = CreateDbContextScope();
+        var dbContext = scope.DbContext;
         var repository = new EfRepository<OutboxMessage>(dbContext);
         var message = await repository.GetByIdAsync(_outboxMessageId);
 
