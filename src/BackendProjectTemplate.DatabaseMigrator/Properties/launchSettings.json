@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "BackendProjectTemplate.DatabaseMigrator": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
