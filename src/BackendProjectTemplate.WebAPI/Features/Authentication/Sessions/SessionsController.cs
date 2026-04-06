@@ -4,12 +4,12 @@ using BackendProjectTemplate.WebAPI.Infrastructure;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BackendProjectTemplate.WebAPI.Features.Authentication.SignIn;
+namespace BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Route(EndpointUrl.SignIn.Route)]
-public sealed class SignInController(
+[Route(EndpointUrl.Sessions.Route)]
+public sealed class SessionsController(
     SignInHandler handler,
     IValidator<SignInRequest> validator) : ControllerBase
 {

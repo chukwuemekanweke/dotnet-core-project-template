@@ -4,12 +4,12 @@ using BackendProjectTemplate.WebAPI.Infrastructure;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BackendProjectTemplate.WebAPI.Features.Authentication.SignUp;
+namespace BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Route(EndpointUrl.SignUp.Route)]
-public sealed class SignUpController(
+[Route(EndpointUrl.Registrations.Route)]
+public sealed class RegistrationsController(
     SignUpHandler handler,
     IValidator<SignUpRequest> validator) : ControllerBase
 {

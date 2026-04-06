@@ -46,7 +46,7 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
 
         async Task WhenSigningIn()
         {
-            _response = await Client.PostAsJsonAsync(EndpointUrl.SignIn.V1, new SignInRequest
+            _response = await Client.PostAsJsonAsync(EndpointUrl.Sessions.V1, new SignInRequest
             {
                 Email = _email,
                 Password = Password
@@ -67,7 +67,7 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
     {
         _email = $"signin-{Guid.NewGuid():N}@example.com";
 
-        using var signUpResponse = await Client.PostAsJsonAsync(EndpointUrl.SignUp.V1, new SignUpRequest
+        using var signUpResponse = await Client.PostAsJsonAsync(EndpointUrl.Registrations.V1, new SignUpRequest
         {
             Email = _email,
             Password = Password,
@@ -80,7 +80,7 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
 
         var otp = OtpDeliveryService.GetCode(_email) ?? throw new InvalidOperationException("Expected an OTP code to be generated.");
 
-        using var verifyResponse = await Client.PostAsJsonAsync(EndpointUrl.SignUpOtp.V1, new SignUpOtpRequest
+        using var verifyResponse = await Client.PostAsJsonAsync(EndpointUrl.EmailConfirmations.V1, new SignUpOtpRequest
         {
             Email = _email,
             Otp = otp

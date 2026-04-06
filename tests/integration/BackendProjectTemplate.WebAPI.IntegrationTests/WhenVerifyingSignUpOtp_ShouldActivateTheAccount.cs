@@ -45,7 +45,7 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
 
         async Task WhenVerifyingOtp()
         {
-            _response = await Client.PostAsJsonAsync(EndpointUrl.SignUpOtp.V1, new SignUpOtpRequest
+            _response = await Client.PostAsJsonAsync(EndpointUrl.EmailConfirmations.V1, new SignUpOtpRequest
             {
                 Email = _email,
                 Otp = _otp
@@ -63,7 +63,7 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
     {
         _email = $"verify-{Guid.NewGuid():N}@example.com";
 
-        using var signUpResponse = await Client.PostAsJsonAsync(EndpointUrl.SignUp.V1, new SignUpRequest
+        using var signUpResponse = await Client.PostAsJsonAsync(EndpointUrl.Registrations.V1, new SignUpRequest
         {
             Email = _email,
             Password = Password,

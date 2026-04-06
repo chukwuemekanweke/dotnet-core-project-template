@@ -2,12 +2,12 @@ using Asp.Versioning;
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BackendProjectTemplate.WebAPI.Features.ReferenceData.GetCountries;
+namespace BackendProjectTemplate.WebAPI.Features.ReferenceData.Countries;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Route(EndpointUrl.GetCountries.Route)]
-public sealed class GetCountriesController(GetCountriesHandler handler) : ControllerBase
+[Route(EndpointUrl.Countries.Route)]
+public sealed class CountriesController(GetCountriesHandler handler) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<GetCountriesResponse>>(StatusCodes.Status200OK)]

@@ -4,12 +4,12 @@ using BackendProjectTemplate.WebAPI.Infrastructure;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BackendProjectTemplate.WebAPI.Features.Authentication.SignUpOtp;
+namespace BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmations;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Route(EndpointUrl.SignUpOtp.Route)]
-public sealed class SignUpOtpController(
+[Route(EndpointUrl.EmailConfirmations.Route)]
+public sealed class EmailConfirmationsController(
     SignUpOtpHandler handler,
     IValidator<SignUpOtpRequest> validator) : ControllerBase
 {

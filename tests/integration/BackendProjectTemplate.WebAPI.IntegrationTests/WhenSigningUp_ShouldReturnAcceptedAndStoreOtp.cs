@@ -57,7 +57,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndStoreOtp(ContainersFixt
 
         async Task WhenSigningUp()
         {
-            _response = await Client.PostAsJsonAsync(EndpointUrl.SignUp.V1, _request);
+            _response = await Client.PostAsJsonAsync(EndpointUrl.Registrations.V1, _request);
         }
 
         void ThenTheRequestIsAcceptedAndOtpIsStored()

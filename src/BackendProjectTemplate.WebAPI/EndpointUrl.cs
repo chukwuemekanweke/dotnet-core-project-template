@@ -8,30 +8,29 @@ public static class EndpointUrl
         public const string V1Route = "v{version:apiVersion}";
     }
 
-    public static class SignUp
+    public static class Registrations
     {
-        public const string Route = $"api/{Versions.V1Route}/authentication/sign-up";
+        public const string Route = $"api/{Versions.V1Route}/authentication/registrations";
         public static readonly string V1 = ToV1(Route);
     }
 
-    public static class SignUpOtp
+    public static class EmailConfirmations
     {
-        public const string Route = $"api/{Versions.V1Route}/authentication/sign-up/otp";
+        public const string Route = $"api/{Versions.V1Route}/authentication/email-confirmations";
         public static readonly string V1 = ToV1(Route);
     }
 
-    public static class SignIn
+    public static class Sessions
     {
-        public const string Route = $"api/{Versions.V1Route}/authentication/sign-in";
+        public const string Route = $"api/{Versions.V1Route}/authentication/sessions";
         public static readonly string V1 = ToV1(Route);
     }
 
-    public static class GetCountries
+    public static class Countries
     {
         public const string Route = $"api/{Versions.V1Route}/reference-data/countries";
         public static readonly string V1 = ToV1(Route);
     }
-
 
     private static string ToV1(string routeTemplate) =>
         routeTemplate.Replace(Versions.V1Route, Versions.V1, StringComparison.Ordinal);
