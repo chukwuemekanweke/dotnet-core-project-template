@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
@@ -8,6 +9,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
     IEventPublisher eventPublisher,
+    ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -45,6 +47,10 @@ public sealed class SignUpOtpHandler(
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        customTelemetryContext.AddCustomEvent(Observability.OtpConfirmedEventName, new Dictionary<string, string>
+        {
+            [Observability.UserIdPropertyName] = user.Id.ToString()
+        });
 
         return new SignUpOtpResult(SignUpOtpStatus.Success);
     }

@@ -16,6 +16,7 @@ builder.Services.AddIdentityUserManagement();
 builder.Services.AddAuthenticationServices();
 builder.Services.AddRedisCaching(builder.Configuration);
 builder.Services.AddSubscribers(builder.Configuration);
+builder.Services.AddCustomTelemetryContext();
 builder.Services
     .AddHealthChecks()
     .AddCheck<ConsumerReadinessHealthCheck>(
@@ -28,6 +29,7 @@ builder.Services.AddBackendTelemetry(builder.Configuration);
 
 var app = builder.Build();
 
+app.MapPrometheusScrapingEndpoint("/metrics");
 app.MapHealthChecks("/health/readiness", new HealthCheckOptions
 {
     Predicate = registration => registration.Tags.Contains("readiness")

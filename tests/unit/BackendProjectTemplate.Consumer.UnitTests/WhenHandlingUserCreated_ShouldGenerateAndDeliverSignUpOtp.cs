@@ -2,6 +2,7 @@ using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Observability;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
@@ -14,6 +15,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
         var otpDeliveryService = Substitute.For<IOtpDeliveryService>();
+        var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var logger = Substitute.For<ILogger<UserCreatedHandler>>();
         var userId = Guid.CreateVersion7();
         var email = ConsumerTestData.Email();
@@ -25,7 +27,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp
         identityService.FindByIdAsync(userId).Returns(user);
         identityService.GenerateSignUpOtpAsync(user).Returns(otpCode);
 
-        await new UserCreatedHandler(identityService, otpDeliveryService, logger).HandleAsync(
+        await new UserCreatedHandler(customTelemetryContext, identityService, otpDeliveryService, logger).HandleAsync(
             new UserCreated(userId, email),
             CancellationToken.None);
 

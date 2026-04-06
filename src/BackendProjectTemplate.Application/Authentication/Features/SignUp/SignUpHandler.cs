@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -10,11 +11,14 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignUp;
 public sealed class SignUpHandler(
     IAuthenticationIdentityService identityService,
     IEventPublisher eventPublisher,
+    ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
     public async Task<SignUpResult> HandleAsync(SignUpRequest request, CancellationToken cancellationToken)
     {
+        customTelemetryContext.AddCustomEvent(Observability.SignUpRequestedEventName);
+
         if (await identityService.FindByEmailAsync(request.Email) is not null)
         {
             return new SignUpResult(SignUpStatus.DuplicateEmail);
@@ -42,6 +46,10 @@ public sealed class SignUpHandler(
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        customTelemetryContext.AddCustomEvent(Observability.UserCreatedEventName, new Dictionary<string, string>
+        {
+            [Observability.UserIdPropertyName] = user.Id.ToString()
+        });
 
         return new SignUpResult(SignUpStatus.Accepted);
     }

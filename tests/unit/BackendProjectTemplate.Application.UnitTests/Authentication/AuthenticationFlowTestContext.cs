@@ -4,6 +4,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using NSubstitute;
 
@@ -16,6 +17,7 @@ internal sealed class AuthenticationFlowTestContext
     public IOtpDeliveryService OtpDeliveryService { get; } = Substitute.For<IOtpDeliveryService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
+    public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public IUnitOfWorkTransaction Transaction { get; } = Substitute.For<IUnitOfWorkTransaction>();
 
@@ -25,8 +27,8 @@ internal sealed class AuthenticationFlowTestContext
             .Returns(Task.FromResult(Transaction));
     }
 
-    public SignUpHandler CreateSignUpHandler() => new(IdentityService, EventPublisher, UnitOfWork, Clock);
-    public SignUpOtpHandler CreateSignUpOtpHandler() => new(IdentityService, EventPublisher, UnitOfWork, Clock);
+    public SignUpHandler CreateSignUpHandler() => new(IdentityService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
+    public SignUpOtpHandler CreateSignUpOtpHandler() => new(IdentityService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
     public SignInHandler CreateSignInHandler() => new(IdentityService, AccessTokenService);
 
     public static SignUpRequest CreateSignUpRequest(

@@ -1,15 +1,16 @@
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
+using BackendProjectTemplate.Domain.Common.Observability;
 
 namespace BackendProjectTemplate.Consumer.Authentication;
 
 public sealed class UserCreatedHandler(
+    ICustomTelemetryContext customTelemetryContext,
     IAuthenticationIdentityService identityService,
     IOtpDeliveryService otpDeliveryService,
-    ILogger<UserCreatedHandler> logger) : IMessageHandler<UserCreated>
+    ILogger<UserCreatedHandler> logger) : BaseMessageHandler<UserCreated>(customTelemetryContext)
 {
-    public async Task HandleAsync(UserCreated message, CancellationToken cancellationToken)
+    protected override async Task HandleAsyncInternal(UserCreated message, CancellationToken cancellationToken)
     {
         var user = await identityService.FindByIdAsync(message.UserId);
         if (user is null)
@@ -32,5 +33,14 @@ public sealed class UserCreatedHandler(
 
         var otpCode = await identityService.GenerateSignUpOtpAsync(user);
         await otpDeliveryService.SendSignUpOtpAsync(user, otpCode, cancellationToken);
+        CustomTelemetryContext.AddCustomEvent(Observability.UserCreatedProcessedEventName, new Dictionary<string, string>
+        {
+            [Observability.UserIdPropertyName] = user.Id.ToString()
+        });
+    }
+
+    protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserCreated message)
+    {
+        yield return (Observability.UserIdPropertyName, message.UserId.ToString());
     }
 }

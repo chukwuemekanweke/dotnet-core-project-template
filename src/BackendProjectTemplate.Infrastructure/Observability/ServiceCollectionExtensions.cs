@@ -3,11 +3,18 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using BackendProjectTemplate.Domain.Common.Observability;
 
 namespace BackendProjectTemplate.Infrastructure.Observability;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddCustomTelemetryContext(this IServiceCollection services)
+    {
+        services.AddSingleton<ICustomTelemetryContext, CustomTelemetryContext>();
+        return services;
+    }
+
     public static IServiceCollection AddBackendTelemetry(this IServiceCollection services, IConfiguration configuration)
     {
         var serviceName = configuration["OpenTelemetry:ServiceName"] ?? "BackendProjectTemplate.WebAPI";
@@ -20,6 +27,7 @@ public static class ServiceCollectionExtensions
         telemetry.WithTracing(tracing =>
         {
             tracing
+                .AddSource(Domain.Common.Observability.Observability.ActivitySourceName)
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation();
 

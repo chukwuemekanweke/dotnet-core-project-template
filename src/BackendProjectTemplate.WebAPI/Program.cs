@@ -35,6 +35,7 @@ builder.Services.AddAuthenticationServices();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddRedisCaching(builder.Configuration);
 builder.Services.AddTransactionalOutbox();
+builder.Services.AddCustomTelemetryContext();
 builder.Services.AddBackendTelemetry(builder.Configuration);
 
 var app = builder.Build();
