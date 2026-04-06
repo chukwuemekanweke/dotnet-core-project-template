@@ -46,7 +46,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
         services.AddScoped<IOtpDeliveryService, LoggingOtpDeliveryService>();
-        services.AddScoped<IAuthenticationNotificationSender, LoggingAuthenticationNotificationSender>();
 
         return services;
     }

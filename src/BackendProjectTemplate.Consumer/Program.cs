@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Consumer;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
+using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
@@ -15,6 +16,7 @@ builder.Services.AddSqlServerPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
 builder.Services.AddAuthenticationServices();
 builder.Services.AddRedisCaching(builder.Configuration);
+builder.Services.AddTransactionalOutbox();
 builder.Services.AddSubscribers(builder.Configuration);
 builder.Services.AddCustomTelemetryContext();
 builder.Services

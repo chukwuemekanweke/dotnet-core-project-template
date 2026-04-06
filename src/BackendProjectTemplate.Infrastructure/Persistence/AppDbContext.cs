@@ -2,6 +2,7 @@ using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 {
     public DbSet<Country> Countries => Set<Country>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<Stakeholder> Stakeholders => Set<Stakeholder>();
+    public DbSet<StakeholderType> StakeholderTypes => Set<StakeholderType>();
+    public DbSet<AppUserStakeholder> AppUserStakeholders => Set<AppUserStakeholder>();
 
     public async Task<IUnitOfWorkTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
         new EfUnitOfWorkTransaction(await Database.BeginTransactionAsync(cancellationToken));

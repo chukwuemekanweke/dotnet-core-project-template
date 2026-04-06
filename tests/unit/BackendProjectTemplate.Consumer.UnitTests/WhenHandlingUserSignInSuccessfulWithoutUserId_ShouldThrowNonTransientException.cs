@@ -1,7 +1,10 @@
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 using NSubstitute;
 using Shouldly;
@@ -14,14 +17,18 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutUserId_ShouldThrowNon
     public async Task Verify()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
-        var notificationSender = Substitute.For<IAuthenticationNotificationSender>();
+        var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
+        var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
         var email = ConsumerTestData.Email();
 
         var action = async () => await new UserSignInSuccessfulHandler(
             customTelemetryContext,
             identityService,
-            notificationSender).HandleAsync(
+            stakeholderReadModelRepository,
+            commandSender,
+            unitOfWork).HandleAsync(
                 new UserSignInSuccessful(Guid.Empty, email, "127.0.0.1", "UnitTestAgent/1.0"),
                 CancellationToken.None);
 

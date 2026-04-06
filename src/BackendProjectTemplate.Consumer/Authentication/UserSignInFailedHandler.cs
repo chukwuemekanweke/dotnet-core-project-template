@@ -1,13 +1,20 @@
+using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 
 namespace BackendProjectTemplate.Consumer.Authentication;
 
 public sealed class UserSignInFailedHandler(
     ICustomTelemetryContext customTelemetryContext,
     IAuthenticationIdentityService identityService,
-    IAuthenticationNotificationSender notificationSender,
+    IStakeholderReadModelRepository stakeholderReadModelRepository,
+    ICommandSender commandSender,
+    IUnitOfWork unitOfWork,
     ILogger<UserSignInFailedHandler> logger) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext)
 {
     protected override async Task HandleAsyncInternal(UserSignInFailed message, CancellationToken cancellationToken)
@@ -49,10 +56,30 @@ public sealed class UserSignInFailedHandler(
         if (message.FailureReason == UserSignInFailureReasons.InvalidCredentials &&
             await identityService.IsLockedOutAsync(user))
         {
+            var stakeholder = await stakeholderReadModelRepository.GetByAppUserIdAsync(message.UserId.Value, cancellationToken);
+            if (stakeholder is null)
+            {
+                throw new CannotProcessMessageNonTransientException(
+                    $"Unable to process UserSignInFailed because no stakeholder could be found for user '{message.UserId.Value}'.");
+            }
+
             var lockedUntilUtc = await identityService.GetLockoutEndUtcAsync(user)
                 ?? throw new InvalidOperationException($"User {user.Id} is locked out but has no lockout end time.");
 
-            await notificationSender.SendAccountLockedAsync(user, lockedUntilUtc, cancellationToken);
+            await commandSender.SendAsync(
+                new SendNotificationCommand(
+                    stakeholder.TenantId,
+                    stakeholder.CountryId,
+                    NotificationType.AccountLocked,
+                    NotificationMedium.Email,
+                    new EmailNotificationContent(
+                        user.Email ?? message.EmailAddress,
+                        [
+                            "Your account has been locked due to multiple failed sign-in attempts.",
+                            $"Locked Until: {lockedUntilUtc:O}"
+                        ])),
+                cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
             properties["LockedUntilUtc"] = lockedUntilUtc.ToString("O");
         }
 

@@ -33,7 +33,11 @@ public sealed class WhenSigningInWithConfirmedUser_ShouldReturnAccessToken
         context.AccessTokenService.Generate(user).Returns(expectedToken);
 
         var result = await context.CreateSignInHandler().HandleAsync(
-            AuthenticationFlowTestContext.CreateSignInCommand(email, password, ipAddress, userAgent),
+            AuthenticationFlowTestContext.CreateSignInCommand(
+                email,
+                password,
+                ipAddress,
+                userAgent),
             CancellationToken.None);
 
         result.Status.ShouldBe(SignInStatus.Success);

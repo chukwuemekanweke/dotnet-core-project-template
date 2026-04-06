@@ -1,8 +1,12 @@
+using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -15,9 +19,13 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldSe
     public async Task Verify()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
-        var notificationSender = Substitute.For<IAuthenticationNotificationSender>();
+        var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
+        var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
         var logger = Substitute.For<ILogger<UserSignInFailedHandler>>();
+        var tenantId = Guid.CreateVersion7();
+        var countryId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
         var email = ConsumerTestData.Email();
         var firstName = ConsumerTestData.FirstName();
@@ -29,8 +37,10 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldSe
         identityService.AccessFailedAsync(user).Returns(IdentityResult.Success);
         identityService.IsLockedOutAsync(user).Returns(true);
         identityService.GetLockoutEndUtcAsync(user).Returns(lockedUntilUtc);
+        stakeholderReadModelRepository.GetByAppUserIdAsync(userId, Arg.Any<CancellationToken>())
+            .Returns(new StakeholderReadModel(Guid.CreateVersion7(), userId, tenantId, countryId, Guid.CreateVersion7()));
 
-        await new UserSignInFailedHandler(customTelemetryContext, identityService, notificationSender, logger).HandleAsync(
+        await new UserSignInFailedHandler(customTelemetryContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
             new UserSignInFailed(
                 userId,
                 email,
@@ -39,9 +49,15 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldSe
                 UserSignInFailureReasons.InvalidCredentials),
             CancellationToken.None);
 
-        await notificationSender.Received(1).SendAccountLockedAsync(
-            user,
-            lockedUntilUtc,
+        await commandSender.Received(1).SendAsync(
+            Arg.Is<SendNotificationCommand>(command =>
+                command.TenantId == tenantId &&
+                command.CountryId == countryId &&
+                command.NotificationType == NotificationType.AccountLocked &&
+                command.NotificationMedium == NotificationMedium.Email &&
+                command.NotificationContent is EmailNotificationContent &&
+                ((EmailNotificationContent)command.NotificationContent).To == email),
             Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

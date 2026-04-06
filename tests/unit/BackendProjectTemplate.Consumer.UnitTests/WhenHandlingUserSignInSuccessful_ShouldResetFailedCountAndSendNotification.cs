@@ -1,8 +1,12 @@
+using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
 
@@ -14,8 +18,12 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
     public async Task Verify()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
-        var notificationSender = Substitute.For<IAuthenticationNotificationSender>();
+        var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
+        var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var tenantId = Guid.CreateVersion7();
+        var countryId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
         var email = ConsumerTestData.Email();
         var firstName = ConsumerTestData.FirstName();
@@ -24,16 +32,23 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
 
         identityService.FindByIdAsync(userId).Returns(user);
         identityService.ResetAccessFailedCountAsync(user).Returns(IdentityResult.Success);
+        stakeholderReadModelRepository.GetByAppUserIdAsync(userId, Arg.Any<CancellationToken>())
+            .Returns(new StakeholderReadModel(Guid.CreateVersion7(), userId, tenantId, countryId, Guid.CreateVersion7()));
 
-        await new UserSignInSuccessfulHandler(customTelemetryContext, identityService, notificationSender).HandleAsync(
+        await new UserSignInSuccessfulHandler(customTelemetryContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork).HandleAsync(
             new UserSignInSuccessful(userId, email, "127.0.0.1", "UnitTestAgent/1.0"),
             CancellationToken.None);
 
         await identityService.Received(1).ResetAccessFailedCountAsync(user);
-        await notificationSender.Received(1).SendSignInSuccessfulAsync(
-            user,
-            "127.0.0.1",
-            "UnitTestAgent/1.0",
+        await commandSender.Received(1).SendAsync(
+            Arg.Is<SendNotificationCommand>(command =>
+                command.TenantId == tenantId &&
+                command.CountryId == countryId &&
+                command.NotificationType == NotificationType.SignInSuccessful &&
+                command.NotificationMedium == NotificationMedium.Email &&
+                command.NotificationContent is EmailNotificationContent &&
+                ((EmailNotificationContent)command.NotificationContent).To == email),
             Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

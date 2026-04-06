@@ -20,7 +20,11 @@ public sealed class WhenSigningInWithUnknownEmail_ShouldReturnInvalidCredentials
         context.IdentityService.FindByEmailAsync(email).Returns((BackendProjectTemplate.Domain.Authentication.Entities.AppUser?)null);
 
         var result = await context.CreateSignInHandler().HandleAsync(
-            AuthenticationFlowTestContext.CreateSignInCommand(email, password, ipAddress, userAgent),
+            AuthenticationFlowTestContext.CreateSignInCommand(
+                email,
+                password,
+                ipAddress,
+                userAgent),
             CancellationToken.None);
 
         result.Status.ShouldBe(SignInStatus.InvalidCredentials);

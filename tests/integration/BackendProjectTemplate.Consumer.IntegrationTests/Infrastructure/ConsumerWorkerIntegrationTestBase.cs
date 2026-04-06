@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
+using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -112,6 +113,7 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddIdentityUserManagement(configuration);
         builder.Services.AddAuthenticationServices();
         builder.Services.AddRedisCaching(configuration);
+        builder.Services.AddTransactionalOutbox();
         builder.Services.AddCustomTelemetryContext();
         builder.Services.RemoveAll<IOtpDeliveryService>();
         builder.Services.AddSingleton(_otpDeliveryService);

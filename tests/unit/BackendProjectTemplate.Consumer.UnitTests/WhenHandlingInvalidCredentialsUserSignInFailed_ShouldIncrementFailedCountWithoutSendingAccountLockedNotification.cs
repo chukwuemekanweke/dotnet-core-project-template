@@ -1,8 +1,12 @@
 using BackendProjectTemplate.Consumer.Authentication;
+using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -15,8 +19,10 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_ShouldIncreme
     public async Task Verify()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
-        var notificationSender = Substitute.For<IAuthenticationNotificationSender>();
+        var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
+        var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
         var logger = Substitute.For<ILogger<UserSignInFailedHandler>>();
         var userId = Guid.CreateVersion7();
         var email = ConsumerTestData.Email();
@@ -28,7 +34,7 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_ShouldIncreme
         identityService.AccessFailedAsync(user).Returns(IdentityResult.Success);
         identityService.IsLockedOutAsync(user).Returns(false);
 
-        await new UserSignInFailedHandler(customTelemetryContext, identityService, notificationSender, logger).HandleAsync(
+        await new UserSignInFailedHandler(customTelemetryContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
             new UserSignInFailed(
                 userId,
                 email,
@@ -38,9 +44,9 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_ShouldIncreme
             CancellationToken.None);
 
         await identityService.Received(1).AccessFailedAsync(user);
-        await notificationSender.DidNotReceive().SendAccountLockedAsync(
-            Arg.Any<AppUser>(),
-            Arg.Any<DateTimeOffset>(),
+        await commandSender.DidNotReceive().SendAsync(
+            Arg.Any<SendNotificationCommand>(),
             Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
