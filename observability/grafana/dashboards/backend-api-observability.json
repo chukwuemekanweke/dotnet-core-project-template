@@ -83,7 +83,7 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(http_server_request_duration_seconds_sum{job=\"backend-template-webapi\"}[$__rate_interval])) / sum(rate(http_server_request_duration_seconds_count{job=\"backend-template-webapi\"}[$__rate_interval]))",
+          "expr": "sum(rate(http_server_request_duration_seconds_sum{job=\"backend-template-webapi\",http_route!=\"/health\"}[$__rate_interval])) / sum(rate(http_server_request_duration_seconds_count{job=\"backend-template-webapi\",http_route!=\"/health\"}[$__rate_interval]))",
           "legendFormat": "",
           "range": true,
           "refId": "A"
@@ -178,7 +178,7 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (http_response_status_code) (rate(http_server_request_duration_seconds_count{job=\"backend-template-webapi\"}[$__rate_interval]))",
+          "expr": "sum by (http_response_status_code) (rate(http_server_request_duration_seconds_count{job=\"backend-template-webapi\",http_route!=\"/health\"}[$__rate_interval]))",
           "legendFormat": "{{http_response_status_code}}",
           "range": true,
           "refId": "A"
@@ -273,8 +273,8 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (http_route) (rate(http_server_request_duration_seconds_count{job=\"backend-template-webapi\",http_route!=\"\"}[$__rate_interval]))",
-          "legendFormat": "{{http_route}}",
+          "expr": "sum by (route) (label_replace(rate(http_server_request_duration_seconds_count{job=\"backend-template-webapi\",http_route!=\"\",http_route!=\"/health\"}[$__rate_interval]), \"route\", \"$1v1$2\", \"http_route\", \"(.*)v\\\\{version:apiVersion\\\\}(.*)\"))",
+          "legendFormat": "{{route}}",
           "range": true,
           "refId": "A"
         }
@@ -372,8 +372,8 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (http_route) (rate(http_server_request_duration_seconds_sum{job=\"backend-template-webapi\",http_route!=\"\"}[$__rate_interval])) / sum by (http_route) (rate(http_server_request_duration_seconds_count{job=\"backend-template-webapi\",http_route!=\"\"}[$__rate_interval]))",
-          "legendFormat": "{{http_route}}",
+          "expr": "sum by (route) (label_replace(rate(http_server_request_duration_seconds_sum{job=\"backend-template-webapi\",http_route!=\"\",http_route!=\"/health\"}[$__rate_interval]), \"route\", \"$1v1$2\", \"http_route\", \"(.*)v\\\\{version:apiVersion\\\\}(.*)\")) / sum by (route) (label_replace(rate(http_server_request_duration_seconds_count{job=\"backend-template-webapi\",http_route!=\"\",http_route!=\"/health\"}[$__rate_interval]), \"route\", \"$1v1$2\", \"http_route\", \"(.*)v\\\\{version:apiVersion\\\\}(.*)\"))",
+          "legendFormat": "{{route}}",
           "range": true,
           "refId": "A"
         }
