@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -45,11 +44,9 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
 
         async Task WhenVerifyingOtp()
         {
-            _response = await Client.PostAsJsonAsync(EndpointUrl.EmailConfirmations.V1, new SignUpOtpRequest
-            {
-                Email = _email,
-                Otp = _otp
-            });
+            _response = await Client.PostAsJsonAsync(
+                EndpointUrl.EmailConfirmations.V1,
+                new BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmations.SignUpOtpRequest(_email, _otp));
         }
 
         void ThenTheAccountIsActivated()

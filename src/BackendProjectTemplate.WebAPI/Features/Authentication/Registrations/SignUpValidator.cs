@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace BackendProjectTemplate.Application.Authentication.Features.SignUp;
+namespace BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 
 public sealed class SignUpValidator : AbstractValidator<SignUpRequest>
 {

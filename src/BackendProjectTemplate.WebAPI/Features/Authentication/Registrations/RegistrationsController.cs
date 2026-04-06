@@ -27,7 +27,14 @@ public sealed class RegistrationsController(
             return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
 
-        var result = await handler.HandleAsync(request, cancellationToken);
+        var command = new SignUpCommand(
+            request.Email,
+            request.Password,
+            request.ConfirmPassword,
+            request.FirstName,
+            request.LastName);
+
+        var result = await handler.HandleAsync(command, cancellationToken);
 
         return result.Status switch
         {

@@ -28,7 +28,13 @@ public sealed class SessionsController(
             return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
 
-        var result = await handler.HandleAsync(request, cancellationToken);
+        var command = new SignInCommand(
+            request.Email,
+            request.Password,
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+            Request.Headers.UserAgent.ToString());
+
+        var result = await handler.HandleAsync(command, cancellationToken);
 
         return result.Status switch
         {

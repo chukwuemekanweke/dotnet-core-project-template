@@ -29,9 +29,9 @@ internal sealed class AuthenticationFlowTestContext
 
     public SignUpHandler CreateSignUpHandler() => new(IdentityService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(IdentityService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
-    public SignInHandler CreateSignInHandler() => new(IdentityService, AccessTokenService);
+    public SignInHandler CreateSignInHandler() => new(IdentityService, AccessTokenService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
 
-    public static SignUpRequest CreateSignUpRequest(
+    public static SignUpCommand CreateSignUpCommand(
         string? email = null,
         string? password = null,
         string? firstName = null,
@@ -39,33 +39,31 @@ internal sealed class AuthenticationFlowTestContext
     {
         var resolvedPassword = password ?? AuthenticationTestData.StrongPassword();
 
-        return new SignUpRequest
-        {
-            Email = email ?? AuthenticationTestData.Email(),
-            Password = resolvedPassword,
-            ConfirmPassword = resolvedPassword,
-            FirstName = firstName ?? AuthenticationTestData.FirstName(),
-            LastName = lastName ?? AuthenticationTestData.LastName()
-        };
+        return new SignUpCommand(
+            email ?? AuthenticationTestData.Email(),
+            resolvedPassword,
+            resolvedPassword,
+            firstName ?? AuthenticationTestData.FirstName(),
+            lastName ?? AuthenticationTestData.LastName());
     }
 
-    public static SignInRequest CreateSignInRequest(
+    public static SignInCommand CreateSignInCommand(
         string? email = null,
-        string? password = null) =>
-        new()
-        {
-            Email = email ?? AuthenticationTestData.Email(),
-            Password = password ?? AuthenticationTestData.StrongPassword()
-        };
+        string? password = null,
+        string? ipAddress = null,
+        string? userAgent = null) =>
+        new(
+            email ?? AuthenticationTestData.Email(),
+            password ?? AuthenticationTestData.StrongPassword(),
+            ipAddress ?? "127.0.0.1",
+            userAgent ?? "UnitTestAgent/1.0");
 
-    public static SignUpOtpRequest CreateSignUpOtpRequest(
+    public static SignUpOtpCommand CreateSignUpOtpCommand(
         string? email = null,
         string? otp = null) =>
-        new()
-        {
-            Email = email ?? AuthenticationTestData.Email(),
-            Otp = otp ?? AuthenticationTestData.Otp()
-        };
+        new(
+            email ?? AuthenticationTestData.Email(),
+            otp ?? AuthenticationTestData.Otp());
 
     public AppUser CreateUser(
         string? email = null,

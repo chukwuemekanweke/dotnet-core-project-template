@@ -5,13 +5,16 @@ using BackendProjectTemplate.Infrastructure.Caching;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
+using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
 using BackendProjectTemplate.WebAPI.Infrastructure;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddControllers();
+builder.Services.AddValidatorsFromAssemblyContaining<SignUpValidator>();
 builder.Services
     .AddApiVersioning(options =>
     {

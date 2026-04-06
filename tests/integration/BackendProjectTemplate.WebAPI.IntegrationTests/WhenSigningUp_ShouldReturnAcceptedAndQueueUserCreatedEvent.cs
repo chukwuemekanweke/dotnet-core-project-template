@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -19,7 +18,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
     private const string Password = "P@ssw0rd123!";
 
     private string _email = string.Empty;
-    private SignUpRequest _request = default!;
+    private BackendProjectTemplate.WebAPI.Features.Authentication.Registrations.SignUpRequest _request = default!;
     private HttpResponseMessage? _response;
 
     public async Task InitializeAsync()
@@ -44,14 +43,12 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
         void GivenANewEmailAddress()
         {
             _email = WebApiIntegrationTestData.Email();
-            _request = new SignUpRequest
-            {
-                Email = _email,
-                Password = Password,
-                ConfirmPassword = Password,
-                FirstName = WebApiIntegrationTestData.FirstName(),
-                LastName = WebApiIntegrationTestData.LastName()
-            };
+            _request = new BackendProjectTemplate.WebAPI.Features.Authentication.Registrations.SignUpRequest(
+                _email,
+                Password,
+                Password,
+                WebApiIntegrationTestData.FirstName(),
+                WebApiIntegrationTestData.LastName());
         }
 
         async Task WhenSigningUp()

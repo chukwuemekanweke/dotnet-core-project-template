@@ -14,17 +14,17 @@ internal static class IdentityResultExtensions
     private static string GetPropertyName(IdentityError error) =>
         error.Code switch
         {
-            nameof(IdentityErrorDescriber.DuplicateEmail) => nameof(SignUpRequest.Email),
-            nameof(IdentityErrorDescriber.DuplicateUserName) => nameof(SignUpRequest.Email),
-            nameof(IdentityErrorDescriber.InvalidEmail) => nameof(SignUpRequest.Email),
-            nameof(IdentityErrorDescriber.InvalidUserName) => nameof(SignUpRequest.Email),
-            nameof(IdentityErrorDescriber.PasswordMismatch) => nameof(SignUpRequest.Password),
-            nameof(IdentityErrorDescriber.PasswordRequiresDigit) => nameof(SignUpRequest.Password),
-            nameof(IdentityErrorDescriber.PasswordRequiresLower) => nameof(SignUpRequest.Password),
-            nameof(IdentityErrorDescriber.PasswordRequiresNonAlphanumeric) => nameof(SignUpRequest.Password),
-            nameof(IdentityErrorDescriber.PasswordRequiresUpper) => nameof(SignUpRequest.Password),
-            nameof(IdentityErrorDescriber.PasswordTooShort) => nameof(SignUpRequest.Password),
-            nameof(IdentityErrorDescriber.PasswordRequiresUniqueChars) => nameof(SignUpRequest.Password),
+            nameof(IdentityErrorDescriber.DuplicateEmail) => nameof(SignUpCommand.Email),
+            nameof(IdentityErrorDescriber.DuplicateUserName) => nameof(SignUpCommand.Email),
+            nameof(IdentityErrorDescriber.InvalidEmail) => nameof(SignUpCommand.Email),
+            nameof(IdentityErrorDescriber.InvalidUserName) => nameof(SignUpCommand.Email),
+            nameof(IdentityErrorDescriber.PasswordMismatch) => nameof(SignUpCommand.Password),
+            nameof(IdentityErrorDescriber.PasswordRequiresDigit) => nameof(SignUpCommand.Password),
+            nameof(IdentityErrorDescriber.PasswordRequiresLower) => nameof(SignUpCommand.Password),
+            nameof(IdentityErrorDescriber.PasswordRequiresNonAlphanumeric) => nameof(SignUpCommand.Password),
+            nameof(IdentityErrorDescriber.PasswordRequiresUpper) => nameof(SignUpCommand.Password),
+            nameof(IdentityErrorDescriber.PasswordTooShort) => nameof(SignUpCommand.Password),
+            nameof(IdentityErrorDescriber.PasswordRequiresUniqueChars) => nameof(SignUpCommand.Password),
             _ => string.Empty
         };
 }

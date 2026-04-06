@@ -45,11 +45,9 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
 
         async Task WhenSigningIn()
         {
-            _response = await Client.PostAsJsonAsync(EndpointUrl.Sessions.V1, new SignInRequest
-            {
-                Email = _email,
-                Password = Password
-            });
+            _response = await Client.PostAsJsonAsync(
+                EndpointUrl.Sessions.V1,
+                new BackendProjectTemplate.WebAPI.Features.Authentication.Sessions.SignInRequest(_email, Password));
 
             payload = await _response.Content.ReadFromJsonAsync<SignInResponse>();
         }

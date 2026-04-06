@@ -29,12 +29,12 @@ public sealed class WhenSigningUpWithRejectedPassword_ShouldReturnValidationFail
             }));
 
         var result = await context.CreateSignUpHandler().HandleAsync(
-            AuthenticationFlowTestContext.CreateSignUpRequest(email, password, firstName, lastName),
+            AuthenticationFlowTestContext.CreateSignUpCommand(email, password, firstName, lastName),
             CancellationToken.None);
 
         result.Status.ShouldBe(SignUpStatus.ValidationFailed);
         result.ValidationErrors.ShouldNotBeNull();
-        result.ValidationErrors.ShouldContainKey(nameof(SignUpRequest.Password));
+        result.ValidationErrors.ShouldContainKey(nameof(SignUpCommand.Password));
         await context.EventPublisher.DidNotReceive().PublishAsync(
             Arg.Any<UserCreated>(),
             Arg.Any<CancellationToken>());

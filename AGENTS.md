@@ -43,11 +43,15 @@ The solution uses DDD project boundaries with vertical slices inside the applica
 
 - Organize application code by feature, not by technical type.
 - Each feature gets its own folder.
-- Keep request, response, validator, handler, and result in separate files within the same feature folder.
+- Keep command, response, handler, and result in separate files within the same application feature folder.
+- Keep WebAPI request DTOs and request validators in the matching controller feature folder at the HTTP edge.
 - Keep feature-specific helper classes in the same feature folder when they are only used by that feature.
 - WebAPI controllers should also be organized by feature folder.
 - Prefer controller-based endpoints, not minimal APIs.
-- Routes should remain conventional and verb-oriented based on the established API style in this repository.
+- Routes and controllers should use resource-oriented naming.
+- Prefer `record` over `class` for data transfer objects.
+- Treat commands, requests, responses, results, and similar transport/application DTOs as records by default.
+- Prefer positional record syntax for DTOs, for example `public sealed record SignInCommand(string Email, string Password);`
 
 ### Current feature layout expectation
 
@@ -57,7 +61,7 @@ Example:
 
 Expected files in a feature folder:
 
-- `SignUpRequest.cs`
+- `SignUpCommand.cs`
 - `SignUpResponse.cs`
 - `SignUpResult.cs`
 - `SignUpValidator.cs`
@@ -65,7 +69,11 @@ Expected files in a feature folder:
 
 Matching WebAPI controller location:
 
-`src/BackendProjectTemplate.WebAPI/Features/Authentication/SignUp/SignUpController.cs`
+`src/BackendProjectTemplate.WebAPI/Features/Authentication/Registrations/RegistrationsController.cs`
+
+Matching WebAPI request DTO location:
+
+`src/BackendProjectTemplate.WebAPI/Features/Authentication/Registrations/SignUpRequest.cs`
 
 ## Testing
 

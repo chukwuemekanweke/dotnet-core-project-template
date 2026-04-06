@@ -13,7 +13,7 @@ public sealed class SignUpOtpHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
-    public async Task<SignUpOtpResult> HandleAsync(SignUpOtpRequest request, CancellationToken cancellationToken)
+    public async Task<SignUpOtpResult> HandleAsync(SignUpOtpCommand request, CancellationToken cancellationToken)
     {
         var user = await identityService.FindByEmailAsync(request.Email);
         if (user is null)

@@ -22,7 +22,7 @@ public sealed class WhenSigningUpWithNewEmail_ShouldCreateIdentityUserAndPublish
         context.IdentityService.CreateAsync(Arg.Any<AppUser>(), password).Returns(IdentityResult.Success);
 
         var result = await context.CreateSignUpHandler().HandleAsync(
-            AuthenticationFlowTestContext.CreateSignUpRequest(
+            AuthenticationFlowTestContext.CreateSignUpCommand(
                 email: email,
                 password: password,
                 firstName: firstName,

@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
+namespace BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmations;
 
 public sealed class SignUpOtpValidator : AbstractValidator<SignUpOtpRequest>
 {

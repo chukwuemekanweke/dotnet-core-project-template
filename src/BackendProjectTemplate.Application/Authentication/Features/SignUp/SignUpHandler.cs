@@ -15,7 +15,7 @@ public sealed class SignUpHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
-    public async Task<SignUpResult> HandleAsync(SignUpRequest request, CancellationToken cancellationToken)
+    public async Task<SignUpResult> HandleAsync(SignUpCommand request, CancellationToken cancellationToken)
     {
         customTelemetryContext.AddCustomEvent(Observability.SignUpRequestedEventName);
 

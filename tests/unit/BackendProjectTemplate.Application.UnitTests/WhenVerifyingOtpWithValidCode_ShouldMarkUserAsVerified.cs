@@ -26,7 +26,7 @@ public sealed class WhenVerifyingOtpWithValidCode_ShouldMarkUserAsVerified
         context.IdentityService.UpdateAsync(Arg.Is<AppUser>(candidate => candidate.EmailConfirmed)).Returns(IdentityResult.Success);
 
         var result = await context.CreateSignUpOtpHandler().HandleAsync(
-            AuthenticationFlowTestContext.CreateSignUpOtpRequest(email, otp),
+            AuthenticationFlowTestContext.CreateSignUpOtpCommand(email, otp),
             CancellationToken.None);
 
         result.Status.ShouldBe(SignUpOtpStatus.Success);
