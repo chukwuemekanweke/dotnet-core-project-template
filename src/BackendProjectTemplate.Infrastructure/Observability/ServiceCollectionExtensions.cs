@@ -17,8 +17,10 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddBackendTelemetry(this IServiceCollection services, IConfiguration configuration)
     {
-        var serviceName = configuration["OpenTelemetry:ServiceName"] ?? "BackendProjectTemplate.WebAPI";
-        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
+        var serviceName = configuration["OpenTelemetry:ServiceName"]
+            ?? throw new InvalidOperationException("Configuration value 'OpenTelemetry:ServiceName' is required.");
+        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"]
+            ?? throw new InvalidOperationException("Configuration value 'OpenTelemetry:OtlpEndpoint' is required.");
 
         var telemetry = services
             .AddOpenTelemetry()
@@ -29,12 +31,8 @@ public static class ServiceCollectionExtensions
             tracing
                 .AddSource(Domain.Common.Observability.Observability.ActivitySourceName)
                 .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation();
-
-            if (!string.IsNullOrWhiteSpace(otlpEndpoint))
-            {
-                tracing.AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
-            }
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
         });
 
         telemetry.WithMetrics(metrics =>
