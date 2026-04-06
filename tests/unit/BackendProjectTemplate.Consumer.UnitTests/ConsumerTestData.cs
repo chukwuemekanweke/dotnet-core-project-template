@@ -13,4 +13,8 @@ internal static class ConsumerTestData
     public static string LastName() => Faker.Name.LastName();
 
     public static string Otp() => Faker.Random.ReplaceNumbers("######");
+
+    public static string IpAddress() => Faker.Internet.Ip();
+
+    public static string UserAgent() => Faker.Internet.UserAgent();
 }

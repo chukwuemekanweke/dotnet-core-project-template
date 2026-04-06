@@ -26,6 +26,8 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
         var countryId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
         var email = ConsumerTestData.Email();
+        var ipAddress = ConsumerTestData.IpAddress();
+        var userAgent = ConsumerTestData.UserAgent();
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
         var user = AppUser.Create(email, firstName, lastName, DateTimeOffset.UtcNow);
@@ -36,7 +38,7 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
             .Returns(new StakeholderReadModel(Guid.CreateVersion7(), userId, tenantId, countryId, Guid.CreateVersion7()));
 
         await new UserSignInSuccessfulHandler(customTelemetryContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork).HandleAsync(
-            new UserSignInSuccessful(userId, email, "127.0.0.1", "UnitTestAgent/1.0"),
+            new UserSignInSuccessful(userId, email, ipAddress, userAgent),
             CancellationToken.None);
 
         await identityService.Received(1).ResetAccessFailedCountAsync(user);

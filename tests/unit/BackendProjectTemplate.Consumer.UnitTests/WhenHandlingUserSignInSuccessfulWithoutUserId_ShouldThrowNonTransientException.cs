@@ -22,6 +22,8 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutUserId_ShouldThrowNon
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var email = ConsumerTestData.Email();
+        var ipAddress = ConsumerTestData.IpAddress();
+        var userAgent = ConsumerTestData.UserAgent();
 
         var action = async () => await new UserSignInSuccessfulHandler(
             customTelemetryContext,
@@ -29,7 +31,7 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutUserId_ShouldThrowNon
             stakeholderReadModelRepository,
             commandSender,
             unitOfWork).HandleAsync(
-                new UserSignInSuccessful(Guid.Empty, email, "127.0.0.1", "UnitTestAgent/1.0"),
+                new UserSignInSuccessful(Guid.Empty, email, ipAddress, userAgent),
                 CancellationToken.None);
 
         await action.ShouldThrowAsync<CannotProcessMessageNonTransientException>();

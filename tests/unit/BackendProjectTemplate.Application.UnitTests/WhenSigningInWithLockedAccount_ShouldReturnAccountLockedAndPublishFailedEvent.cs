@@ -17,8 +17,8 @@ public sealed class WhenSigningInWithLockedAccount_ShouldReturnAccountLockedAndP
         var firstName = AuthenticationTestData.FirstName();
         var lastName = AuthenticationTestData.LastName();
         var lockedUntilUtc = new DateTimeOffset(2026, 4, 7, 12, 0, 0, TimeSpan.Zero);
-        const string ipAddress = "127.0.0.1";
-        const string userAgent = "UnitTestAgent/1.0";
+        var ipAddress = AuthenticationTestData.IpAddress();
+        var userAgent = AuthenticationTestData.UserAgent();
 
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
         var user = AppUser.Create(email, firstName, lastName, now);

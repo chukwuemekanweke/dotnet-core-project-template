@@ -26,6 +26,8 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_ShouldIncreme
         var logger = Substitute.For<ILogger<UserSignInFailedHandler>>();
         var userId = Guid.CreateVersion7();
         var email = ConsumerTestData.Email();
+        var ipAddress = ConsumerTestData.IpAddress();
+        var userAgent = ConsumerTestData.UserAgent();
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
         var user = AppUser.Create(email, firstName, lastName, DateTimeOffset.UtcNow);
@@ -38,8 +40,8 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_ShouldIncreme
             new UserSignInFailed(
                 userId,
                 email,
-                "127.0.0.1",
-                "UnitTestAgent/1.0",
+                ipAddress,
+                userAgent,
                 UserSignInFailureReasons.InvalidCredentials),
             CancellationToken.None);
 

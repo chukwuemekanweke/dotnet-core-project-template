@@ -17,4 +17,8 @@ internal static class AuthenticationTestData
     public static string WeakPassword() => Faker.Random.Replace("????????");
 
     public static string Otp() => Faker.Random.ReplaceNumbers("######");
+
+    public static string IpAddress() => Faker.Internet.Ip();
+
+    public static string UserAgent() => Faker.Internet.UserAgent();
 }

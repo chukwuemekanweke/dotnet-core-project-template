@@ -1,18 +1,25 @@
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
-using Microsoft.EntityFrameworkCore;
+using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence;
 
-public sealed class StakeholderReadModelRepository(AppDbContext dbContext) : IStakeholderReadModelRepository
+public sealed class StakeholderReadModelRepository(IRepository<AppUserStakeholder> repository) : IStakeholderReadModelRepository
 {
-    public Task<StakeholderReadModel?> GetByAppUserIdAsync(Guid appUserId, CancellationToken cancellationToken = default) =>
-        dbContext.AppUserStakeholders
-            .Where(appUserStakeholder => appUserStakeholder.AppUserId == appUserId)
-            .Select(appUserStakeholder => new StakeholderReadModel(
+    public async Task<StakeholderReadModel?> GetByAppUserIdAsync(Guid appUserId, CancellationToken cancellationToken = default)
+    {
+        var appUserStakeholder = await repository.FirstOrDefaultAsync(
+            new AppUserStakeholderByAppUserIdSpecification(appUserId),
+            cancellationToken);
+
+        return appUserStakeholder is null
+            ? null
+            : new StakeholderReadModel(
                 appUserStakeholder.StakeholderId,
                 appUserStakeholder.AppUserId,
                 appUserStakeholder.Stakeholder.TenantId,
                 appUserStakeholder.Stakeholder.CountryId,
-                appUserStakeholder.Stakeholder.StakeholderTypeId))
-            .FirstOrDefaultAsync(cancellationToken);
+                appUserStakeholder.Stakeholder.StakeholderTypeId);
+    }
 }

@@ -13,8 +13,8 @@ public sealed class WhenSigningInWithUnknownEmail_ShouldReturnInvalidCredentials
     {
         var email = AuthenticationTestData.Email();
         var password = AuthenticationTestData.StrongPassword();
-        const string ipAddress = "127.0.0.1";
-        const string userAgent = "UnitTestAgent/1.0";
+        var ipAddress = AuthenticationTestData.IpAddress();
+        var userAgent = AuthenticationTestData.UserAgent();
 
         var context = new AuthenticationFlowTestContext();
         context.IdentityService.FindByEmailAsync(email).Returns((BackendProjectTemplate.Domain.Authentication.Entities.AppUser?)null);

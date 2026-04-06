@@ -17,8 +17,8 @@ public sealed class WhenSigningInWithConfirmedUser_ShouldReturnAccessToken
         var password = AuthenticationTestData.StrongPassword();
         var firstName = AuthenticationTestData.FirstName();
         var lastName = AuthenticationTestData.LastName();
-        const string ipAddress = "127.0.0.1";
-        const string userAgent = "UnitTestAgent/1.0";
+        var ipAddress = AuthenticationTestData.IpAddress();
+        var userAgent = AuthenticationTestData.UserAgent();
         const string token = "signed-jwt";
 
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);

@@ -55,8 +55,8 @@ internal sealed class AuthenticationFlowTestContext
         new(
             email ?? AuthenticationTestData.Email(),
             password ?? AuthenticationTestData.StrongPassword(),
-            ipAddress ?? "127.0.0.1",
-            userAgent ?? "UnitTestAgent/1.0");
+            ipAddress ?? AuthenticationTestData.IpAddress(),
+            userAgent ?? AuthenticationTestData.UserAgent());
 
     public static SignUpOtpCommand CreateSignUpOtpCommand(
         string? email = null,

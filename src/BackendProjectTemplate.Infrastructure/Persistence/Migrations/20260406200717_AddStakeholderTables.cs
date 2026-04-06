@@ -20,6 +20,7 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     Key = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
@@ -113,6 +114,12 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
                 name: "IX_Stakeholders_TenantId",
                 schema: "stakeholders",
                 table: "Stakeholders",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StakeholderTypes_TenantId",
+                schema: "stakeholders",
+                table: "StakeholderTypes",
                 column: "TenantId");
 
             migrationBuilder.CreateIndex(

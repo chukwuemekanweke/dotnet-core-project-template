@@ -28,6 +28,8 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldSe
         var countryId = Guid.CreateVersion7();
         var userId = Guid.CreateVersion7();
         var email = ConsumerTestData.Email();
+        var ipAddress = ConsumerTestData.IpAddress();
+        var userAgent = ConsumerTestData.UserAgent();
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
         var lockedUntilUtc = new DateTimeOffset(2026, 4, 7, 12, 0, 0, TimeSpan.Zero);
@@ -44,8 +46,8 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldSe
             new UserSignInFailed(
                 userId,
                 email,
-                "127.0.0.1",
-                "UnitTestAgent/1.0",
+                ipAddress,
+                userAgent,
                 UserSignInFailureReasons.InvalidCredentials),
             CancellationToken.None);
 
