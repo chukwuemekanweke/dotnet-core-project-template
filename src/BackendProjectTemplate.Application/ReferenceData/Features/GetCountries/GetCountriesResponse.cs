@@ -1,3 +1,7 @@
 namespace BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
 
-public sealed record GetCountriesResponse(string Code, string Name);
+public sealed record GetCountriesResponse(
+    string Name,
+    string ShortCode,
+    string? CallingCode,
+    string FlagUrl);

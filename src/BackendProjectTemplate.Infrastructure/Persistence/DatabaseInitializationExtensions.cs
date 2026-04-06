@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -20,32 +19,12 @@ public static class DatabaseInitializationExtensions
     {
         using var scope = services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInitialization");
 
         await EnsureDatabaseExistsAsync(database.Database.GetConnectionString(), cancellationToken);
         await RunScriptsAsync(database, contentRootPath, "PreDeploy", logger, cancellationToken);
         await database.Database.MigrateAsync(cancellationToken);
-        await SeedReferenceDataAsync(database, timeProvider, cancellationToken);
         await RunScriptsAsync(database, contentRootPath, "PostDeploy", logger, cancellationToken);
-    }
-
-    private static async Task SeedReferenceDataAsync(
-        AppDbContext database,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
-    {
-        if (!await database.Countries.AnyAsync(cancellationToken))
-        {
-            var now = timeProvider.GetUtcNow();
-
-            database.Countries.AddRange(
-                Country.Create("NG", "Nigeria", now),
-                Country.Create("GB", "United Kingdom", now),
-                Country.Create("US", "United States", now));
-
-            await database.SaveChangesAsync(cancellationToken);
-        }
     }
 
     private static async Task RunScriptsAsync(

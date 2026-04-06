@@ -18,7 +18,11 @@ public sealed class GetCountriesHandler(IRepository<Country> countries, IJsonCac
         }
 
         var response = (await countries.ListAsync(new EnabledCountriesSpecification(), cancellationToken))
-            .Select(country => new GetCountriesResponse(country.Code, country.Name))
+            .Select(country => new GetCountriesResponse(
+                country.Name,
+                country.ShortCode,
+                country.CallingCode,
+                country.FlagUrl))
             .ToArray();
 
         await cache.SetAsync(CacheKey, response, TimeSpan.FromHours(12), cancellationToken);
