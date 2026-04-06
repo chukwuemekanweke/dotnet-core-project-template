@@ -6,6 +6,9 @@ namespace BackendProjectTemplate.Infrastructure.Authentication;
 
 public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAuthenticationIdentityService
 {
+    public Task<AppUser?> FindByIdAsync(Guid userId) =>
+        userManager.FindByIdAsync(userId.ToString());
+
     public Task<AppUser?> FindByEmailAsync(string email) =>
         userManager.FindByEmailAsync(email);
 

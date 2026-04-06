@@ -1,17 +1,21 @@
 using BackendProjectTemplate.Consumer;
+using BackendProjectTemplate.Infrastructure.Authentication;
+using BackendProjectTemplate.Infrastructure.Caching;
+using BackendProjectTemplate.Infrastructure.Observability;
+using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<WorkerReadinessState>();
-builder.Services.AddHostedService<Worker>();
+builder.Services.AddSqlServerPersistence(builder.Configuration);
+builder.Services.AddIdentityUserManagement();
+builder.Services.AddAuthenticationServices();
+builder.Services.AddRedisCaching(builder.Configuration);
+builder.Services.AddSubscribers(builder.Configuration);
 builder.Services
     .AddHealthChecks()
     .AddCheck<ConsumerReadinessHealthCheck>(
@@ -20,25 +24,7 @@ builder.Services
     .AddCheck<ConsumerLivenessHealthCheck>(
         "consumer-liveness",
         tags: ["liveness"]);
-builder.Services
-    .AddOpenTelemetry()
-    .ConfigureResource(resource => resource.AddService("BackendProjectTemplate.Consumer"))
-    .WithTracing(tracing =>
-    {
-        tracing.AddHttpClientInstrumentation();
-
-        var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"];
-        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
-        {
-            tracing.AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
-        }
-    })
-    .WithMetrics(metrics =>
-    {
-        metrics
-            .AddHttpClientInstrumentation()
-            .AddRuntimeInstrumentation();
-    });
+builder.Services.AddBackendTelemetry(builder.Configuration);
 
 var app = builder.Build();
 

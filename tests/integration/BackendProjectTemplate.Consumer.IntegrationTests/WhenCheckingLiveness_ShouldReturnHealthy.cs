@@ -6,21 +6,10 @@ namespace BackendProjectTemplate.Consumer.IntegrationTests;
 
 [Collection(nameof(ContainersCollection))]
 public sealed class WhenCheckingLiveness_ShouldReturnHealthy(ContainersFixture fixture)
-    : ConsumerIntegrationTestBase(fixture), IAsyncLifetime
+    : ConsumerIntegrationTestBase(fixture)
 {
     private const string LivenessEndpoint = "/health/liveness";
     private HttpResponseMessage? _response;
-
-    public async Task InitializeAsync()
-    {
-        await InitializeClientAsync();
-    }
-
-    public async Task DisposeAsync()
-    {
-        _response?.Dispose();
-        await DisposeClientAsync();
-    }
 
     [Fact]
     public async Task Verify()
@@ -38,5 +27,11 @@ public sealed class WhenCheckingLiveness_ShouldReturnHealthy(ContainersFixture f
             _response.ShouldNotBeNull();
             _response.StatusCode.ShouldBe(HttpStatusCode.OK);
         }
+    }
+
+    public override async Task DisposeAsync()
+    {
+        _response?.Dispose();
+        await base.DisposeAsync();
     }
 }

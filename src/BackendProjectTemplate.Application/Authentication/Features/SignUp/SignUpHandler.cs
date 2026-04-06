@@ -9,18 +9,15 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignUp;
 
 public sealed class SignUpHandler(
     IAuthenticationIdentityService identityService,
-    IOtpDeliveryService otpDeliveryService,
     IEventPublisher eventPublisher,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
-    private static readonly TimeSpan OtpLifetime = TimeSpan.FromMinutes(3);
-
     public async Task<SignUpResult> HandleAsync(SignUpRequest request, CancellationToken cancellationToken)
     {
         if (await identityService.FindByEmailAsync(request.Email) is not null)
         {
-            return new SignUpResult(SignUpStatus.DuplicateEmail, null);
+            return new SignUpResult(SignUpStatus.DuplicateEmail);
         }
 
         var now = timeProvider.GetUtcNow();
@@ -33,21 +30,19 @@ public sealed class SignUpHandler(
         {
             if (createResult.Errors.Any(error => error.Code is nameof(IdentityErrorDescriber.DuplicateEmail) or nameof(IdentityErrorDescriber.DuplicateUserName)))
             {
-                return new SignUpResult(SignUpStatus.DuplicateEmail, null);
+                return new SignUpResult(SignUpStatus.DuplicateEmail);
             }
 
-            return new SignUpResult(SignUpStatus.ValidationFailed, null, createResult.ToValidationDictionary());
+            return new SignUpResult(SignUpStatus.ValidationFailed, createResult.ToValidationDictionary());
         }
 
-        var otpCode = await identityService.GenerateSignUpOtpAsync(user);
         await eventPublisher.PublishAsync(new UserCreated(user.Id, user.Email!)
         {
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        await otpDeliveryService.SendSignUpOtpAsync(user, otpCode, cancellationToken);
 
-        return new SignUpResult(SignUpStatus.Accepted, now.Add(OtpLifetime));
+        return new SignUpResult(SignUpStatus.Accepted);
     }
 }

@@ -6,21 +6,21 @@ namespace BackendProjectTemplate.Consumer.IntegrationTests;
 
 [Collection(nameof(ContainersCollection))]
 public sealed class WhenCheckingReadinessWithAvailableDependencies_ShouldReturnHealthy(ContainersFixture fixture)
-    : ConsumerIntegrationTestBase(fixture), IAsyncLifetime
+    : ConsumerIntegrationTestBase(fixture)
 {
     private const string ReadinessEndpoint = "/health/readiness";
     private HttpResponseMessage? _response;
 
-    public async Task InitializeAsync()
+    public override async Task InitializeAsync()
     {
-        await InitializeClientAsync();
+        await base.InitializeAsync();
         await WaitForDependenciesToBecomeHealthyAsync();
     }
 
-    public async Task DisposeAsync()
+    public override async Task DisposeAsync()
     {
         _response?.Dispose();
-        await DisposeClientAsync();
+        await base.DisposeAsync();
     }
 
     [Fact]

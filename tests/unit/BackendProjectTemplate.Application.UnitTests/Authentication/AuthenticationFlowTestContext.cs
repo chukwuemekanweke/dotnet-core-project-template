@@ -25,47 +25,55 @@ internal sealed class AuthenticationFlowTestContext
             .Returns(Task.FromResult(Transaction));
     }
 
-    public SignUpHandler CreateSignUpHandler() => new(IdentityService, OtpDeliveryService, EventPublisher, UnitOfWork, Clock);
+    public SignUpHandler CreateSignUpHandler() => new(IdentityService, EventPublisher, UnitOfWork, Clock);
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(IdentityService, EventPublisher, UnitOfWork, Clock);
     public SignInHandler CreateSignInHandler() => new(IdentityService, AccessTokenService);
 
     public static SignUpRequest CreateSignUpRequest(
-        string email = "ada@example.com",
-        string password = "P@ssw0rd123!",
-        string firstName = "Ada",
-        string lastName = "Lovelace") =>
-        new()
+        string? email = null,
+        string? password = null,
+        string? firstName = null,
+        string? lastName = null)
+    {
+        var resolvedPassword = password ?? AuthenticationTestData.StrongPassword();
+
+        return new SignUpRequest
         {
-            Email = email,
-            Password = password,
-            ConfirmPassword = password,
-            FirstName = firstName,
-            LastName = lastName
+            Email = email ?? AuthenticationTestData.Email(),
+            Password = resolvedPassword,
+            ConfirmPassword = resolvedPassword,
+            FirstName = firstName ?? AuthenticationTestData.FirstName(),
+            LastName = lastName ?? AuthenticationTestData.LastName()
         };
+    }
 
     public static SignInRequest CreateSignInRequest(
-        string email = "linus@example.com",
-        string password = "P@ssw0rd123!") =>
+        string? email = null,
+        string? password = null) =>
         new()
         {
-            Email = email,
-            Password = password
+            Email = email ?? AuthenticationTestData.Email(),
+            Password = password ?? AuthenticationTestData.StrongPassword()
         };
 
     public static SignUpOtpRequest CreateSignUpOtpRequest(
-        string email = "grace@example.com",
-        string otp = "123456") =>
+        string? email = null,
+        string? otp = null) =>
         new()
         {
-            Email = email,
-            Otp = otp
+            Email = email ?? AuthenticationTestData.Email(),
+            Otp = otp ?? AuthenticationTestData.Otp()
         };
 
     public AppUser CreateUser(
-        string email = "grace@example.com",
-        string firstName = "Grace",
-        string lastName = "Hopper") =>
-        AppUser.Create(email, firstName, lastName, Clock.GetUtcNow());
+        string? email = null,
+        string? firstName = null,
+        string? lastName = null) =>
+        AppUser.Create(
+            email ?? AuthenticationTestData.Email(),
+            firstName ?? AuthenticationTestData.FirstName(),
+            lastName ?? AuthenticationTestData.LastName(),
+            Clock.GetUtcNow());
 
     internal sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {

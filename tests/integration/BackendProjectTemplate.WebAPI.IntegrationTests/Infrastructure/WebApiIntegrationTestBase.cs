@@ -1,4 +1,3 @@
-using BackendProjectTemplate.Domain.Common.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,7 +13,6 @@ public abstract class WebApiIntegrationTestBase
     }
 
     protected HttpClient Client { get; private set; } = default!;
-    protected TestOtpDeliveryService OtpDeliveryService => _factory.OtpDeliveryService;
 
     protected Task InitializeClientAsync()
     {
@@ -33,6 +31,4 @@ public abstract class WebApiIntegrationTestBase
     }
 
     protected IServiceScope CreateScope() => _factory.Services.CreateScope();
-
-    protected void ClearOtpDeliveries() => OtpDeliveryService.Clear();
 }

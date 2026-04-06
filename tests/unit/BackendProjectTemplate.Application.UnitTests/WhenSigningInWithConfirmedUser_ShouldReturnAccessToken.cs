@@ -12,10 +12,10 @@ public sealed class WhenSigningInWithConfirmedUser_ShouldReturnAccessToken
     [Fact]
     public async Task Verify()
     {
-        const string email = "linus@example.com";
-        const string password = "P@ssw0rd123!";
-        const string firstName = "Linus";
-        const string lastName = "Torvalds";
+        var email = AuthenticationTestData.Email();
+        var password = AuthenticationTestData.StrongPassword();
+        var firstName = AuthenticationTestData.FirstName();
+        var lastName = AuthenticationTestData.LastName();
         const string token = "signed-jwt";
 
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);

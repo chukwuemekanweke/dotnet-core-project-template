@@ -1,17 +1,30 @@
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 
-public abstract class ConsumerIntegrationTestBase
+public abstract class ConsumerIntegrationTestBase : IAsyncLifetime
 {
     private readonly CustomConsumerApplicationFactory _factory;
 
     protected ConsumerIntegrationTestBase(ContainersFixture fixture)
     {
-        _factory = new CustomConsumerApplicationFactory(fixture.SqlConnectionString, fixture.RedisConnectionString);
+        _factory = new CustomConsumerApplicationFactory(
+            fixture.SqlConnectionString,
+            fixture.RedisConnectionString,
+            fixture.RabbitMqHostName,
+            fixture.RabbitMqPort,
+            fixture.RabbitMqUserName,
+            fixture.RabbitMqPassword,
+            fixture.RabbitMqVirtualHost);
     }
 
     protected HttpClient Client { get; private set; } = default!;
+    protected TestOtpDeliveryService OtpDeliveryService => _factory.OtpDeliveryService;
+
+    public virtual Task InitializeAsync() => InitializeClientAsync();
+
+    public virtual Task DisposeAsync() => DisposeClientAsync();
 
     protected Task InitializeClientAsync()
     {
@@ -28,6 +41,8 @@ public abstract class ConsumerIntegrationTestBase
         Client.Dispose();
         await _factory.DisposeAsync();
     }
+
+    protected IServiceScope CreateScope() => _factory.Services.CreateScope();
 
     protected static async Task WaitForHealthyAsync(Func<Task<HttpResponseMessage>> probe)
     {

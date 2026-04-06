@@ -1,7 +1,7 @@
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 
-namespace BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
+namespace BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 
 public sealed class TestOtpDeliveryService : IOtpDeliveryService
 {

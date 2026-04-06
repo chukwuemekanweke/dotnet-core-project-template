@@ -39,8 +39,7 @@ public sealed class RegistrationsController(
                 new Dictionary<string, string[]>(result.ValidationErrors ?? new Dictionary<string, string[]>()))),
             _ => Accepted((string?)null, new SignUpResponse(
                 request.Email,
-                result.OtpExpiresAtUtc!.Value,
-                "The sign-up request has been accepted. Verify the OTP to activate the account."))
+                "The sign-up request has been accepted. The account verification OTP will be sent shortly."))
         };
     }
 }

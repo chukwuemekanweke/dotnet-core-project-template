@@ -1,0 +1,44 @@
+using BackendProjectTemplate.Consumer.Authentication;
+using BackendProjectTemplate.Infrastructure.Messaging;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
+using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
+
+namespace BackendProjectTemplate.Consumer;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddSubscribers(this IServiceCollection services, IConfiguration configuration)
+    {
+        var options = configuration
+            .GetSection(RabbitMqMessagingOptions.SectionName)
+            .Get<RabbitMqMessagingOptions>()
+            ?? throw new InvalidOperationException($"Configuration section '{RabbitMqMessagingOptions.SectionName}' is required.");
+
+        options.Validate();
+
+        var subscriberConfig = new SubscriberConfig
+        {
+            ServiceName = options.ServiceName,
+            HostName = options.HostName,
+            Port = options.Port,
+            UserName = options.UserName,
+            Password = options.Password,
+            VirtualHost = options.VirtualHost,
+            SubscriptionName = "authentication-user-created",
+            ExchangeName = options.EventsExchange,
+            PrefetchCount = 5,
+            MaxRetryCount = 10,
+            ConcurrentMessageCount = 1
+        };
+
+        services
+            .AddSubscriber(subscriberConfig, builder => builder.AddHandler<UserCreatedEvent, UserCreatedHandler>())
+            .AddHostedService(serviceProvider => new Worker(
+                serviceProvider.GetRequiredKeyedService<ISubscriber>(subscriberConfig.Key),
+                serviceProvider.GetRequiredService<ILogger<Worker>>(),
+                serviceProvider.GetRequiredService<WorkerReadinessState>()));
+
+        return services;
+    }
+}

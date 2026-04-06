@@ -10,23 +10,35 @@ public sealed class WhenApplyingSpecification_ShouldFilterOrderAndPage
     [Fact]
     public void Verify()
     {
-        const string firstEmail = "linus@example.com";
-        const string secondEmail = "ada@example.com";
-        const string thirdEmail = "grace@example.com";
+        var firstEmail = InfrastructureTestData.Email();
+        var secondEmail = InfrastructureTestData.Email();
+        var thirdEmail = InfrastructureTestData.Email();
+        var firstName = InfrastructureTestData.FirstName();
+        var secondName = InfrastructureTestData.FirstName();
+        var thirdName = InfrastructureTestData.FirstName();
+        var firstLastName = InfrastructureTestData.LastName();
+        var secondLastName = InfrastructureTestData.LastName();
+        var thirdLastName = InfrastructureTestData.LastName();
         var createdAt = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
 
         var users = new[]
         {
-            AppUser.Create(firstEmail, "Linus", "Torvalds", createdAt),
-            AppUser.Create(secondEmail, "Ada", "Lovelace", createdAt),
-            AppUser.Create(thirdEmail, "Grace", "Hopper", createdAt)
+            AppUser.Create(firstEmail, firstName, firstLastName, createdAt),
+            AppUser.Create(secondEmail, secondName, secondLastName, createdAt),
+            AppUser.Create(thirdEmail, thirdName, thirdLastName, createdAt)
         }.AsQueryable();
 
         var specification = new OrderedPagedUsersSpecification();
 
         var result = SpecificationEvaluator.GetQuery(users, specification).ToList();
 
-        result.Select(user => user.Email).ShouldBe([firstEmail, thirdEmail]);
+        var expectedEmails = users
+            .OrderByDescending(user => user.FirstName)
+            .Take(2)
+            .Select(user => user.Email)
+            .ToList();
+
+        result.Select(user => user.Email).ShouldBe(expectedEmails);
     }
 
     private sealed class OrderedPagedUsersSpecification : Specification<AppUser>

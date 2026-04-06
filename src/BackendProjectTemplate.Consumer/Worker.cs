@@ -1,19 +1,29 @@
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
+
 namespace BackendProjectTemplate.Consumer;
 
 public sealed class Worker(
+    ISubscriber subscriber,
     ILogger<Worker> logger,
-    TimeProvider timeProvider,
     WorkerReadinessState readinessState) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        logger.LogInformation("Starting RabbitMQ subscriber.");
+        await subscriber.StartAsync(stoppingToken);
         readinessState.MarkReady();
-        logger.LogInformation("Consumer worker started. Replace this loop with queue-specific message handling.");
 
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            logger.LogDebug("Consumer heartbeat at {Timestamp}", timeProvider.GetUtcNow());
-            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+            await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            logger.LogInformation("Stopping RabbitMQ subscriber.");
+            await subscriber.StopAsync(CancellationToken.None);
         }
     }
 }

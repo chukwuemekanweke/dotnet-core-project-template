@@ -13,10 +13,10 @@ public sealed class WhenSigningUpWithRejectedPassword_ShouldReturnValidationFail
     [Fact]
     public async Task Verify()
     {
-        const string email = "ada@example.com";
-        const string password = "weakpass";
-        const string firstName = "Ada";
-        const string lastName = "Lovelace";
+        var email = AuthenticationTestData.Email();
+        var password = AuthenticationTestData.WeakPassword();
+        var firstName = AuthenticationTestData.FirstName();
+        var lastName = AuthenticationTestData.LastName();
 
         var context = new AuthenticationFlowTestContext();
 
@@ -35,10 +35,6 @@ public sealed class WhenSigningUpWithRejectedPassword_ShouldReturnValidationFail
         result.Status.ShouldBe(SignUpStatus.ValidationFailed);
         result.ValidationErrors.ShouldNotBeNull();
         result.ValidationErrors.ShouldContainKey(nameof(SignUpRequest.Password));
-        await context.OtpDeliveryService.DidNotReceive().SendSignUpOtpAsync(
-            Arg.Any<AppUser>(),
-            Arg.Any<string>(),
-            Arg.Any<CancellationToken>());
         await context.EventPublisher.DidNotReceive().PublishAsync(
             Arg.Any<UserCreated>(),
             Arg.Any<CancellationToken>());

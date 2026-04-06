@@ -5,6 +5,7 @@ namespace BackendProjectTemplate.Domain.Common.Authentication;
 
 public interface IAuthenticationIdentityService
 {
+    Task<AppUser?> FindByIdAsync(Guid userId);
     Task<AppUser?> FindByEmailAsync(string email);
     Task<IdentityResult> CreateAsync(AppUser user, string password);
     Task<string> GenerateSignUpOtpAsync(AppUser user);

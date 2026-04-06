@@ -8,21 +8,18 @@ using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests;
 
-public sealed class WhenSigningUpWithNewEmail_ShouldCreateIdentityUserAndSendOtp
+public sealed class WhenSigningUpWithNewEmail_ShouldCreateIdentityUserAndPublishUserCreatedEvent
 {
     [Fact]
     public async Task Verify()
     {
         var context = new AuthenticationFlowTestContext();
-        const string email = "ada@example.com";
-        const string password = "P@ssw0rd123!";
-        const string firstName = "Ada";
-        const string lastName = "Lovelace";
-        const string otp = "123456";
-
+        var email = AuthenticationTestData.Email();
+        var password = AuthenticationTestData.StrongPassword();
+        var firstName = AuthenticationTestData.FirstName();
+        var lastName = AuthenticationTestData.LastName();
         context.IdentityService.FindByEmailAsync(email).Returns((AppUser?)null);
         context.IdentityService.CreateAsync(Arg.Any<AppUser>(), password).Returns(IdentityResult.Success);
-        context.IdentityService.GenerateSignUpOtpAsync(Arg.Any<AppUser>()).Returns(otp);
 
         var result = await context.CreateSignUpHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateSignUpRequest(
@@ -33,7 +30,6 @@ public sealed class WhenSigningUpWithNewEmail_ShouldCreateIdentityUserAndSendOtp
             CancellationToken.None);
 
         result.Status.ShouldBe(SignUpStatus.Accepted);
-        result.OtpExpiresAtUtc.ShouldBe(context.Clock.GetUtcNow().AddMinutes(3));
         await context.IdentityService.Received(1).CreateAsync(
             Arg.Is<AppUser>(user =>
                 user.Email == email &&
@@ -41,12 +37,9 @@ public sealed class WhenSigningUpWithNewEmail_ShouldCreateIdentityUserAndSendOtp
                 user.FirstName == firstName &&
                 user.LastName == lastName),
             password);
-        await context.OtpDeliveryService.Received(1).SendSignUpOtpAsync(
-            Arg.Is<AppUser>(user => user.Email == email),
-            otp,
-            Arg.Any<CancellationToken>());
         await context.EventPublisher.Received(1).PublishAsync(
-            Arg.Is<UserCreated>(message => message.EmailAddress == email),
+            Arg.Is<UserCreated>(message =>
+                message.EmailAddress == email),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await context.Transaction.Received(1).CommitAsync(Arg.Any<CancellationToken>());

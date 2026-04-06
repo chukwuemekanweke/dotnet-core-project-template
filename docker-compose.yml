@@ -54,6 +54,15 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__SqlServer: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
       ConnectionStrings__Redis: redis:6379
+      Messaging__RabbitMq__ServiceName: BackendProjectTemplate.Consumer
+      Messaging__RabbitMq__HostName: rabbitmq
+      Messaging__RabbitMq__Port: 5672
+      Messaging__RabbitMq__UserName: guest
+      Messaging__RabbitMq__Password: guest
+      Messaging__RabbitMq__VirtualHost: /
+      Messaging__RabbitMq__EventsExchange: x.events.backendprojecttemplate
+      Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
+      OpenTelemetry__ServiceName: BackendProjectTemplate.Consumer
       OpenTelemetry__OtlpEndpoint: http://tempo:4317
     depends_on:
       database-migrator:
@@ -62,6 +71,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
       tempo:
         condition: service_started
     healthcheck:

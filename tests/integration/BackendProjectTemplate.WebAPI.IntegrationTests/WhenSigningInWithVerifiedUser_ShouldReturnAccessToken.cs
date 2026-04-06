@@ -1,7 +1,7 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
-using BackendProjectTemplate.Application.Authentication.Features.SignUp;
-using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,10 +16,10 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
     : WebApiIntegrationTestBase(fixture), IAsyncLifetime
 {
     private const string Password = "P@ssw0rd123!";
-    private const string FirstName = "Linus";
-    private const string LastName = "Torvalds";
 
     private string _email = string.Empty;
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
     private HttpResponseMessage? _response;
 
     public async Task InitializeAsync()
@@ -32,7 +32,6 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
     {
         _response?.Dispose();
         await DeleteAuthenticationRecordsAsync();
-        ClearOtpDeliveries();
         await DisposeClientAsync();
     }
 
@@ -65,28 +64,20 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
 
     private async Task CreateVerifiedUserAsync()
     {
-        _email = $"signin-{Guid.NewGuid():N}@example.com";
+        _email = WebApiIntegrationTestData.Email("signin");
+        _firstName = WebApiIntegrationTestData.FirstName();
+        _lastName = WebApiIntegrationTestData.LastName();
+        using var scope = CreateScope();
+        var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
+        var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
 
-        using var signUpResponse = await Client.PostAsJsonAsync(EndpointUrl.Registrations.V1, new SignUpRequest
-        {
-            Email = _email,
-            Password = Password,
-            ConfirmPassword = Password,
-            FirstName = FirstName,
-            LastName = LastName
-        });
+        var user = AppUser.Create(_email, _firstName, _lastName, timeProvider.GetUtcNow());
+        var createResult = await identityService.CreateAsync(user, Password);
+        createResult.Succeeded.ShouldBeTrue();
 
-        signUpResponse.EnsureSuccessStatusCode();
-
-        var otp = OtpDeliveryService.GetCode(_email) ?? throw new InvalidOperationException("Expected an OTP code to be generated.");
-
-        using var verifyResponse = await Client.PostAsJsonAsync(EndpointUrl.EmailConfirmations.V1, new SignUpOtpRequest
-        {
-            Email = _email,
-            Otp = otp
-        });
-
-        verifyResponse.EnsureSuccessStatusCode();
+        user.MarkEmailVerified(timeProvider.GetUtcNow());
+        var updateResult = await identityService.UpdateAsync(user);
+        updateResult.Succeeded.ShouldBeTrue();
     }
 
     private async Task DeleteAuthenticationRecordsAsync()

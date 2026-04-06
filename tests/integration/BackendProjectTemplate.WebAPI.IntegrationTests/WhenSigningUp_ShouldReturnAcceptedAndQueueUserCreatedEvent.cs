@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.WebAPI;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
@@ -11,12 +13,10 @@ using Shouldly;
 namespace BackendProjectTemplate.WebAPI.IntegrationTests;
 
 [Collection(nameof(ContainersCollection))]
-public sealed class WhenSigningUp_ShouldReturnAcceptedAndStoreOtp(ContainersFixture fixture)
+public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(ContainersFixture fixture)
     : WebApiIntegrationTestBase(fixture), IAsyncLifetime
 {
     private const string Password = "P@ssw0rd123!";
-    private const string FirstName = "Ada";
-    private const string LastName = "Lovelace";
 
     private string _email = string.Empty;
     private SignUpRequest _request = default!;
@@ -31,7 +31,6 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndStoreOtp(ContainersFixt
     {
         _response?.Dispose();
         await DeleteAuthenticationRecordsAsync();
-        ClearOtpDeliveries();
         await DisposeClientAsync();
     }
 
@@ -40,18 +39,18 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndStoreOtp(ContainersFixt
     {
         GivenANewEmailAddress();
         await WhenSigningUp();
-        ThenTheRequestIsAcceptedAndOtpIsStored();
+        await ThenTheRequestIsAcceptedAndUserCreatedEventIsQueued();
 
         void GivenANewEmailAddress()
         {
-            _email = $"signup-{Guid.NewGuid():N}@example.com";
+            _email = WebApiIntegrationTestData.Email("signup");
             _request = new SignUpRequest
             {
                 Email = _email,
                 Password = Password,
                 ConfirmPassword = Password,
-                FirstName = FirstName,
-                LastName = LastName
+                FirstName = WebApiIntegrationTestData.FirstName(),
+                LastName = WebApiIntegrationTestData.LastName()
             };
         }
 
@@ -60,11 +59,17 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndStoreOtp(ContainersFixt
             _response = await Client.PostAsJsonAsync(EndpointUrl.Registrations.V1, _request);
         }
 
-        void ThenTheRequestIsAcceptedAndOtpIsStored()
+        async Task ThenTheRequestIsAcceptedAndUserCreatedEventIsQueued()
         {
             _response.ShouldNotBeNull();
             _response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-            OtpDeliveryService.GetCode(_email).ShouldNotBeNull();
+
+            using var scope = CreateScope();
+            var repository = scope.ServiceProvider.GetRequiredService<IRepository<OutboxMessage>>();
+            var outboxMessages = await repository.ListAsync(new UserCreatedOutboxMessagesSpecification(_email));
+
+            outboxMessages.Count.ShouldBe(1);
+            outboxMessages[0].SentAtUtc.ShouldBeNull();
         }
     }
 
@@ -76,14 +81,36 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndStoreOtp(ContainersFixt
         }
 
         using var scope = CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
+        var userRepository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
+        var outboxRepository = scope.ServiceProvider.GetRequiredService<IRepository<OutboxMessage>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var user = await repository.GetByEmailAsync(_email);
+        var user = await userRepository.GetByEmailAsync(_email);
 
         if (user is not null)
         {
-            repository.Remove(user);
+            userRepository.Remove(user);
+        }
+
+        var outboxMessages = await outboxRepository.ListAsync(new UserCreatedOutboxMessagesSpecification(_email));
+        foreach (var outboxMessage in outboxMessages)
+        {
+            outboxRepository.Remove(outboxMessage);
+        }
+
+        if (user is not null || outboxMessages.Count > 0)
+        {
             await unitOfWork.SaveChangesAsync();
+        }
+    }
+
+    private sealed class UserCreatedOutboxMessagesSpecification : Specification<OutboxMessage>
+    {
+        public UserCreatedOutboxMessagesSpecification(string email)
+        {
+            Where(message =>
+                message.Kind == OutboxMessageKind.Event &&
+                message.Type == typeof(UserCreated).FullName! &&
+                message.Payload.Contains(email));
         }
     }
 }

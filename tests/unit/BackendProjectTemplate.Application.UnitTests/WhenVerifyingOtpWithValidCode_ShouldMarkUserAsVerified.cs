@@ -13,10 +13,10 @@ public sealed class WhenVerifyingOtpWithValidCode_ShouldMarkUserAsVerified
     [Fact]
     public async Task Verify()
     {
-        const string email = "grace@example.com";
-        const string firstName = "Grace";
-        const string lastName = "Hopper";
-        const string otp = "123456";
+        var email = AuthenticationTestData.Email();
+        var firstName = AuthenticationTestData.FirstName();
+        var lastName = AuthenticationTestData.LastName();
+        var otp = AuthenticationTestData.Otp();
 
         var context = new AuthenticationFlowTestContext();
         var user = context.CreateUser(email, firstName, lastName);

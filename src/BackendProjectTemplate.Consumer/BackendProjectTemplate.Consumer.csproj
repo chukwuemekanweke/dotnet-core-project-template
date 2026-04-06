@@ -4,6 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Chidelu.Integration.Messaging.RabbitMQ.Consumer" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
@@ -11,6 +12,12 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
     <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\\BackendProjectTemplate.Contracts\\BackendProjectTemplate.Contracts.csproj" />
+    <ProjectReference Include="..\\BackendProjectTemplate.Domain\\BackendProjectTemplate.Domain.csproj" />
+    <ProjectReference Include="..\\BackendProjectTemplate.Infrastructure\\BackendProjectTemplate.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

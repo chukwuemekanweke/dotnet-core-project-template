@@ -8,9 +8,9 @@ public sealed class WhenMarkingEmailVerified_ShouldUpdateConfirmationAndTimestam
     [Fact]
     public void Verify()
     {
-        const string email = "ada@example.com";
-        const string firstName = "Ada";
-        const string lastName = "Lovelace";
+        var email = DomainTestData.Email();
+        var firstName = DomainTestData.FirstName();
+        var lastName = DomainTestData.LastName();
 
         var createdAt = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
         var verifiedAt = createdAt.AddMinutes(5);

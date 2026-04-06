@@ -16,7 +16,7 @@ public sealed class WhenDispatchingEventOutboxMessage_ShouldPublishEventThroughR
         var publisher = Substitute.For<IPublisher>();
         var sender = Substitute.For<ISender>();
         var userId = Guid.CreateVersion7();
-        const string emailAddress = "ada@example.com";
+        var emailAddress = InfrastructureTestData.Email();
         var @event = new UserCreated(userId, emailAddress);
         var outboxMessage = OutboxMessage.CreateEvent(
             @event.MessageId,
