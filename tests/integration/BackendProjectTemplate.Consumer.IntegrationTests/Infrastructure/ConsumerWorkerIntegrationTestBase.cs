@@ -109,7 +109,7 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<WorkerReadinessState>();
         builder.Services.AddSqlServerPersistence(configuration);
-        builder.Services.AddIdentityUserManagement();
+        builder.Services.AddIdentityUserManagement(configuration);
         builder.Services.AddAuthenticationServices();
         builder.Services.AddRedisCaching(configuration);
         builder.Services.AddCustomTelemetryContext();

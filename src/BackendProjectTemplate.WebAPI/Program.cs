@@ -34,7 +34,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddApiDocumentation();
 builder.Services.AddApplication();
 builder.Services.AddSqlServerPersistence(builder.Configuration);
-builder.Services.AddIdentityUserManagement();
+builder.Services.AddIdentityUserManagement(builder.Configuration);
 builder.Services.AddAuthenticationServices();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddRedisCaching(builder.Configuration);

@@ -11,13 +11,22 @@ namespace BackendProjectTemplate.Infrastructure.Authentication;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddIdentityUserManagement(this IServiceCollection services)
+    public static IServiceCollection AddIdentityUserManagement(this IServiceCollection services, IConfiguration configuration)
     {
+        var lockoutOptions = configuration
+            .GetSection(AuthenticationLockoutOptions.SectionName)
+            .Get<AuthenticationLockoutOptions>() ?? new AuthenticationLockoutOptions();
+
+        lockoutOptions.Validate();
+
         services
             .AddIdentityCore<AppUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
                 options.SignIn.RequireConfirmedEmail = true;
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = lockoutOptions.MaxFailedAttempts;
+                options.Lockout.DefaultLockoutTimeSpan = lockoutOptions.Duration;
                 options.Password.RequiredLength = 8;
                 options.Password.RequireDigit = true;
                 options.Password.RequireLowercase = true;
@@ -37,6 +46,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
         services.AddScoped<IOtpDeliveryService, LoggingOtpDeliveryService>();
+        services.AddScoped<IAuthenticationNotificationSender, LoggingAuthenticationNotificationSender>();
 
         return services;
     }

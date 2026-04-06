@@ -18,6 +18,7 @@ public sealed class SessionsController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status423Locked)]
     public async Task<ActionResult<SignInResponse>> Handle(
         [FromBody] SignInRequest request,
         CancellationToken cancellationToken)
@@ -46,6 +47,12 @@ public sealed class SessionsController(
                 statusCode: StatusCodes.Status403Forbidden,
                 title: "Email not verified",
                 detail: "Verify the sign-up OTP before attempting to sign in."),
+            SignInStatus.AccountLocked => Problem(
+                statusCode: StatusCodes.Status423Locked,
+                title: "Account locked",
+                detail: result.LockedUntilUtc.HasValue
+                    ? $"The account is locked until {result.LockedUntilUtc.Value:O}."
+                    : "The account is currently locked."),
             _ => Problem(
                 statusCode: StatusCodes.Status401Unauthorized,
                 title: "Invalid credentials",

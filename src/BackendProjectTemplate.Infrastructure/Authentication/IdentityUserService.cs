@@ -12,6 +12,15 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
     public Task<AppUser?> FindByEmailAsync(string email) =>
         userManager.FindByEmailAsync(email);
 
+    public Task<bool> IsLockedOutAsync(AppUser user) =>
+        userManager.IsLockedOutAsync(user);
+
+    public async Task<DateTimeOffset?> GetLockoutEndUtcAsync(AppUser user)
+    {
+        var lockoutEnd = await userManager.GetLockoutEndDateAsync(user);
+        return lockoutEnd?.ToUniversalTime();
+    }
+
     public Task<IdentityResult> CreateAsync(AppUser user, string password) =>
         userManager.CreateAsync(user, password);
 
@@ -23,6 +32,12 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
 
     public Task<bool> CheckPasswordAsync(AppUser user, string password) =>
         userManager.CheckPasswordAsync(user, password);
+
+    public Task<IdentityResult> AccessFailedAsync(AppUser user) =>
+        userManager.AccessFailedAsync(user);
+
+    public Task<IdentityResult> ResetAccessFailedCountAsync(AppUser user) =>
+        userManager.ResetAccessFailedCountAsync(user);
 
     public Task<IdentityResult> UpdateAsync(AppUser user) =>
         userManager.UpdateAsync(user);

@@ -25,11 +25,27 @@ public sealed class SignInHandler(
                 emailAddress: request.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
-                failureReason: FailureReasons.UserNotFound,
+                failureReason: UserSignInFailureReasons.UserNotFound,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             return new SignInResult(SignInStatus.InvalidCredentials, null);
+        }
+
+        if (await identityService.IsLockedOutAsync(user))
+        {
+            var lockedUntilUtc = await identityService.GetLockoutEndUtcAsync(user);
+
+            await PublishFailedAsync(
+                userId: user.Id,
+                emailAddress: user.Email ?? request.Email,
+                ipAddress: request.IpAddress,
+                userAgent: request.UserAgent,
+                failureReason: UserSignInFailureReasons.LockedOut,
+                cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new SignInResult(SignInStatus.AccountLocked, null, lockedUntilUtc);
         }
 
         if (!user.EmailConfirmed)
@@ -39,7 +55,7 @@ public sealed class SignInHandler(
                 emailAddress: user.Email ?? request.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
-                failureReason: FailureReasons.EmailNotVerified,
+                failureReason: UserSignInFailureReasons.EmailNotVerified,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -53,7 +69,7 @@ public sealed class SignInHandler(
                 emailAddress: user.Email ?? request.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
-                failureReason: FailureReasons.InvalidCredentials,
+                failureReason: UserSignInFailureReasons.InvalidCredentials,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -119,12 +135,5 @@ public sealed class SignInHandler(
         }
 
         customTelemetryContext.AddCustomEvent(Observability.UserSignInFailedEventName, properties);
-    }
-
-    private static class FailureReasons
-    {
-        public const string UserNotFound = "user_not_found";
-        public const string InvalidCredentials = "invalid_credentials";
-        public const string EmailNotVerified = "email_not_verified";
     }
 }

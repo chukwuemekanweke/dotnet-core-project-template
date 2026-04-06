@@ -3,6 +3,8 @@ using BackendProjectTemplate.Infrastructure.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
+using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
+using UserSignInSuccessfulEvent = BackendProjectTemplate.Contracts.Events.UserSignInSuccessful;
 
 namespace BackendProjectTemplate.Consumer;
 
@@ -25,7 +27,7 @@ public static class ServiceCollectionExtensions
             UserName = options.UserName,
             Password = options.Password,
             VirtualHost = options.VirtualHost,
-            SubscriptionName = "authentication-user-created",
+            SubscriptionName = "authentication-events",
             ExchangeName = options.EventsExchange,
             PrefetchCount = 5,
             MaxRetryCount = 10,
@@ -33,7 +35,10 @@ public static class ServiceCollectionExtensions
         };
 
         services
-            .AddSubscriber(subscriberConfig, builder => builder.AddHandler<UserCreatedEvent, UserCreatedHandler>())
+            .AddSubscriber(subscriberConfig, builder => builder
+                .AddHandler<UserCreatedEvent, UserCreatedHandler>()
+                .AddHandler<UserSignInSuccessfulEvent, UserSignInSuccessfulHandler>()
+                .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>())
             .AddHostedService(serviceProvider => new Worker(
                 serviceProvider.GetRequiredKeyedService<ISubscriber>(subscriberConfig.Key),
                 serviceProvider.GetRequiredService<ILogger<Worker>>(),
