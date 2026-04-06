@@ -5,6 +5,7 @@ using BackendProjectTemplate.Infrastructure.Caching;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
+using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,7 +28,7 @@ builder.Services
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();
-builder.Services.AddOpenApi();
+builder.Services.AddApiDocumentation();
 builder.Services.AddApplication();
 builder.Services.AddSqlServerPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement();
@@ -45,7 +46,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapOpenApi();
+app.UseApiDocumentation();
 app.MapPrometheusScrapingEndpoint("/metrics");
 app.MapHealthChecks("/health");
 app.MapControllers();
