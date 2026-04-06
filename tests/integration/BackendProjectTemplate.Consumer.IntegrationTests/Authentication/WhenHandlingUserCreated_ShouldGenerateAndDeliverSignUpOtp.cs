@@ -76,7 +76,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp(Co
 
     private async Task CreatePendingUserAsync()
     {
-        _email = ConsumerIntegrationTestData.Email("consumer");
+        _email = ConsumerIntegrationTestData.Email();
         _firstName = ConsumerIntegrationTestData.FirstName();
         _lastName = ConsumerIntegrationTestData.LastName();
 

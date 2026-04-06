@@ -43,7 +43,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
 
         void GivenANewEmailAddress()
         {
-            _email = WebApiIntegrationTestData.Email("signup");
+            _email = WebApiIntegrationTestData.Email();
             _request = new SignUpRequest
             {
                 Email = _email,

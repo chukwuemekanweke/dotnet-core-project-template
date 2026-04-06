@@ -61,7 +61,7 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
 
     private async Task CreateSignedUpUserAsync()
     {
-        _email = WebApiIntegrationTestData.Email("verify");
+        _email = WebApiIntegrationTestData.Email();
         _firstName = WebApiIntegrationTestData.FirstName();
         _lastName = WebApiIntegrationTestData.LastName();
         using var scope = CreateScope();

@@ -6,14 +6,7 @@ internal static class InfrastructureTestData
 {
     private static readonly Faker Faker = new();
 
-    public static string Email()
-    {
-        var localPart = $"{Faker.Internet.UserName()}-{Faker.Random.Guid():N}"
-            .Replace(".", "-", StringComparison.Ordinal)
-            .ToLowerInvariant();
-
-        return $"{localPart}@example.com";
-    }
+    public static string Email() => Faker.Internet.Email().ToLowerInvariant();
 
     public static string FirstName() => Faker.Name.FirstName();
 

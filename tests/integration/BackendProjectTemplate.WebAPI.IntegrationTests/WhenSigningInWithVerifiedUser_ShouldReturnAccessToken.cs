@@ -64,7 +64,7 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
 
     private async Task CreateVerifiedUserAsync()
     {
-        _email = WebApiIntegrationTestData.Email("signin");
+        _email = WebApiIntegrationTestData.Email();
         _firstName = WebApiIntegrationTestData.FirstName();
         _lastName = WebApiIntegrationTestData.LastName();
         using var scope = CreateScope();

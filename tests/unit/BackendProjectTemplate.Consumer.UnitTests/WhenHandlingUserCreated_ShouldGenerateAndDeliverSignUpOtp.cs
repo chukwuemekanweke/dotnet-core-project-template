@@ -4,7 +4,6 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using Shouldly;
 
 namespace BackendProjectTemplate.Consumer.UnitTests;
 
