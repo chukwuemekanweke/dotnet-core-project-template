@@ -1,15 +1,13 @@
-using BackendProjectTemplate.Consumer.Authentication;
+using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher.DependencyInjection;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Authentication;
 
@@ -53,7 +51,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp(Co
                 .BuildServiceProvider();
 
             var publisher = publisherServices.GetRequiredKeyedService<IPublisher>(publisherConfig.Key);
-            await publisher.PublishAsync(new UserCreatedEvent(_userId, _email), CancellationToken.None);
+            await publisher.PublishAsync(new UserCreated(_userId, _email), CancellationToken.None);
         }
 
         async Task ThenTheSignUpOtpIsGeneratedAndDelivered()
@@ -110,7 +108,4 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp(Co
         repository.Remove(user);
         await unitOfWork.SaveChangesAsync();
     }
-
-    protected override void RegisterWorkerServices(IServiceCollection services, IConfiguration configuration) =>
-        services.AddSubscribers(configuration);
 }

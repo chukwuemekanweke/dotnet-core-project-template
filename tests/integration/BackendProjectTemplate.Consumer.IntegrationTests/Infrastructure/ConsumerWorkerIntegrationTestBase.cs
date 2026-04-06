@@ -62,7 +62,9 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
 
     protected virtual Task DisposeWorkerTestAsync() => Task.CompletedTask;
 
-    protected abstract void RegisterWorkerServices(IServiceCollection services, IConfiguration configuration);
+    protected virtual void RegisterTestServices(IServiceCollection services)
+    {
+    }
 
     protected static async Task WaitForConditionAsync(Func<Task<bool>> condition)
     {
@@ -113,7 +115,7 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddSingleton(_otpDeliveryService);
         builder.Services.AddSingleton<IOtpDeliveryService>(_otpDeliveryService);
         builder.Services.AddSubscribers(configuration);
-        RegisterWorkerServices(builder.Services, configuration);
+        RegisterTestServices(builder.Services);
 
         _host = builder.Build();
         await _host.StartAsync();
