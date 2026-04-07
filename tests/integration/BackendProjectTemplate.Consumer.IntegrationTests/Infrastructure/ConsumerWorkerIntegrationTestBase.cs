@@ -42,11 +42,12 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
 
     protected IServiceScope CreateScope() => _host.Services.CreateScope();
 
+    protected ScopedDbContext CreateDbContextScope() => new(_host.Services.CreateScope());
+
     protected async Task MigrateDatabaseAsync()
     {
-        using var scope = CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await dbContext.Database.MigrateAsync();
+        using var scope = CreateDbContextScope();
+        await scope.DbContext.Database.MigrateAsync();
     }
 
     protected async Task DisposeHostAsync()
@@ -90,7 +91,8 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServer"] = _fixture.SqlConnectionString,
+                ["ConnectionStrings:SqlServerWrite"] = _fixture.SqlConnectionString,
+                ["ConnectionStrings:SqlServerRead"] = _fixture.SqlConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
                 ["Messaging:RabbitMq:HostName"] = _fixture.RabbitMqHostName,

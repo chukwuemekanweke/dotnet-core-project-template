@@ -28,7 +28,8 @@ public sealed class CustomConsumerApplicationFactory(
         {
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServer"] = sqlServerConnectionString,
+                ["ConnectionStrings:SqlServerWrite"] = sqlServerConnectionString,
+                ["ConnectionStrings:SqlServerRead"] = sqlServerConnectionString,
                 ["ConnectionStrings:Redis"] = redisConnectionString,
                 ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
                 ["Messaging:RabbitMq:HostName"] = rabbitMqHostName,

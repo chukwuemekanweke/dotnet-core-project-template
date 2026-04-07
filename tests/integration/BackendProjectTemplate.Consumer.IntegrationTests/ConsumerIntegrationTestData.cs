@@ -11,4 +11,8 @@ internal static class ConsumerIntegrationTestData
     public static string FirstName() => Faker.Name.FirstName();
 
     public static string LastName() => Faker.Name.LastName();
+
+    public static string IpAddress() => Faker.Internet.Ip();
+
+    public static string UserAgent() => Faker.Internet.UserAgent();
 }

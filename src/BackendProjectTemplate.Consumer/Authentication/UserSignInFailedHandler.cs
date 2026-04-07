@@ -31,11 +31,8 @@ public sealed class UserSignInFailedHandler(
         var user = await identityService.FindByIdAsync(message.UserId.Value);
         if (user is null)
         {
-            logger.LogWarning(
-                "Unable to process sign-in failure for user {UserId} because the account could not be found.",
-                message.UserId.Value);
-
-            return;
+            throw new CannotProcessMessageNonTransientException(
+                $"Unable to process UserSignInFailed because user '{message.UserId.Value}' could not be found.");
         }
 
         if (message.FailureReason == UserSignInFailureReasons.InvalidCredentials)
