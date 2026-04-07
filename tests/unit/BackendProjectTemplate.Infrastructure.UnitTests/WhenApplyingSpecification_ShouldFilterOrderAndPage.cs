@@ -10,9 +10,9 @@ public sealed class WhenApplyingSpecification_ShouldFilterOrderAndPage
     [Fact]
     public void Verify()
     {
-        var firstEmail = InfrastructureTestData.Email();
-        var secondEmail = InfrastructureTestData.Email();
-        var thirdEmail = InfrastructureTestData.Email();
+        const string firstEmail = "alpha@example.com";
+        const string secondEmail = "bravo@example.com";
+        const string thirdEmail = "charlie@example.com";
         var firstName = InfrastructureTestData.FirstName();
         var secondName = InfrastructureTestData.FirstName();
         var thirdName = InfrastructureTestData.FirstName();

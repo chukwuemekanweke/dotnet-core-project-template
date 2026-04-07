@@ -1,7 +1,9 @@
 using BackendProjectTemplate.Consumer.Authentication;
+using BackendProjectTemplate.Consumer.Notifications;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
+using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications.SendNotificationCommand;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
 using UserSignInSuccessfulEvent = BackendProjectTemplate.Contracts.Events.UserSignInSuccessful;
@@ -34,13 +36,31 @@ public static class ServiceCollectionExtensions
             ConcurrentMessageCount = 1
         };
 
+        var consumerConfig = new ConsumerConfig
+        {
+            ServiceName = options.ServiceName,
+            HostName = options.HostName,
+            Port = options.Port,
+            UserName = options.UserName,
+            Password = options.Password,
+            VirtualHost = options.VirtualHost,
+            QueueName = "notifications",
+            ExchangeName = options.CommandsExchange,
+            PrefetchCount = 5,
+            MaxRetryCount = 10,
+            ConcurrentMessageCount = 1
+        };
+
         services
             .AddSubscriber(subscriberConfig, builder => builder
                 .AddHandler<UserCreatedEvent, UserCreatedHandler>()
                 .AddHandler<UserSignInSuccessfulEvent, UserSignInSuccessfulHandler>()
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>())
+            .AddConsumer(consumerConfig, builder => builder
+                .AddHandler<SendNotification, SendNotificationHandler>())
             .AddHostedService(serviceProvider => new Worker(
                 serviceProvider.GetRequiredKeyedService<ISubscriber>(subscriberConfig.Key),
+                serviceProvider.GetRequiredKeyedService<IConsumer>(consumerConfig.Key),
                 serviceProvider.GetRequiredService<ILogger<Worker>>(),
                 serviceProvider.GetRequiredService<WorkerReadinessState>()));
 

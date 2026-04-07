@@ -2,6 +2,7 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
 using BackendProjectTemplate.Infrastructure.Messaging;
+using BackendProjectTemplate.Infrastructure.Notifications;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -101,7 +102,11 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
                 ["Messaging:RabbitMq:Password"] = _fixture.RabbitMqPassword,
                 ["Messaging:RabbitMq:VirtualHost"] = _fixture.RabbitMqVirtualHost,
                 ["Messaging:RabbitMq:EventsExchange"] = "x.events.backendprojecttemplate.integrationtests",
-                ["Messaging:RabbitMq:CommandsExchange"] = "x.commands.backendprojecttemplate.integrationtests"
+                ["Messaging:RabbitMq:CommandsExchange"] = "x.commands.backendprojecttemplate.integrationtests",
+                ["Notifications:Email:FromAddress"] = "no-reply@integrationtests.local",
+                ["Notifications:Email:FromName"] = "BackendProjectTemplate Integration Tests",
+                ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
+                ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
             })
             .Build();
 
@@ -116,7 +121,9 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddAuthenticationServices();
         builder.Services.AddRedisCaching(configuration);
         builder.Services.AddTransactionalOutbox();
+        builder.Services.AddNotificationServices(configuration);
         builder.Services.AddCustomTelemetryContext();
+        builder.Services.AddBackendTelemetry(configuration);
         builder.Services.RemoveAll<IOtpDeliveryService>();
         builder.Services.AddSingleton(_otpDeliveryService);
         builder.Services.AddSingleton<IOtpDeliveryService>(_otpDeliveryService);

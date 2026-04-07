@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -14,6 +15,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
 {
     public DbSet<Country> Countries => Set<Country>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<EmailProvider> EmailProviders => Set<EmailProvider>();
     public DbSet<Stakeholder> Stakeholders => Set<Stakeholder>();
     public DbSet<StakeholderType> StakeholderTypes => Set<StakeholderType>();
     public DbSet<AppUserStakeholder> AppUserStakeholders => Set<AppUserStakeholder>();

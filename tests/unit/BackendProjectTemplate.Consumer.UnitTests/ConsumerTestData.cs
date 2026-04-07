@@ -17,4 +17,6 @@ internal static class ConsumerTestData
     public static string IpAddress() => Faker.Internet.Ip();
 
     public static string UserAgent() => Faker.Internet.UserAgent();
+
+    public static string PhoneNumber() => Faker.Phone.PhoneNumber();
 }

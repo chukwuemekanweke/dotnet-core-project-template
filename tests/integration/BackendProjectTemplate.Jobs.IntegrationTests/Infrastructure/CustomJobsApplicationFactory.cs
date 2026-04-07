@@ -24,7 +24,8 @@ public sealed class CustomJobsApplicationFactory(
         {
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServer"] = sqlServerConnectionString,
+                ["ConnectionStrings:SqlServerWrite"] = sqlServerConnectionString,
+                ["ConnectionStrings:SqlServerRead"] = sqlServerConnectionString,
                 ["ConnectionStrings:Redis"] = redisConnectionString,
                 ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
                 ["Messaging:RabbitMq:HostName"] = rabbitMqHostName,
@@ -35,7 +36,8 @@ public sealed class CustomJobsApplicationFactory(
                 ["Messaging:RabbitMq:EventsExchange"] = EventsExchange,
                 ["Messaging:RabbitMq:CommandsExchange"] = CommandsExchange,
                 ["Outbox:PollIntervalSeconds"] = "1",
-                ["OpenTelemetry:OtlpEndpoint"] = ""
+                ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
+                ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
             });
         });
     }

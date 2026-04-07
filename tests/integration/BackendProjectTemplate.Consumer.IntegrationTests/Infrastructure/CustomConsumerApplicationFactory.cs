@@ -39,8 +39,10 @@ public sealed class CustomConsumerApplicationFactory(
                 ["Messaging:RabbitMq:VirtualHost"] = rabbitMqVirtualHost,
                 ["Messaging:RabbitMq:EventsExchange"] = "x.events.backendprojecttemplate.integrationtests",
                 ["Messaging:RabbitMq:CommandsExchange"] = "x.commands.backendprojecttemplate.integrationtests",
+                ["Notifications:Email:FromAddress"] = "no-reply@integrationtests.local",
+                ["Notifications:Email:FromName"] = "BackendProjectTemplate Integration Tests",
                 ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
-                ["OpenTelemetry:OtlpEndpoint"] = ""
+                ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
             });
         });
 

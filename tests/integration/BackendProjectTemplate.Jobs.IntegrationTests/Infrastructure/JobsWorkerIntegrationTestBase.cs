@@ -112,7 +112,8 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServer"] = _fixture.SqlConnectionString,
+                ["ConnectionStrings:SqlServerWrite"] = _fixture.SqlConnectionString,
+                ["ConnectionStrings:SqlServerRead"] = _fixture.SqlConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 [$"{OutboxProcessingOptions.SectionName}:BatchSize"] = "50",
                 [$"{OutboxProcessingOptions.SectionName}:PollIntervalSeconds"] = "1",
@@ -123,7 +124,9 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
                 ["Messaging:RabbitMq:Password"] = _fixture.RabbitMqPassword,
                 ["Messaging:RabbitMq:VirtualHost"] = _fixture.RabbitMqVirtualHost,
                 ["Messaging:RabbitMq:EventsExchange"] = CustomJobsApplicationFactory.EventsExchange,
-                ["Messaging:RabbitMq:CommandsExchange"] = CustomJobsApplicationFactory.CommandsExchange
+                ["Messaging:RabbitMq:CommandsExchange"] = CustomJobsApplicationFactory.CommandsExchange,
+                ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
+                ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
             })
             .Build();
 }

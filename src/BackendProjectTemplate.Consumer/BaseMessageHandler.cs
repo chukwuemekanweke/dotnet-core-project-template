@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using BackendProjectTemplate.Contracts.Commands;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Observability;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
@@ -23,6 +24,12 @@ public abstract class BaseMessageHandler<TMessage>(
             CustomTelemetryContext
                 .SetProperty(Observability.MessageIdPropertyName, baseEvent.MessageId.ToString())
                 .SetProperty("OccurredAt", baseEvent.OccuredAt.ToString("O"));
+        }
+        else if (message is BaseCommand baseCommand)
+        {
+            CustomTelemetryContext
+                .SetProperty(Observability.MessageIdPropertyName, baseCommand.MessageId.ToString())
+                .SetProperty("RequestedAt", baseCommand.RequestedAt.ToString("O"));
         }
 
         foreach (var telemetryParameter in GetTelemetryParameters(message))
