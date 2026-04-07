@@ -12,7 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddBackgroundServiceReadinessTracking();
-builder.Services.AddSqlServerPersistence(builder.Configuration);
+builder.Services.AddSqlServerWritePersistence(builder.Configuration);
+builder.Services.AddSqlServerReadPersistence(builder.Configuration);
 builder.Services.AddRabbitMqOutboxDispatching(builder.Configuration);
 builder.Services.AddOutboxMessageProcessing(builder.Configuration);
 builder.Services.AddJobsHealthChecks();

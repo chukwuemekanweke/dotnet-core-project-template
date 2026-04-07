@@ -5,7 +5,7 @@ using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence;
 
-public sealed class StakeholderReadModelRepository(IRepository<AppUserStakeholder> repository) : IStakeholderReadModelRepository
+public sealed class StakeholderReadModelRepository(IReadRepository<AppUserStakeholder> repository) : IStakeholderReadModelRepository
 {
     public async Task<StakeholderReadModel?> GetByAppUserIdAsync(Guid appUserId, CancellationToken cancellationToken = default)
     {

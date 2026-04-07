@@ -23,20 +23,10 @@ public sealed class JobsReadinessHealthCheck(
             return HealthCheckResult.Unhealthy(description);
         }
 
-        var sqlConnectionString = configuration.GetConnectionString("SqlServer");
-        if (string.IsNullOrWhiteSpace(sqlConnectionString))
-        {
-            return HealthCheckResult.Unhealthy("Jobs SQL Server connection string is not configured.");
-        }
-
-        var redisConnectionString = configuration.GetConnectionString("Redis");
-        if (string.IsNullOrWhiteSpace(redisConnectionString))
-        {
-            return HealthCheckResult.Unhealthy("Jobs Redis connection string is not configured.");
-        }
-
         try
         {
+            var sqlConnectionString = GetRequiredConnectionString("SqlServerWrite");
+            var redisConnectionString = GetRequiredConnectionString("Redis");
             await using var sqlConnection = new SqlConnection(sqlConnectionString);
             await sqlConnection.OpenAsync(cancellationToken);
 
@@ -55,4 +45,8 @@ public sealed class JobsReadinessHealthCheck(
                 exception);
         }
     }
+
+    private string GetRequiredConnectionString(string name) =>
+        configuration.GetConnectionString(name)
+        ?? throw new InvalidOperationException($"Connection string '{name}' is required.");
 }

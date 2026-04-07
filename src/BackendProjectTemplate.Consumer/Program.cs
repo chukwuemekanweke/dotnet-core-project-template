@@ -12,7 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<WorkerReadinessState>();
-builder.Services.AddSqlServerPersistence(builder.Configuration);
+builder.Services.AddSqlServerWritePersistence(builder.Configuration);
+builder.Services.AddSqlServerReadPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
 builder.Services.AddAuthenticationServices();
 builder.Services.AddRedisCaching(builder.Configuration);

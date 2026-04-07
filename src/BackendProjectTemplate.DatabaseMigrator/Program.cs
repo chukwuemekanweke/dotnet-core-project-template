@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
-builder.Services.AddSqlServerPersistence(builder.Configuration);
+builder.Services.AddSqlServerWritePersistence(builder.Configuration);
 builder.Services.AddSingleton<DatabaseMigrationState>();
 builder.Services.AddHostedService<DatabaseMigrationWorker>();
 builder.Services

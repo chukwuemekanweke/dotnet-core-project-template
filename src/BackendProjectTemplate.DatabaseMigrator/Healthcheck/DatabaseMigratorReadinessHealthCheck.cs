@@ -19,14 +19,9 @@ public sealed class DatabaseMigratorReadinessHealthCheck(
                 state.Failure);
         }
 
-        var sqlConnectionString = configuration.GetConnectionString("SqlServer");
-        if (string.IsNullOrWhiteSpace(sqlConnectionString))
-        {
-            return HealthCheckResult.Unhealthy("Database migrator SQL Server connection string is not configured.");
-        }
-
         try
         {
+            var sqlConnectionString = GetRequiredConnectionString("SqlServerWrite");
             await using var sqlConnection = new SqlConnection(sqlConnectionString);
             await sqlConnection.OpenAsync(cancellationToken);
 
@@ -48,4 +43,8 @@ public sealed class DatabaseMigratorReadinessHealthCheck(
                 exception);
         }
     }
+
+    private string GetRequiredConnectionString(string name) =>
+        configuration.GetConnectionString(name)
+        ?? throw new InvalidOperationException($"Connection string '{name}' is required.");
 }
