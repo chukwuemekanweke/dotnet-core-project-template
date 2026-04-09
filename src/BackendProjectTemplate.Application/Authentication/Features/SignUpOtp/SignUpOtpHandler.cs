@@ -47,7 +47,7 @@ public sealed class SignUpOtpHandler(
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        customTelemetryContext.AddCustomEvent(Observability.OtpConfirmedEventName, new Dictionary<string, string>
+        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.OtpConfirmed, new Dictionary<string, string>
         {
             [Observability.UserIdPropertyName] = user.Id.ToString()
         });

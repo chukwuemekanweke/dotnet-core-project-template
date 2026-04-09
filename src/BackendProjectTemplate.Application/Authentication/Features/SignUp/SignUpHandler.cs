@@ -17,7 +17,7 @@ public sealed class SignUpHandler(
 {
     public async Task<SignUpResult> HandleAsync(SignUpCommand request, CancellationToken cancellationToken)
     {
-        customTelemetryContext.AddCustomEvent(Observability.SignUpRequestedEventName);
+        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.SignUpRequested);
 
         if (await identityService.FindByEmailAsync(request.Email) is not null)
         {
@@ -46,7 +46,7 @@ public sealed class SignUpHandler(
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        customTelemetryContext.AddCustomEvent(Observability.UserCreatedEventName, new Dictionary<string, string>
+        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserCreated, new Dictionary<string, string>
         {
             [Observability.UserIdPropertyName] = user.Id.ToString()
         });

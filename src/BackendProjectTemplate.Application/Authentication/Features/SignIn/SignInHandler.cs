@@ -103,7 +103,7 @@ public sealed class SignInHandler(
             OccuredAt = now
         }, cancellationToken);
 
-        customTelemetryContext.AddCustomEvent(Observability.UserSignInSuccessfulEventName, new Dictionary<string, string>
+        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInSuccessful, new Dictionary<string, string>
         {
             [Observability.UserIdPropertyName] = userId.ToString()
         });
@@ -134,6 +134,6 @@ public sealed class SignInHandler(
             properties[Observability.UserIdPropertyName] = userId.Value.ToString();
         }
 
-        customTelemetryContext.AddCustomEvent(Observability.UserSignInFailedEventName, properties);
+        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInFailed, properties);
     }
 }

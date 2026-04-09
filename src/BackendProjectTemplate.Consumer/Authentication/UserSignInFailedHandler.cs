@@ -80,7 +80,7 @@ public sealed class UserSignInFailedHandler(
             properties["LockedUntilUtc"] = lockedUntilUtc.ToString("O");
         }
 
-        CustomTelemetryContext.AddCustomEvent(Observability.UserSignInFailedEventName, properties);
+        CustomTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInFailed, properties);
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserSignInFailed message)

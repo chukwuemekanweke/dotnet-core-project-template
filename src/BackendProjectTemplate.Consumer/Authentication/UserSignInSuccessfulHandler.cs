@@ -59,7 +59,7 @@ public sealed class UserSignInSuccessfulHandler(
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        CustomTelemetryContext.AddCustomEvent(Observability.UserSignInSuccessfulEventName, new Dictionary<string, string>
+        CustomTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInSuccessful, new Dictionary<string, string>
         {
             [Observability.UserIdPropertyName] = user.Id.ToString()
         });

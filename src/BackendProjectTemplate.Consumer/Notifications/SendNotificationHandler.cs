@@ -20,7 +20,7 @@ public sealed class SendNotificationHandler(
                     break;
 
                 default:
-                    throw new CannotProcessMessageNonTransientException(
+                    throw new FailedToProcessMessageException(
                         $"Notification medium '{message.NotificationMedium}' is not supported.");
             }
         }
@@ -30,7 +30,7 @@ public sealed class SendNotificationHandler(
         }
 
         CustomTelemetryContext.AddCustomEvent(
-            "notifications.email_sent",
+            Observability.EventNames.Notifications.EmailSent,
             new Dictionary<string, string>
             {
                 ["NotificationType"] = message.NotificationType.ToString(),

@@ -33,7 +33,7 @@ public sealed class UserCreatedHandler(
 
         var otpCode = await identityService.GenerateSignUpOtpAsync(user);
         await otpDeliveryService.SendSignUpOtpAsync(user, otpCode, cancellationToken);
-        CustomTelemetryContext.AddCustomEvent(Observability.UserCreatedProcessedEventName, new Dictionary<string, string>
+        CustomTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserCreatedProcessed, new Dictionary<string, string>
         {
             [Observability.UserIdPropertyName] = user.Id.ToString()
         });
