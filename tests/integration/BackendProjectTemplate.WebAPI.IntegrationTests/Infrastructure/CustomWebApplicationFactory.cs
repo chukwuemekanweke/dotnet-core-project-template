@@ -14,7 +14,8 @@ public sealed class CustomWebApplicationFactory(string sqlServerConnectionString
         {
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServer"] = sqlServerConnectionString,
+                ["ConnectionStrings:SqlServerWrite"] = sqlServerConnectionString,
+                ["ConnectionStrings:SqlServerRead"] = sqlServerConnectionString,
                 ["ConnectionStrings:Redis"] = redisConnectionString,
                 ["Database:InitializeOnStartup"] = "true",
                 ["Jwt:Issuer"] = "integration-tests",
