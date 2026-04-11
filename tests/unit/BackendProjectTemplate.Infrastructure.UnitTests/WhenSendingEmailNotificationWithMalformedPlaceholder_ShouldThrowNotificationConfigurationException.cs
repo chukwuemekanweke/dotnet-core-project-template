@@ -10,7 +10,7 @@ using Shouldly;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 
-public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_ShouldThrowNotificationConfigurationException
+public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldThrowNotificationConfigurationException
 {
     [Fact]
     public async Task Verify()
@@ -27,13 +27,13 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
         var command = new SendNotificationCommand(
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
-            NotificationType.AccountLocked,
+            NotificationType.SignInSuccessful,
             NotificationMedium.Email,
             new EmailNotificationContent(
                 InfrastructureTestData.Email(),
                 new Dictionary<string, string>
                 {
-                    ["LockedUntilUtc"] = "2026-04-11T00:00:00.0000000+00:00"
+                    ["IpAddress"] = "127.0.0.1"
                 }));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveEmailProviderSpecification>(), Arg.Any<CancellationToken>())
@@ -42,10 +42,10 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
             .Returns(EmailNotificationTemplate.Create(
-                NotificationType.AccountLocked,
-                "Account locked notification",
-                "Account locked until {{:LockoutEndUtc:}}",
-                "Locked Until: {{:LockoutEndUtc:}}",
+                NotificationType.SignInSuccessful,
+                "Sign-in successful notification",
+                "Successful sign-in from {{:IpAddress:}}",
+                "A sign-in to your account was successful.\nIP Address: {{:IpAddress:}",
                 now));
         transportProvider.ProviderKey.Returns("logging");
 
@@ -59,7 +59,7 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
             sut.SendAsync(command, CancellationToken.None));
 
         exception.Message.ShouldBe(
-            "The email body template for notification type 'AccountLocked' requires replacement key 'LockoutEndUtc'.");
+            "The email body template for notification type 'SignInSuccessful' contains a malformed placeholder token. Expected format '{{:Key:}}'.");
         await transportProvider.DidNotReceive().SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>());
     }
 }

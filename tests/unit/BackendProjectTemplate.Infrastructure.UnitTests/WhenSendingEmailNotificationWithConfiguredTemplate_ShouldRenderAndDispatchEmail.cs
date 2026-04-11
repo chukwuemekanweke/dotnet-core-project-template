@@ -45,8 +45,8 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_ShouldRen
             .Returns(EmailNotificationTemplate.Create(
                 NotificationType.SignInSuccessful,
                 "Sign-in successful notification",
-                "Successful sign-in from {IpAddress}",
-                "A sign-in to your account was successful.\nIP Address: {IpAddress}\nUser Agent: {UserAgent}",
+                "Successful sign-in from {{:IpAddress:}}",
+                "A sign-in to your account was successful.\nIP Address: {{:IpAddress:}}\nUser Agent: {{:UserAgent:}}",
                 now));
         transportProvider.ProviderKey.Returns("logging");
 

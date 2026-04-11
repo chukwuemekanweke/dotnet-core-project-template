@@ -348,7 +348,7 @@ VALUES
 /*
     Seeds [notifications].[EmailNotificationTemplates].
 
-    Subject and body support named placeholders in the form {PlaceholderName}.
+    Subject and body support named placeholders in the form {{:PlaceholderName:}}.
     The placeholder values come from NotificationContent.Content for the outgoing command.
 */
 
@@ -361,8 +361,8 @@ VALUES
     (3, N'Reset password OTP notification', N'Reset your password', N'Use the one-time password sent to you to reset your password.'),
     (4, N'Password reset success notification', N'Your password has been reset', N'Your password has been reset successfully.'),
     (5, N'Email confirmation follow-up notification', N'Reminder to confirm your email', N'This is a reminder to confirm your email address.'),
-    (6, N'Sign-in successful notification', N'Successful sign-in', N'A sign-in to your account was successful.' + CHAR(13) + CHAR(10) + N'IP Address: {IpAddress}' + CHAR(13) + CHAR(10) + N'User Agent: {UserAgent}'),
-    (7, N'Account locked notification', N'Your account has been locked', N'Your account has been locked due to multiple failed sign-in attempts.' + CHAR(13) + CHAR(10) + N'Locked Until: {LockedUntilUtc}')
+    (6, N'Sign-in successful notification', N'Successful sign-in', N'A sign-in to your account was successful.' + CHAR(13) + CHAR(10) + N'IP Address: {{:IpAddress:}}' + CHAR(13) + CHAR(10) + N'User Agent: {{:UserAgent:}}'),
+    (7, N'Account locked notification', N'Your account has been locked', N'Your account has been locked due to multiple failed sign-in attempts.' + CHAR(13) + CHAR(10) + N'Locked Until: {{:LockedUntilUtc:}}')
 ) AS [Source] ([NotificationType], [Description], [Subject], [Body])
 ON [Target].[NotificationType] = [Source].[NotificationType]
 WHEN MATCHED AND

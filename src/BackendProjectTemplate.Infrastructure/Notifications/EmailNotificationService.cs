@@ -14,7 +14,8 @@ internal sealed class EmailNotificationService(
     IEnumerable<IEmailTransportProvider> transportProviders,
     IOptions<EmailNotificationsOptions> options) : IEmailNotificationService
 {
-    private static readonly Regex PlaceholderPattern = new(@"\{(?<key>[A-Za-z0-9_]+)\}", RegexOptions.CultureInvariant);
+    private static readonly Regex PlaceholderPattern = new(@"\{\{:(?<key>[A-Za-z0-9_]+):\}\}", RegexOptions.CultureInvariant);
+    private static readonly Regex PlaceholderFragmentPattern = new(@"\{\{:|:\}\}", RegexOptions.CultureInvariant);
 
     public async Task SendAsync(SendNotificationCommand command, CancellationToken cancellationToken = default)
     {
@@ -77,7 +78,7 @@ internal sealed class EmailNotificationService(
         string templatePart,
         NotificationType? notificationType)
     {
-        return PlaceholderPattern.Replace(template, match =>
+        var renderedTemplate = PlaceholderPattern.Replace(template, match =>
         {
             var key = match.Groups["key"].Value;
 
@@ -89,5 +90,13 @@ internal sealed class EmailNotificationService(
             throw new NotificationConfigurationException(
                 $"The email {templatePart} template for notification type '{notificationType}' requires replacement key '{key}'.");
         });
+
+        if (PlaceholderFragmentPattern.IsMatch(renderedTemplate))
+        {
+            throw new NotificationConfigurationException(
+                $"The email {templatePart} template for notification type '{notificationType}' contains a malformed placeholder token. Expected format '{{{{:Key:}}}}'.");
+        }
+
+        return renderedTemplate;
     }
 }
