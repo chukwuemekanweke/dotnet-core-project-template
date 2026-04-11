@@ -44,7 +44,7 @@ public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_Should
             .Returns((EmailNotificationTemplate?)null);
         transportProvider.ProviderKey.Returns("logging");
 
-        var sut = new EmailNotificationService(
+        var sut = new EmailNotificationDispatcher(
             providerRepository,
             templateRepository,
             [transportProvider],

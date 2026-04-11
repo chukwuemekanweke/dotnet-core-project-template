@@ -50,7 +50,7 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_ShouldRen
                 now));
         transportProvider.ProviderKey.Returns("logging");
 
-        var sut = new EmailNotificationService(
+        var sut = new EmailNotificationDispatcher(
             providerRepository,
             templateRepository,
             [transportProvider],

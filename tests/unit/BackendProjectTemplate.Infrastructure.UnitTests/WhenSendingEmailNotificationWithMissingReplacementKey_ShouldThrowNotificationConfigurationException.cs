@@ -49,7 +49,7 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
                 now));
         transportProvider.ProviderKey.Returns("logging");
 
-        var sut = new EmailNotificationService(
+        var sut = new EmailNotificationDispatcher(
             providerRepository,
             templateRepository,
             [transportProvider],

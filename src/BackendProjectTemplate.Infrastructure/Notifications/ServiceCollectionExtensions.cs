@@ -17,7 +17,7 @@ public static class ServiceCollectionExtensions
         options.Validate();
 
         services.Configure<EmailNotificationsOptions>(configuration.GetSection(EmailNotificationsOptions.SectionName));
-        services.AddScoped<IEmailNotificationService, EmailNotificationService>();
+        services.AddScoped<IEmailNotificationService, EmailNotificationDispatcher>();
         services.AddScoped<IEmailTransportProvider, LoggingEmailTransportProvider>();
         services.AddScoped<IEmailTransportProvider, MailtrapEmailTransportProvider>();
 

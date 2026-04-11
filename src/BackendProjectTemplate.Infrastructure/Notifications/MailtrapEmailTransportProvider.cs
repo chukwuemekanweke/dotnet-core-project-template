@@ -31,6 +31,7 @@ internal sealed class MailtrapEmailTransportProvider(
             .From(message.FromAddress, message.FromName)
             .To(message.To)
             .Subject(message.Subject)
+            .Text(string.Join(Environment.NewLine, message.Content))
             .Html(BuildHtmlBody(message.Content));
 
         if (message.Cc is not null)

@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace BackendProjectTemplate.Infrastructure.Notifications;
 
-internal sealed class EmailNotificationService(
+internal sealed class EmailNotificationDispatcher(
     IReadRepository<EmailProvider> emailProviderRepository,
     IReadRepository<EmailNotificationTemplate> emailNotificationTemplateRepository,
     IEnumerable<IEmailTransportProvider> transportProviders,
