@@ -1,0 +1,58 @@
+using BackendProjectTemplate.Contracts.Commands.Notifications;
+using BackendProjectTemplate.Domain.Common.Notifications;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Domain.Notifications.Specifications;
+using BackendProjectTemplate.Infrastructure.Notifications;
+using Microsoft.Extensions.Options;
+using NSubstitute;
+using Shouldly;
+
+namespace BackendProjectTemplate.Infrastructure.UnitTests;
+
+public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_ShouldThrowNotificationConfigurationException
+{
+    [Fact]
+    public async Task Verify()
+    {
+        var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
+        var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
+        var transportProvider = Substitute.For<IEmailTransportProvider>();
+        var options = Options.Create(new EmailNotificationsOptions
+        {
+            FromAddress = "no-reply@test.local",
+            FromName = "Backend Project Template"
+        });
+        var now = DateTimeOffset.UtcNow;
+        var command = new SendNotificationCommand(
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            NotificationType.AccountLocked,
+            NotificationMedium.Email,
+            new EmailNotificationContent(
+                InfrastructureTestData.Email(),
+                new Dictionary<string, string>
+                {
+                    ["LockedUntilUtc"] = "now"
+                }));
+
+        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveEmailProviderSpecification>(), Arg.Any<CancellationToken>())
+            .Returns(EmailProvider.Create("Logging", "logging", true, now));
+        templateRepository.FirstOrDefaultAsync(
+                Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
+                Arg.Any<CancellationToken>())
+            .Returns((EmailNotificationTemplate?)null);
+        transportProvider.ProviderKey.Returns("logging");
+
+        var sut = new EmailNotificationService(
+            providerRepository,
+            templateRepository,
+            [transportProvider],
+            options);
+
+        var exception = await Should.ThrowAsync<NotificationConfigurationException>(() =>
+            sut.SendAsync(command, CancellationToken.None));
+
+        exception.Message.ShouldBe("No email template is configured for notification type 'AccountLocked'.");
+    }
+}

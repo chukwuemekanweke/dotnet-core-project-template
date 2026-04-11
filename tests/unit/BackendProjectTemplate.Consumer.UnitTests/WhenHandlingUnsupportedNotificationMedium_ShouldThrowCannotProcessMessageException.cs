@@ -23,7 +23,10 @@ public sealed class WhenHandlingUnsupportedNotificationMedium_ShouldThrowCannotP
             new SmsNotificationContent(
                 "+234",
                 ConsumerTestData.PhoneNumber(),
-                ["A sign-in to your account was successful."]));
+                new Dictionary<string, string>
+                {
+                    ["Message"] = "A sign-in to your account was successful."
+                }));
 
         var exception = await Should.ThrowAsync<FailedToProcessMessageException>(() =>
             new SendNotificationHandler(customTelemetryContext, emailNotificationService)

@@ -51,11 +51,11 @@ public sealed class UserSignInSuccessfulHandler(
                 NotificationMedium.Email,
                 new EmailNotificationContent(
                     user.Email ?? message.EmailAddress,
-                    [
-                        "A sign-in to your account was successful.",
-                        $"IP Address: {message.IpAddress}",
-                        $"User Agent: {message.UserAgent}"
-                    ])),
+                    new Dictionary<string, string>
+                    {
+                        ["IpAddress"] = message.IpAddress,
+                        ["UserAgent"] = message.UserAgent
+                    })),
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

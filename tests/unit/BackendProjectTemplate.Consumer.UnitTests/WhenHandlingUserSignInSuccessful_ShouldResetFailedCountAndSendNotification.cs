@@ -49,7 +49,9 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
                 command.NotificationType == NotificationType.SignInSuccessful &&
                 command.NotificationMedium == NotificationMedium.Email &&
                 command.NotificationContent is EmailNotificationContent &&
-                ((EmailNotificationContent)command.NotificationContent).To == email),
+                ((EmailNotificationContent)command.NotificationContent).To == email &&
+                ((EmailNotificationContent)command.NotificationContent).Content["IpAddress"] == ipAddress &&
+                ((EmailNotificationContent)command.NotificationContent).Content["UserAgent"] == userAgent),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

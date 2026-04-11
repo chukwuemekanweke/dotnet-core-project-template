@@ -58,7 +58,8 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldSe
                 command.NotificationType == NotificationType.AccountLocked &&
                 command.NotificationMedium == NotificationMedium.Email &&
                 command.NotificationContent is EmailNotificationContent &&
-                ((EmailNotificationContent)command.NotificationContent).To == email),
+                ((EmailNotificationContent)command.NotificationContent).To == email &&
+                ((EmailNotificationContent)command.NotificationContent).Content["LockedUntilUtc"] == lockedUntilUtc.ToString("O")),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

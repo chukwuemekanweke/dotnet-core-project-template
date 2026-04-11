@@ -22,7 +22,10 @@ public sealed class WhenHandlingEmailNotificationCommandWithInvalidConfiguration
             NotificationMedium.Email,
             new EmailNotificationContent(
                 ConsumerTestData.Email(),
-                ["Your account has been locked."]));
+                new Dictionary<string, string>
+                {
+                    ["LockedUntilUtc"] = "2026-04-11T00:00:00.0000000+00:00"
+                }));
 
         emailNotificationService
             .SendAsync(command, Arg.Any<CancellationToken>())

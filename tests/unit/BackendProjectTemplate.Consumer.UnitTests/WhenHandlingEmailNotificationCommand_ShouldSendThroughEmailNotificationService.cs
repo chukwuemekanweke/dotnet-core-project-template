@@ -20,7 +20,11 @@ public sealed class WhenHandlingEmailNotificationCommand_ShouldSendThroughEmailN
             NotificationMedium.Email,
             new EmailNotificationContent(
                 ConsumerTestData.Email(),
-                ["A sign-in to your account was successful."]));
+                new Dictionary<string, string>
+                {
+                    ["IpAddress"] = "127.0.0.1",
+                    ["UserAgent"] = "Test Agent"
+                }));
 
         await new SendNotificationHandler(customTelemetryContext, emailNotificationService)
             .HandleAsync(command, CancellationToken.None);

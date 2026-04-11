@@ -7,4 +7,4 @@ namespace BackendProjectTemplate.Contracts.Commands.Notifications;
 [JsonDerivedType(typeof(SmsNotificationContent), "sms")]
 [JsonDerivedType(typeof(WebPushNotificationContent), "webPush")]
 [JsonDerivedType(typeof(AppPushNotificationContent), "appPush")]
-public abstract record NotificationContent(string[] Content);
+public abstract record NotificationContent(Dictionary<string, string> Content);

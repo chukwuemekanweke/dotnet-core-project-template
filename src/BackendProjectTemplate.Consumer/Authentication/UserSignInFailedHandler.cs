@@ -71,10 +71,10 @@ public sealed class UserSignInFailedHandler(
                     NotificationMedium.Email,
                     new EmailNotificationContent(
                         user.Email ?? message.EmailAddress,
-                        [
-                            "Your account has been locked due to multiple failed sign-in attempts.",
-                            $"Locked Until: {lockedUntilUtc:O}"
-                        ])),
+                        new Dictionary<string, string>
+                        {
+                            ["LockedUntilUtc"] = lockedUntilUtc.ToString("O")
+                        })),
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             properties["LockedUntilUtc"] = lockedUntilUtc.ToString("O");
