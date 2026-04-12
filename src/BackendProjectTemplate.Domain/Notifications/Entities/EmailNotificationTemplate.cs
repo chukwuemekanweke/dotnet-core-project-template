@@ -13,26 +13,26 @@ public sealed class EmailNotificationTemplate : Entity
         NotificationType notificationType,
         string description,
         string subject,
-        string body,
+        string templateFileName,
         DateTimeOffset utcNow)
     {
         NotificationType = notificationType;
         Description = description.Trim();
         Subject = subject.Trim();
-        Body = body.Trim();
+        TemplateFileName = templateFileName.Trim();
         SetAuditDates(utcNow);
     }
 
     public NotificationType NotificationType { get; private set; }
     public string Description { get; private set; } = string.Empty;
     public string Subject { get; private set; } = string.Empty;
-    public string Body { get; private set; } = string.Empty;
+    public string TemplateFileName { get; private set; } = string.Empty;
 
     public static EmailNotificationTemplate Create(
         NotificationType notificationType,
         string description,
         string subject,
-        string body,
+        string templateFileName,
         DateTimeOffset utcNow) =>
-        new(notificationType, description, subject, body, utcNow);
+        new(notificationType, description, subject, templateFileName, utcNow);
 }

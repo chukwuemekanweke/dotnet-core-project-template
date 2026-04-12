@@ -21,6 +21,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<Stakeholder> Stakeholders => Set<Stakeholder>();
     public DbSet<StakeholderType> StakeholderTypes => Set<StakeholderType>();
     public DbSet<AppUserStakeholder> AppUserStakeholders => Set<AppUserStakeholder>();
+    public DbSet<Tenant> Tenants => Set<Tenant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

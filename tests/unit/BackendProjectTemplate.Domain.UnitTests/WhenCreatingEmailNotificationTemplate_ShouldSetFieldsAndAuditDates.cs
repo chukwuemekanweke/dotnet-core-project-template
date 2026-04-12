@@ -14,13 +14,13 @@ public sealed class WhenCreatingEmailNotificationTemplate_ShouldSetFieldsAndAudi
             NotificationType.SignInSuccessful,
             " Sign-in successful notification ",
             " Successful sign-in ",
-            " Sign-in succeeded. ",
+            " SignInSuccessful.html ",
             utcNow);
 
         template.NotificationType.ShouldBe(NotificationType.SignInSuccessful);
         template.Description.ShouldBe("Sign-in successful notification");
         template.Subject.ShouldBe("Successful sign-in");
-        template.Body.ShouldBe("Sign-in succeeded.");
+        template.TemplateFileName.ShouldBe("SignInSuccessful.html");
         template.CreatedAtUtc.ShouldBe(utcNow);
         template.UpdatedAtUtc.ShouldBe(utcNow);
     }

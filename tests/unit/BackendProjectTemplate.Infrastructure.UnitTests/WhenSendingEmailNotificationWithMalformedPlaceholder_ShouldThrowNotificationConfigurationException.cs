@@ -3,7 +3,10 @@ using BackendProjectTemplate.Domain.Common.Notifications;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 using BackendProjectTemplate.Infrastructure.Notifications;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Shouldly;
@@ -16,14 +19,26 @@ public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldT
     public async Task Verify()
     {
         var tenantId = Guid.CreateVersion7();
+        var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.NewGuid():N}");
+        var tenantTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", "NotificationTypes");
+        Directory.CreateDirectory(tenantTemplateDirectory);
+        await File.WriteAllTextAsync(
+            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", "BaseTemplate.html"),
+            "<html><body>{{:BodyHtml:}}</body></html>");
+        await File.WriteAllTextAsync(
+            Path.Combine(tenantTemplateDirectory, "SignInSuccessful.html"),
+            "A sign-in to your account was successful.\nIP Address: {{:IpAddress:}");
+
         var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
-        var tenantBaseTemplateRepository = Substitute.For<IReadRepository<TenantEmailBaseTemplate>>();
+        var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
         var transportProvider = Substitute.For<IEmailTransportProvider>();
+        var hostEnvironment = Substitute.For<IHostEnvironment>();
         var options = Options.Create(new EmailNotificationsOptions
         {
             FromAddress = "no-reply@test.local",
-            FromName = "Backend Project Template"
+            FromName = "Backend Project Template",
+            TemplateSetsRootPath = "EmailTemplates/TemplateSets"
         });
         var now = DateTimeOffset.UtcNow;
         var command = new SendNotificationCommand(
@@ -47,23 +62,25 @@ public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldT
                 NotificationType.SignInSuccessful,
                 "Sign-in successful notification",
                 "Successful sign-in from {{:IpAddress:}}",
-                "A sign-in to your account was successful.\nIP Address: {{:IpAddress:}",
+                "SignInSuccessful.html",
                 now));
-        tenantBaseTemplateRepository.FirstOrDefaultAsync(
-                Arg.Any<TenantEmailBaseTemplateByTenantIdSpecification>(),
+        tenantRepository.FirstOrDefaultAsync(
+                Arg.Any<TenantByIdSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns(TenantEmailBaseTemplate.Create(
+            .Returns(Tenant.Create(
                 tenantId,
-                "Tenant brand",
-                "<html><body>{{:BodyHtml:}}</body></html>",
+                "Moveaex",
+                "moveaex",
                 now));
         transportProvider.ProviderKey.Returns("logging");
+        hostEnvironment.ContentRootPath.Returns(templateRoot);
 
         var sut = new EmailNotificationDispatcher(
             providerRepository,
             templateRepository,
-            tenantBaseTemplateRepository,
+            tenantRepository,
             [transportProvider],
+            hostEnvironment,
             options);
 
         var exception = await Should.ThrowAsync<NotificationConfigurationException>(() =>

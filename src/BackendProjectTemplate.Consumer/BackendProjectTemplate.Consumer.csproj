@@ -23,4 +23,10 @@
     <ProjectReference Include="..\\BackendProjectTemplate.Infrastructure\\BackendProjectTemplate.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="EmailTemplates\\**\\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

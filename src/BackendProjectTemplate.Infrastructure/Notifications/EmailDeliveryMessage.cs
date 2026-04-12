@@ -5,7 +5,6 @@ internal sealed record EmailDeliveryMessage(
     string FromName,
     string To,
     string Subject,
-    string TextBody,
     string HtmlBody,
     string[]? Cc,
     string[]? Bcc);

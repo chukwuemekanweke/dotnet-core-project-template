@@ -3,6 +3,9 @@ using BackendProjectTemplate.Domain.Common.Notifications;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Specifications;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -12,8 +15,9 @@ namespace BackendProjectTemplate.Infrastructure.Notifications;
 internal sealed class EmailNotificationDispatcher(
     IReadRepository<EmailProvider> emailProviderRepository,
     IReadRepository<EmailNotificationTemplate> emailNotificationTemplateRepository,
-    IReadRepository<TenantEmailBaseTemplate> tenantEmailBaseTemplateRepository,
+    IReadRepository<Tenant> tenantRepository,
     IEnumerable<IEmailTransportProvider> transportProviders,
+    IHostEnvironment hostEnvironment,
     IOptions<EmailNotificationsOptions> options) : IEmailNotificationService
 {
     private static readonly Regex PlaceholderPattern = new(@"\{\{:(?<key>[A-Za-z0-9_]+):\}\}", RegexOptions.CultureInvariant);
@@ -21,6 +25,8 @@ internal sealed class EmailNotificationDispatcher(
 
     public async Task SendAsync(SendNotificationCommand command, CancellationToken cancellationToken = default)
     {
+        var notificationsOptions = options.Value;
+
         if (command.NotificationContent is not EmailNotificationContent content)
         {
             throw new NotificationConfigurationException(
@@ -44,15 +50,17 @@ internal sealed class EmailNotificationDispatcher(
                 $"No email template is configured for notification type '{command.NotificationType}'.");
         }
 
-        var tenantBaseTemplate = await tenantEmailBaseTemplateRepository.FirstOrDefaultAsync(
-            new TenantEmailBaseTemplateByTenantIdSpecification(command.TenantId),
+        var tenant = await tenantRepository.FirstOrDefaultAsync(
+            new TenantByIdSpecification(command.TenantId),
             cancellationToken);
 
-        if (tenantBaseTemplate is null)
+        if (tenant is null && command.TenantId != Guid.Empty)
         {
-            throw new NotificationConfigurationException(
-                $"No tenant email base template is configured for tenant '{command.TenantId}'.");
+            tenant = await tenantRepository.FirstOrDefaultAsync(
+                new TenantByIdSpecification(Guid.Empty),
+                cancellationToken);
         }
+        var brandKey = tenant?.BrandKey ?? notificationsOptions.DefaultBrandKey;
 
         var transportProvider = transportProviders.SingleOrDefault(candidate =>
             string.Equals(candidate.ProviderKey, provider.ProviderKey, StringComparison.OrdinalIgnoreCase));
@@ -64,24 +72,88 @@ internal sealed class EmailNotificationDispatcher(
         }
 
         var renderedSubject = RenderTemplate(template.Subject, content.Content, "subject", command.NotificationType);
-        var renderedBody = RenderTemplate(template.Body, content.Content, "body", command.NotificationType);
+        var renderedBody = RenderTemplate(
+            LoadNotificationTemplate(
+                notificationsOptions,
+                brandKey,
+                template.TemplateFileName,
+                command.NotificationType),
+            content.Content,
+            "body",
+            command.NotificationType);
         var renderedHtmlBody = RenderTenantHtmlBody(
-            tenantBaseTemplate.HtmlTemplate,
+            LoadBaseTemplate(notificationsOptions, brandKey, command.NotificationType),
             renderedSubject,
             renderedBody,
             command.NotificationType);
 
         var deliveryMessage = new EmailDeliveryMessage(
-            options.Value.FromAddress,
-            options.Value.FromName,
+            notificationsOptions.FromAddress,
+            notificationsOptions.FromName,
             content.To,
             renderedSubject,
-            renderedBody,
             renderedHtmlBody,
             content.Cc,
             content.Bcc);
         await transportProvider.SendAsync(deliveryMessage, cancellationToken);
     }
+
+    private string LoadNotificationTemplate(
+        EmailNotificationsOptions notificationsOptions,
+        string brandKey,
+        string templateFileName,
+        NotificationType notificationType)
+    {
+        if (templateFileName.IndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]) >= 0)
+        {
+            throw new NotificationConfigurationException(
+                $"Template file name '{templateFileName}' for notification type '{notificationType}' is invalid.");
+        }
+
+        var relativePath = Path.Combine(notificationsOptions.NotificationTemplatesFolder, templateFileName);
+        return ReadTemplateFileWithFallback(notificationsOptions, brandKey, relativePath, "notification body", notificationType);
+    }
+
+    private string LoadBaseTemplate(
+        EmailNotificationsOptions notificationsOptions,
+        string brandKey,
+        NotificationType notificationType) =>
+        ReadTemplateFileWithFallback(
+            notificationsOptions,
+            brandKey,
+            notificationsOptions.BaseTemplateFileName,
+            "base template",
+            notificationType);
+
+    private string ReadTemplateFileWithFallback(
+        EmailNotificationsOptions notificationsOptions,
+        string brandKey,
+        string relativePath,
+        string templateKind,
+        NotificationType notificationType)
+    {
+        var templateSetsRootPath = ResolveTemplateSetsRootPath(notificationsOptions.TemplateSetsRootPath);
+        var brandKeyPath = Path.Combine(templateSetsRootPath, brandKey, relativePath);
+
+        if (File.Exists(brandKeyPath))
+        {
+            return File.ReadAllText(brandKeyPath);
+        }
+
+        var defaultBrandKeyPath = Path.Combine(templateSetsRootPath, notificationsOptions.DefaultBrandKey, relativePath);
+        if (File.Exists(defaultBrandKeyPath))
+        {
+            return File.ReadAllText(defaultBrandKeyPath);
+        }
+
+        throw new NotificationConfigurationException(
+            $"No {templateKind} file was found for brand '{brandKey}' (or default brand '{notificationsOptions.DefaultBrandKey}') and notification type '{notificationType}'.");
+    }
+
+    private string ResolveTemplateSetsRootPath(string configuredRootPath) =>
+        Path.IsPathRooted(configuredRootPath)
+            ? configuredRootPath
+            : Path.GetFullPath(Path.Combine(hostEnvironment.ContentRootPath, configuredRootPath));
 
     private static string RenderTenantHtmlBody(
         string tenantHtmlTemplate,
@@ -89,22 +161,31 @@ internal sealed class EmailNotificationDispatcher(
         string renderedBody,
         NotificationType notificationType)
     {
-        var bodyLines = renderedBody.Split(["\r\n", "\n"], StringSplitOptions.None);
-        var bodyHtml = string.Join(string.Empty, bodyLines.Select(line =>
-            string.IsNullOrWhiteSpace(line)
-                ? "<br />"
-                : $"<p>{WebUtility.HtmlEncode(line)}</p>"));
+        var bodyHtml = RenderBodyHtml(renderedBody);
 
         return RenderTemplate(
             tenantHtmlTemplate,
             new Dictionary<string, string>
             {
                 ["Subject"] = WebUtility.HtmlEncode(renderedSubject),
-                ["BodyText"] = WebUtility.HtmlEncode(renderedBody),
                 ["BodyHtml"] = bodyHtml
             },
             "tenant base html",
             notificationType);
+    }
+
+    private static string RenderBodyHtml(string renderedBody)
+    {
+        if (renderedBody.Contains('<') && renderedBody.Contains('>'))
+        {
+            return renderedBody;
+        }
+
+        var bodyLines = renderedBody.Split(["\r\n", "\n"], StringSplitOptions.None);
+        return string.Join(string.Empty, bodyLines.Select(line =>
+            string.IsNullOrWhiteSpace(line)
+                ? "<br />"
+                : $"<p>{WebUtility.HtmlEncode(line)}</p>"));
     }
 
     private static string RenderTemplate(

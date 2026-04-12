@@ -3,7 +3,10 @@ using BackendProjectTemplate.Domain.Common.Notifications;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 using BackendProjectTemplate.Infrastructure.Notifications;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Shouldly;
@@ -16,14 +19,26 @@ public sealed class WhenSendingEmailNotificationWithoutTenantBaseTemplate_Should
     public async Task Verify()
     {
         var tenantId = Guid.CreateVersion7();
+        var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.NewGuid():N}");
+        var defaultTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "NotificationTypes");
+        Directory.CreateDirectory(defaultTemplateDirectory);
+        await File.WriteAllTextAsync(
+            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "BaseTemplate.html"),
+            "<html><body>{{:BodyHtml:}}</body></html>");
+        await File.WriteAllTextAsync(
+            Path.Combine(defaultTemplateDirectory, "SignInSuccessful.html"),
+            "A sign-in to your account was successful.");
+
         var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
-        var tenantBaseTemplateRepository = Substitute.For<IReadRepository<TenantEmailBaseTemplate>>();
+        var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
         var transportProvider = Substitute.For<IEmailTransportProvider>();
+        var hostEnvironment = Substitute.For<IHostEnvironment>();
         var options = Options.Create(new EmailNotificationsOptions
         {
             FromAddress = "no-reply@test.local",
-            FromName = "Backend Project Template"
+            FromName = "Backend Project Template",
+            TemplateSetsRootPath = "EmailTemplates/TemplateSets"
         });
         var now = DateTimeOffset.UtcNow;
         var command = new SendNotificationCommand(
@@ -48,25 +63,29 @@ public sealed class WhenSendingEmailNotificationWithoutTenantBaseTemplate_Should
                 NotificationType.SignInSuccessful,
                 "Sign-in successful notification",
                 "Successful sign-in",
-                "A sign-in to your account was successful.",
+                "SignInSuccessful.html",
                 now));
-        tenantBaseTemplateRepository.FirstOrDefaultAsync(
-                Arg.Any<TenantEmailBaseTemplateByTenantIdSpecification>(),
+        tenantRepository.FirstOrDefaultAsync(
+                Arg.Any<TenantByIdSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns((TenantEmailBaseTemplate?)null);
+            .Returns((Tenant?)null);
         transportProvider.ProviderKey.Returns("logging");
+        hostEnvironment.ContentRootPath.Returns(templateRoot);
 
         var sut = new EmailNotificationDispatcher(
             providerRepository,
             templateRepository,
-            tenantBaseTemplateRepository,
+            tenantRepository,
             [transportProvider],
+            hostEnvironment,
             options);
 
-        var exception = await Should.ThrowAsync<NotificationConfigurationException>(() =>
-            sut.SendAsync(command, CancellationToken.None));
+        await sut.SendAsync(command, CancellationToken.None);
 
-        exception.Message.ShouldBe($"No tenant email base template is configured for tenant '{tenantId}'.");
-        await transportProvider.DidNotReceive().SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>());
+        await transportProvider.Received(1).SendAsync(
+            Arg.Is<EmailDeliveryMessage>(message =>
+                message.Subject == "Successful sign-in" &&
+                message.HtmlBody == "<html><body><p>A sign-in to your account was successful.</p></body></html>"),
+            Arg.Any<CancellationToken>());
     }
 }

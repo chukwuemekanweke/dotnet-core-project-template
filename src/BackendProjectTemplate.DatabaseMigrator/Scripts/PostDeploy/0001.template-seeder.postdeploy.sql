@@ -346,35 +346,79 @@ VALUES
 );
 
 /*
+    Seeds [stakeholders].[Tenants].
+
+    The default tenant (Guid.Empty) is used as a fallback for brand resolution
+    when a specific tenant id does not exist.
+*/
+
+MERGE [stakeholders].[Tenants] AS [Target]
+USING
+(
+VALUES
+    (CAST('00000000-0000-0000-0000-000000000000' AS uniqueidentifier), N'Default Tenant', N'default')
+) AS [Source] ([Id], [Name], [BrandKey])
+ON [Target].[Id] = [Source].[Id]
+WHEN MATCHED AND
+(
+    [Target].[Name] <> [Source].[Name]
+    OR [Target].[BrandKey] <> [Source].[BrandKey]
+)
+THEN UPDATE SET
+    [Name] = [Source].[Name],
+    [BrandKey] = [Source].[BrandKey],
+    [UpdatedAtUtc] = @UtcNow
+WHEN NOT MATCHED BY TARGET
+THEN INSERT
+(
+    [Id],
+    [Name],
+    [BrandKey],
+    [CreatedAtUtc],
+    [UpdatedAtUtc]
+)
+VALUES
+(
+    [Source].[Id],
+    [Source].[Name],
+    [Source].[BrandKey],
+    @UtcNow,
+    @UtcNow
+);
+
+/*
     Seeds [notifications].[EmailNotificationTemplates].
 
-    Subject and body support named placeholders in the form {{:PlaceholderName:}}.
-    The placeholder values come from NotificationContent.Content for the outgoing command.
+    Subject supports named placeholders in the form {{:PlaceholderName:}}.
+    The template file name points to an HTML content fragment loaded from filesystem.
 */
 
 MERGE [notifications].[EmailNotificationTemplates] AS [Target]
 USING
 (
 VALUES
-    (1, N'Account created notification', N'Your account has been created', N'Your account has been created.'),
-    (2, N'Email confirmation OTP notification', N'Confirm your email address', N'Use the one-time password sent to you to confirm your email address.'),
-    (3, N'Reset password OTP notification', N'Reset your password', N'Use the one-time password sent to you to reset your password.'),
-    (4, N'Password reset success notification', N'Your password has been reset', N'Your password has been reset successfully.'),
-    (5, N'Email confirmation follow-up notification', N'Reminder to confirm your email', N'This is a reminder to confirm your email address.'),
-    (6, N'Sign-in successful notification', N'Successful sign-in', N'A sign-in to your account was successful.' + CHAR(13) + CHAR(10) + N'IP Address: {{:IpAddress:}}' + CHAR(13) + CHAR(10) + N'User Agent: {{:UserAgent:}}'),
-    (7, N'Account locked notification', N'Your account has been locked', N'Your account has been locked due to multiple failed sign-in attempts.' + CHAR(13) + CHAR(10) + N'Locked Until: {{:LockedUntilUtc:}}')
-) AS [Source] ([NotificationType], [Description], [Subject], [Body])
+    (1, N'Account created notification', N'Welcome to {{:Product:}}', N'AccountCreated.html'),
+    (2, N'Email confirmation OTP notification', N'Please confirm your email', N'ConfirmEmail.html'),
+    (3, N'Reset password OTP notification', N'Reset your password', N'ResetPassword.html'),
+    (4, N'Password reset success notification', N'Your password has been reset', N'PasswordResetSuccessful.html'),
+    (5, N'Email confirmation follow-up notification', N'Reminder to confirm your email', N'EmailConfirmationFollowUp.html'),
+    (6, N'Sign-in successful notification', N'Successful sign-in', N'SignInSuccessful.html'),
+    (7, N'Account locked notification', N'Your account has been locked', N'AccountLocked.html'),
+    (8, N'Trial expired notification', N'Your {{:Product:}} trial has ended', N'TrialExpired.html'),
+    (9, N'Subscription cancelled notification', N'Help us improve {{:Product:}}', N'CancelledSubscription.html'),
+    (10, N'Subscription invoice notification', N'Your invoice from {{:Product:}}', N'Invoice.html')
+) AS [Source] ([NotificationType], [Description], [Subject], [TemplateFileName])
 ON [Target].[NotificationType] = [Source].[NotificationType]
 WHEN MATCHED AND
 (
     [Target].[Description] <> [Source].[Description]
     OR [Target].[Subject] <> [Source].[Subject]
-    OR [Target].[Body] <> [Source].[Body]
+    OR [Target].[TemplateFileName] <> [Source].[TemplateFileName]
 )
 THEN UPDATE SET
     [Description] = [Source].[Description],
     [Subject] = [Source].[Subject],
-    [Body] = [Source].[Body],
+    [TemplateFileName] = [Source].[TemplateFileName],
     [UpdatedAtUtc] = @UtcNow
 WHEN NOT MATCHED BY TARGET
 THEN INSERT
@@ -383,7 +427,7 @@ THEN INSERT
     [NotificationType],
     [Description],
     [Subject],
-    [Body],
+    [TemplateFileName],
     [CreatedAtUtc],
     [UpdatedAtUtc]
 )
@@ -393,7 +437,7 @@ VALUES
     [Source].[NotificationType],
     [Source].[Description],
     [Source].[Subject],
-    [Source].[Body],
+    [Source].[TemplateFileName],
     @UtcNow,
     @UtcNow
 );

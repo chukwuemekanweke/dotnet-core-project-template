@@ -6,12 +6,20 @@ public sealed class EmailNotificationsOptions
 
     public string FromAddress { get; init; } = string.Empty;
     public string FromName { get; init; } = string.Empty;
+    public string TemplateSetsRootPath { get; init; } = "EmailTemplates/TemplateSets";
+    public string DefaultBrandKey { get; init; } = "default";
+    public string BaseTemplateFileName { get; init; } = "BaseTemplate.html";
+    public string NotificationTemplatesFolder { get; init; } = "NotificationTypes";
     public MailtrapOptions Mailtrap { get; init; } = new();
 
     public void Validate()
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(FromAddress);
         ArgumentException.ThrowIfNullOrWhiteSpace(FromName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(TemplateSetsRootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(DefaultBrandKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(BaseTemplateFileName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(NotificationTemplatesFolder);
     }
 
     public sealed class MailtrapOptions

@@ -8,5 +8,9 @@ public enum NotificationType
     PasswordResetSuccessful = 4,
     EmailConfirmationFollowUp = 5,
     SignInSuccessful = 6,
-    AccountLocked = 7
+    AccountLocked = 7,
+    TrialExpired = 8,
+    SubscriptionCancelled = 9,
+    SubscriptionInvoice = 10
+
 }

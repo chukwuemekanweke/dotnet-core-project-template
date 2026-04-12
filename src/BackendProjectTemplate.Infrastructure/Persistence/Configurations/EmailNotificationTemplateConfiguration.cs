@@ -23,8 +23,8 @@ public sealed class EmailNotificationTemplateConfiguration : IEntityTypeConfigur
             .HasMaxLength(200)
             .IsRequired();
 
-        builder.Property(template => template.Body)
-            .HasMaxLength(4000)
+        builder.Property(template => template.TemplateFileName)
+            .HasMaxLength(260)
             .IsRequired();
 
         builder.HasIndex(template => template.NotificationType)

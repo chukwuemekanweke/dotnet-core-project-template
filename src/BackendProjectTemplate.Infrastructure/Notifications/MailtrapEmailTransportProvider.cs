@@ -30,7 +30,6 @@ internal sealed class MailtrapEmailTransportProvider(
             .From(message.FromAddress, message.FromName)
             .To(message.To)
             .Subject(message.Subject)
-            .Text(message.TextBody)
             .Html(message.HtmlBody);
 
         if (message.Cc is not null)

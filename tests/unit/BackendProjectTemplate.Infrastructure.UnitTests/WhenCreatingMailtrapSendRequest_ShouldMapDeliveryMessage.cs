@@ -14,7 +14,6 @@ public sealed class WhenCreatingMailtrapSendRequest_ShouldMapDeliveryMessage
             "Backend Project Template",
             "to@test.local",
             "Subject line",
-            $"Line 1{Environment.NewLine}{Environment.NewLine}Line 3",
             "<html><body><p>Line 1</p><br /><p>Line 3</p></body></html>",
             ["cc1@test.local", "cc2@test.local"],
             ["bcc1@test.local"]);
@@ -28,7 +27,7 @@ public sealed class WhenCreatingMailtrapSendRequest_ShouldMapDeliveryMessage
         request.Cc.Select(address => address.Email).ShouldBe(["cc1@test.local", "cc2@test.local"]);
         request.Bcc.Select(address => address.Email).ShouldBe(["bcc1@test.local"]);
         request.Subject.ShouldBe("Subject line");
-        request.TextBody.ShouldBe($"Line 1{Environment.NewLine}{Environment.NewLine}Line 3");
+        request.TextBody.ShouldBeNull();
         request.HtmlBody.ShouldBe("<html><body><p>Line 1</p><br /><p>Line 3</p></body></html>");
     }
 }
