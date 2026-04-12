@@ -1,0 +1,29 @@
+using BackendProjectTemplate.Domain.Notifications.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace BackendProjectTemplate.Infrastructure.Persistence.Configurations;
+
+public sealed class TenantEmailBaseTemplateConfiguration : IEntityTypeConfiguration<TenantEmailBaseTemplate>
+{
+    public void Configure(EntityTypeBuilder<TenantEmailBaseTemplate> builder)
+    {
+        builder.ToTable("TenantEmailBaseTemplates", SchemaNames.Notifications);
+
+        builder.HasKey(template => template.Id);
+
+        builder.Property(template => template.TenantId)
+            .IsRequired();
+
+        builder.Property(template => template.Description)
+            .HasMaxLength(250)
+            .IsRequired();
+
+        builder.Property(template => template.HtmlTemplate)
+            .HasColumnType("nvarchar(max)")
+            .IsRequired();
+
+        builder.HasIndex(template => template.TenantId)
+            .IsUnique();
+    }
+}

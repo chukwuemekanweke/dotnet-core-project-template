@@ -3,7 +3,6 @@ using Mailtrap.Configuration;
 using Mailtrap.Emails;
 using Mailtrap.Emails.Requests;
 using Microsoft.Extensions.Options;
-using System.Net;
 
 namespace BackendProjectTemplate.Infrastructure.Notifications;
 
@@ -31,8 +30,8 @@ internal sealed class MailtrapEmailTransportProvider(
             .From(message.FromAddress, message.FromName)
             .To(message.To)
             .Subject(message.Subject)
-            .Text(string.Join(Environment.NewLine, message.Content))
-            .Html(BuildHtmlBody(message.Content));
+            .Text(message.TextBody)
+            .Html(message.HtmlBody);
 
         if (message.Cc is not null)
         {
@@ -65,22 +64,4 @@ internal sealed class MailtrapEmailTransportProvider(
         return options.UseBulkApi ? client.Bulk() : client.Email();
     }
 
-    private static string BuildHtmlBody(IEnumerable<string> contentLines)
-    {
-        var encodedLines = contentLines
-            .Select(WebUtility.HtmlEncode)
-            .ToArray();
-
-        if (encodedLines.Length == 0)
-        {
-            return "<html><body></body></html>";
-        }
-
-        var body = string.Join(string.Empty, encodedLines.Select(line =>
-            string.IsNullOrWhiteSpace(line)
-                ? "<br />"
-                : $"<p>{line}</p>"));
-
-        return $"<html><body>{body}</body></html>";
-    }
 }

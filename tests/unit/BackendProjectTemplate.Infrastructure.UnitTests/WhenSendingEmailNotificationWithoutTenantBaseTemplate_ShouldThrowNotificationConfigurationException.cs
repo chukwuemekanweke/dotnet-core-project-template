@@ -10,11 +10,12 @@ using Shouldly;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 
-public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_ShouldThrowNotificationConfigurationException
+public sealed class WhenSendingEmailNotificationWithoutTenantBaseTemplate_ShouldThrowNotificationConfigurationException
 {
     [Fact]
     public async Task Verify()
     {
+        var tenantId = Guid.CreateVersion7();
         var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
         var tenantBaseTemplateRepository = Substitute.For<IReadRepository<TenantEmailBaseTemplate>>();
@@ -26,15 +27,16 @@ public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_Should
         });
         var now = DateTimeOffset.UtcNow;
         var command = new SendNotificationCommand(
+            tenantId,
             Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            NotificationType.AccountLocked,
+            NotificationType.SignInSuccessful,
             NotificationMedium.Email,
             new EmailNotificationContent(
                 InfrastructureTestData.Email(),
                 new Dictionary<string, string>
                 {
-                    ["LockedUntilUtc"] = "now"
+                    ["IpAddress"] = "127.0.0.1",
+                    ["UserAgent"] = "Test Agent"
                 }));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveEmailProviderSpecification>(), Arg.Any<CancellationToken>())
@@ -42,7 +44,16 @@ public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_Should
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns((EmailNotificationTemplate?)null);
+            .Returns(EmailNotificationTemplate.Create(
+                NotificationType.SignInSuccessful,
+                "Sign-in successful notification",
+                "Successful sign-in",
+                "A sign-in to your account was successful.",
+                now));
+        tenantBaseTemplateRepository.FirstOrDefaultAsync(
+                Arg.Any<TenantEmailBaseTemplateByTenantIdSpecification>(),
+                Arg.Any<CancellationToken>())
+            .Returns((TenantEmailBaseTemplate?)null);
         transportProvider.ProviderKey.Returns("logging");
 
         var sut = new EmailNotificationDispatcher(
@@ -55,6 +66,7 @@ public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_Should
         var exception = await Should.ThrowAsync<NotificationConfigurationException>(() =>
             sut.SendAsync(command, CancellationToken.None));
 
-        exception.Message.ShouldBe("No email template is configured for notification type 'AccountLocked'.");
+        exception.Message.ShouldBe($"No tenant email base template is configured for tenant '{tenantId}'.");
+        await transportProvider.DidNotReceive().SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>());
     }
 }

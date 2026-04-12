@@ -15,8 +15,10 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
     [Fact]
     public async Task Verify()
     {
+        var tenantId = Guid.CreateVersion7();
         var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
+        var tenantBaseTemplateRepository = Substitute.For<IReadRepository<TenantEmailBaseTemplate>>();
         var transportProvider = Substitute.For<IEmailTransportProvider>();
         var options = Options.Create(new EmailNotificationsOptions
         {
@@ -25,7 +27,7 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
         });
         var now = DateTimeOffset.UtcNow;
         var command = new SendNotificationCommand(
-            Guid.CreateVersion7(),
+            tenantId,
             Guid.CreateVersion7(),
             NotificationType.AccountLocked,
             NotificationMedium.Email,
@@ -44,14 +46,23 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
             .Returns(EmailNotificationTemplate.Create(
                 NotificationType.AccountLocked,
                 "Account locked notification",
-                "Account locked until {{:LockoutEndUtc:}}",
+                "Account locked",
                 "Locked Until: {{:LockoutEndUtc:}}",
+                now));
+        tenantBaseTemplateRepository.FirstOrDefaultAsync(
+                Arg.Any<TenantEmailBaseTemplateByTenantIdSpecification>(),
+                Arg.Any<CancellationToken>())
+            .Returns(TenantEmailBaseTemplate.Create(
+                tenantId,
+                "Tenant brand",
+                "<html><body>{{:BodyHtml:}}</body></html>",
                 now));
         transportProvider.ProviderKey.Returns("logging");
 
         var sut = new EmailNotificationDispatcher(
             providerRepository,
             templateRepository,
+            tenantBaseTemplateRepository,
             [transportProvider],
             options);
 

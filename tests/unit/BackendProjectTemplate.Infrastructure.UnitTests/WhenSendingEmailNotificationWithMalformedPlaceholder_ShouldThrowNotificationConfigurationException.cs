@@ -15,8 +15,10 @@ public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldT
     [Fact]
     public async Task Verify()
     {
+        var tenantId = Guid.CreateVersion7();
         var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
+        var tenantBaseTemplateRepository = Substitute.For<IReadRepository<TenantEmailBaseTemplate>>();
         var transportProvider = Substitute.For<IEmailTransportProvider>();
         var options = Options.Create(new EmailNotificationsOptions
         {
@@ -25,7 +27,7 @@ public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldT
         });
         var now = DateTimeOffset.UtcNow;
         var command = new SendNotificationCommand(
-            Guid.CreateVersion7(),
+            tenantId,
             Guid.CreateVersion7(),
             NotificationType.SignInSuccessful,
             NotificationMedium.Email,
@@ -47,11 +49,20 @@ public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldT
                 "Successful sign-in from {{:IpAddress:}}",
                 "A sign-in to your account was successful.\nIP Address: {{:IpAddress:}",
                 now));
+        tenantBaseTemplateRepository.FirstOrDefaultAsync(
+                Arg.Any<TenantEmailBaseTemplateByTenantIdSpecification>(),
+                Arg.Any<CancellationToken>())
+            .Returns(TenantEmailBaseTemplate.Create(
+                tenantId,
+                "Tenant brand",
+                "<html><body>{{:BodyHtml:}}</body></html>",
+                now));
         transportProvider.ProviderKey.Returns("logging");
 
         var sut = new EmailNotificationDispatcher(
             providerRepository,
             templateRepository,
+            tenantBaseTemplateRepository,
             [transportProvider],
             options);
 

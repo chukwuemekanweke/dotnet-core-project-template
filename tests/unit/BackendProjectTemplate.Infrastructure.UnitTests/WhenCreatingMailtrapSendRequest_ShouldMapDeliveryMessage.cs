@@ -13,8 +13,9 @@ public sealed class WhenCreatingMailtrapSendRequest_ShouldMapDeliveryMessage
             "no-reply@test.local",
             "Backend Project Template",
             "to@test.local",
-            ["Line 1", "", "Line 3"],
             "Subject line",
+            $"Line 1{Environment.NewLine}{Environment.NewLine}Line 3",
+            "<html><body><p>Line 1</p><br /><p>Line 3</p></body></html>",
             ["cc1@test.local", "cc2@test.local"],
             ["bcc1@test.local"]);
 

@@ -17,6 +17,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<EmailProvider> EmailProviders => Set<EmailProvider>();
     public DbSet<EmailNotificationTemplate> EmailNotificationTemplates => Set<EmailNotificationTemplate>();
+    public DbSet<TenantEmailBaseTemplate> TenantEmailBaseTemplates => Set<TenantEmailBaseTemplate>();
     public DbSet<Stakeholder> Stakeholders => Set<Stakeholder>();
     public DbSet<StakeholderType> StakeholderTypes => Set<StakeholderType>();
     public DbSet<AppUserStakeholder> AppUserStakeholders => Set<AppUserStakeholder>();

@@ -9,12 +9,13 @@ internal sealed class LoggingEmailTransportProvider(ILogger<LoggingEmailTranspor
     public Task SendAsync(EmailDeliveryMessage message, CancellationToken cancellationToken = default)
     {
         logger.LogInformation(
-            "Sending email via logging provider. To={To} Subject={Subject} CcCount={CcCount} BccCount={BccCount} ContentLines={ContentLines}",
+            "Sending email via logging provider. To={To} Subject={Subject} CcCount={CcCount} BccCount={BccCount} TextLength={TextLength} HtmlLength={HtmlLength}",
             message.To,
             message.Subject,
             message.Cc?.Length ?? 0,
             message.Bcc?.Length ?? 0,
-            message.Content.Length);
+            message.TextBody.Length,
+            message.HtmlBody.Length);
 
         return Task.CompletedTask;
     }
