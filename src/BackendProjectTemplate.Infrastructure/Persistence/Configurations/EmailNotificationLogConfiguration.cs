@@ -1,6 +1,9 @@
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence.Configurations;
 
@@ -9,10 +12,30 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<EmailNotificationLog> builder)
     {
         builder.ToTable("EmailNotificationLogs", SchemaNames.Notifications);
+        builder.ToTable(tableBuilder =>
+            tableBuilder.HasCheckConstraint(
+                "CK_EmailNotificationLogs_NotificationContent_IsJson",
+                "ISJSON([NotificationContent]) = 1"));
 
         builder.HasKey(log => log.Id);
 
         builder.Property(log => log.MessageId)
+            .IsRequired();
+
+        builder.Property(log => log.TenantId)
+            .IsRequired();
+
+        builder.Property(log => log.CountryId)
+            .IsRequired();
+
+        builder.Property(log => log.NotificationType)
+            .IsRequired();
+
+        builder.Property(log => log.NotificationContent)
+            .HasConversion(GetNotificationContentConverter())
+            .Metadata.SetValueComparer(GetNotificationContentComparer());
+        builder.Property(log => log.NotificationContent)
+            .HasColumnType("nvarchar(max)")
             .IsRequired();
 
         builder.Property(log => log.To)
@@ -35,4 +58,17 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
             .IsUnique()
             .HasFilter("[IsDeleted] = 0");
     }
+
+    private static ValueConverter<Dictionary<string, string>, string> GetNotificationContentConverter() =>
+        new(
+            value => JsonSerializer.Serialize(value, (JsonSerializerOptions?)null),
+            value => JsonSerializer.Deserialize<Dictionary<string, string>>(value, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>());
+
+    private static ValueComparer<Dictionary<string, string>> GetNotificationContentComparer() =>
+        new(
+            (left, right) => left.OrderBy(pair => pair.Key).SequenceEqual(right.OrderBy(pair => pair.Key)),
+            dictionary => dictionary
+                .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Aggregate(0, (hash, pair) => HashCode.Combine(hash, pair.Key, pair.Value)),
+            dictionary => dictionary.ToDictionary(pair => pair.Key, pair => pair.Value));
 }

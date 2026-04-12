@@ -4,6 +4,7 @@ using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260412210333_AddEmailNotificationLogMetadataAndContent")]
+    partial class AddEmailNotificationLogMetadataAndContent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -265,10 +268,7 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("EmailNotificationLogs", "notifications", t =>
-                        {
-                            t.HasCheckConstraint("CK_EmailNotificationLogs_NotificationContent_IsJson", "ISJSON([NotificationContent]) = 1");
-                        });
+                    b.ToTable("EmailNotificationLogs", "notifications");
                 });
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Notifications.Entities.EmailNotificationTemplate", b =>

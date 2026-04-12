@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Notifications.Entities;
@@ -12,11 +13,19 @@ public sealed class EmailNotificationLog : Entity
 
     private EmailNotificationLog(
         Guid messageId,
+        Guid tenantId,
+        Guid countryId,
+        NotificationType notificationType,
+        Dictionary<string, string> notificationContent,
         string to,
         string? cc,
         string? bcc)
     {
         MessageId = messageId;
+        TenantId = tenantId;
+        CountryId = countryId;
+        NotificationType = notificationType;
+        NotificationContent = new Dictionary<string, string>(notificationContent);
         To = to.Trim();
         Cc = string.IsNullOrWhiteSpace(cc) ? null : cc.Trim();
         Bcc = string.IsNullOrWhiteSpace(bcc) ? null : bcc.Trim();
@@ -24,6 +33,10 @@ public sealed class EmailNotificationLog : Entity
     }
 
     public Guid MessageId { get; private set; }
+    public Guid TenantId { get; private set; }
+    public Guid CountryId { get; private set; }
+    public NotificationType NotificationType { get; private set; }
+    public Dictionary<string, string> NotificationContent { get; private set; } = [];
     public string To { get; private set; } = string.Empty;
     public string? Cc { get; private set; }
     public string? Bcc { get; private set; }
@@ -32,10 +45,14 @@ public sealed class EmailNotificationLog : Entity
 
     public static EmailNotificationLog Create(
         Guid messageId,
+        Guid tenantId,
+        Guid countryId,
+        NotificationType notificationType,
+        Dictionary<string, string> notificationContent,
         string to,
         string? cc,
         string? bcc) =>
-        new(messageId, to, cc, bcc);
+        new(messageId, tenantId, countryId, notificationType, notificationContent, to, cc, bcc);
 
     public void MarkSent(DateTimeOffset utcNow)
     {

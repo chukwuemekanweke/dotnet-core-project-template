@@ -35,12 +35,20 @@ public sealed class WhenSendingEmailNotification_ShouldPersistPendingLogBeforeDi
         string? loggedBcc = null;
         bool loggedIsSent = true;
         string? loggedFailureReason = "placeholder";
+        Guid loggedTenantId = Guid.Empty;
+        Guid loggedCountryId = Guid.Empty;
+        NotificationType loggedNotificationType = default;
+        Dictionary<string, string> loggedNotificationContent = [];
         logRepository
             .When(repository => repository.AddAsync(Arg.Any<EmailNotificationLog>(), Arg.Any<CancellationToken>()))
             .Do(callInfo =>
             {
                 var log = callInfo.Arg<EmailNotificationLog>();
                 loggedMessageId = log.MessageId;
+                loggedTenantId = log.TenantId;
+                loggedCountryId = log.CountryId;
+                loggedNotificationType = log.NotificationType;
+                loggedNotificationContent = new Dictionary<string, string>(log.NotificationContent);
                 loggedTo = log.To;
                 loggedCc = log.Cc;
                 loggedBcc = log.Bcc;
@@ -73,7 +81,9 @@ public sealed class WhenSendingEmailNotification_ShouldPersistPendingLogBeforeDi
                 InfrastructureTestData.Email(),
                 new Dictionary<string, string>
                 {
-                    ["IpAddress"] = "127.0.0.1"
+                    ["IpAddress"] = "127.0.0.1",
+                    ["OtpCode"] = "123456",
+                    ["Password"] = "P@ssword!123"
                 },
                 Cc: ["cc-one@test.local", "cc-two@test.local"],
                 Bcc: ["bcc-one@test.local"]));
@@ -107,11 +117,19 @@ public sealed class WhenSendingEmailNotification_ShouldPersistPendingLogBeforeDi
 
         await logRepository.Received(1).AddAsync(Arg.Any<EmailNotificationLog>(), Arg.Any<CancellationToken>());
         loggedMessageId.ShouldBe(command.MessageId);
+        loggedTenantId.ShouldBe(command.TenantId);
+        loggedCountryId.ShouldBe(command.CountryId);
+        loggedNotificationType.ShouldBe(command.NotificationType);
         loggedTo.ShouldBe(((EmailNotificationContent)command.NotificationContent).To);
         loggedCc.ShouldBe("cc-one@test.local,cc-two@test.local");
         loggedBcc.ShouldBe("bcc-one@test.local");
         loggedIsSent.ShouldBeFalse();
         loggedFailureReason.ShouldBeNull();
+        loggedNotificationContent["IpAddress"].ShouldBe("127.0.0.1");
+        loggedNotificationContent["OtpCode"].ShouldBe("***");
+        loggedNotificationContent["Password"].ShouldBe("***");
+        loggedNotificationContent.Values.ShouldNotContain("123456");
+        loggedNotificationContent.Values.ShouldNotContain("P@ssword!123");
         logRepository.Received(1).Update(Arg.Is<EmailNotificationLog>(log => log.IsSent && log.FailureReason == null));
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

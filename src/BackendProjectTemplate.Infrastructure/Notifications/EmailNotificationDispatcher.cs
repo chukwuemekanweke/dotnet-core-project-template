@@ -38,6 +38,10 @@ internal sealed class EmailNotificationDispatcher(
 
         var emailNotificationLog = EmailNotificationLog.Create(
             command.MessageId,
+            command.TenantId,
+            command.CountryId,
+            command.NotificationType,
+            NotificationContentObfuscator.Obfuscate(content.Content),
             content.To,
             JoinRecipients(content.Cc),
             JoinRecipients(content.Bcc));
