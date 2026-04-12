@@ -3,12 +3,25 @@ using Mailtrap.Configuration;
 using Mailtrap.Emails;
 using Mailtrap.Emails.Requests;
 using Microsoft.Extensions.Options;
+using Polly;
+using Polly.Retry;
 
 namespace BackendProjectTemplate.Infrastructure.Notifications;
 
 internal sealed class MailtrapEmailTransportProvider(
     IOptions<EmailNotificationsOptions> options) : IEmailTransportProvider
 {
+    private static readonly ResiliencePipeline RetryPipeline = new ResiliencePipelineBuilder()
+        .AddRetry(new RetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromSeconds(2),
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+            ShouldHandle = new PredicateBuilder().Handle<Exception>()
+        })
+        .Build();
+
     public string ProviderKey => EmailProviderKeys.Mailtrap;
 
     public async Task SendAsync(EmailDeliveryMessage message, CancellationToken cancellationToken = default)
@@ -20,7 +33,13 @@ internal sealed class MailtrapEmailTransportProvider(
         var client = factory.CreateClient();
         var request = CreateRequest(message);
         var emailClient = ResolveEmailClient(client, mailtrapOptions);
-        var response = await emailClient.Send(request, cancellationToken);
+
+        await RetryPipeline.ExecuteAsync(
+            async token =>
+            {
+                await emailClient.Send(request, token);
+            },
+            cancellationToken);
     }
 
     internal static SendEmailRequest CreateRequest(EmailDeliveryMessage message)

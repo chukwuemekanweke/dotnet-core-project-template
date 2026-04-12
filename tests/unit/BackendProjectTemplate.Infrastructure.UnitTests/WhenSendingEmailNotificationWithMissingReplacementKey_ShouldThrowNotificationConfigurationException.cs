@@ -32,8 +32,10 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
         var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
         var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
+        var emailNotificationLogRepository = Substitute.For<IRepository<EmailNotificationLog>>();
         var transportProvider = Substitute.For<IEmailTransportProvider>();
         var hostEnvironment = Substitute.For<IHostEnvironment>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
         var options = Options.Create(new EmailNotificationsOptions
         {
             FromAddress = "no-reply@test.local",
@@ -41,6 +43,9 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
             TemplateSetsRootPath = "EmailTemplates/TemplateSets"
         });
         var now = DateTimeOffset.UtcNow;
+        var timeProvider = Substitute.For<TimeProvider>();
+        timeProvider.GetUtcNow().Returns(now);
+        unitOfWork.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
         var command = new SendNotificationCommand(
             tenantId,
             Guid.CreateVersion7(),
@@ -79,9 +84,12 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
             providerRepository,
             templateRepository,
             tenantRepository,
+            emailNotificationLogRepository,
             [transportProvider],
             hostEnvironment,
-            options);
+            options,
+            unitOfWork,
+            timeProvider);
 
         var exception = await Should.ThrowAsync<NotificationConfigurationException>(() =>
             sut.SendAsync(command, CancellationToken.None));

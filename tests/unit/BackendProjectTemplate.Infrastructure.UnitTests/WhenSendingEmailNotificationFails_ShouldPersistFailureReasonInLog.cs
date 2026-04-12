@@ -12,7 +12,7 @@ using Shouldly;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 
-public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_ShouldThrowNotificationConfigurationException
+public sealed class WhenSendingEmailNotificationFails_ShouldPersistFailureReasonInLog
 {
     [Fact]
     public async Task Verify()
@@ -20,20 +20,21 @@ public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_Should
         var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
         var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
-        var emailNotificationLogRepository = Substitute.For<IRepository<EmailNotificationLog>>();
+        var logRepository = Substitute.For<IRepository<EmailNotificationLog>>();
         var transportProvider = Substitute.For<IEmailTransportProvider>();
         var hostEnvironment = Substitute.For<IHostEnvironment>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var now = DateTimeOffset.UtcNow;
+        var timeProvider = Substitute.For<TimeProvider>();
+        timeProvider.GetUtcNow().Returns(now);
+        unitOfWork.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
         var options = Options.Create(new EmailNotificationsOptions
         {
             FromAddress = "no-reply@test.local",
             FromName = "Backend Project Template",
             TemplateSetsRootPath = "EmailTemplates/TemplateSets"
         });
-        var now = DateTimeOffset.UtcNow;
-        var timeProvider = Substitute.For<TimeProvider>();
-        timeProvider.GetUtcNow().Returns(now);
-        unitOfWork.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
+
         var command = new SendNotificationCommand(
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
@@ -58,7 +59,7 @@ public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_Should
             providerRepository,
             templateRepository,
             tenantRepository,
-            emailNotificationLogRepository,
+            logRepository,
             [transportProvider],
             hostEnvironment,
             options,
@@ -69,5 +70,9 @@ public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_Should
             sut.SendAsync(command, CancellationToken.None));
 
         exception.Message.ShouldBe("No email template is configured for notification type 'AccountLocked'.");
+        logRepository.Received(1).Update(Arg.Is<EmailNotificationLog>(log =>
+            !log.IsSent &&
+            log.FailureReason == "No email template is configured for notification type 'AccountLocked'."));
+        await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

@@ -16,9 +16,12 @@ internal sealed class EmailNotificationDispatcher(
     IReadRepository<EmailProvider> emailProviderRepository,
     IReadRepository<EmailNotificationTemplate> emailNotificationTemplateRepository,
     IReadRepository<Tenant> tenantRepository,
+    IRepository<EmailNotificationLog> emailNotificationLogRepository,
     IEnumerable<IEmailTransportProvider> transportProviders,
     IHostEnvironment hostEnvironment,
-    IOptions<EmailNotificationsOptions> options) : IEmailNotificationService
+    IOptions<EmailNotificationsOptions> options,
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : IEmailNotificationService
 {
     private static readonly Regex PlaceholderPattern = new(@"\{\{:(?<key>[A-Za-z0-9_]+):\}\}", RegexOptions.CultureInvariant);
     private static readonly Regex PlaceholderFragmentPattern = new(@"\{\{:|:\}\}", RegexOptions.CultureInvariant);
@@ -33,70 +36,98 @@ internal sealed class EmailNotificationDispatcher(
                 $"Notification content '{command.NotificationContent.GetType().Name}' is not valid for email delivery.");
         }
 
-        var provider = await emailProviderRepository.FirstOrDefaultAsync(new ActiveEmailProviderSpecification(), cancellationToken);
-
-        if (provider is null)
-        {
-            throw new NotificationConfigurationException("No active email provider is configured.");
-        }
-
-        var template = await emailNotificationTemplateRepository.FirstOrDefaultAsync(
-            new EmailNotificationTemplateByNotificationTypeSpecification(command.NotificationType),
-            cancellationToken);
-
-        if (template is null)
-        {
-            throw new NotificationConfigurationException(
-                $"No email template is configured for notification type '{command.NotificationType}'.");
-        }
-
-        var tenant = await tenantRepository.FirstOrDefaultAsync(
-            new TenantByIdSpecification(command.TenantId),
-            cancellationToken);
-
-        if (tenant is null && command.TenantId != Guid.Empty)
-        {
-            tenant = await tenantRepository.FirstOrDefaultAsync(
-                new TenantByIdSpecification(Guid.Empty),
-                cancellationToken);
-        }
-        var brandKey = tenant?.BrandKey ?? notificationsOptions.DefaultBrandKey;
-
-        var transportProvider = transportProviders.SingleOrDefault(candidate =>
-            string.Equals(candidate.ProviderKey, provider.ProviderKey, StringComparison.OrdinalIgnoreCase));
-
-        if (transportProvider is null)
-        {
-            throw new NotificationConfigurationException(
-                $"No email transport implementation is registered for provider key '{provider.ProviderKey}'.");
-        }
-
-        var renderedSubject = RenderTemplate(template.Subject, content.Content, "subject", command.NotificationType);
-        var renderedBody = RenderTemplate(
-            LoadNotificationTemplate(
-                notificationsOptions,
-                brandKey,
-                template.TemplateFileName,
-                command.NotificationType),
-            content.Content,
-            "body",
-            command.NotificationType);
-        var renderedHtmlBody = RenderTenantHtmlBody(
-            LoadBaseTemplate(notificationsOptions, brandKey, command.NotificationType),
-            renderedSubject,
-            renderedBody,
-            command.NotificationType);
-
-        var deliveryMessage = new EmailDeliveryMessage(
-            notificationsOptions.FromAddress,
-            notificationsOptions.FromName,
+        var emailNotificationLog = EmailNotificationLog.Create(
+            command.MessageId,
             content.To,
-            renderedSubject,
-            renderedHtmlBody,
-            content.Cc,
-            content.Bcc);
-        await transportProvider.SendAsync(deliveryMessage, cancellationToken);
+            JoinRecipients(content.Cc),
+            JoinRecipients(content.Bcc));
+
+        await emailNotificationLogRepository.AddAsync(emailNotificationLog, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            var provider = await emailProviderRepository.FirstOrDefaultAsync(new ActiveEmailProviderSpecification(), cancellationToken);
+
+            if (provider is null)
+            {
+                throw new NotificationConfigurationException("No active email provider is configured.");
+            }
+
+            var template = await emailNotificationTemplateRepository.FirstOrDefaultAsync(
+                new EmailNotificationTemplateByNotificationTypeSpecification(command.NotificationType),
+                cancellationToken);
+
+            if (template is null)
+            {
+                throw new NotificationConfigurationException(
+                    $"No email template is configured for notification type '{command.NotificationType}'.");
+            }
+
+            var tenant = await tenantRepository.FirstOrDefaultAsync(
+                new TenantByIdSpecification(command.TenantId),
+                cancellationToken);
+
+            if (tenant is null && command.TenantId != Guid.Empty)
+            {
+                tenant = await tenantRepository.FirstOrDefaultAsync(
+                    new TenantByIdSpecification(Guid.Empty),
+                    cancellationToken);
+            }
+            var brandKey = tenant?.BrandKey ?? notificationsOptions.DefaultBrandKey;
+
+            var transportProvider = transportProviders.SingleOrDefault(candidate =>
+                string.Equals(candidate.ProviderKey, provider.ProviderKey, StringComparison.OrdinalIgnoreCase));
+
+            if (transportProvider is null)
+            {
+                throw new NotificationConfigurationException(
+                    $"No email transport implementation is registered for provider key '{provider.ProviderKey}'.");
+            }
+
+            var renderedSubject = RenderTemplate(template.Subject, content.Content, "subject", command.NotificationType);
+            var renderedBody = RenderTemplate(
+                LoadNotificationTemplate(
+                    notificationsOptions,
+                    brandKey,
+                    template.TemplateFileName,
+                    command.NotificationType),
+                content.Content,
+                "body",
+                command.NotificationType);
+            var renderedHtmlBody = RenderTenantHtmlBody(
+                LoadBaseTemplate(notificationsOptions, brandKey, command.NotificationType),
+                renderedSubject,
+                renderedBody,
+                command.NotificationType);
+
+            var deliveryMessage = new EmailDeliveryMessage(
+                notificationsOptions.FromAddress,
+                notificationsOptions.FromName,
+                content.To,
+                renderedSubject,
+                renderedHtmlBody,
+                content.Cc,
+                content.Bcc);
+            await transportProvider.SendAsync(deliveryMessage, cancellationToken);
+
+            emailNotificationLog.MarkSent(timeProvider.GetUtcNow());
+            emailNotificationLogRepository.Update(emailNotificationLog);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            emailNotificationLog.MarkFailed(ex.Message, timeProvider.GetUtcNow());
+            emailNotificationLogRepository.Update(emailNotificationLog);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            throw;
+        }
     }
+
+    private static string? JoinRecipients(string[]? recipients) =>
+        recipients is null || recipients.Length == 0
+            ? null
+            : string.Join(",", recipients);
 
     private string LoadNotificationTemplate(
         EmailNotificationsOptions notificationsOptions,
