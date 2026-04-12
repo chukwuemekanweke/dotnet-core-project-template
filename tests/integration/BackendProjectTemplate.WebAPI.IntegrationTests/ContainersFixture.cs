@@ -29,7 +29,7 @@ public sealed class ContainersFixture : IAsyncLifetime
 
             SqlConnectionString = new SqlConnectionStringBuilder(SqlServer.GetConnectionString())
             {
-                InitialCatalog = $"backend_template_webapi_tests_{Guid.NewGuid():N}",
+                InitialCatalog = $"backend_template_webapi_tests_{Guid.CreateVersion7():N}",
                 TrustServerCertificate = true
             }.ConnectionString;
 

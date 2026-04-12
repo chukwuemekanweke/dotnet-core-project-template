@@ -24,10 +24,11 @@ public sealed class EmailProviderConfiguration : IEntityTypeConfiguration<EmailP
             .IsRequired();
 
         builder.HasIndex(provider => provider.ProviderKey)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
         builder.HasIndex(provider => provider.IsActive)
-            .HasFilter("[IsActive] = 1")
+            .HasFilter("[IsActive] = 1 AND [IsDeleted] = 0")
             .IsUnique();
     }
 }

@@ -132,5 +132,6 @@ Matching WebAPI request DTO location:
 ## Additional repository conventions
 
 - Use `TimeProvider` for time-related behavior instead of direct `DateTime.UtcNow` in application code.
+- Use `Guid.CreateVersion7()` for generated GUID values across application and test code instead of `Guid.NewGuid()`.
 - ASP.NET Core Identity is the authentication base. Do not reintroduce custom authentication flows when built-in Identity behavior is sufficient.
 - Keep application dependencies narrow. If wrapping `UserManager`, expose only the methods the application currently uses.

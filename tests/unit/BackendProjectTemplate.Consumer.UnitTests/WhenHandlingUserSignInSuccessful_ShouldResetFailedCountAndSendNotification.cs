@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -18,6 +19,7 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
     public async Task Verify()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
@@ -37,7 +39,7 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
         stakeholderReadModelRepository.GetByAppUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(Guid.CreateVersion7(), userId, tenantId, countryId, Guid.CreateVersion7()));
 
-        await new UserSignInSuccessfulHandler(customTelemetryContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork).HandleAsync(
+        await new UserSignInSuccessfulHandler(customTelemetryContext, currentActorAccessor, identityService, stakeholderReadModelRepository, commandSender, unitOfWork).HandleAsync(
             new UserSignInSuccessful(userId, email, ipAddress, userAgent),
             CancellationToken.None);
 

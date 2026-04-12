@@ -21,7 +21,7 @@ public sealed class WhenCreatingEmailNotificationTemplate_ShouldSetFieldsAndAudi
         template.Description.ShouldBe("Sign-in successful notification");
         template.Subject.ShouldBe("Successful sign-in");
         template.TemplateFileName.ShouldBe("SignInSuccessful.html");
-        template.CreatedAtUtc.ShouldBe(utcNow);
-        template.UpdatedAtUtc.ShouldBe(utcNow);
+        template.CreatedAtUtc.ShouldBe(default);
+        template.UpdatedAtUtc.ShouldBe(default);
     }
 }

@@ -11,7 +11,9 @@ public sealed class AppUserStakeholderConfiguration : IEntityTypeConfiguration<A
         builder.ToTable("AppUserStakeholders", SchemaNames.Stakeholders);
         builder.HasKey(appUserStakeholder => appUserStakeholder.Id);
 
-        builder.HasIndex(appUserStakeholder => new { appUserStakeholder.AppUserId, appUserStakeholder.StakeholderId }).IsUnique();
+        builder.HasIndex(appUserStakeholder => new { appUserStakeholder.AppUserId, appUserStakeholder.StakeholderId })
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
         builder.HasOne(appUserStakeholder => appUserStakeholder.AppUser)
             .WithMany()

@@ -13,7 +13,6 @@ public sealed class StakeholderType : Entity
         TenantId = tenantId;
         Name = name.Trim();
         Key = key.Trim();
-        SetAuditDates(utcNow);
     }
 
     public Guid TenantId { get; private set; }

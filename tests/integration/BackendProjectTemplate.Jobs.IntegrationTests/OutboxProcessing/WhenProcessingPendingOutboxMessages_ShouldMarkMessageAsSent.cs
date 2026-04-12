@@ -96,7 +96,7 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
             UserName = _fixture.RabbitMqUserName,
             Password = _fixture.RabbitMqPassword,
             VirtualHost = _fixture.RabbitMqVirtualHost,
-            SubscriptionName = $"jobs-outbox-{Guid.NewGuid():N}",
+            SubscriptionName = $"jobs-outbox-{Guid.CreateVersion7():N}",
             ExchangeName = EventsExchange,
             PrefetchCount = 1,
             MaxRetryCount = 10,

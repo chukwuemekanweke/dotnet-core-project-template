@@ -17,7 +17,6 @@ public sealed class Stakeholder : Entity
         TenantId = tenantId;
         CountryId = countryId;
         StakeholderTypeId = stakeholderTypeId;
-        SetAuditDates(utcNow);
     }
 
     public Guid TenantId { get; private set; }

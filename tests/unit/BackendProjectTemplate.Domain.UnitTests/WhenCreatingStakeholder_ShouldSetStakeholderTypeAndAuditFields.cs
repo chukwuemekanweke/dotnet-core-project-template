@@ -18,7 +18,7 @@ public sealed class WhenCreatingStakeholder_ShouldSetStakeholderTypeAndAuditFiel
         stakeholder.TenantId.ShouldBe(tenantId);
         stakeholder.CountryId.ShouldBe(countryId);
         stakeholder.StakeholderTypeId.ShouldBe(stakeholderTypeId);
-        stakeholder.CreatedAtUtc.ShouldBe(now);
-        stakeholder.UpdatedAtUtc.ShouldBe(now);
+        stakeholder.CreatedAtUtc.ShouldBe(default);
+        stakeholder.UpdatedAtUtc.ShouldBe(default);
     }
 }

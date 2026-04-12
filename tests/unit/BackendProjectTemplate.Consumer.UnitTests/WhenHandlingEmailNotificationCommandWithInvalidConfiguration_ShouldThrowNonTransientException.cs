@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Consumer.Notifications;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Common.Notifications;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -14,6 +15,7 @@ public sealed class WhenHandlingEmailNotificationCommandWithInvalidConfiguration
     public async Task Verify()
     {
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var emailNotificationService = Substitute.For<IEmailNotificationService>();
         var command = new SendNotificationCommand(
             Guid.CreateVersion7(),
@@ -32,7 +34,7 @@ public sealed class WhenHandlingEmailNotificationCommandWithInvalidConfiguration
             .Returns(_ => throw new NotificationConfigurationException("No email provider is configured."));
 
         var exception = await Should.ThrowAsync<CannotProcessMessageNonTransientException>(() =>
-            new SendNotificationHandler(customTelemetryContext, emailNotificationService)
+            new SendNotificationHandler(customTelemetryContext, currentActorAccessor, emailNotificationService)
                 .HandleAsync(command, CancellationToken.None));
 
         exception.Message.ShouldBe("No email provider is configured.");

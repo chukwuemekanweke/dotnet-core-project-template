@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Consumer.Notifications;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Common.Notifications;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -12,6 +13,7 @@ public sealed class WhenHandlingEmailNotificationCommand_ShouldSendThroughEmailN
     public async Task Verify()
     {
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var emailNotificationService = Substitute.For<IEmailNotificationService>();
         var command = new SendNotificationCommand(
             Guid.CreateVersion7(),
@@ -26,7 +28,7 @@ public sealed class WhenHandlingEmailNotificationCommand_ShouldSendThroughEmailN
                     ["UserAgent"] = "Test Agent"
                 }));
 
-        await new SendNotificationHandler(customTelemetryContext, emailNotificationService)
+        await new SendNotificationHandler(customTelemetryContext, currentActorAccessor, emailNotificationService)
             .HandleAsync(command, CancellationToken.None);
 
         await emailNotificationService.Received(1).SendAsync(command, Arg.Any<CancellationToken>());

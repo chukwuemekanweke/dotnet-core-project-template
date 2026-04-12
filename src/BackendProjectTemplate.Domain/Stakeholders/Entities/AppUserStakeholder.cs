@@ -13,7 +13,6 @@ public sealed class AppUserStakeholder : Entity
     {
         AppUserId = appUserId;
         StakeholderId = stakeholderId;
-        SetAuditDates(utcNow);
     }
 
     public Guid AppUserId { get; private set; }

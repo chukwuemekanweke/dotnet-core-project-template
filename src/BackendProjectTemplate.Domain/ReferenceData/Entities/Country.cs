@@ -19,7 +19,6 @@ public sealed class Country : Entity
         ShortCode = shortCode;
         CallingCode = callingCode;
         FlagUrl = flagUrl;
-        SetAuditDates(utcNow);
     }
 
     public string Name { get; private set; } = string.Empty;

@@ -13,7 +13,6 @@ public sealed class EmailProvider : Entity
         ProviderName = providerName.Trim();
         ProviderKey = providerKey.Trim();
         IsActive = isActive;
-        SetAuditDates(utcNow);
     }
 
     public string ProviderName { get; private set; } = string.Empty;

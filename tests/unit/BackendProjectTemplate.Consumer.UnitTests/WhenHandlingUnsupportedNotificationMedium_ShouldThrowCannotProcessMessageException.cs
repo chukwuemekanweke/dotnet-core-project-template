@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Consumer.Notifications;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Common.Notifications;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -14,6 +15,7 @@ public sealed class WhenHandlingUnsupportedNotificationMedium_ShouldThrowCannotP
     public async Task Verify()
     {
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var emailNotificationService = Substitute.For<IEmailNotificationService>();
         var command = new SendNotificationCommand(
             Guid.CreateVersion7(),
@@ -29,7 +31,7 @@ public sealed class WhenHandlingUnsupportedNotificationMedium_ShouldThrowCannotP
                 }));
 
         var exception = await Should.ThrowAsync<FailedToProcessMessageException>(() =>
-            new SendNotificationHandler(customTelemetryContext, emailNotificationService)
+            new SendNotificationHandler(customTelemetryContext, currentActorAccessor, emailNotificationService)
                 .HandleAsync(command, CancellationToken.None));
 
         exception.Message.ShouldBe("Notification medium 'Sms' is not supported.");

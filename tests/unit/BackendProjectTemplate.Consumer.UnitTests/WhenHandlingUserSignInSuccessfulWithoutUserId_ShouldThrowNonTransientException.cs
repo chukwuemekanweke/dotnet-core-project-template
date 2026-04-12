@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -17,6 +18,7 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutUserId_ShouldThrowNon
     public async Task Verify()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
@@ -27,6 +29,7 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutUserId_ShouldThrowNon
 
         var action = async () => await new UserSignInSuccessfulHandler(
             customTelemetryContext,
+            currentActorAccessor,
             identityService,
             stakeholderReadModelRepository,
             commandSender,

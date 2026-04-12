@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
 
@@ -6,9 +7,10 @@ namespace BackendProjectTemplate.Consumer.Authentication;
 
 public sealed class UserCreatedHandler(
     ICustomTelemetryContext customTelemetryContext,
+    ICurrentActorAccessor currentActorAccessor,
     IAuthenticationIdentityService identityService,
     IOtpDeliveryService otpDeliveryService,
-    ILogger<UserCreatedHandler> logger) : BaseMessageHandler<UserCreated>(customTelemetryContext)
+    ILogger<UserCreatedHandler> logger) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor)
 {
     protected override async Task HandleAsyncInternal(UserCreated message, CancellationToken cancellationToken)
     {

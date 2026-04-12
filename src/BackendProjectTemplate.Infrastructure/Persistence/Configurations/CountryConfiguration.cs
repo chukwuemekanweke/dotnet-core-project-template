@@ -16,6 +16,8 @@ public sealed class CountryConfiguration : IEntityTypeConfiguration<Country>
         builder.Property(country => country.CallingCode).HasMaxLength(20);
         builder.Property(country => country.FlagUrl).HasMaxLength(200).IsRequired();
 
-        builder.HasIndex(country => country.ShortCode).IsUnique();
+        builder.HasIndex(country => country.ShortCode)
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
     }
 }

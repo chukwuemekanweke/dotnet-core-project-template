@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp
     public async Task Verify()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var otpDeliveryService = Substitute.For<IOtpDeliveryService>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var logger = Substitute.For<ILogger<UserCreatedHandler>>();
@@ -27,7 +29,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp
         identityService.FindByIdAsync(userId).Returns(user);
         identityService.GenerateSignUpOtpAsync(user).Returns(otpCode);
 
-        await new UserCreatedHandler(customTelemetryContext, identityService, otpDeliveryService, logger).HandleAsync(
+        await new UserCreatedHandler(customTelemetryContext, currentActorAccessor, identityService, otpDeliveryService, logger).HandleAsync(
             new UserCreated(userId, email),
             CancellationToken.None);
 

@@ -1,8 +1,23 @@
 namespace BackendProjectTemplate.Contracts.Commands.Notifications;
 
-public sealed record SendNotificationCommand(
-    Guid TenantId,
-    Guid CountryId,
-    NotificationType NotificationType,
-    NotificationMedium NotificationMedium,
-    NotificationContent NotificationContent) : BaseCommand;
+public sealed record SendNotificationCommand : BaseCommand
+{
+    public SendNotificationCommand(
+        Guid tenantId,
+        Guid countryId,
+        NotificationType notificationType,
+        NotificationMedium notificationMedium,
+        NotificationContent notificationContent)
+    {
+        TenantId = tenantId;
+        CountryId = countryId;
+        NotificationType = notificationType;
+        NotificationMedium = notificationMedium;
+        NotificationContent = notificationContent;
+    }
+
+    public Guid CountryId { get; }
+    public NotificationType NotificationType { get; }
+    public NotificationMedium NotificationMedium { get; }
+    public NotificationContent NotificationContent { get; }
+}

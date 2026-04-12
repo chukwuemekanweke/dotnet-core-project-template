@@ -14,7 +14,7 @@ public sealed class WhenCreatingEmailProvider_ShouldSetProviderNameProviderKeyIs
         emailProvider.ProviderName.ShouldBe("Mailtrap");
         emailProvider.ProviderKey.ShouldBe("mailtrap");
         emailProvider.IsActive.ShouldBeTrue();
-        emailProvider.CreatedAtUtc.ShouldBe(utcNow);
-        emailProvider.UpdatedAtUtc.ShouldBe(utcNow);
+        emailProvider.CreatedAtUtc.ShouldBe(default);
+        emailProvider.UpdatedAtUtc.ShouldBe(default);
     }
 }

@@ -17,7 +17,6 @@ public sealed class Tenant : Entity
         Id = id;
         Name = name.Trim();
         BrandKey = brandKey.Trim().ToLowerInvariant();
-        SetAuditDates(utcNow);
     }
 
     public string Name { get; private set; } = string.Empty;

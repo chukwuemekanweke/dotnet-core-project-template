@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -19,6 +20,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldSe
     public async Task Verify()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
@@ -42,7 +44,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldSe
         stakeholderReadModelRepository.GetByAppUserIdAsync(userId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(Guid.CreateVersion7(), userId, tenantId, countryId, Guid.CreateVersion7()));
 
-        await new UserSignInFailedHandler(customTelemetryContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
+        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
             new UserSignInFailed(
                 userId,
                 email,

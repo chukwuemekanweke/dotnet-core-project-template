@@ -21,7 +21,7 @@ public sealed class WhenCreatingStakeholderType_ShouldSetNameKeyAndAuditFields
         stakeholderType.TenantId.ShouldBe(tenantId);
         stakeholderType.Name.ShouldBe(expectedName);
         stakeholderType.Key.ShouldBe(expectedKey);
-        stakeholderType.CreatedAtUtc.ShouldBe(now);
-        stakeholderType.UpdatedAtUtc.ShouldBe(now);
+        stakeholderType.CreatedAtUtc.ShouldBe(default);
+        stakeholderType.UpdatedAtUtc.ShouldBe(default);
     }
 }

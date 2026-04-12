@@ -1,6 +1,8 @@
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using BackendProjectTemplate.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,8 +13,13 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSqlServerWritePersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(GetRequiredConnectionString(configuration, "SqlServerWrite")));
+        services.AddScoped<ICurrentActorAccessor, CurrentActorAccessor>();
+        services.AddScoped<ICurrentActor>(serviceProvider => serviceProvider.GetRequiredService<ICurrentActorAccessor>());
+        services.AddScoped<AuditAndSoftDeleteInterceptor>();
+
+        services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+            options.UseSqlServer(GetRequiredConnectionString(configuration, "SqlServerWrite"))
+                .AddInterceptors(serviceProvider.GetRequiredService<AuditAndSoftDeleteInterceptor>()));
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IAppUserRepository, AppUserRepository>();

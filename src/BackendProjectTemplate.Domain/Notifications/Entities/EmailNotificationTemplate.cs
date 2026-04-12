@@ -20,7 +20,6 @@ public sealed class EmailNotificationTemplate : Entity
         Description = description.Trim();
         Subject = subject.Trim();
         TemplateFileName = templateFileName.Trim();
-        SetAuditDates(utcNow);
     }
 
     public NotificationType NotificationType { get; private set; }

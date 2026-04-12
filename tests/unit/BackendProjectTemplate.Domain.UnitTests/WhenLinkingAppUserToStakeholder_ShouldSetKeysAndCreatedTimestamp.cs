@@ -16,7 +16,7 @@ public sealed class WhenLinkingAppUserToStakeholder_ShouldSetKeysAndCreatedTimes
 
         appUserStakeholder.AppUserId.ShouldBe(appUserId);
         appUserStakeholder.StakeholderId.ShouldBe(stakeholderId);
-        appUserStakeholder.CreatedAtUtc.ShouldBe(createdAtUtc);
-        appUserStakeholder.UpdatedAtUtc.ShouldBe(createdAtUtc);
+        appUserStakeholder.CreatedAtUtc.ShouldBe(default);
+        appUserStakeholder.UpdatedAtUtc.ShouldBe(default);
     }
 }

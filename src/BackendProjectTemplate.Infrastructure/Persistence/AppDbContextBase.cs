@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Notifications.Entities;
@@ -6,6 +7,8 @@ using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using System.Linq.Expressions;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence;
 
@@ -34,5 +37,47 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens", SchemaNames.Authentication);
         modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims", SchemaNames.Authentication);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        ApplyAuditingConventions(modelBuilder);
+        ApplySoftDeleteFilters(modelBuilder);
+    }
+
+    private static void ApplyAuditingConventions(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes().Where(type => type.ClrType is not null && !type.IsOwned()))
+        {
+            if (typeof(IAuditableEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType).Property<string>(nameof(IAuditableEntity.CreatedBy)).HasMaxLength(200);
+                modelBuilder.Entity(entityType.ClrType).Property<string>(nameof(IAuditableEntity.UpdatedBy)).HasMaxLength(200);
+            }
+
+            if (typeof(ISoftDelete).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType).Property<string>(nameof(ISoftDelete.DeletedBy)).HasMaxLength(200);
+            }
+        }
+    }
+
+    private static void ApplySoftDeleteFilters(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes().Where(type => type.ClrType is not null && !type.IsOwned()))
+        {
+            if (!typeof(ISoftDelete).IsAssignableFrom(entityType.ClrType))
+            {
+                continue;
+            }
+
+            var parameter = Expression.Parameter(entityType.ClrType, "entity");
+            var isDeletedProperty = Expression.Call(
+                typeof(EF),
+                nameof(EF.Property),
+                [typeof(bool)],
+                parameter,
+                Expression.Constant(nameof(ISoftDelete.IsDeleted)));
+            var compareExpression = Expression.Equal(isDeletedProperty, Expression.Constant(false));
+            var lambda = Expression.Lambda(compareExpression, parameter);
+
+            modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+        }
     }
 }

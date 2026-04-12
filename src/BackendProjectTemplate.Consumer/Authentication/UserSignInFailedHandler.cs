@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -11,11 +12,12 @@ namespace BackendProjectTemplate.Consumer.Authentication;
 
 public sealed class UserSignInFailedHandler(
     ICustomTelemetryContext customTelemetryContext,
+    ICurrentActorAccessor currentActorAccessor,
     IAuthenticationIdentityService identityService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
-    ILogger<UserSignInFailedHandler> logger) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext)
+    ILogger<UserSignInFailedHandler> logger) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor)
 {
     protected override async Task HandleAsyncInternal(UserSignInFailed message, CancellationToken cancellationToken)
     {

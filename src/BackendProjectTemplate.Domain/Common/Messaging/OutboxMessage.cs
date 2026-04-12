@@ -20,7 +20,6 @@ public sealed class OutboxMessage : Entity
         Type = type;
         Payload = payload;
         EnqueuedAtUtc = enqueuedAtUtc;
-        SetAuditDates(enqueuedAtUtc);
     }
 
     public Guid MessageId { get; private set; }

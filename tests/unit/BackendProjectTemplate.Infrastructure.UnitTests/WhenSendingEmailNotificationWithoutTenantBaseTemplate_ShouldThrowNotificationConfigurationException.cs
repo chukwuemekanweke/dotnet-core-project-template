@@ -19,7 +19,7 @@ public sealed class WhenSendingEmailNotificationWithoutTenantBaseTemplate_Should
     public async Task Verify()
     {
         var tenantId = Guid.CreateVersion7();
-        var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.NewGuid():N}");
+        var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.CreateVersion7():N}");
         var defaultTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "NotificationTypes");
         Directory.CreateDirectory(defaultTemplateDirectory);
         await File.WriteAllTextAsync(

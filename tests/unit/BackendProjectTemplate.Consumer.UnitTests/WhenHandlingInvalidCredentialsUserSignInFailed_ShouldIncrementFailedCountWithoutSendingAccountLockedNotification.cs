@@ -2,6 +2,7 @@ using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -19,6 +20,7 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_ShouldIncreme
     public async Task Verify()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
@@ -36,7 +38,7 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_ShouldIncreme
         identityService.AccessFailedAsync(user).Returns(IdentityResult.Success);
         identityService.IsLockedOutAsync(user).Returns(false);
 
-        await new UserSignInFailedHandler(customTelemetryContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
+        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
             new UserSignInFailed(
                 userId,
                 email,

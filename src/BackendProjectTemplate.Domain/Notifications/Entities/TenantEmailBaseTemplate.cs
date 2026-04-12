@@ -17,7 +17,6 @@ public sealed class TenantEmailBaseTemplate : Entity
         TenantId = tenantId;
         Description = description.Trim();
         HtmlTemplate = htmlTemplate.Trim();
-        SetAuditDates(utcNow);
     }
 
     public Guid TenantId { get; private set; }

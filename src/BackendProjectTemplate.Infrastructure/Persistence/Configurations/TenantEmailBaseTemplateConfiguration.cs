@@ -24,6 +24,7 @@ public sealed class TenantEmailBaseTemplateConfiguration : IEntityTypeConfigurat
             .IsRequired();
 
         builder.HasIndex(template => template.TenantId)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
     }
 }

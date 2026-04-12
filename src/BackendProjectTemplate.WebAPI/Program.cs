@@ -48,6 +48,7 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseMiddleware<CurrentActorMiddleware>();
 app.UseAuthorization();
 
 app.UseApiDocumentation();

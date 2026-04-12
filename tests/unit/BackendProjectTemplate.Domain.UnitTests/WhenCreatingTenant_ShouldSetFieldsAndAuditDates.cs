@@ -19,7 +19,7 @@ public sealed class WhenCreatingTenant_ShouldSetFieldsAndAuditDates
         tenant.Id.ShouldBe(tenantId);
         tenant.Name.ShouldBe("Moveaex");
         tenant.BrandKey.ShouldBe("moveaex");
-        tenant.CreatedAtUtc.ShouldBe(utcNow);
-        tenant.UpdatedAtUtc.ShouldBe(utcNow);
+        tenant.CreatedAtUtc.ShouldBe(default);
+        tenant.UpdatedAtUtc.ShouldBe(default);
     }
 }

@@ -19,7 +19,7 @@ public sealed class WhenCreatingTenantEmailBaseTemplate_ShouldSetFieldsAndAuditD
         template.TenantId.ShouldBe(tenantId);
         template.Description.ShouldBe("Primary tenant brand");
         template.HtmlTemplate.ShouldBe("<html><body>{{:BodyHtml:}}</body></html>");
-        template.CreatedAtUtc.ShouldBe(utcNow);
-        template.UpdatedAtUtc.ShouldBe(utcNow);
+        template.CreatedAtUtc.ShouldBe(default);
+        template.UpdatedAtUtc.ShouldBe(default);
     }
 }

@@ -23,7 +23,7 @@ public sealed class WhenCreatingAppUser_ShouldSetTrimmedNamesAndAuditFields
         user.UserName.ShouldBe(expectedEmail);
         user.FirstName.ShouldBe(expectedFirstName);
         user.LastName.ShouldBe(expectedLastName);
-        user.CreatedAtUtc.ShouldBe(now);
-        user.UpdatedAtUtc.ShouldBe(now);
+        user.CreatedAtUtc.ShouldBe(default);
+        user.UpdatedAtUtc.ShouldBe(default);
     }
 }

@@ -19,7 +19,7 @@ public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldT
     public async Task Verify()
     {
         var tenantId = Guid.CreateVersion7();
-        var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.NewGuid():N}");
+        var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.CreateVersion7():N}");
         var tenantTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", "NotificationTypes");
         Directory.CreateDirectory(tenantTemplateDirectory);
         await File.WriteAllTextAsync(
