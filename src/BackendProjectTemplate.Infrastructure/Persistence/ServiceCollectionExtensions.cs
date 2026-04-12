@@ -16,10 +16,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICurrentActorAccessor, CurrentActorAccessor>();
         services.AddScoped<ICurrentActor>(serviceProvider => serviceProvider.GetRequiredService<ICurrentActorAccessor>());
         services.AddScoped<AuditAndSoftDeleteInterceptor>();
+        services.AddScoped<ObservabilityCommandInterceptor>();
 
         services.AddDbContext<AppDbContext>((serviceProvider, options) =>
             options.UseSqlServer(GetRequiredConnectionString(configuration, "SqlServerWrite"))
-                .AddInterceptors(serviceProvider.GetRequiredService<AuditAndSoftDeleteInterceptor>()));
+                .AddInterceptors(
+                    serviceProvider.GetRequiredService<AuditAndSoftDeleteInterceptor>(),
+                    serviceProvider.GetRequiredService<ObservabilityCommandInterceptor>()));
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IAppUserRepository, AppUserRepository>();
@@ -30,8 +33,11 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddSqlServerReadPersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<AppReadDbContext>(options =>
-            options.UseSqlServer(GetReadConnectionString(configuration)));
+        services.AddScoped<ObservabilityCommandInterceptor>();
+
+        services.AddDbContext<AppReadDbContext>((serviceProvider, options) =>
+            options.UseSqlServer(GetReadConnectionString(configuration))
+                .AddInterceptors(serviceProvider.GetRequiredService<ObservabilityCommandInterceptor>()));
 
         services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
         services.AddScoped<IStakeholderReadModelRepository, StakeholderReadModelRepository>();
