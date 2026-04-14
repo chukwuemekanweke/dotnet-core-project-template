@@ -11,6 +11,9 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "infrastructure");
+
             migrationBuilder.DropIndex(
                 name: "IX_EmailProviders_IsActive",
                 schema: "notifications",
@@ -30,11 +33,11 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
                 name: "EmailProviders",
                 schema: "notifications",
                 newName: "Providers",
-                newSchema: "notifications");
+                newSchema: "infrastructure");
 
             migrationBuilder.AddColumn<int>(
                 name: "ProviderType",
-                schema: "notifications",
+                schema: "infrastructure",
                 table: "Providers",
                 type: "int",
                 nullable: false,
@@ -42,13 +45,13 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
 
             migrationBuilder.AddPrimaryKey(
                 name: "PK_Providers",
-                schema: "notifications",
+                schema: "infrastructure",
                 table: "Providers",
                 column: "Id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Providers_ProviderType_IsActive",
-                schema: "notifications",
+                schema: "infrastructure",
                 table: "Providers",
                 columns: new[] { "ProviderType", "IsActive" },
                 unique: true,
@@ -56,7 +59,7 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_Providers_ProviderType_ProviderKey",
-                schema: "notifications",
+                schema: "infrastructure",
                 table: "Providers",
                 columns: new[] { "ProviderType", "ProviderKey" },
                 unique: true,
@@ -68,27 +71,27 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
         {
             migrationBuilder.DropIndex(
                 name: "IX_Providers_ProviderType_IsActive",
-                schema: "notifications",
+                schema: "infrastructure",
                 table: "Providers");
 
             migrationBuilder.DropIndex(
                 name: "IX_Providers_ProviderType_ProviderKey",
-                schema: "notifications",
+                schema: "infrastructure",
                 table: "Providers");
 
             migrationBuilder.DropPrimaryKey(
                 name: "PK_Providers",
-                schema: "notifications",
+                schema: "infrastructure",
                 table: "Providers");
 
             migrationBuilder.DropColumn(
                 name: "ProviderType",
-                schema: "notifications",
+                schema: "infrastructure",
                 table: "Providers");
 
             migrationBuilder.RenameTable(
                 name: "Providers",
-                schema: "notifications",
+                schema: "infrastructure",
                 newName: "EmailProviders",
                 newSchema: "notifications");
 

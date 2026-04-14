@@ -20,6 +20,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
     private const string Password = "P@ssw0rd123!";
 
     private string _email = string.Empty;
+    private Guid _tenantId;
     private Guid _countryId;
     private bool _createdCountryForTest;
     private BackendProjectTemplate.WebAPI.Features.Authentication.Registrations.SignUpRequest _request = default!;
@@ -28,6 +29,8 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
     public async Task InitializeAsync()
     {
         await InitializeClientAsync();
+        _tenantId = Guid.CreateVersion7();
+        Client.DefaultRequestHeaders.Add("X-Tenant-Id", _tenantId.ToString());
         _countryId = await ResolveCountryIdAsync();
     }
 
@@ -120,7 +123,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
             outboxRepository.Remove(outboxMessage);
         }
 
-        var stakeholderTypes = await stakeholderTypeRepository.ListAsync(new DefaultCustomerStakeholderTypeCleanupSpecification(Guid.Empty));
+        var stakeholderTypes = await stakeholderTypeRepository.ListAsync(new DefaultCustomerStakeholderTypeCleanupSpecification(_tenantId));
         foreach (var stakeholderType in stakeholderTypes)
         {
             stakeholderTypeRepository.Remove(stakeholderType);

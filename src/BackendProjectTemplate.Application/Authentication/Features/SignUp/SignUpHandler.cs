@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Application.Authentication.Constants;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -22,9 +23,6 @@ public sealed class SignUpHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
-    private const string DefaultStakeholderTypeName = "Customer";
-    private const string DefaultStakeholderTypeKey = "customer";
-
     public async Task<SignUpResult> HandleAsync(SignUpCommand request, CancellationToken cancellationToken)
     {
         customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.SignUpRequested);
@@ -36,7 +34,8 @@ public sealed class SignUpHandler(
 
         var now = timeProvider.GetUtcNow();
         var user = AppUser.Create(request.Email, request.FirstName, request.LastName, now);
-        var tenantId = currentActor.TenantId ?? Guid.Empty;
+        var tenantId = currentActor.TenantId
+            ?? throw new InvalidOperationException("Tenant id is required to sign up.");
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
         var createResult = await identityService.CreateAsync(user, request.Password);
@@ -52,14 +51,14 @@ public sealed class SignUpHandler(
         }
 
         var stakeholderType = await stakeholderTypeRepository.FirstOrDefaultAsync(
-            new StakeholderTypeByTenantAndKeySpecification(tenantId, DefaultStakeholderTypeKey),
+            new StakeholderTypeByTenantAndKeySpecification(tenantId, StakeholderDefaults.TypeKey),
             cancellationToken);
         if (stakeholderType is null)
         {
             stakeholderType = StakeholderType.Create(
                 tenantId,
-                DefaultStakeholderTypeName,
-                DefaultStakeholderTypeKey,
+                StakeholderDefaults.TypeName,
+                StakeholderDefaults.TypeKey,
                 now);
             await stakeholderTypeRepository.AddAsync(stakeholderType, cancellationToken);
         }

@@ -302,13 +302,13 @@ VALUES
 );
 
 /*
-    Seeds [notifications].[Providers].
+    Seeds [infrastructure].[Providers].
 
     Provider credentials and secrets should remain in configuration or a secret store.
     This table only controls the selectable provider definitions.
 */
 
-MERGE [notifications].[Providers] AS [Target]
+MERGE [infrastructure].[Providers] AS [Target]
 USING
 (
 VALUES
