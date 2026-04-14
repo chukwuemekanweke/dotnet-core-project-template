@@ -83,7 +83,7 @@ public sealed class SignUpHandler(
         await transaction.CommitAsync(cancellationToken);
         customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserCreated, new Dictionary<string, string>
         {
-            [Observability.UserIdPropertyName] = user.Id.ToString()
+            [Observability.StakeholderIdPropertyName] = stakeholder.Id.ToString()
         });
 
         return new SignUpResult(SignUpStatus.Accepted);

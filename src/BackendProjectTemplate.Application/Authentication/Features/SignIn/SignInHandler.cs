@@ -3,6 +3,8 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignIn;
 
@@ -10,6 +12,7 @@ public sealed class SignInHandler(
     IAuthenticationIdentityService identityService,
     IAccessTokenService accessTokenService,
     IEventPublisher eventPublisher,
+    IRepository<AppUserStakeholder> appUserStakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -103,10 +106,8 @@ public sealed class SignInHandler(
             OccuredAt = now
         }, cancellationToken);
 
-        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInSuccessful, new Dictionary<string, string>
-        {
-            [Observability.UserIdPropertyName] = userId.ToString()
-        });
+        var properties = await BuildStakeholderPropertiesAsync(userId, cancellationToken);
+        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInSuccessful, properties);
     }
 
     private async Task PublishFailedAsync(
@@ -131,9 +132,29 @@ public sealed class SignInHandler(
 
         if (userId.HasValue)
         {
-            properties[Observability.UserIdPropertyName] = userId.Value.ToString();
+            var stakeholderProperties = await BuildStakeholderPropertiesAsync(userId.Value, cancellationToken);
+            foreach (var property in stakeholderProperties)
+            {
+                properties[property.Key] = property.Value;
+            }
         }
 
         customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInFailed, properties);
+    }
+
+    private async Task<Dictionary<string, string>> BuildStakeholderPropertiesAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
+            new AppUserStakeholderByAppUserIdSpecification(userId),
+            cancellationToken);
+        if (appUserStakeholder is null)
+        {
+            return [];
+        }
+
+        return new Dictionary<string, string>
+        {
+            [Observability.StakeholderIdPropertyName] = appUserStakeholder.StakeholderId.ToString()
+        };
     }
 }

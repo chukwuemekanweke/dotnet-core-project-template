@@ -61,14 +61,15 @@ public sealed class UserSignInSuccessfulHandler(
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
+        CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInSuccessful, new Dictionary<string, string>
         {
-            [Observability.UserIdPropertyName] = user.Id.ToString()
+            [Observability.StakeholderIdPropertyName] = stakeholder.StakeholderId.ToString()
         });
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserSignInSuccessful message)
     {
-        yield return (Observability.UserIdPropertyName, message.UserId.ToString());
+        yield break;
     }
 }

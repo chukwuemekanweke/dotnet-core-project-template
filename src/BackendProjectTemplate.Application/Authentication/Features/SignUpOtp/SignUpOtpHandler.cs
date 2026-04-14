@@ -3,12 +3,15 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 
 public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
     IEventPublisher eventPublisher,
+    IRepository<AppUserStakeholder> appUserStakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -47,10 +50,17 @@ public sealed class SignUpOtpHandler(
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.OtpConfirmed, new Dictionary<string, string>
+
+        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
+            new AppUserStakeholderByAppUserIdSpecification(user.Id),
+            cancellationToken);
+        var properties = new Dictionary<string, string>();
+        if (appUserStakeholder is not null)
         {
-            [Observability.UserIdPropertyName] = user.Id.ToString()
-        });
+            properties[Observability.StakeholderIdPropertyName] = appUserStakeholder.StakeholderId.ToString();
+        }
+
+        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.OtpConfirmed, properties);
 
         return new SignUpOtpResult(SignUpOtpStatus.Success);
     }

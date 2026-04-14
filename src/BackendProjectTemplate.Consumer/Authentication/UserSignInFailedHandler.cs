@@ -46,16 +46,20 @@ public sealed class UserSignInFailedHandler(
             }
         }
 
+        var stakeholder = await stakeholderReadModelRepository.GetByAppUserIdAsync(message.UserId.Value, cancellationToken);
         var properties = new Dictionary<string, string>
         {
-            [Observability.UserIdPropertyName] = user.Id.ToString(),
             ["FailureReason"] = message.FailureReason
         };
+        if (stakeholder is not null)
+        {
+            properties[Observability.StakeholderIdPropertyName] = stakeholder.StakeholderId.ToString();
+            CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
+        }
 
         if (message.FailureReason == UserSignInFailureReasons.InvalidCredentials &&
             await identityService.IsLockedOutAsync(user))
         {
-            var stakeholder = await stakeholderReadModelRepository.GetByAppUserIdAsync(message.UserId.Value, cancellationToken);
             if (stakeholder is null)
             {
                 throw new CannotProcessMessageNonTransientException(
@@ -87,9 +91,6 @@ public sealed class UserSignInFailedHandler(
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserSignInFailed message)
     {
-        if (message.UserId.HasValue)
-        {
-            yield return (Observability.UserIdPropertyName, message.UserId.Value.ToString());
-        }
+        yield break;
     }
 }

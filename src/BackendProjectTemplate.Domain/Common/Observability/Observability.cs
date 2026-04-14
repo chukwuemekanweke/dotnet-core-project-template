@@ -7,6 +7,7 @@ public static class Observability
     public const string MessageTypePropertyName = "MessageType";
     public const string MessageIdPropertyName = "MessageId";
     public const string UserIdPropertyName = "UserId";
+    public const string StakeholderIdPropertyName = "StakeholderId";
 
     public static class EventNames
     {

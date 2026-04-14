@@ -44,8 +44,21 @@ internal sealed class AuthenticationFlowTestContext
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
-    public SignUpOtpHandler CreateSignUpOtpHandler() => new(IdentityService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
-    public SignInHandler CreateSignInHandler() => new(IdentityService, AccessTokenService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
+    public SignUpOtpHandler CreateSignUpOtpHandler() => new(
+        IdentityService,
+        EventPublisher,
+        AppUserStakeholderRepository,
+        CustomTelemetryContext,
+        UnitOfWork,
+        Clock);
+    public SignInHandler CreateSignInHandler() => new(
+        IdentityService,
+        AccessTokenService,
+        EventPublisher,
+        AppUserStakeholderRepository,
+        CustomTelemetryContext,
+        UnitOfWork,
+        Clock);
 
     public static SignUpCommand CreateSignUpCommand(
         string? email = null,

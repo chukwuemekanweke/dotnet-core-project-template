@@ -4,6 +4,7 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
@@ -17,6 +18,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp
         var identityService = Substitute.For<IAuthenticationIdentityService>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var otpDeliveryService = Substitute.For<IOtpDeliveryService>();
+        var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var logger = Substitute.For<ILogger<UserCreatedHandler>>();
         var userId = Guid.CreateVersion7();
@@ -29,7 +31,13 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp
         identityService.FindByIdAsync(userId).Returns(user);
         identityService.GenerateSignUpOtpAsync(user).Returns(otpCode);
 
-        await new UserCreatedHandler(customTelemetryContext, currentActorAccessor, identityService, otpDeliveryService, logger).HandleAsync(
+        await new UserCreatedHandler(
+            customTelemetryContext,
+            currentActorAccessor,
+            identityService,
+            stakeholderReadModelRepository,
+            otpDeliveryService,
+            logger).HandleAsync(
             new UserCreated(userId, email),
             CancellationToken.None);
 

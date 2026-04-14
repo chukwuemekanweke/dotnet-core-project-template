@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 
 namespace BackendProjectTemplate.Consumer.Authentication;
 
@@ -9,6 +10,7 @@ public sealed class UserCreatedHandler(
     ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
     IAuthenticationIdentityService identityService,
+    IStakeholderReadModelRepository stakeholderReadModelRepository,
     IOtpDeliveryService otpDeliveryService,
     ILogger<UserCreatedHandler> logger) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor)
 {
@@ -35,14 +37,19 @@ public sealed class UserCreatedHandler(
 
         var otpCode = await identityService.GenerateSignUpOtpAsync(user);
         await otpDeliveryService.SendSignUpOtpAsync(user, otpCode, cancellationToken);
-        CustomTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserCreatedProcessed, new Dictionary<string, string>
+        var stakeholder = await stakeholderReadModelRepository.GetByAppUserIdAsync(message.UserId, cancellationToken);
+        var properties = new Dictionary<string, string>();
+        if (stakeholder is not null)
         {
-            [Observability.UserIdPropertyName] = user.Id.ToString()
-        });
+            CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
+            properties[Observability.StakeholderIdPropertyName] = stakeholder.StakeholderId.ToString();
+        }
+
+        CustomTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserCreatedProcessed, properties);
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserCreated message)
     {
-        yield return (Observability.UserIdPropertyName, message.UserId.ToString());
+        yield break;
     }
 }
