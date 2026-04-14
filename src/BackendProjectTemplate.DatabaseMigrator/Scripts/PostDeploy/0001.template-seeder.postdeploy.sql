@@ -302,20 +302,22 @@ VALUES
 );
 
 /*
-    Seeds [notifications].[EmailProviders].
+    Seeds [notifications].[Providers].
 
     Provider credentials and secrets should remain in configuration or a secret store.
     This table only controls the selectable provider definitions.
 */
 
-MERGE [notifications].[EmailProviders] AS [Target]
+MERGE [notifications].[Providers] AS [Target]
 USING
 (
 VALUES
-    (N'Logging (Stub)', N'logging', 1),
-    (N'Mailtrap', N'mailtrap', 0)
-) AS [Source] ([ProviderName], [ProviderKey], [IsActive])
-ON [Target].[ProviderKey] = [Source].[ProviderKey]
+    (1, N'Logging (Stub)', N'logging', 1),
+    (1, N'Mailtrap', N'mailtrap', 0),
+    (2, N'Noop (Stub)', N'noop', 1),
+    (2, N'Cloudflare R2', N'cloudflare-r2', 0)
+) AS [Source] ([ProviderType], [ProviderName], [ProviderKey], [IsActive])
+ON [Target].[ProviderType] = [Source].[ProviderType] AND [Target].[ProviderKey] = [Source].[ProviderKey]
 WHEN MATCHED AND
 (
     [Target].[ProviderName] <> [Source].[ProviderName]
@@ -329,6 +331,7 @@ WHEN NOT MATCHED BY TARGET
 THEN INSERT
 (
     [Id],
+    [ProviderType],
     [ProviderName],
     [ProviderKey],
     [IsActive],
@@ -338,6 +341,7 @@ THEN INSERT
 VALUES
 (
     NEWID(),
+    [Source].[ProviderType],
     [Source].[ProviderName],
     [Source].[ProviderKey],
     [Source].[IsActive],

@@ -16,7 +16,7 @@ public sealed class StakeholderTypeConfiguration : IEntityTypeConfiguration<Stak
         builder.Property(stakeholderType => stakeholderType.Key).HasMaxLength(100).IsRequired();
 
         builder.HasIndex(stakeholderType => stakeholderType.TenantId);
-        builder.HasIndex(stakeholderType => stakeholderType.Key)
+        builder.HasIndex(stakeholderType => new { stakeholderType.TenantId, stakeholderType.Key })
             .IsUnique()
             .HasFilter("[IsDeleted] = 0");
     }

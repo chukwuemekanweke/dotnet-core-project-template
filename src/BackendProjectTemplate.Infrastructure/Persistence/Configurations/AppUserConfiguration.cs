@@ -13,8 +13,6 @@ public sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
         builder.Property(user => user.NormalizedUserName).HasMaxLength(256);
         builder.Property(user => user.Email).HasMaxLength(256);
         builder.Property(user => user.NormalizedEmail).HasMaxLength(256);
-        builder.Property(user => user.FirstName).HasMaxLength(100).IsRequired();
-        builder.Property(user => user.LastName).HasMaxLength(100).IsRequired();
 
         builder.HasIndex(user => user.NormalizedUserName)
             .HasDatabaseName("UserNameIndex")

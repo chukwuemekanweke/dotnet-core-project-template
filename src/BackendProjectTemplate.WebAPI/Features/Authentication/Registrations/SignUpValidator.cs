@@ -23,6 +23,9 @@ public sealed class SignUpValidator : AbstractValidator<SignUpRequest>
             .Equal(request => request.Password)
             .WithMessage("Password and ConfirmPassword must match.");
 
+        RuleFor(request => request.CountryId)
+            .NotEmpty();
+
         RuleFor(request => request.FirstName)
             .NotEmpty()
             .MaximumLength(100);

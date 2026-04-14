@@ -13,19 +13,13 @@ public sealed class WhenApplyingSpecification_ShouldFilterOrderAndPage
         const string firstEmail = "alpha@example.com";
         const string secondEmail = "bravo@example.com";
         const string thirdEmail = "charlie@example.com";
-        var firstName = InfrastructureTestData.FirstName();
-        var secondName = InfrastructureTestData.FirstName();
-        var thirdName = InfrastructureTestData.FirstName();
-        var firstLastName = InfrastructureTestData.LastName();
-        var secondLastName = InfrastructureTestData.LastName();
-        var thirdLastName = InfrastructureTestData.LastName();
         var createdAt = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
 
         var users = new[]
         {
-            AppUser.Create(firstEmail, firstName, firstLastName, createdAt),
-            AppUser.Create(secondEmail, secondName, secondLastName, createdAt),
-            AppUser.Create(thirdEmail, thirdName, thirdLastName, createdAt)
+            AppUser.Create(firstEmail, createdAt),
+            AppUser.Create(secondEmail, createdAt),
+            AppUser.Create(thirdEmail, createdAt)
         }.AsQueryable();
 
         var specification = new OrderedPagedUsersSpecification();
@@ -33,7 +27,7 @@ public sealed class WhenApplyingSpecification_ShouldFilterOrderAndPage
         var result = SpecificationEvaluator.GetQuery(users, specification).ToList();
 
         var expectedEmails = users
-            .OrderByDescending(user => user.FirstName)
+            .OrderByDescending(user => user.Email)
             .Take(2)
             .Select(user => user.Email)
             .ToList();
@@ -46,7 +40,7 @@ public sealed class WhenApplyingSpecification_ShouldFilterOrderAndPage
         public OrderedPagedUsersSpecification()
         {
             Where(user => user.Email != null && user.Email.Contains("@example.com"));
-            ApplyOrderByDescending(user => user.FirstName);
+            ApplyOrderByDescending(user => user.Email);
             ApplyPaging(0, 2);
         }
     }

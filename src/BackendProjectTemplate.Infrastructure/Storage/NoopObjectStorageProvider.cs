@@ -1,0 +1,23 @@
+using BackendProjectTemplate.Domain.Common.Storage;
+
+namespace BackendProjectTemplate.Infrastructure.Storage;
+
+internal sealed class NoopObjectStorageProvider : IObjectStorageProvider
+{
+    public string ProviderKey => ObjectStorageProviderKeys.Noop;
+
+    public Task<string> UploadPublicAsync(ObjectStorageUploadRequest request, CancellationToken cancellationToken)
+    {
+        var escapedKey = NormalizeObjectKey(request.ObjectKey);
+        return Task.FromResult($"https://example.invalid/{escapedKey}");
+    }
+
+    public Task<string> UploadPrivateAsync(ObjectStorageUploadRequest request, CancellationToken cancellationToken)
+    {
+        var escapedKey = NormalizeObjectKey(request.ObjectKey);
+        return Task.FromResult($"https://example.invalid/private/{escapedKey}");
+    }
+
+    private static string NormalizeObjectKey(string objectKey)
+        => objectKey.TrimStart('/').Replace("\\", "/", StringComparison.Ordinal);
+}

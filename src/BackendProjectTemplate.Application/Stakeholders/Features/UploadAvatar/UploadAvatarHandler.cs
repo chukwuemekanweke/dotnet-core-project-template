@@ -1,0 +1,61 @@
+using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Common.Storage;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Specifications;
+
+namespace BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
+
+public sealed class UploadAvatarHandler(
+    ICurrentActor currentActor,
+    IRepository<AppUserStakeholder> appUserStakeholderRepository,
+    IObjectStorageService objectStorageService,
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider)
+{
+    private const long MaxAvatarFileSizeBytes = 2 * 1024 * 1024;
+
+    public async Task<UploadAvatarResult> HandleAsync(UploadAvatarCommand command, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(currentActor.ActorId, out var appUserId))
+        {
+            return new UploadAvatarResult(UploadAvatarStatus.NotAuthenticated);
+        }
+
+        if (command.ContentLength <= 0 ||
+            command.ContentLength > MaxAvatarFileSizeBytes ||
+            string.IsNullOrWhiteSpace(command.ContentType) ||
+            !command.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            return new UploadAvatarResult(
+                UploadAvatarStatus.InvalidFile,
+                Error: "Avatar must be an image file with size up to 2 MB.");
+        }
+
+        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
+            new AppUserStakeholderByAppUserIdSpecification(appUserId),
+            cancellationToken);
+        if (appUserStakeholder is null)
+        {
+            return new UploadAvatarResult(UploadAvatarStatus.StakeholderNotFound);
+        }
+
+        var fileExtension = Path.GetExtension(command.FileName);
+        if (string.IsNullOrWhiteSpace(fileExtension))
+        {
+            fileExtension = ".bin";
+        }
+
+        var objectKey =
+            $"tenants/{appUserStakeholder.Stakeholder.TenantId}/stakeholders/{appUserStakeholder.Stakeholder.Id}/avatar/{Guid.CreateVersion7():N}{fileExtension.ToLowerInvariant()}";
+        var avatarUrl = await objectStorageService.UploadPublicAsync(
+            new ObjectStorageUploadRequest(objectKey, command.Content, command.ContentType),
+            cancellationToken);
+
+        appUserStakeholder.Stakeholder.SetAvatarUrl(avatarUrl, timeProvider.GetUtcNow());
+        appUserStakeholderRepository.Update(appUserStakeholder);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return new UploadAvatarResult(UploadAvatarStatus.Success, avatarUrl);
+    }
+}

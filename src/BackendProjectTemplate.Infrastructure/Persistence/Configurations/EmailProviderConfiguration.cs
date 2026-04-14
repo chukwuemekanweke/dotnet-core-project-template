@@ -4,13 +4,16 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence.Configurations;
 
-public sealed class EmailProviderConfiguration : IEntityTypeConfiguration<EmailProvider>
+public sealed class ProviderConfiguration : IEntityTypeConfiguration<Provider>
 {
-    public void Configure(EntityTypeBuilder<EmailProvider> builder)
+    public void Configure(EntityTypeBuilder<Provider> builder)
     {
-        builder.ToTable("EmailProviders", SchemaNames.Notifications);
+        builder.ToTable("Providers", SchemaNames.Notifications);
 
         builder.HasKey(provider => provider.Id);
+
+        builder.Property(provider => provider.ProviderType)
+            .IsRequired();
 
         builder.Property(provider => provider.ProviderName)
             .HasMaxLength(200)
@@ -23,12 +26,12 @@ public sealed class EmailProviderConfiguration : IEntityTypeConfiguration<EmailP
         builder.Property(provider => provider.IsActive)
             .IsRequired();
 
-        builder.HasIndex(provider => provider.ProviderKey)
+        builder.HasIndex(provider => new { provider.ProviderType, provider.ProviderKey })
             .IsUnique()
             .HasFilter("[IsDeleted] = 0");
 
-        builder.HasIndex(provider => provider.IsActive)
-            .HasFilter("[IsActive] = 1 AND [IsDeleted] = 0")
+        builder.HasIndex(provider => new { provider.ProviderType, provider.IsActive })
+            .HasFilter("[ProviderType] IS NOT NULL AND [IsActive] = 1 AND [IsDeleted] = 0")
             .IsUnique();
     }
 }

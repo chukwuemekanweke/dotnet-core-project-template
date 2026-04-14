@@ -15,6 +15,7 @@ public sealed class WhenSigningUpWithRejectedPassword_ShouldReturnValidationFail
     {
         var email = AuthenticationTestData.Email();
         var password = AuthenticationTestData.WeakPassword();
+        var countryId = Guid.CreateVersion7();
         var firstName = AuthenticationTestData.FirstName();
         var lastName = AuthenticationTestData.LastName();
 
@@ -29,7 +30,7 @@ public sealed class WhenSigningUpWithRejectedPassword_ShouldReturnValidationFail
             }));
 
         var result = await context.CreateSignUpHandler().HandleAsync(
-            AuthenticationFlowTestContext.CreateSignUpCommand(email, password, firstName, lastName),
+            AuthenticationFlowTestContext.CreateSignUpCommand(email, password, countryId, firstName, lastName),
             CancellationToken.None);
 
         result.Status.ShouldBe(SignUpStatus.ValidationFailed);

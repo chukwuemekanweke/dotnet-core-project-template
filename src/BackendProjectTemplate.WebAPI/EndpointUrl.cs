@@ -32,6 +32,18 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
     }
 
+    public static class Stakeholders
+    {
+        public const string Route = $"api/{Versions.V1Route}/stakeholders";
+        public static readonly string V1 = ToV1(Route);
+    }
+
+    public static class Providers
+    {
+        public const string Route = $"api/{Versions.V1Route}/providers";
+        public static readonly string V1 = ToV1(Route);
+    }
+
     private static string ToV1(string routeTemplate) =>
         routeTemplate.Replace(Versions.V1Route, Versions.V1, StringComparison.Ordinal);
 }

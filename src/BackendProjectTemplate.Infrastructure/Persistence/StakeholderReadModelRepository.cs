@@ -20,6 +20,10 @@ public sealed class StakeholderReadModelRepository(IReadRepository<AppUserStakeh
                 appUserStakeholder.AppUserId,
                 appUserStakeholder.Stakeholder.TenantId,
                 appUserStakeholder.Stakeholder.CountryId,
-                appUserStakeholder.Stakeholder.StakeholderTypeId);
+                appUserStakeholder.Stakeholder.StakeholderTypeId,
+                appUserStakeholder.Stakeholder.FirstName,
+                appUserStakeholder.Stakeholder.LastName,
+                appUserStakeholder.Stakeholder.AvatarUrl,
+                appUserStakeholder.Stakeholder.IsVerified);
     }
 }

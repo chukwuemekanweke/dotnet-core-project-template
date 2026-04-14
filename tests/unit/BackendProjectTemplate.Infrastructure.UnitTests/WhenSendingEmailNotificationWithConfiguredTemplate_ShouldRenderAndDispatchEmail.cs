@@ -29,7 +29,7 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_ShouldRen
             Path.Combine(tenantTemplateDirectory, "SignInSuccessful.html"),
             "A sign-in to your account was successful.\nIP Address: {{:IpAddress:}}\nUser Agent: {{:UserAgent:}}");
 
-        var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
+        var providerRepository = Substitute.For<IReadRepository<Provider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
         var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
         var emailNotificationLogRepository = Substitute.For<IRepository<EmailNotificationLog>>();
@@ -59,8 +59,8 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_ShouldRen
                     ["UserAgent"] = "Test Agent"
                 }));
 
-        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveEmailProviderSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(EmailProvider.Create("Logging", "logging", true, now));
+        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
+            .Returns(Provider.Create(ProviderType.Email, "Logging", "logging", true, now));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -102,3 +102,4 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_ShouldRen
             Arg.Any<CancellationToken>());
     }
 }
+

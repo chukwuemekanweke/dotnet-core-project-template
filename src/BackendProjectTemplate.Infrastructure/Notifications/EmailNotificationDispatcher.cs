@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 namespace BackendProjectTemplate.Infrastructure.Notifications;
 
 internal sealed class EmailNotificationDispatcher(
-    IReadRepository<EmailProvider> emailProviderRepository,
+    IReadRepository<Provider> providerRepository,
     IReadRepository<EmailNotificationTemplate> emailNotificationTemplateRepository,
     IReadRepository<Tenant> tenantRepository,
     IRepository<EmailNotificationLog> emailNotificationLogRepository,
@@ -51,7 +51,9 @@ internal sealed class EmailNotificationDispatcher(
 
         try
         {
-            var provider = await emailProviderRepository.FirstOrDefaultAsync(new ActiveEmailProviderSpecification(), cancellationToken);
+            var provider = await providerRepository.FirstOrDefaultAsync(
+                new ActiveProviderByTypeSpecification(ProviderType.Email),
+                cancellationToken);
 
             if (provider is null)
             {

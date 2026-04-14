@@ -31,6 +31,7 @@ public sealed class RegistrationsController(
             request.Email,
             request.Password,
             request.ConfirmPassword,
+            request.CountryId,
             request.FirstName,
             request.LastName);
 

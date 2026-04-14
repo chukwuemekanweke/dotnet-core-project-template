@@ -37,7 +37,7 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
         identityService.FindByIdAsync(userId).Returns(user);
         identityService.ResetAccessFailedCountAsync(user).Returns(IdentityResult.Success);
         stakeholderReadModelRepository.GetByAppUserIdAsync(userId, Arg.Any<CancellationToken>())
-            .Returns(new StakeholderReadModel(Guid.CreateVersion7(), userId, tenantId, countryId, Guid.CreateVersion7()));
+            .Returns(new StakeholderReadModel(Guid.CreateVersion7(), userId, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
 
         await new UserSignInSuccessfulHandler(customTelemetryContext, currentActorAccessor, identityService, stakeholderReadModelRepository, commandSender, unitOfWork).HandleAsync(
             new UserSignInSuccessful(userId, email, ipAddress, userAgent),

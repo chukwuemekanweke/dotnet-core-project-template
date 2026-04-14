@@ -29,7 +29,7 @@ public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldT
             Path.Combine(tenantTemplateDirectory, "SignInSuccessful.html"),
             "A sign-in to your account was successful.\nIP Address: {{:IpAddress:}");
 
-        var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
+        var providerRepository = Substitute.For<IReadRepository<Provider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
         var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
         var emailNotificationLogRepository = Substitute.For<IRepository<EmailNotificationLog>>();
@@ -58,8 +58,8 @@ public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldT
                     ["IpAddress"] = "127.0.0.1"
                 }));
 
-        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveEmailProviderSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(EmailProvider.Create("Logging", "logging", true, now));
+        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
+            .Returns(Provider.Create(ProviderType.Email, "Logging", "logging", true, now));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -99,3 +99,4 @@ public sealed class WhenSendingEmailNotificationWithMalformedPlaceholder_ShouldT
         await transportProvider.DidNotReceive().SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>());
     }
 }
+

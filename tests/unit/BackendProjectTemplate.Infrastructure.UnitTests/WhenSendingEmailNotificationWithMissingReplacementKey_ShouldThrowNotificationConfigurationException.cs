@@ -29,7 +29,7 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
             Path.Combine(tenantTemplateDirectory, "AccountLocked.html"),
             "Locked Until: {{:LockoutEndUtc:}}");
 
-        var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
+        var providerRepository = Substitute.For<IReadRepository<Provider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
         var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
         var emailNotificationLogRepository = Substitute.For<IRepository<EmailNotificationLog>>();
@@ -58,8 +58,8 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
                     ["LockedUntilUtc"] = "2026-04-11T00:00:00.0000000+00:00"
                 }));
 
-        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveEmailProviderSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(EmailProvider.Create("Logging", "logging", true, now));
+        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
+            .Returns(Provider.Create(ProviderType.Email, "Logging", "logging", true, now));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -99,3 +99,4 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
         await transportProvider.DidNotReceive().SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>());
     }
 }
+

@@ -5,6 +5,7 @@
   <ItemGroup>
     <PackageVersion Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.13.1" />
     <PackageVersion Include="Bogus" Version="35.6.5" />
     <PackageVersion Include="Chidelu.Integration.Messaging.RabbitMQ.Core" Version="1.0.1" />
     <PackageVersion Include="Chidelu.Integration.Messaging.RabbitMQ.Consumer" Version="1.0.1" />

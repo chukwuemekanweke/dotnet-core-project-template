@@ -27,7 +27,7 @@ public sealed class WhenSendingEmailNotificationWithHtmlBodyTemplate_ShouldRende
             Path.Combine(tenantTemplateDirectory, "AccountCreated.html"),
             "<div>Hello {{:FirstName:}}</div><div>Line 2</div>");
 
-        var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
+        var providerRepository = Substitute.For<IReadRepository<Provider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
         var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
         var emailNotificationLogRepository = Substitute.For<IRepository<EmailNotificationLog>>();
@@ -56,8 +56,8 @@ public sealed class WhenSendingEmailNotificationWithHtmlBodyTemplate_ShouldRende
                     ["FirstName"] = "Ada"
                 }));
 
-        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveEmailProviderSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(EmailProvider.Create("Logging", "logging", true, now));
+        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
+            .Returns(Provider.Create(ProviderType.Email, "Logging", "logging", true, now));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -98,3 +98,4 @@ public sealed class WhenSendingEmailNotificationWithHtmlBodyTemplate_ShouldRende
             Arg.Any<CancellationToken>());
     }
 }
+

@@ -133,7 +133,7 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndQu
         updateResult.Succeeded.ShouldBeTrue();
 
         var stakeholderType = StakeholderType.Create(_tenantId, "Individual Customer", "individual_customer", now);
-        var stakeholder = Stakeholder.Create(_tenantId, _countryId, stakeholderType.Id, now);
+        var stakeholder = Stakeholder.Create(_tenantId, _countryId, stakeholderType.Id, _firstName, _lastName, now);
         var appUserStakeholder = AppUserStakeholder.Create(user.Id, stakeholder.Id, now);
 
         await dbContext.StakeholderTypes.AddAsync(stakeholderType);

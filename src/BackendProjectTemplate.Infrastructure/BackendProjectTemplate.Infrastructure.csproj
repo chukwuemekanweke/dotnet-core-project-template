@@ -4,6 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" />
     <PackageReference Include="Chidelu.Integration.Messaging.RabbitMQ.Publisher" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Mailtrap" />

@@ -56,18 +56,8 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -328,7 +318,7 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
                     b.ToTable("EmailNotificationTemplates", "notifications");
                 });
 
-            modelBuilder.Entity("BackendProjectTemplate.Domain.Notifications.Entities.EmailProvider", b =>
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Notifications.Entities.Provider", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -364,6 +354,9 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("ProviderType")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
@@ -373,15 +366,15 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsActive")
+                    b.HasIndex("ProviderType", "IsActive")
                         .IsUnique()
-                        .HasFilter("[IsActive] = 1 AND [IsDeleted] = 0");
+                        .HasFilter("[ProviderType] IS NOT NULL AND [IsActive] = 1 AND [IsDeleted] = 0");
 
-                    b.HasIndex("ProviderKey")
+                    b.HasIndex("ProviderType", "ProviderKey")
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("EmailProviders", "notifications");
+                    b.ToTable("Providers", "notifications");
                 });
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Notifications.Entities.TenantEmailBaseTemplate", b =>
@@ -546,6 +539,10 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<Guid>("CountryId")
                         .HasColumnType("uniqueidentifier");
 
@@ -563,8 +560,21 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<Guid>("StakeholderTypeId")
                         .HasColumnType("uniqueidentifier");
@@ -635,11 +645,11 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Key")
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "Key")
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
-
-                    b.HasIndex("TenantId");
 
                     b.ToTable("StakeholderTypes", "stakeholders");
                 });

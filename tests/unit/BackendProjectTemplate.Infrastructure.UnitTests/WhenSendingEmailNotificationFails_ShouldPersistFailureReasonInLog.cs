@@ -17,7 +17,7 @@ public sealed class WhenSendingEmailNotificationFails_ShouldPersistFailureReason
     [Fact]
     public async Task Verify()
     {
-        var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
+        var providerRepository = Substitute.For<IReadRepository<Provider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
         var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
         var logRepository = Substitute.For<IRepository<EmailNotificationLog>>();
@@ -47,8 +47,8 @@ public sealed class WhenSendingEmailNotificationFails_ShouldPersistFailureReason
                     ["LockedUntilUtc"] = "now"
                 }));
 
-        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveEmailProviderSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(EmailProvider.Create("Logging", "logging", true, now));
+        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
+            .Returns(Provider.Create(ProviderType.Email, "Logging", "logging", true, now));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -76,3 +76,4 @@ public sealed class WhenSendingEmailNotificationFails_ShouldPersistFailureReason
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+

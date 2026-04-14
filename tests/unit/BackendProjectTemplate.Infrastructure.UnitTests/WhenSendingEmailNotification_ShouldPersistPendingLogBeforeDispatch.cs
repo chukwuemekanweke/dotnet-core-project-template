@@ -18,7 +18,7 @@ public sealed class WhenSendingEmailNotification_ShouldPersistPendingLogBeforeDi
     public async Task Verify()
     {
         var tenantId = Guid.CreateVersion7();
-        var providerRepository = Substitute.For<IReadRepository<EmailProvider>>();
+        var providerRepository = Substitute.For<IReadRepository<Provider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
         var tenantRepository = Substitute.For<IReadRepository<Tenant>>();
         var logRepository = Substitute.For<IRepository<EmailNotificationLog>>();
@@ -88,8 +88,8 @@ public sealed class WhenSendingEmailNotification_ShouldPersistPendingLogBeforeDi
                 Cc: ["cc-one@test.local", "cc-two@test.local"],
                 Bcc: ["bcc-one@test.local"]));
 
-        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveEmailProviderSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(EmailProvider.Create("Logging", "logging", true, now));
+        providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
+            .Returns(Provider.Create(ProviderType.Email, "Logging", "logging", true, now));
         templateRepository.FirstOrDefaultAsync(Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(), Arg.Any<CancellationToken>())
             .Returns(EmailNotificationTemplate.Create(
                 NotificationType.SignInSuccessful,
@@ -134,3 +134,4 @@ public sealed class WhenSendingEmailNotification_ShouldPersistPendingLogBeforeDi
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+

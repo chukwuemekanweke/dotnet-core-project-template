@@ -2,10 +2,12 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
 
 namespace BackendProjectTemplate.Application.UnitTests.Authentication;
@@ -18,22 +20,37 @@ internal sealed class AuthenticationFlowTestContext
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
+    public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
+    public IRepository<StakeholderType> StakeholderTypeRepository { get; } = Substitute.For<IRepository<StakeholderType>>();
+    public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
+    public IRepository<AppUserStakeholder> AppUserStakeholderRepository { get; } = Substitute.For<IRepository<AppUserStakeholder>>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public IUnitOfWorkTransaction Transaction { get; } = Substitute.For<IUnitOfWorkTransaction>();
 
     public AuthenticationFlowTestContext()
     {
+        CurrentActor.TenantId.Returns(Guid.Empty);
         UnitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Transaction));
     }
 
-    public SignUpHandler CreateSignUpHandler() => new(IdentityService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
+    public SignUpHandler CreateSignUpHandler() => new(
+        IdentityService,
+        EventPublisher,
+        CurrentActor,
+        StakeholderTypeRepository,
+        StakeholderRepository,
+        AppUserStakeholderRepository,
+        CustomTelemetryContext,
+        UnitOfWork,
+        Clock);
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(IdentityService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
     public SignInHandler CreateSignInHandler() => new(IdentityService, AccessTokenService, EventPublisher, CustomTelemetryContext, UnitOfWork, Clock);
 
     public static SignUpCommand CreateSignUpCommand(
         string? email = null,
         string? password = null,
+        Guid? countryId = null,
         string? firstName = null,
         string? lastName = null)
     {
@@ -43,6 +60,7 @@ internal sealed class AuthenticationFlowTestContext
             email ?? AuthenticationTestData.Email(),
             resolvedPassword,
             resolvedPassword,
+            countryId ?? Guid.CreateVersion7(),
             firstName ?? AuthenticationTestData.FirstName(),
             lastName ?? AuthenticationTestData.LastName());
     }

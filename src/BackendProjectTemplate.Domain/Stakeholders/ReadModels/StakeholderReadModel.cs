@@ -5,4 +5,8 @@ public sealed record StakeholderReadModel(
     Guid AppUserId,
     Guid TenantId,
     Guid CountryId,
-    Guid StakeholderTypeId);
+    Guid StakeholderTypeId,
+    string FirstName,
+    string LastName,
+    string? AvatarUrl,
+    bool IsVerified);

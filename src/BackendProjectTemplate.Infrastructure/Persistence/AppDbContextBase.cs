@@ -18,7 +18,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
 {
     public DbSet<Country> Countries => Set<Country>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
-    public DbSet<EmailProvider> EmailProviders => Set<EmailProvider>();
+    public DbSet<Provider> Providers => Set<Provider>();
     public DbSet<EmailNotificationTemplate> EmailNotificationTemplates => Set<EmailNotificationTemplate>();
     public DbSet<EmailNotificationLog> EmailNotificationLogs => Set<EmailNotificationLog>();
     public DbSet<TenantEmailBaseTemplate> TenantEmailBaseTemplates => Set<TenantEmailBaseTemplate>();

@@ -10,6 +10,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Authentication.Features.SignUp.SignUpHandler>();
         services.AddScoped<Authentication.Features.SignUpOtp.SignUpOtpHandler>();
         services.AddScoped<Authentication.Features.SignIn.SignInHandler>();
+        services.AddScoped<Stakeholders.Features.UploadAvatar.UploadAvatarHandler>();
+        services.AddScoped<Stakeholders.Features.UpdateProfile.UpdateProfileHandler>();
+        services.AddScoped<Providers.Features.ActivateProvider.ActivateProviderHandler>();
         services.AddScoped<GetCountriesHandler>();
 
         return services;

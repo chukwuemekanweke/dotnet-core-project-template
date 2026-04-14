@@ -9,12 +9,13 @@ public sealed class WhenCreatingEmailProvider_ShouldSetProviderNameProviderKeyIs
     {
         var utcNow = DateTimeOffset.UtcNow;
 
-        var emailProvider = EmailProvider.Create(" Mailtrap ", " mailtrap ", true, utcNow);
+        var provider = Provider.Create(ProviderType.Email, " Mailtrap ", " mailtrap ", true, utcNow);
 
-        emailProvider.ProviderName.ShouldBe("Mailtrap");
-        emailProvider.ProviderKey.ShouldBe("mailtrap");
-        emailProvider.IsActive.ShouldBeTrue();
-        emailProvider.CreatedAtUtc.ShouldBe(default);
-        emailProvider.UpdatedAtUtc.ShouldBe(default);
+        provider.ProviderName.ShouldBe("Mailtrap");
+        provider.ProviderKey.ShouldBe("mailtrap");
+        provider.IsActive.ShouldBeTrue();
+        provider.CreatedAtUtc.ShouldBe(default);
+        provider.UpdatedAtUtc.ShouldBe(default);
     }
 }
+
