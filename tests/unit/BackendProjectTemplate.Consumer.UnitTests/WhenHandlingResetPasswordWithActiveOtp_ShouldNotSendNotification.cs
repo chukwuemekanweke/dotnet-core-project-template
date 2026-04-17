@@ -16,7 +16,7 @@ public sealed class WhenHandlingResetPasswordWithActiveOtp_ShouldNotSendNotifica
     [Fact]
     public async Task Verify()
     {
-        var passwordResetOtpService = Substitute.For<IPasswordResetOtpService>();
+        var twoFactorOtpService = Substitute.For<ITwoFactorOtpService>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var messageContext = Substitute.For<IMessageContext>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
@@ -30,8 +30,8 @@ public sealed class WhenHandlingResetPasswordWithActiveOtp_ShouldNotSendNotifica
         var email = ConsumerTestData.Email();
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
-        passwordResetOtpService.GetActiveAsync(appUserId, Arg.Any<CancellationToken>())
-            .Returns(new PasswordResetOtp(ConsumerTestData.Otp(), DateTimeOffset.UtcNow.AddMinutes(2)));
+        twoFactorOtpService.OtpExistsAsync(appUserId, OtpIntent.PasswordReset, Arg.Any<CancellationToken>())
+            .Returns(true);
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(stakeholderId, appUserId, email, tenantId, countryId, Guid.CreateVersion7(), ConsumerTestData.FirstName(), ConsumerTestData.LastName(), null, false));
 
@@ -39,7 +39,7 @@ public sealed class WhenHandlingResetPasswordWithActiveOtp_ShouldNotSendNotifica
             customTelemetryContext,
             currentActorAccessor,
             messageContext,
-            passwordResetOtpService,
+            twoFactorOtpService,
             stakeholderReadModelRepository,
             commandSender,
             unitOfWork).HandleAsync(
@@ -50,7 +50,12 @@ public sealed class WhenHandlingResetPasswordWithActiveOtp_ShouldNotSendNotifica
             },
             CancellationToken.None);
 
-        await passwordResetOtpService.DidNotReceive().GenerateAsync(Arg.Any<Guid>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+        await twoFactorOtpService.DidNotReceive().GenerateOtpAsync(
+            Arg.Any<Guid>(),
+            Arg.Any<OtpIntent>(),
+            Arg.Any<CancellationToken>(),
+            Arg.Any<int>(),
+            Arg.Any<bool>());
         await commandSender.DidNotReceive().SendAsync(Arg.Any<Contracts.Commands.Notifications.SendNotificationCommand>(), Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }

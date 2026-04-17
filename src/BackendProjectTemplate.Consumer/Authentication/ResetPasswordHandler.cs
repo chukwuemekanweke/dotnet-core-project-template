@@ -15,13 +15,11 @@ public sealed class ResetPasswordHandler(
     ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
-    IPasswordResetOtpService passwordResetOtpService,
+    ITwoFactorOtpService twoFactorOtpService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
     IUnitOfWork unitOfWork) : BaseMessageHandler<ResetPasswordCommand>(customTelemetryContext, currentActorAccessor, messageContext)
 {
-    private static readonly TimeSpan OtpLifetime = TimeSpan.FromMinutes(2);
-
     protected override async Task HandleAsyncInternal(ResetPasswordCommand message, CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
@@ -36,13 +34,17 @@ public sealed class ResetPasswordHandler(
                 $"Unable to process ResetPasswordCommand because no stakeholder could be found for stakeholder '{message.StakeholderId}'.");
         }
 
-        var activeOtp = await passwordResetOtpService.GetActiveAsync(stakeholder.AppUserId, cancellationToken);
-        if (activeOtp is not null)
+        if (await twoFactorOtpService.OtpExistsAsync(stakeholder.AppUserId, OtpIntent.PasswordReset, cancellationToken))
         {
             return;
         }
 
-        var otp = await passwordResetOtpService.GenerateAsync(stakeholder.AppUserId, OtpLifetime, cancellationToken);
+        var otp = await twoFactorOtpService.GenerateOtpAsync(
+            stakeholder.AppUserId,
+            OtpIntent.PasswordReset,
+            cancellationToken,
+            characterLength: 6,
+            isAlphaNumeric: false);
 
         await commandSender.SendAsync(
             new SendNotificationCommand(

@@ -17,7 +17,7 @@ public sealed class WhenHandlingResetPassword_ShouldGenerateOtpAndSendNotificati
     [Fact]
     public async Task Verify()
     {
-        var passwordResetOtpService = Substitute.For<IPasswordResetOtpService>();
+        var twoFactorOtpService = Substitute.For<ITwoFactorOtpService>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var messageContext = Substitute.For<IMessageContext>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
@@ -31,12 +31,17 @@ public sealed class WhenHandlingResetPassword_ShouldGenerateOtpAndSendNotificati
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
         var email = ConsumerTestData.Email();
-        var otp = new PasswordResetOtp(ConsumerTestData.Otp(), DateTimeOffset.UtcNow.AddMinutes(2));
+        var otp = new TwoFactorOtp(ConsumerTestData.Otp(), DateTimeOffset.UtcNow.AddMinutes(2));
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
-        passwordResetOtpService.GetActiveAsync(appUserId, Arg.Any<CancellationToken>())
-            .Returns((PasswordResetOtp?)null);
-        passwordResetOtpService.GenerateAsync(appUserId, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+        twoFactorOtpService.OtpExistsAsync(appUserId, OtpIntent.PasswordReset, Arg.Any<CancellationToken>())
+            .Returns(false);
+        twoFactorOtpService.GenerateOtpAsync(
+                appUserId,
+                OtpIntent.PasswordReset,
+                Arg.Any<CancellationToken>(),
+                6,
+                false)
             .Returns(otp);
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(stakeholderId, appUserId, email, tenantId, countryId, Guid.CreateVersion7(), firstName, lastName, null, false));
@@ -45,7 +50,7 @@ public sealed class WhenHandlingResetPassword_ShouldGenerateOtpAndSendNotificati
             customTelemetryContext,
             currentActorAccessor,
             messageContext,
-            passwordResetOtpService,
+            twoFactorOtpService,
             stakeholderReadModelRepository,
             commandSender,
             unitOfWork).HandleAsync(
@@ -69,7 +74,12 @@ public sealed class WhenHandlingResetPassword_ShouldGenerateOtpAndSendNotificati
                 ((EmailNotificationContent)command.NotificationContent).Content["LastName"] == lastName &&
                 ((EmailNotificationContent)command.NotificationContent).Content["OtpCode"] == otp.Code),
             Arg.Any<CancellationToken>());
-        await passwordResetOtpService.Received(1).GenerateAsync(appUserId, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+        await twoFactorOtpService.Received(1).GenerateOtpAsync(
+            appUserId,
+            OtpIntent.PasswordReset,
+            Arg.Any<CancellationToken>(),
+            6,
+            false);
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
