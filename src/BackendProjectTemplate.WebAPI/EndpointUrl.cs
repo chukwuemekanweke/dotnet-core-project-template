@@ -26,6 +26,12 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
     }
 
+    public static class PasswordResets
+    {
+        public const string Route = $"api/{Versions.V1Route}/authentication/password-resets";
+        public static readonly string V1 = ToV1(Route);
+    }
+
     public static class Countries
     {
         public const string Route = $"api/{Versions.V1Route}/reference-data/countries";

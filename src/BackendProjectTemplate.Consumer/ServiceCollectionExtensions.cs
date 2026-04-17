@@ -3,6 +3,7 @@ using BackendProjectTemplate.Consumer.Notifications;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
+using ResetPassword = BackendProjectTemplate.Contracts.Commands.Authentication.ResetPasswordCommand;
 using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications.SendNotificationCommand;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
@@ -57,6 +58,7 @@ public static class ServiceCollectionExtensions
                 .AddHandler<UserSignInSuccessfulEvent, UserSignInSuccessfulHandler>()
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>())
             .AddConsumer(consumerConfig, builder => builder
+                .AddHandler<ResetPassword, ResetPasswordHandler>()
                 .AddHandler<SendNotification, SendNotificationHandler>())
             .AddHostedService(serviceProvider => new Worker(
                 serviceProvider.GetRequiredKeyedService<ISubscriber>(subscriberConfig.Key),

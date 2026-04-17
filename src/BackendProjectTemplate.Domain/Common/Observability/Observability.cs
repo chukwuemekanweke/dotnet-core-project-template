@@ -14,6 +14,7 @@ public static class Observability
         public static class Authentication
         {
             public const string SignUpRequested = "authentication.signup_requested";
+            public const string PasswordResetRequested = "authentication.password_reset_requested";
             public const string UserCreated = "authentication.user_created";
             public const string UserCreatedProcessed = "authentication.user_created_processed";
             public const string OtpConfirmed = "authentication.otp_confirmed";

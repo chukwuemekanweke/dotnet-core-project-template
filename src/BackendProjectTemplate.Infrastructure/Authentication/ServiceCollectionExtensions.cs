@@ -45,6 +45,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
+        services.AddScoped<IPasswordResetOtpService, PasswordResetOtpService>();
         services.AddScoped<IOtpDeliveryService, LoggingOtpDeliveryService>();
 
         return services;

@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Domain.Authentication.Entities;
@@ -19,6 +20,7 @@ internal sealed class AuthenticationFlowTestContext
     public IOtpDeliveryService OtpDeliveryService { get; } = Substitute.For<IOtpDeliveryService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
+    public ICommandSender CommandSender { get; } = Substitute.For<ICommandSender>();
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
     public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
     public IRepository<StakeholderType> StakeholderTypeRepository { get; } = Substitute.For<IRepository<StakeholderType>>();
@@ -59,6 +61,13 @@ internal sealed class AuthenticationFlowTestContext
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
+    public RequestPasswordResetHandler CreateRequestPasswordResetHandler() => new(
+        IdentityService,
+        CommandSender,
+        AppUserStakeholderRepository,
+        CurrentActor,
+        CustomTelemetryContext,
+        UnitOfWork);
 
     public static SignUpCommand CreateSignUpCommand(
         string? email = null,
@@ -95,6 +104,9 @@ internal sealed class AuthenticationFlowTestContext
         new(
             email ?? AuthenticationTestData.Email(),
             otp ?? AuthenticationTestData.Otp());
+
+    public static RequestPasswordResetCommand CreateRequestPasswordResetCommand(string? email = null) =>
+        new(email ?? AuthenticationTestData.Email());
 
     public AppUser CreateUser(
         string? email = null,
