@@ -1,13 +1,16 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.WebAPI.Infrastructure;
+using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 
 [ApiController]
 [ApiVersion("1.0")]
+[EnableRateLimiting(RateLimitingPolicyNames.AuthPublicPolicy)]
 [Route(EndpointUrl.Sessions.Route)]
 public sealed class SessionsController(
     SignInHandler handler,

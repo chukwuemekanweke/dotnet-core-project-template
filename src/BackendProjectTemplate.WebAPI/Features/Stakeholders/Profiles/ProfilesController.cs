@@ -2,13 +2,16 @@ using Asp.Versioning;
 using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
+using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 
 namespace BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
+[EnableRateLimiting(RateLimitingPolicyNames.AuthenticatedUserPolicy)]
 [Route($"{EndpointUrl.Stakeholders.Route}/me/profile")]
 public sealed class ProfilesController(
     UploadAvatarHandler uploadAvatarHandler,

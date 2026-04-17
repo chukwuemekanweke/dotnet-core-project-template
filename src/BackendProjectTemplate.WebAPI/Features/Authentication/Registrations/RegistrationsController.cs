@@ -1,13 +1,16 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.WebAPI.Infrastructure;
+using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 
 [ApiController]
 [ApiVersion("1.0")]
+[EnableRateLimiting(RateLimitingPolicyNames.AuthPublicPolicy)]
 [Route(EndpointUrl.Registrations.Route)]
 public sealed class RegistrationsController(
     SignUpHandler handler,

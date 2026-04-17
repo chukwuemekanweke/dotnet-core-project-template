@@ -9,6 +9,7 @@ using BackendProjectTemplate.Infrastructure.Storage;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
 using BackendProjectTemplate.WebAPI.Infrastructure;
+using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,6 +40,7 @@ builder.Services.AddSqlServerReadPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
 builder.Services.AddAuthenticationServices();
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddRequestRateLimiting(builder.Configuration);
 builder.Services.AddRedisCaching(builder.Configuration);
 builder.Services.AddObjectStorage(builder.Configuration);
 builder.Services.AddTransactionalOutbox();
@@ -52,10 +54,11 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseMiddleware<CurrentActorMiddleware>();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.UseApiDocumentation();
-app.MapPrometheusScrapingEndpoint("/metrics");
-app.MapHealthChecks("/health");
+app.MapPrometheusScrapingEndpoint("/metrics").DisableRateLimiting();
+app.MapHealthChecks("/health").DisableRateLimiting();
 app.MapControllers();
 app.MapGet("/", () => TypedResults.Ok(new
 {
