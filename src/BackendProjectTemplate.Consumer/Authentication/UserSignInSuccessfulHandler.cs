@@ -6,6 +6,7 @@ using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 
 namespace BackendProjectTemplate.Consumer.Authentication;
@@ -13,30 +14,31 @@ namespace BackendProjectTemplate.Consumer.Authentication;
 public sealed class UserSignInSuccessfulHandler(
     ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
+    IMessageContext messageContext,
     IAuthenticationIdentityService identityService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
-    IUnitOfWork unitOfWork) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor)
+    IUnitOfWork unitOfWork) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext)
 {
     protected override async Task HandleAsyncInternal(UserSignInSuccessful message, CancellationToken cancellationToken)
     {
-        if (message.UserId == Guid.Empty)
+        if (!message.StakeholderId.HasValue)
         {
-            throw new CannotProcessMessageNonTransientException("UserSignInSuccessful must contain a non-empty UserId.");
+            throw new CannotProcessMessageNonTransientException("UserSignInSuccessful must contain a valid stakeholder actor id.");
         }
 
-        var user = await identityService.FindByIdAsync(message.UserId);
+        var user = await identityService.FindByEmailAsync(message.EmailAddress);
         if (user is null)
         {
             throw new CannotProcessMessageNonTransientException(
-                $"Unable to process UserSignInSuccessful because user '{message.UserId}' could not be found.");
+                $"Unable to process UserSignInSuccessful because user '{message.EmailAddress}' could not be found.");
         }
 
-        var stakeholder = await stakeholderReadModelRepository.GetByAppUserIdAsync(message.UserId, cancellationToken);
+        var stakeholder = await stakeholderReadModelRepository.GetByStakeholderIdAsync(message.StakeholderId.Value, cancellationToken);
         if (stakeholder is null)
         {
             throw new CannotProcessMessageNonTransientException(
-                $"Unable to process UserSignInSuccessful because no stakeholder could be found for user '{message.UserId}'.");
+                $"Unable to process UserSignInSuccessful because no stakeholder could be found for stakeholder '{message.StakeholderId}'.");
         }
 
         var resetResult = await identityService.ResetAccessFailedCountAsync(user);
@@ -57,7 +59,10 @@ public sealed class UserSignInSuccessfulHandler(
                     {
                         ["IpAddress"] = message.IpAddress,
                         ["UserAgent"] = message.UserAgent
-                    })),
+                    }))
+            {
+                StakeholderId = stakeholder.StakeholderId
+            },
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

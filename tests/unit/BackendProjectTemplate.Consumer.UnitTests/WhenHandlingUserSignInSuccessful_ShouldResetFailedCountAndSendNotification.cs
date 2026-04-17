@@ -8,6 +8,7 @@ using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
 
@@ -20,13 +21,14 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
+        var messageContext = Substitute.For<IMessageContext>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
-        var userId = Guid.CreateVersion7();
+        var stakeholderId = Guid.CreateVersion7();
         var email = ConsumerTestData.Email();
         var ipAddress = ConsumerTestData.IpAddress();
         var userAgent = ConsumerTestData.UserAgent();
@@ -34,13 +36,18 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
         var lastName = ConsumerTestData.LastName();
         var user = AppUser.Create(email, firstName, lastName, DateTimeOffset.UtcNow);
 
-        identityService.FindByIdAsync(userId).Returns(user);
+        messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
+        identityService.FindByEmailAsync(email).Returns(user);
         identityService.ResetAccessFailedCountAsync(user).Returns(IdentityResult.Success);
-        stakeholderReadModelRepository.GetByAppUserIdAsync(userId, Arg.Any<CancellationToken>())
-            .Returns(new StakeholderReadModel(Guid.CreateVersion7(), userId, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
+        stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
+            .Returns(new StakeholderReadModel(stakeholderId, Guid.CreateVersion7(), tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
 
-        await new UserSignInSuccessfulHandler(customTelemetryContext, currentActorAccessor, identityService, stakeholderReadModelRepository, commandSender, unitOfWork).HandleAsync(
-            new UserSignInSuccessful(userId, email, ipAddress, userAgent),
+        await new UserSignInSuccessfulHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork).HandleAsync(
+            new UserSignInSuccessful(email, ipAddress, userAgent)
+            {
+                StakeholderId = stakeholderId,
+                TenantId = tenantId
+            },
             CancellationToken.None);
 
         await identityService.Received(1).ResetAccessFailedCountAsync(user);
@@ -50,6 +57,7 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
                 command.CountryId == countryId &&
                 command.NotificationType == NotificationType.SignInSuccessful &&
                 command.NotificationMedium == NotificationMedium.Email &&
+                command.StakeholderId == stakeholderId &&
                 command.NotificationContent is EmailNotificationContent &&
                 ((EmailNotificationContent)command.NotificationContent).To == email &&
                 ((EmailNotificationContent)command.NotificationContent).Content["IpAddress"] == ipAddress &&

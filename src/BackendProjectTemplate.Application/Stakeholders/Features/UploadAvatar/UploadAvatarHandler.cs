@@ -17,7 +17,7 @@ public sealed class UploadAvatarHandler(
 
     public async Task<UploadAvatarResult> HandleAsync(UploadAvatarCommand command, CancellationToken cancellationToken)
     {
-        if (!Guid.TryParse(currentActor.ActorId, out var appUserId))
+        if (!Guid.TryParse(currentActor.ActorId, out var stakeholderId))
         {
             return new UploadAvatarResult(UploadAvatarStatus.NotAuthenticated);
         }
@@ -33,7 +33,7 @@ public sealed class UploadAvatarHandler(
         }
 
         var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
-            new AppUserStakeholderByAppUserIdSpecification(appUserId),
+            new AppUserStakeholderByStakeholderIdSpecification(stakeholderId),
             cancellationToken);
         if (appUserStakeholder is null)
         {

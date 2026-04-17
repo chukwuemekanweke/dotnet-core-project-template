@@ -8,6 +8,7 @@ using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -21,30 +22,34 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_ShouldIncreme
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
+        var messageContext = Substitute.For<IMessageContext>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var logger = Substitute.For<ILogger<UserSignInFailedHandler>>();
-        var userId = Guid.CreateVersion7();
         var email = ConsumerTestData.Email();
         var ipAddress = ConsumerTestData.IpAddress();
         var userAgent = ConsumerTestData.UserAgent();
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
+        var tenantId = Guid.CreateVersion7();
         var user = AppUser.Create(email, firstName, lastName, DateTimeOffset.UtcNow);
 
-        identityService.FindByIdAsync(userId).Returns(user);
+        messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
+        identityService.FindByEmailAsync(email).Returns(user);
         identityService.AccessFailedAsync(user).Returns(IdentityResult.Success);
         identityService.IsLockedOutAsync(user).Returns(false);
 
-        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
+        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
             new UserSignInFailed(
-                userId,
                 email,
                 ipAddress,
                 userAgent,
-                UserSignInFailureReasons.InvalidCredentials),
+                UserSignInFailureReasons.InvalidCredentials)
+            {
+                TenantId = tenantId
+            },
             CancellationToken.None);
 
         await identityService.Received(1).AccessFailedAsync(user);

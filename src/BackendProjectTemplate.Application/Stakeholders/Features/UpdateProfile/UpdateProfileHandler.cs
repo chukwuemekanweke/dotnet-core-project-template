@@ -13,7 +13,7 @@ public sealed class UpdateProfileHandler(
 {
     public async Task<UpdateProfileResult> HandleAsync(UpdateProfileCommand command, CancellationToken cancellationToken)
     {
-        if (!Guid.TryParse(currentActor.ActorId, out var appUserId))
+        if (!Guid.TryParse(currentActor.ActorId, out var stakeholderId))
         {
             return new UpdateProfileResult(UpdateProfileStatus.NotAuthenticated);
         }
@@ -26,7 +26,7 @@ public sealed class UpdateProfileHandler(
         }
 
         var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
-            new AppUserStakeholderByAppUserIdSpecification(appUserId),
+            new AppUserStakeholderByStakeholderIdSpecification(stakeholderId),
             cancellationToken);
         if (appUserStakeholder is null)
         {

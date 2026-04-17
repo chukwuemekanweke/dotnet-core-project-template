@@ -6,6 +6,7 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using Chidelu.Integration.Messaging.RabbitMQ.Core;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
@@ -63,7 +64,17 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndQu
                 .BuildServiceProvider();
 
             var publisher = publisherServices.GetRequiredKeyedService<IPublisher>(publisherConfig.Key);
-            await publisher.PublishAsync(new UserSignInSuccessful(_userId, _email, _ipAddress, _userAgent), CancellationToken.None);
+            await publisher.PublishAsync(
+                new UserSignInSuccessful(_email, _ipAddress, _userAgent)
+                {
+                    StakeholderId = _stakeholderId,
+                    TenantId = _tenantId
+                },
+                CancellationToken.None,
+                new Dictionary<string, string>
+                {
+                    [KnownMetadata.CorrelationId] = Guid.CreateVersion7().ToString("N")
+                });
         }
 
         async Task ThenTheFailedCountIsResetAndTheNotificationCommandIsQueued()

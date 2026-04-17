@@ -7,9 +7,9 @@
     <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.13.1" />
     <PackageVersion Include="Bogus" Version="35.6.5" />
-    <PackageVersion Include="Chidelu.Integration.Messaging.RabbitMQ.Core" Version="1.0.1" />
-    <PackageVersion Include="Chidelu.Integration.Messaging.RabbitMQ.Consumer" Version="1.0.1" />
-    <PackageVersion Include="Chidelu.Integration.Messaging.RabbitMQ.Publisher" Version="1.0.1" />
+    <PackageVersion Include="Chidelu.Integration.Messaging.RabbitMQ.Core" Version="1.0.2" />
+    <PackageVersion Include="Chidelu.Integration.Messaging.RabbitMQ.Consumer" Version="1.0.2" />
+    <PackageVersion Include="Chidelu.Integration.Messaging.RabbitMQ.Publisher" Version="1.0.2" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
     <PackageVersion Include="Mailtrap" Version="3.1.1" />

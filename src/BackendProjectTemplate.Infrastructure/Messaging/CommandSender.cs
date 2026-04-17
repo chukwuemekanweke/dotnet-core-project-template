@@ -11,13 +11,15 @@ internal sealed class CommandSender(
     public Task SendAsync<TCommand>(TCommand message, CancellationToken cancellationToken = default)
         where TCommand : BaseCommand
     {
-        message.ActorId = currentActor.ActorId;
+        if (!message.StakeholderId.HasValue && Guid.TryParse(currentActor.ActorId, out var stakeholderId))
+        {
+            message.StakeholderId = stakeholderId;
+        }
+
         if (message.TenantId == Guid.Empty && currentActor.TenantId.HasValue)
         {
             message.TenantId = currentActor.TenantId.Value;
         }
-
-        message.CorrelationId = currentActor.CorrelationId;
 
         return outboxWriter.AddCommandAsync(message, cancellationToken);
     }

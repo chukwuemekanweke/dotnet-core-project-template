@@ -23,7 +23,6 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
     private ServiceProvider _subscriberServices = default!;
     private ISubscriber _subscriber = default!;
     private Guid _outboxMessageId;
-    private Guid _userId;
     private string _emailAddress = string.Empty;
 
     public WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent(ContainersFixture fixture)
@@ -43,7 +42,6 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             var received = await _channel.Reader.ReadAsync(cts.Token);
 
-            received.UserId.ShouldBe(_userId);
             received.EmailAddress.ShouldBe(_emailAddress);
             received.MessageId.ShouldNotBe(Guid.Empty);
 
@@ -115,10 +113,9 @@ public sealed class WhenProcessingPendingOutboxMessages_ShouldMarkMessageAsSent
 
     private async Task SeedPendingUserCreatedOutboxMessageAsync()
     {
-        _userId = Guid.CreateVersion7();
         _emailAddress = "jobs-outbox@example.com";
 
-        var @event = new UserCreated(_userId, _emailAddress);
+        var @event = new UserCreated(_emailAddress);
         var outboxMessage = OutboxMessage.CreateEvent(
             @event.MessageId,
             typeof(UserCreated).FullName.ShouldNotBeNull(),

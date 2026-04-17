@@ -24,7 +24,7 @@ public sealed class SignInHandler(
         if (user is null)
         {
             await PublishFailedAsync(
-                userId: null,
+                stakeholderId: null,
                 emailAddress: request.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
@@ -38,9 +38,10 @@ public sealed class SignInHandler(
         if (await identityService.IsLockedOutAsync(user))
         {
             var lockedUntilUtc = await identityService.GetLockoutEndUtcAsync(user);
+            var stakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
 
             await PublishFailedAsync(
-                userId: user.Id,
+                stakeholderId: stakeholder.StakeholderId,
                 emailAddress: user.Email ?? request.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
@@ -53,8 +54,9 @@ public sealed class SignInHandler(
 
         if (!user.EmailConfirmed)
         {
+            var stakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
             await PublishFailedAsync(
-                userId: user.Id,
+                stakeholderId: stakeholder.StakeholderId,
                 emailAddress: user.Email ?? request.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
@@ -67,8 +69,9 @@ public sealed class SignInHandler(
 
         if (!await identityService.CheckPasswordAsync(user, request.Password))
         {
+            var stakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
             await PublishFailedAsync(
-                userId: user.Id,
+                stakeholderId: stakeholder.StakeholderId,
                 emailAddress: user.Email ?? request.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
@@ -79,10 +82,11 @@ public sealed class SignInHandler(
             return new SignInResult(SignInStatus.InvalidCredentials, null);
         }
 
-        var accessToken = accessTokenService.Generate(user);
+        var currentStakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
+        var accessToken = accessTokenService.Generate(user, currentStakeholder.StakeholderId);
 
         await PublishSuccessfulAsync(
-            userId: user.Id,
+            stakeholderId: currentStakeholder.StakeholderId,
             emailAddress: user.Email ?? request.Email,
             ipAddress: request.IpAddress,
             userAgent: request.UserAgent,
@@ -93,7 +97,7 @@ public sealed class SignInHandler(
     }
 
     private async Task PublishSuccessfulAsync(
-        Guid userId,
+        Guid stakeholderId,
         string emailAddress,
         string ipAddress,
         string userAgent,
@@ -101,17 +105,21 @@ public sealed class SignInHandler(
     {
         var now = timeProvider.GetUtcNow();
 
-        await eventPublisher.PublishAsync(new UserSignInSuccessful(userId, emailAddress, ipAddress, userAgent)
+        await eventPublisher.PublishAsync(new UserSignInSuccessful(emailAddress, ipAddress, userAgent)
         {
+            StakeholderId = stakeholderId,
             OccuredAt = now
         }, cancellationToken);
 
-        var properties = await BuildStakeholderPropertiesAsync(userId, cancellationToken);
+        var properties = new Dictionary<string, string>
+        {
+            [Observability.StakeholderIdPropertyName] = stakeholderId.ToString()
+        };
         customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInSuccessful, properties);
     }
 
     private async Task PublishFailedAsync(
-        Guid? userId,
+        Guid? stakeholderId,
         string emailAddress,
         string ipAddress,
         string userAgent,
@@ -120,8 +128,9 @@ public sealed class SignInHandler(
     {
         var now = timeProvider.GetUtcNow();
 
-        await eventPublisher.PublishAsync(new UserSignInFailed(userId, emailAddress, ipAddress, userAgent, failureReason)
+        await eventPublisher.PublishAsync(new UserSignInFailed(emailAddress, ipAddress, userAgent, failureReason)
         {
+            StakeholderId = stakeholderId,
             OccuredAt = now
         }, cancellationToken);
 
@@ -130,31 +139,24 @@ public sealed class SignInHandler(
             ["FailureReason"] = failureReason
         };
 
-        if (userId.HasValue)
+        if (stakeholderId.HasValue)
         {
-            var stakeholderProperties = await BuildStakeholderPropertiesAsync(userId.Value, cancellationToken);
-            foreach (var property in stakeholderProperties)
-            {
-                properties[property.Key] = property.Value;
-            }
+            properties[Observability.StakeholderIdPropertyName] = stakeholderId.Value.ToString();
         }
 
         customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInFailed, properties);
     }
 
-    private async Task<Dictionary<string, string>> BuildStakeholderPropertiesAsync(Guid userId, CancellationToken cancellationToken)
+    private async Task<AppUserStakeholder> GetRequiredStakeholderAsync(Guid userId, CancellationToken cancellationToken)
     {
         var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
             new AppUserStakeholderByAppUserIdSpecification(userId),
             cancellationToken);
         if (appUserStakeholder is null)
         {
-            return [];
+            throw new InvalidOperationException($"Unable to resolve stakeholder for user '{userId}'.");
         }
 
-        return new Dictionary<string, string>
-        {
-            [Observability.StakeholderIdPropertyName] = appUserStakeholder.StakeholderId.ToString()
-        };
+        return appUserStakeholder;
     }
 }

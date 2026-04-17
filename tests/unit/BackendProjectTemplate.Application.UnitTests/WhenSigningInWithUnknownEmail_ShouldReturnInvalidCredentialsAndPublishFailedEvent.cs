@@ -31,7 +31,6 @@ public sealed class WhenSigningInWithUnknownEmail_ShouldReturnInvalidCredentials
         result.AccessToken.ShouldBeNull();
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserSignInFailed>(message =>
-                message.UserId == null &&
                 message.EmailAddress == email &&
                 message.IpAddress == ipAddress &&
                 message.UserAgent == userAgent &&

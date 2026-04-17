@@ -36,6 +36,9 @@ public sealed class SignUpOtpHandler(
 
         var now = timeProvider.GetUtcNow();
         user.MarkEmailVerified(now);
+        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
+            new AppUserStakeholderByAppUserIdSpecification(user.Id),
+            cancellationToken);
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
         var updateResult = await identityService.UpdateAsync(user);
@@ -44,16 +47,13 @@ public sealed class SignUpOtpHandler(
             throw new InvalidOperationException("Failed to update the user after OTP verification.");
         }
 
-        await eventPublisher.PublishAsync(new UserEmailConfirmed(user.Id, user.Email!)
+        await eventPublisher.PublishAsync(new UserEmailConfirmed(user.Email!)
         {
+            StakeholderId = appUserStakeholder?.StakeholderId,
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-
-        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
-            new AppUserStakeholderByAppUserIdSpecification(user.Id),
-            cancellationToken);
         var properties = new Dictionary<string, string>();
         if (appUserStakeholder is not null)
         {

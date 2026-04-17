@@ -5,12 +5,14 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
+using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 
 namespace BackendProjectTemplate.Consumer;
 
 public abstract class BaseMessageHandler<TMessage>(
     ICustomTelemetryContext customTelemetryContext,
-    ICurrentActorAccessor currentActorAccessor) : IMessageHandler<TMessage>
+    ICurrentActorAccessor currentActorAccessor,
+    IMessageContext messageContext) : IMessageHandler<TMessage>
 {
     private static readonly ActivitySource ActivitySource = new(Observability.ActivitySourceName);
 
@@ -24,31 +26,51 @@ public abstract class BaseMessageHandler<TMessage>(
 
         if (message is BaseEvent baseEvent)
         {
+            if (baseEvent.TenantId == Guid.Empty)
+            {
+                throw new CannotProcessMessageNonTransientException($"{typeof(TMessage).Name} must contain a valid tenant id.");
+            }
+
+            if (string.IsNullOrWhiteSpace(messageContext.CorrelationId))
+            {
+                throw new CannotProcessMessageNonTransientException($"{typeof(TMessage).Name} must contain a correlation id header.");
+            }
+
             currentActorAccessor.Set(
-                baseEvent.ActorId,
-                baseEvent.TenantId == Guid.Empty ? null : baseEvent.TenantId,
-                baseEvent.CorrelationId);
+                baseEvent.StakeholderId?.ToString() ?? ActorDefaults.SystemActorId,
+                baseEvent.TenantId,
+                messageContext.CorrelationId);
 
             CustomTelemetryContext
                 .SetProperty(Observability.MessageIdPropertyName, baseEvent.MessageId.ToString())
                 .SetProperty("OccurredAt", baseEvent.OccuredAt.ToString("O"))
-                .SetProperty("ActorId", baseEvent.ActorId)
-                .SetProperty("TenantId", baseEvent.TenantId == Guid.Empty ? string.Empty : baseEvent.TenantId.ToString())
-                .SetProperty("CorrelationId", baseEvent.CorrelationId);
+                .SetProperty(Observability.StakeholderIdPropertyName, baseEvent.StakeholderId?.ToString() ?? string.Empty)
+                .SetProperty("TenantId", baseEvent.TenantId.ToString())
+                .SetProperty("CorrelationId", messageContext.CorrelationId);
         }
         else if (message is BaseCommand baseCommand)
         {
+            if (baseCommand.TenantId == Guid.Empty)
+            {
+                throw new CannotProcessMessageNonTransientException($"{typeof(TMessage).Name} must contain a valid tenant id.");
+            }
+
+            if (string.IsNullOrWhiteSpace(messageContext.CorrelationId))
+            {
+                throw new CannotProcessMessageNonTransientException($"{typeof(TMessage).Name} must contain a correlation id header.");
+            }
+
             currentActorAccessor.Set(
-                baseCommand.ActorId,
-                baseCommand.TenantId == Guid.Empty ? null : baseCommand.TenantId,
-                baseCommand.CorrelationId);
+                baseCommand.StakeholderId?.ToString() ?? ActorDefaults.SystemActorId,
+                baseCommand.TenantId,
+                messageContext.CorrelationId);
 
             CustomTelemetryContext
                 .SetProperty(Observability.MessageIdPropertyName, baseCommand.MessageId.ToString())
                 .SetProperty("RequestedAt", baseCommand.RequestedAt.ToString("O"))
-                .SetProperty("ActorId", baseCommand.ActorId)
-                .SetProperty("TenantId", baseCommand.TenantId == Guid.Empty ? string.Empty : baseCommand.TenantId.ToString())
-                .SetProperty("CorrelationId", baseCommand.CorrelationId);
+                .SetProperty(Observability.StakeholderIdPropertyName, baseCommand.StakeholderId?.ToString() ?? string.Empty)
+                .SetProperty("TenantId", baseCommand.TenantId.ToString())
+                .SetProperty("CorrelationId", messageContext.CorrelationId);
         }
         else
         {

@@ -6,6 +6,7 @@ using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 
 namespace BackendProjectTemplate.Consumer.Authentication;
@@ -13,28 +14,23 @@ namespace BackendProjectTemplate.Consumer.Authentication;
 public sealed class UserSignInFailedHandler(
     ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
+    IMessageContext messageContext,
     IAuthenticationIdentityService identityService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
-    ILogger<UserSignInFailedHandler> logger) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor)
+    ILogger<UserSignInFailedHandler> logger) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor, messageContext)
 {
     protected override async Task HandleAsyncInternal(UserSignInFailed message, CancellationToken cancellationToken)
     {
-        if (!message.UserId.HasValue)
+        var user = await identityService.FindByEmailAsync(message.EmailAddress);
+        if (user is null)
         {
             logger.LogInformation(
                 "Skipping sign-in failure processing because no user could be resolved for email {EmailAddress}.",
                 message.EmailAddress);
 
             return;
-        }
-
-        var user = await identityService.FindByIdAsync(message.UserId.Value);
-        if (user is null)
-        {
-            throw new CannotProcessMessageNonTransientException(
-                $"Unable to process UserSignInFailed because user '{message.UserId.Value}' could not be found.");
         }
 
         if (message.FailureReason == UserSignInFailureReasons.InvalidCredentials)
@@ -46,7 +42,11 @@ public sealed class UserSignInFailedHandler(
             }
         }
 
-        var stakeholder = await stakeholderReadModelRepository.GetByAppUserIdAsync(message.UserId.Value, cancellationToken);
+        StakeholderReadModel? stakeholder = null;
+        if (message.StakeholderId.HasValue)
+        {
+            stakeholder = await stakeholderReadModelRepository.GetByStakeholderIdAsync(message.StakeholderId.Value, cancellationToken);
+        }
         var properties = new Dictionary<string, string>
         {
             ["FailureReason"] = message.FailureReason
@@ -63,7 +63,7 @@ public sealed class UserSignInFailedHandler(
             if (stakeholder is null)
             {
                 throw new CannotProcessMessageNonTransientException(
-                    $"Unable to process UserSignInFailed because no stakeholder could be found for user '{message.UserId.Value}'.");
+                    $"Unable to process UserSignInFailed because no stakeholder could be found for stakeholder '{message.StakeholderId}'.");
             }
 
             var lockedUntilUtc = await identityService.GetLockoutEndUtcAsync(user)
@@ -80,7 +80,10 @@ public sealed class UserSignInFailedHandler(
                         new Dictionary<string, string>
                         {
                             ["LockedUntilUtc"] = lockedUntilUtc.ToString("O")
-                        })),
+                        }))
+                {
+                    StakeholderId = stakeholder.StakeholderId
+                },
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             properties["LockedUntilUtc"] = lockedUntilUtc.ToString("O");

@@ -4,5 +4,5 @@ namespace BackendProjectTemplate.Domain.Common.Authentication;
 
 public interface IAccessTokenService
 {
-    AccessToken Generate(AppUser user);
+    AccessToken Generate(AppUser user, Guid stakeholderId);
 }

@@ -26,4 +26,24 @@ public sealed class StakeholderReadModelRepository(IReadRepository<AppUserStakeh
                 appUserStakeholder.Stakeholder.AvatarUrl,
                 appUserStakeholder.Stakeholder.IsVerified);
     }
+
+    public async Task<StakeholderReadModel?> GetByStakeholderIdAsync(Guid stakeholderId, CancellationToken cancellationToken = default)
+    {
+        var appUserStakeholder = await repository.FirstOrDefaultAsync(
+            new AppUserStakeholderByStakeholderIdSpecification(stakeholderId),
+            cancellationToken);
+
+        return appUserStakeholder is null
+            ? null
+            : new StakeholderReadModel(
+                appUserStakeholder.StakeholderId,
+                appUserStakeholder.AppUserId,
+                appUserStakeholder.Stakeholder.TenantId,
+                appUserStakeholder.Stakeholder.CountryId,
+                appUserStakeholder.Stakeholder.StakeholderTypeId,
+                appUserStakeholder.Stakeholder.FirstName,
+                appUserStakeholder.Stakeholder.LastName,
+                appUserStakeholder.Stakeholder.AvatarUrl,
+                appUserStakeholder.Stakeholder.IsVerified);
+    }
 }

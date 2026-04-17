@@ -11,6 +11,7 @@ public sealed class RabbitMqOutboxMessageDispatcher(
     [FromKeyedServices(RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey)] IPublisher publisher,
     [FromKeyedServices(RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey)] ISender sender) : IOutboxMessageDispatcher
 {
+    private const string ParentOperationIdHeader = "cimr-parent-operation-id";
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
     private static readonly MethodInfo PublishMethod = typeof(IPublisher)
@@ -28,32 +29,58 @@ public sealed class RabbitMqOutboxMessageDispatcher(
 
         return message.Kind switch
         {
-            OutboxMessageKind.Event => PublishEventAsync(messageType, payload, cancellationToken),
-            OutboxMessageKind.Command => SendCommandAsync(messageType, payload, cancellationToken),
+            OutboxMessageKind.Event => PublishEventAsync(message, messageType, payload, cancellationToken),
+            OutboxMessageKind.Command => SendCommandAsync(message, messageType, payload, cancellationToken),
             _ => throw new InvalidOperationException($"Unsupported outbox message kind '{message.Kind}'.")
         };
     }
 
-    private Task PublishEventAsync(Type messageType, object payload, CancellationToken cancellationToken)
+    private Task PublishEventAsync(OutboxMessage message, Type messageType, object payload, CancellationToken cancellationToken)
     {
         if (!typeof(IEvent).IsAssignableFrom(messageType))
         {
             throw new InvalidOperationException($"Outbox event type '{messageType.FullName}' does not implement IEvent.");
         }
 
+        var extraHeaders = BuildExtraHeaders(message);
         return (Task)(PublishMethod.MakeGenericMethod(messageType)
-            .Invoke(publisher, [payload, cancellationToken, null]) ?? throw new InvalidOperationException("Publisher invocation failed."));
+            .Invoke(publisher, [payload, cancellationToken, extraHeaders]) ?? throw new InvalidOperationException("Publisher invocation failed."));
     }
 
-    private Task SendCommandAsync(Type messageType, object payload, CancellationToken cancellationToken)
+    private Task SendCommandAsync(OutboxMessage message, Type messageType, object payload, CancellationToken cancellationToken)
     {
         if (!typeof(ICommand).IsAssignableFrom(messageType))
         {
             throw new InvalidOperationException($"Outbox command type '{messageType.FullName}' does not implement ICommand.");
         }
 
+        var extraHeaders = BuildExtraHeaders(message);
         return (Task)(SendMethod.MakeGenericMethod(messageType)
-            .Invoke(sender, [payload, cancellationToken, null]) ?? throw new InvalidOperationException("Sender invocation failed."));
+            .Invoke(sender, [payload, cancellationToken, extraHeaders]) ?? throw new InvalidOperationException("Sender invocation failed."));
+    }
+
+    private static IDictionary<string, string>? BuildExtraHeaders(OutboxMessage message) =>
+        CreateHeaders(message);
+
+    private static IDictionary<string, string>? CreateHeaders(OutboxMessage message)
+    {
+        Dictionary<string, string>? headers = null;
+
+        if (!string.IsNullOrWhiteSpace(message.CorrelationId))
+        {
+            headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [KnownMetadata.CorrelationId] = message.CorrelationId
+            };
+        }
+
+        if (!string.IsNullOrWhiteSpace(message.ActivityId))
+        {
+            headers ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            headers[ParentOperationIdHeader] = message.ActivityId;
+        }
+
+        return headers;
     }
 
     private static object DeserializePayload(string payload, Type messageType) =>

@@ -11,13 +11,15 @@ internal sealed class EventPublisher(
     public Task PublishAsync<TEvent>(TEvent message, CancellationToken cancellationToken = default)
         where TEvent : BaseEvent
     {
-        message.ActorId = currentActor.ActorId;
+        if (!message.StakeholderId.HasValue && Guid.TryParse(currentActor.ActorId, out var stakeholderId))
+        {
+            message.StakeholderId = stakeholderId;
+        }
+
         if (message.TenantId == Guid.Empty && currentActor.TenantId.HasValue)
         {
             message.TenantId = currentActor.TenantId.Value;
         }
-
-        message.CorrelationId = currentActor.CorrelationId;
 
         return outboxWriter.AddEventAsync(message, cancellationToken);
     }

@@ -3,6 +3,7 @@ using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Common.Notifications;
 using BackendProjectTemplate.Domain.Common.Observability;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 using NSubstitute;
 using Shouldly;
@@ -16,7 +17,9 @@ public sealed class WhenHandlingEmailNotificationCommandWithInvalidConfiguration
     {
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
+        var messageContext = Substitute.For<IMessageContext>();
         var emailNotificationService = Substitute.For<IEmailNotificationService>();
+        messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         var command = new SendNotificationCommand(
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
@@ -34,7 +37,7 @@ public sealed class WhenHandlingEmailNotificationCommandWithInvalidConfiguration
             .Returns(_ => throw new NotificationConfigurationException("No email provider is configured."));
 
         var exception = await Should.ThrowAsync<CannotProcessMessageNonTransientException>(() =>
-            new SendNotificationHandler(customTelemetryContext, currentActorAccessor, emailNotificationService)
+            new SendNotificationHandler(customTelemetryContext, currentActorAccessor, messageContext, emailNotificationService)
                 .HandleAsync(command, CancellationToken.None));
 
         exception.Message.ShouldBe("No email provider is configured.");

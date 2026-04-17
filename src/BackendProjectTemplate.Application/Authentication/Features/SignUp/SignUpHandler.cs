@@ -75,8 +75,9 @@ public sealed class SignUpHandler(
         var appUserStakeholder = AppUserStakeholder.Create(user.Id, stakeholder.Id, now);
         await appUserStakeholderRepository.AddAsync(appUserStakeholder, cancellationToken);
 
-        await eventPublisher.PublishAsync(new UserCreated(user.Id, user.Email!)
+        await eventPublisher.PublishAsync(new UserCreated(user.Email!)
         {
+            StakeholderId = stakeholder.Id,
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
