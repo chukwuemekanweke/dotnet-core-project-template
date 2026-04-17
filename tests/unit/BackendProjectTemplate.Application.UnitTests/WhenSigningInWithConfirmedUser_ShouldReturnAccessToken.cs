@@ -50,7 +50,6 @@ public sealed class WhenSigningInWithConfirmedUser_ShouldReturnAccessToken
         result.AccessToken.ShouldBe(expectedToken);
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserSignInSuccessful>(message =>
-                message.EmailAddress == email &&
                 message.IpAddress == ipAddress &&
                 message.UserAgent == userAgent &&
                 message.StakeholderId == stakeholderId),

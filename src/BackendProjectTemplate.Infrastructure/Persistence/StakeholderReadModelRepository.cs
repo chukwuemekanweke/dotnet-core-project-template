@@ -18,6 +18,7 @@ public sealed class StakeholderReadModelRepository(IReadRepository<AppUserStakeh
             : new StakeholderReadModel(
                 appUserStakeholder.StakeholderId,
                 appUserStakeholder.AppUserId,
+                appUserStakeholder.AppUser.Email ?? string.Empty,
                 appUserStakeholder.Stakeholder.TenantId,
                 appUserStakeholder.Stakeholder.CountryId,
                 appUserStakeholder.Stakeholder.StakeholderTypeId,
@@ -38,6 +39,7 @@ public sealed class StakeholderReadModelRepository(IReadRepository<AppUserStakeh
             : new StakeholderReadModel(
                 appUserStakeholder.StakeholderId,
                 appUserStakeholder.AppUserId,
+                appUserStakeholder.AppUser.Email ?? string.Empty,
                 appUserStakeholder.Stakeholder.TenantId,
                 appUserStakeholder.Stakeholder.CountryId,
                 appUserStakeholder.Stakeholder.StakeholderTypeId,

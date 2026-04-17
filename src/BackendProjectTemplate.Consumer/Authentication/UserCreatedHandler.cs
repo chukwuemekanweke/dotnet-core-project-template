@@ -42,7 +42,7 @@ public sealed class UserCreatedHandler(
         {
             logger.LogWarning(
                 "Skipping sign-up OTP delivery for email {EmailAddress} because the email is already confirmed.",
-                message.EmailAddress);
+                stakeholder.EmailAddress);
 
             return;
         }

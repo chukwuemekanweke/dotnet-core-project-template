@@ -1,4 +1,3 @@
 namespace BackendProjectTemplate.Contracts.Events;
 
-public sealed record UserEmailConfirmed(
-    string EmailAddress) : BaseEvent;
+public sealed record UserEmailConfirmed : BaseEvent;

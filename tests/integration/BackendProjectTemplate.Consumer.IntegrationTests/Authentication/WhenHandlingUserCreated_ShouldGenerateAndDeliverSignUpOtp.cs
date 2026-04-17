@@ -60,7 +60,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp(Co
 
             var publisher = publisherServices.GetRequiredKeyedService<IPublisher>(publisherConfig.Key);
             await publisher.PublishAsync(
-                new UserCreated(_email)
+                new UserCreated
                 {
                     StakeholderId = _stakeholderId,
                     TenantId = _tenantId

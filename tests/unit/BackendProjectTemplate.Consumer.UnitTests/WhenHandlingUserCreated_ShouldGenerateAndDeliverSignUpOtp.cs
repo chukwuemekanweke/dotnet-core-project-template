@@ -34,7 +34,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
-            .Returns(new StakeholderReadModel(stakeholderId, user.Id, tenantId, countryId, Guid.CreateVersion7(), firstName, lastName, null, false));
+            .Returns(new StakeholderReadModel(stakeholderId, user.Id, email, tenantId, countryId, Guid.CreateVersion7(), firstName, lastName, null, false));
         identityService.FindByIdAsync(user.Id).Returns(user);
         identityService.GenerateSignUpOtpAsync(user).Returns(otpCode);
 
@@ -46,7 +46,7 @@ public sealed class WhenHandlingUserCreated_ShouldGenerateAndDeliverSignUpOtp
             stakeholderReadModelRepository,
             otpDeliveryService,
             logger).HandleAsync(
-            new UserCreated(email)
+            new UserCreated
             {
                 StakeholderId = stakeholderId,
                 TenantId = tenantId

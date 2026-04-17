@@ -72,7 +72,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
 
             using var scope = CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<IRepository<OutboxMessage>>();
-            var outboxMessages = await repository.ListAsync(new UserCreatedOutboxMessagesSpecification(_email));
+            var outboxMessages = await repository.ListAsync(new UserCreatedOutboxMessagesSpecification());
 
             outboxMessages.Count.ShouldBe(1);
             outboxMessages[0].SentAtUtc.ShouldBeNull();
@@ -117,7 +117,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
             userRepository.Remove(user);
         }
 
-        var outboxMessages = await outboxRepository.ListAsync(new UserCreatedOutboxMessagesSpecification(_email));
+        var outboxMessages = await outboxRepository.ListAsync(new UserCreatedOutboxMessagesSpecification());
         foreach (var outboxMessage in outboxMessages)
         {
             outboxRepository.Remove(outboxMessage);
@@ -167,12 +167,11 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
 
     private sealed class UserCreatedOutboxMessagesSpecification : Specification<OutboxMessage>
     {
-        public UserCreatedOutboxMessagesSpecification(string email)
+        public UserCreatedOutboxMessagesSpecification()
         {
             Where(message =>
                 message.Kind == OutboxMessageKind.Event &&
-                message.Type == typeof(UserCreated).FullName! &&
-                message.Payload.Contains(email));
+                message.Type == typeof(UserCreated).FullName!);
         }
     }
 

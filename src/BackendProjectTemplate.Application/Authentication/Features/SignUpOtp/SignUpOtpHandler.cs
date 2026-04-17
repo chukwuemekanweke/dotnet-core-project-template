@@ -47,7 +47,7 @@ public sealed class SignUpOtpHandler(
             throw new InvalidOperationException("Failed to update the user after OTP verification.");
         }
 
-        await eventPublisher.PublishAsync(new UserEmailConfirmed(user.Email!)
+        await eventPublisher.PublishAsync(new UserEmailConfirmed
         {
             StakeholderId = appUserStakeholder?.StakeholderId,
             OccuredAt = now

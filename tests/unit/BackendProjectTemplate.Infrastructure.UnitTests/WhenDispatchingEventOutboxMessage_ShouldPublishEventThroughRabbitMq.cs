@@ -15,8 +15,11 @@ public sealed class WhenDispatchingEventOutboxMessage_ShouldPublishEventThroughR
     {
         var publisher = Substitute.For<IPublisher>();
         var sender = Substitute.For<ISender>();
-        var emailAddress = InfrastructureTestData.Email();
-        var @event = new UserCreated(emailAddress);
+        var stakeholderId = Guid.CreateVersion7();
+        var @event = new UserCreated
+        {
+            StakeholderId = stakeholderId
+        };
         var outboxMessage = OutboxMessage.CreateEvent(
             @event.MessageId,
             typeof(UserCreated).FullName.ShouldNotBeNull(),
@@ -28,7 +31,7 @@ public sealed class WhenDispatchingEventOutboxMessage_ShouldPublishEventThroughR
         await sut.DispatchAsync(outboxMessage);
 
         await publisher.Received(1).PublishAsync(
-            Arg.Is<UserCreated>(message => message.MessageId == @event.MessageId && message.EmailAddress == emailAddress),
+            Arg.Is<UserCreated>(message => message.MessageId == @event.MessageId && message.StakeholderId == stakeholderId),
             Arg.Any<CancellationToken>(),
             Arg.Any<IDictionary<string, string>?>());
     }

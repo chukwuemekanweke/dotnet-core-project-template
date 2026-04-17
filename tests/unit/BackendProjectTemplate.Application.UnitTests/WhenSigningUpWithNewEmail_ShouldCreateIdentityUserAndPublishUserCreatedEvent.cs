@@ -45,7 +45,7 @@ public sealed class WhenSigningUpWithNewEmail_ShouldCreateIdentityUserAndPublish
             Arg.Any<CancellationToken>());
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserCreated>(message =>
-                message.EmailAddress == email),
+                message.StakeholderId != null),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await context.Transaction.Received(1).CommitAsync(Arg.Any<CancellationToken>());

@@ -25,7 +25,6 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutStakeholderActorId_Sh
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
-        var email = ConsumerTestData.Email();
         var ipAddress = ConsumerTestData.IpAddress();
         var userAgent = ConsumerTestData.UserAgent();
         var tenantId = Guid.CreateVersion7();
@@ -40,13 +39,13 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutStakeholderActorId_Sh
             stakeholderReadModelRepository,
             commandSender,
             unitOfWork).HandleAsync(
-                new UserSignInSuccessful(email, ipAddress, userAgent)
+                new UserSignInSuccessful(ipAddress, userAgent)
                 {
                     TenantId = tenantId
                 },
                 CancellationToken.None);
 
         await action.ShouldThrowAsync<CannotProcessMessageNonTransientException>();
-        await identityService.DidNotReceive().FindByEmailAsync(Arg.Any<string>());
+        await identityService.DidNotReceive().FindByIdAsync(Arg.Any<Guid>());
     }
 }

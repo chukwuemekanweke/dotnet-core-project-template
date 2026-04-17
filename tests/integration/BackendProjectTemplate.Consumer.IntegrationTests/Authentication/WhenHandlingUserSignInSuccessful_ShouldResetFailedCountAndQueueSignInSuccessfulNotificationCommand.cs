@@ -65,7 +65,7 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndQu
 
             var publisher = publisherServices.GetRequiredKeyedService<IPublisher>(publisherConfig.Key);
             await publisher.PublishAsync(
-                new UserSignInSuccessful(_email, _ipAddress, _userAgent)
+                new UserSignInSuccessful(_ipAddress, _userAgent)
                 {
                     StakeholderId = _stakeholderId,
                     TenantId = _tenantId

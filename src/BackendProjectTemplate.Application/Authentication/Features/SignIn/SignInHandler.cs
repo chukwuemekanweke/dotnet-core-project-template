@@ -105,7 +105,7 @@ public sealed class SignInHandler(
     {
         var now = timeProvider.GetUtcNow();
 
-        await eventPublisher.PublishAsync(new UserSignInSuccessful(emailAddress, ipAddress, userAgent)
+        await eventPublisher.PublishAsync(new UserSignInSuccessful(ipAddress, userAgent)
         {
             StakeholderId = stakeholderId,
             OccuredAt = now

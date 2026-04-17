@@ -8,6 +8,7 @@ public sealed class AppUserStakeholderByStakeholderIdSpecification : Specificati
     public AppUserStakeholderByStakeholderIdSpecification(Guid stakeholderId)
     {
         Where(appUserStakeholder => appUserStakeholder.StakeholderId == stakeholderId);
+        AddInclude(appUserStakeholder => appUserStakeholder.AppUser);
         AddInclude(appUserStakeholder => appUserStakeholder.Stakeholder);
         AddInclude(appUserStakeholder => appUserStakeholder.Stakeholder.StakeholderType);
     }

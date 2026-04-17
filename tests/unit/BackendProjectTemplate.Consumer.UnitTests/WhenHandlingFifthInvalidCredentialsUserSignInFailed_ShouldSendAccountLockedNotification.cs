@@ -45,7 +45,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldSe
         identityService.IsLockedOutAsync(user).Returns(true);
         identityService.GetLockoutEndUtcAsync(user).Returns(lockedUntilUtc);
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
-            .Returns(new StakeholderReadModel(stakeholderId, Guid.CreateVersion7(), tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
+            .Returns(new StakeholderReadModel(stakeholderId, Guid.CreateVersion7(), email, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
 
         await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
             new UserSignInFailed(

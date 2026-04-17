@@ -27,18 +27,18 @@ public sealed class UserSignInSuccessfulHandler(
             throw new CannotProcessMessageNonTransientException("UserSignInSuccessful must contain a valid stakeholder actor id.");
         }
 
-        var user = await identityService.FindByEmailAsync(message.EmailAddress);
-        if (user is null)
-        {
-            throw new CannotProcessMessageNonTransientException(
-                $"Unable to process UserSignInSuccessful because user '{message.EmailAddress}' could not be found.");
-        }
-
         var stakeholder = await stakeholderReadModelRepository.GetByStakeholderIdAsync(message.StakeholderId.Value, cancellationToken);
         if (stakeholder is null)
         {
             throw new CannotProcessMessageNonTransientException(
                 $"Unable to process UserSignInSuccessful because no stakeholder could be found for stakeholder '{message.StakeholderId}'.");
+        }
+
+        var user = await identityService.FindByIdAsync(stakeholder.AppUserId);
+        if (user is null)
+        {
+            throw new CannotProcessMessageNonTransientException(
+                $"Unable to process UserSignInSuccessful because user '{stakeholder.AppUserId}' could not be found.");
         }
 
         var resetResult = await identityService.ResetAccessFailedCountAsync(user);
@@ -54,7 +54,7 @@ public sealed class UserSignInSuccessfulHandler(
                 NotificationType.SignInSuccessful,
                 NotificationMedium.Email,
                 new EmailNotificationContent(
-                    user.Email ?? message.EmailAddress,
+                    stakeholder.EmailAddress,
                     new Dictionary<string, string>
                     {
                         ["IpAddress"] = message.IpAddress,
