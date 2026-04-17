@@ -1,17 +1,15 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 using BackendProjectTemplate.Domain.Notifications.Entities;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.AspNetCore.Mvc;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BackendProjectTemplate.WebAPI.Features.Providers;
 
 [ApiController]
 [ApiVersion("1.0")]
 [Authorize]
-[EnableRateLimiting(RateLimitingPolicyNames.AuthenticatedUserPolicy)]
 [Route(EndpointUrl.Providers.Route)]
 public sealed class ProvidersController(ActivateProviderHandler activateProviderHandler) : ControllerBase
 {

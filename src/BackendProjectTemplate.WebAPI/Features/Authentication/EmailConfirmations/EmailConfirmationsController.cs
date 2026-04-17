@@ -10,7 +10,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmatio
 
 [ApiController]
 [ApiVersion("1.0")]
-[EnableRateLimiting(RateLimitingPolicyNames.AuthPublicPolicy)]
+[EnableRateLimiting(RateLimitingPolicyNames.EmailConfirmationPolicy)]
 [Route(EndpointUrl.EmailConfirmations.Route)]
 public sealed class EmailConfirmationsController(
     SignUpOtpHandler handler,

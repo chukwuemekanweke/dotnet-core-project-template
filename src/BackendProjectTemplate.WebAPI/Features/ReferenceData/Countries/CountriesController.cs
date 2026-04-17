@@ -1,11 +1,13 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BackendProjectTemplate.WebAPI.Features.ReferenceData.Countries;
 
 [ApiController]
 [ApiVersion("1.0")]
+[AllowAnonymous]
 [Route(EndpointUrl.Countries.Route)]
 public sealed class CountriesController(GetCountriesHandler handler) : ControllerBase
 {

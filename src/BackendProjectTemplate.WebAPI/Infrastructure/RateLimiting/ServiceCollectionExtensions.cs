@@ -11,23 +11,30 @@ public static class ServiceCollectionExtensions
     {
         var options = configuration.GetSection(RateLimitingOptions.SectionName).Get<RateLimitingOptions>() ?? new RateLimitingOptions();
 
-        Validate(options.AuthPublicPolicy, nameof(RateLimitingOptions.AuthPublicPolicy));
-        Validate(options.AuthenticatedUserPolicy, nameof(RateLimitingOptions.AuthenticatedUserPolicy));
-        Validate(options.GlobalFallbackPolicy, nameof(RateLimitingOptions.GlobalFallbackPolicy));
+        Validate(options.AuthenticatedGlobalPolicy, nameof(RateLimitingOptions.AuthenticatedGlobalPolicy));
+        Validate(options.AnonymousGlobalPolicy, nameof(RateLimitingOptions.AnonymousGlobalPolicy));
+        Validate(options.SignInPolicy, nameof(RateLimitingOptions.SignInPolicy));
+        Validate(options.SignUpPolicy, nameof(RateLimitingOptions.SignUpPolicy));
+        Validate(options.EmailConfirmationPolicy, nameof(RateLimitingOptions.EmailConfirmationPolicy));
+        Validate(options.PasswordResetPolicy, nameof(RateLimitingOptions.PasswordResetPolicy));
 
         services.Configure<RateLimitingOptions>(configuration.GetSection(RateLimitingOptions.SectionName));
         services.AddRateLimiter(rateLimiterOptions =>
         {
             rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            rateLimiterOptions.GlobalLimiter = CreatePartitionedLimiter(options.GlobalFallbackPolicy, ResolveGlobalFallbackPartitionKey);
+            rateLimiterOptions.GlobalLimiter = CreateGlobalLimiter(options);
 
             rateLimiterOptions.AddPolicy(
-                RateLimitingPolicyNames.AuthPublicPolicy,
-                context => CreateFixedWindowPartition(context, options.AuthPublicPolicy, ResolveClientIpPartitionKey(context)));
+                RateLimitingPolicyNames.SignInPolicy,
+                context => CreateFixedWindowPartition(options.SignInPolicy, ResolveClientIpPartitionKey(context)));
 
             rateLimiterOptions.AddPolicy(
-                RateLimitingPolicyNames.AuthenticatedUserPolicy,
-                context => CreateFixedWindowPartition(context, options.AuthenticatedUserPolicy, ResolveAuthenticatedUserPartitionKey(context)));
+                RateLimitingPolicyNames.SignUpPolicy,
+                context => CreateFixedWindowPartition(options.SignUpPolicy, ResolveClientIpPartitionKey(context)));
+
+            rateLimiterOptions.AddPolicy(
+                RateLimitingPolicyNames.EmailConfirmationPolicy,
+                context => CreateFixedWindowPartition(options.EmailConfirmationPolicy, ResolveClientIpPartitionKey(context)));
 
             rateLimiterOptions.OnRejected = async (context, cancellationToken) =>
             {
@@ -57,17 +64,22 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static PartitionedRateLimiter<HttpContext> CreatePartitionedLimiter(
-        RateLimitingOptions.PolicyOptions policy,
-        Func<HttpContext, string> partitionResolver)
+    private static PartitionedRateLimiter<HttpContext> CreateGlobalLimiter(RateLimitingOptions options)
     {
         return PartitionedRateLimiter.Create<HttpContext, string>(
-            context => CreateFixedWindowPartition(context, policy, partitionResolver(context)));
+            context =>
+            {
+                if (context.User.Identity?.IsAuthenticated == true)
+                {
+                    return CreateTokenBucketPartition(options.AuthenticatedGlobalPolicy, ResolveAuthenticatedUserPartitionKey(context));
+                }
+
+                return CreateSlidingWindowPartition(options.AnonymousGlobalPolicy, ResolveAnonymousPartitionKey(context));
+            });
     }
 
     private static RateLimitPartition<string> CreateFixedWindowPartition(
-        HttpContext context,
-        RateLimitingOptions.PolicyOptions policy,
+        RateLimitingOptions.FixedWindowPolicyOptions policy,
         string partitionKey)
     {
         return RateLimitPartition.GetFixedWindowLimiter(
@@ -82,6 +94,40 @@ public static class ServiceCollectionExtensions
             });
     }
 
+    private static RateLimitPartition<string> CreateSlidingWindowPartition(
+        RateLimitingOptions.SlidingWindowPolicyOptions policy,
+        string partitionKey)
+    {
+        return RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey,
+            _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = policy.PermitLimit,
+                Window = TimeSpan.FromMinutes(policy.WindowMinutes),
+                SegmentsPerWindow = policy.SegmentsPerWindow,
+                QueueLimit = policy.QueueLimit,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                AutoReplenishment = true
+            });
+    }
+
+    private static RateLimitPartition<string> CreateTokenBucketPartition(
+        RateLimitingOptions.TokenBucketPolicyOptions policy,
+        string partitionKey)
+    {
+        return RateLimitPartition.GetTokenBucketLimiter(
+            partitionKey,
+            _ => new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = policy.TokenLimit,
+                TokensPerPeriod = policy.TokensPerPeriod,
+                ReplenishmentPeriod = TimeSpan.FromSeconds(policy.ReplenishmentPeriodSeconds),
+                AutoReplenishment = true,
+                QueueLimit = policy.QueueLimit,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+            });
+    }
+
     private static string ResolveAuthenticatedUserPartitionKey(HttpContext context)
     {
         var appUserId =
@@ -93,15 +139,7 @@ public static class ServiceCollectionExtensions
             : ResolveClientIpPartitionKey(context);
     }
 
-    private static string ResolveGlobalFallbackPartitionKey(HttpContext context)
-    {
-        if (context.User.Identity?.IsAuthenticated == true)
-        {
-            return ResolveAuthenticatedUserPartitionKey(context);
-        }
-
-        return ResolveClientIpPartitionKey(context);
-    }
+    private static string ResolveAnonymousPartitionKey(HttpContext context) => ResolveClientIpPartitionKey(context);
 
     private static string ResolveClientIpPartitionKey(HttpContext context)
     {
@@ -119,7 +157,7 @@ public static class ServiceCollectionExtensions
         return $"ip:{remoteIpAddress}";
     }
 
-    private static void Validate(RateLimitingOptions.PolicyOptions policy, string name)
+    private static void Validate(RateLimitingOptions.FixedWindowPolicyOptions policy, string name)
     {
         if (policy.PermitLimit <= 0)
         {
@@ -129,6 +167,52 @@ public static class ServiceCollectionExtensions
         if (policy.WindowMinutes <= 0)
         {
             throw new InvalidOperationException($"{name} window minutes must be greater than zero.");
+        }
+
+        if (policy.QueueLimit < 0)
+        {
+            throw new InvalidOperationException($"{name} queue limit must be zero or greater.");
+        }
+    }
+
+    private static void Validate(RateLimitingOptions.SlidingWindowPolicyOptions policy, string name)
+    {
+        if (policy.PermitLimit <= 0)
+        {
+            throw new InvalidOperationException($"{name} permit limit must be greater than zero.");
+        }
+
+        if (policy.WindowMinutes <= 0)
+        {
+            throw new InvalidOperationException($"{name} window minutes must be greater than zero.");
+        }
+
+        if (policy.SegmentsPerWindow <= 0)
+        {
+            throw new InvalidOperationException($"{name} segments per window must be greater than zero.");
+        }
+
+        if (policy.QueueLimit < 0)
+        {
+            throw new InvalidOperationException($"{name} queue limit must be zero or greater.");
+        }
+    }
+
+    private static void Validate(RateLimitingOptions.TokenBucketPolicyOptions policy, string name)
+    {
+        if (policy.TokenLimit <= 0)
+        {
+            throw new InvalidOperationException($"{name} token limit must be greater than zero.");
+        }
+
+        if (policy.TokensPerPeriod <= 0)
+        {
+            throw new InvalidOperationException($"{name} tokens per period must be greater than zero.");
+        }
+
+        if (policy.ReplenishmentPeriodSeconds <= 0)
+        {
+            throw new InvalidOperationException($"{name} replenishment period seconds must be greater than zero.");
         }
 
         if (policy.QueueLimit < 0)

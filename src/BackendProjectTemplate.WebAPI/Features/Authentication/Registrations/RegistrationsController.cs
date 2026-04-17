@@ -10,7 +10,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 
 [ApiController]
 [ApiVersion("1.0")]
-[EnableRateLimiting(RateLimitingPolicyNames.AuthPublicPolicy)]
+[EnableRateLimiting(RateLimitingPolicyNames.SignUpPolicy)]
 [Route(EndpointUrl.Registrations.Route)]
 public sealed class RegistrationsController(
     SignUpHandler handler,

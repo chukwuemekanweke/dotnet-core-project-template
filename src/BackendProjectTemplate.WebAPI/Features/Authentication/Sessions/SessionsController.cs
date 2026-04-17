@@ -10,7 +10,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 
 [ApiController]
 [ApiVersion("1.0")]
-[EnableRateLimiting(RateLimitingPolicyNames.AuthPublicPolicy)]
+[EnableRateLimiting(RateLimitingPolicyNames.SignInPolicy)]
 [Route(EndpointUrl.Sessions.Route)]
 public sealed class SessionsController(
     SignInHandler handler,
