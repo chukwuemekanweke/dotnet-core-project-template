@@ -32,6 +32,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
         _tenantId = Guid.CreateVersion7();
         Client.DefaultRequestHeaders.Add("X-Tenant-Id", _tenantId.ToString());
         _countryId = await ResolveCountryIdAsync();
+        await EnsureDefaultStakeholderTypeExistsAsync();
     }
 
     public async Task DisposeAsync()
@@ -163,6 +164,18 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
         _createdCountryForTest = true;
 
         return country.Id;
+    }
+
+    private async Task EnsureDefaultStakeholderTypeExistsAsync()
+    {
+        using var scope = CreateScope();
+        var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
+
+        await stakeholderTypeRepository.AddAsync(stakeholderType);
+        await unitOfWork.SaveChangesAsync();
     }
 
     private sealed class UserCreatedOutboxMessagesSpecification : Specification<OutboxMessage>

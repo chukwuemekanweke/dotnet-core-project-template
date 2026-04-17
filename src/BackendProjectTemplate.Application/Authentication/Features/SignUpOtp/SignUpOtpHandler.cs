@@ -38,7 +38,9 @@ public sealed class SignUpOtpHandler(
         user.MarkEmailVerified(now);
         var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
             new AppUserStakeholderByAppUserIdSpecification(user.Id),
-            cancellationToken);
+            cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"Unable to resolve stakeholder for user '{user.Id}' during OTP confirmation.");
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
         var updateResult = await identityService.UpdateAsync(user);
@@ -49,16 +51,15 @@ public sealed class SignUpOtpHandler(
 
         await eventPublisher.PublishAsync(new UserEmailConfirmed
         {
-            StakeholderId = appUserStakeholder?.StakeholderId,
+            StakeholderId = appUserStakeholder.StakeholderId,
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        var properties = new Dictionary<string, string>();
-        if (appUserStakeholder is not null)
+        var properties = new Dictionary<string, string>
         {
-            properties[Observability.StakeholderIdPropertyName] = appUserStakeholder.StakeholderId.ToString();
-        }
+            [Observability.StakeholderIdPropertyName] = appUserStakeholder.StakeholderId.ToString()
+        };
 
         customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.OtpConfirmed, properties);
 

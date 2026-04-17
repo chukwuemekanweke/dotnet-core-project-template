@@ -2,9 +2,12 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
 using Shouldly;
+using StakeholderDefaults = BackendProjectTemplate.Application.Authentication.Constants.StakeholderDefaults;
 
 namespace BackendProjectTemplate.Application.UnitTests;
 
@@ -19,8 +22,20 @@ public sealed class WhenSigningUpWithNewEmail_ShouldCreateIdentityUserAndPublish
         var countryId = Guid.CreateVersion7();
         var firstName = AuthenticationTestData.FirstName();
         var lastName = AuthenticationTestData.LastName();
+        var tenantId = Guid.CreateVersion7();
+        var stakeholderType = StakeholderType.Create(
+            tenantId,
+            StakeholderDefaults.TypeName,
+            StakeholderDefaults.TypeKey,
+            context.Clock.GetUtcNow());
+
+        context.CurrentActor.TenantId.Returns(tenantId);
         context.IdentityService.FindByEmailAsync(email).Returns((AppUser?)null);
         context.IdentityService.CreateAsync(Arg.Any<AppUser>(), password).Returns(IdentityResult.Success);
+        context.StakeholderTypeRepository.FirstOrDefaultAsync(
+                Arg.Any<ISpecification<StakeholderType>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(stakeholderType);
 
         var result = await context.CreateSignUpHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateSignUpCommand(

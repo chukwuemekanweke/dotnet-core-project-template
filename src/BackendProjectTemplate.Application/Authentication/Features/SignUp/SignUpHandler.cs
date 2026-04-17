@@ -55,12 +55,8 @@ public sealed class SignUpHandler(
             cancellationToken);
         if (stakeholderType is null)
         {
-            stakeholderType = StakeholderType.Create(
-                tenantId,
-                StakeholderDefaults.TypeName,
-                StakeholderDefaults.TypeKey,
-                now);
-            await stakeholderTypeRepository.AddAsync(stakeholderType, cancellationToken);
+            throw new InvalidOperationException(
+                $"Stakeholder type '{StakeholderDefaults.TypeKey}' is not configured for tenant '{tenantId}'.");
         }
 
         var stakeholder = Stakeholder.Create(
