@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
@@ -14,7 +15,9 @@ namespace BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 [Route(EndpointUrl.Registrations.Route)]
 public sealed class RegistrationsController(
     SignUpHandler handler,
-    IValidator<SignUpRequest> validator) : ControllerBase
+    GoogleSignUpHandler googleSignUpHandler,
+    IValidator<SignUpRequest> validator,
+    IValidator<GoogleSignUpRequest> googleSignUpValidator) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType<SignUpResponse>(StatusCodes.Status202Accepted)]
@@ -51,6 +54,51 @@ public sealed class RegistrationsController(
             _ => Accepted((string?)null, new SignUpResponse(
                 request.Email,
                 "The sign-up request has been accepted. The account verification OTP will be sent shortly."))
+        };
+    }
+
+    [HttpPost("google")]
+    [ProducesResponseType<GoogleSignUpResponse>(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<GoogleSignUpResponse>> HandleGoogle(
+        [FromBody] GoogleSignUpRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await googleSignUpValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
+        }
+
+        var result = await googleSignUpHandler.HandleAsync(
+            new GoogleSignUpCommand(
+                request.IdToken,
+                request.CountryId,
+                request.FirstName,
+                request.LastName),
+            cancellationToken);
+
+        return result.Status switch
+        {
+            GoogleSignUpStatus.InvalidGoogleToken => Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Invalid Google token",
+                detail: "The supplied Google identity token is invalid or expired."),
+            GoogleSignUpStatus.DuplicateEmail => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Email already exists",
+                detail: "An account with this email address already exists."),
+            GoogleSignUpStatus.DuplicateGoogleAccount => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Google account already linked",
+                detail: "This Google account is already linked to another user."),
+            GoogleSignUpStatus.ValidationFailed => BadRequest(new ValidationProblemDetails(
+                new Dictionary<string, string[]>(result.ValidationErrors ?? new Dictionary<string, string[]>()))),
+            _ => Accepted((string?)null, new GoogleSignUpResponse(
+                result.Email ?? string.Empty,
+                "The Google sign-up request has been accepted and the email has been confirmed automatically."))
         };
     }
 }

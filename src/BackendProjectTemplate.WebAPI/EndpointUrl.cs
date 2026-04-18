@@ -24,6 +24,13 @@ public static class EndpointUrl
     {
         public const string Route = $"api/{Versions.V1Route}/authentication/sessions";
         public static readonly string V1 = ToV1(Route);
+        public static readonly string GoogleV1 = $"{V1}/google";
+    }
+
+    public static class GoogleRegistrations
+    {
+        public const string Route = $"{Registrations.Route}/google";
+        public static readonly string V1 = ToV1(Route);
     }
 
     public static class PasswordResets

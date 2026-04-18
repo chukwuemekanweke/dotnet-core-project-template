@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -32,7 +33,7 @@ public sealed class WhenHandlingUserSignInFailedWithMissingUser_ShouldSkipProces
         var tenantId = Guid.CreateVersion7();
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
-        identityService.FindByEmailAsync(email).Returns((BackendProjectTemplate.Domain.Authentication.Entities.AppUser?)null);
+        identityService.FindByEmailAsync(email).Returns((AppUser?)null);
 
         await new UserSignInFailedHandler(
             customTelemetryContext,

@@ -7,6 +7,7 @@ using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI;
+using BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmations;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -56,7 +57,7 @@ public sealed class WhenVerifyingSignUpOtp_ShouldActivateTheAccount(ContainersFi
         {
             _response = await Client.PostAsJsonAsync(
                 EndpointUrl.EmailConfirmations.V1,
-                new BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmations.SignUpOtpRequest(_email, _otp));
+                new SignUpOtpRequest(_email, _otp));
         }
 
         void ThenTheAccountIsActivated()

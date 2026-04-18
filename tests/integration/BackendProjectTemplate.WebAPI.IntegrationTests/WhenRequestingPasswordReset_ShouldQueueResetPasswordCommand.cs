@@ -4,10 +4,12 @@ using BackendProjectTemplate.Contracts.Commands.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI;
+using BackendProjectTemplate.WebAPI.Features.Authentication.PasswordResets;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -56,7 +58,7 @@ public sealed class WhenRequestingPasswordReset_ShouldQueueResetPasswordCommand(
         {
             _response = await Client.PostAsJsonAsync(
                 EndpointUrl.PasswordResets.V1,
-                new BackendProjectTemplate.WebAPI.Features.Authentication.PasswordResets.PasswordResetRequest(_email));
+                new PasswordResetRequest(_email));
         }
 
         async Task ThenTheRequestIsAcceptedAndResetPasswordCommandIsQueued()
@@ -79,7 +81,7 @@ public sealed class WhenRequestingPasswordReset_ShouldQueueResetPasswordCommand(
         _firstName = WebApiIntegrationTestData.FirstName();
         _lastName = WebApiIntegrationTestData.LastName();
         using var scope = CreateScope();
-        var identityService = scope.ServiceProvider.GetRequiredService<Domain.Common.Authentication.IAuthenticationIdentityService>();
+        var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
         var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();

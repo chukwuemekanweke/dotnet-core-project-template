@@ -11,6 +11,9 @@ namespace BackendProjectTemplate.Infrastructure.Authentication;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services) =>
+        services.AddAuthenticationServices(new ConfigurationBuilder().Build());
+
     public static IServiceCollection AddIdentityUserManagement(this IServiceCollection services, IConfiguration configuration)
     {
         var lockoutOptions = configuration
@@ -41,10 +44,12 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services)
+    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<GoogleAuthenticationOptions>(configuration.GetSection(GoogleAuthenticationOptions.SectionName));
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
+        services.AddScoped<IGoogleIdentityTokenService, GoogleIdentityTokenService>();
         services.AddScoped<ITwoFactorOtpService, TwoFactorOtpService>();
         services.AddScoped<IOtpDeliveryService, LoggingOtpDeliveryService>();
 

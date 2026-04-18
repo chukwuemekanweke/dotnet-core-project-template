@@ -1,4 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
+using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
@@ -17,6 +19,7 @@ internal sealed class AuthenticationFlowTestContext
 {
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero));
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
+    public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
     public IOtpDeliveryService OtpDeliveryService { get; } = Substitute.For<IOtpDeliveryService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
@@ -46,6 +49,17 @@ internal sealed class AuthenticationFlowTestContext
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
+    public GoogleSignUpHandler CreateGoogleSignUpHandler() => new(
+        IdentityService,
+        GoogleIdentityTokenService,
+        EventPublisher,
+        CurrentActor,
+        StakeholderTypeRepository,
+        StakeholderRepository,
+        AppUserStakeholderRepository,
+        CustomTelemetryContext,
+        UnitOfWork,
+        Clock);
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(
         IdentityService,
         EventPublisher,
@@ -55,6 +69,15 @@ internal sealed class AuthenticationFlowTestContext
         Clock);
     public SignInHandler CreateSignInHandler() => new(
         IdentityService,
+        AccessTokenService,
+        EventPublisher,
+        AppUserStakeholderRepository,
+        CustomTelemetryContext,
+        UnitOfWork,
+        Clock);
+    public GoogleSignInHandler CreateGoogleSignInHandler() => new(
+        IdentityService,
+        GoogleIdentityTokenService,
         AccessTokenService,
         EventPublisher,
         AppUserStakeholderRepository,
@@ -95,6 +118,26 @@ internal sealed class AuthenticationFlowTestContext
         new(
             email ?? AuthenticationTestData.Email(),
             password ?? AuthenticationTestData.StrongPassword(),
+            ipAddress ?? AuthenticationTestData.IpAddress(),
+            userAgent ?? AuthenticationTestData.UserAgent());
+
+    public static GoogleSignUpCommand CreateGoogleSignUpCommand(
+        string? idToken = null,
+        Guid? countryId = null,
+        string? firstName = null,
+        string? lastName = null) =>
+        new(
+            idToken ?? "google-id-token",
+            countryId ?? Guid.CreateVersion7(),
+            firstName ?? AuthenticationTestData.FirstName(),
+            lastName ?? AuthenticationTestData.LastName());
+
+    public static GoogleSignInCommand CreateGoogleSignInCommand(
+        string? idToken = null,
+        string? ipAddress = null,
+        string? userAgent = null) =>
+        new(
+            idToken ?? "google-id-token",
             ipAddress ?? AuthenticationTestData.IpAddress(),
             userAgent ?? AuthenticationTestData.UserAgent());
 

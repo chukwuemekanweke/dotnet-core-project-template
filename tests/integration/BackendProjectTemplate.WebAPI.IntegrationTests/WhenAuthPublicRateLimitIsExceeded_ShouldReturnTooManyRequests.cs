@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using BackendProjectTemplate.WebAPI;
+using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +41,7 @@ public sealed class WhenAuthPublicRateLimitIsExceeded_ShouldReturnTooManyRequest
                 _response?.Dispose();
                 _response = await Client.PostAsJsonAsync(
                     EndpointUrl.Sessions.V1,
-                    new BackendProjectTemplate.WebAPI.Features.Authentication.Sessions.SignInRequest(
+                    new SignInRequest(
                         "missing@example.com",
                         "WrongPassword123!"));
             }

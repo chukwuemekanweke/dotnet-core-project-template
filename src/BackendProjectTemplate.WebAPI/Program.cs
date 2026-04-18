@@ -38,7 +38,7 @@ builder.Services.AddApplication();
 builder.Services.AddSqlServerWritePersistence(builder.Configuration);
 builder.Services.AddSqlServerReadPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
-builder.Services.AddAuthenticationServices();
+builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddRequestRateLimiting(builder.Configuration);
 builder.Services.AddRedisCaching(builder.Configuration);

@@ -1,0 +1,17 @@
+using BackendProjectTemplate.Domain.Common.Authentication;
+
+namespace BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
+
+public sealed record GoogleSignInResult(
+    GoogleSignInStatus Status,
+    AccessToken? AccessToken,
+    DateTimeOffset? LockedUntilUtc = null);
+
+public enum GoogleSignInStatus
+{
+    Success = 1,
+    InvalidGoogleToken = 2,
+    AccountNotRegistered = 3,
+    EmailNotVerified = 4,
+    AccountLocked = 5
+}

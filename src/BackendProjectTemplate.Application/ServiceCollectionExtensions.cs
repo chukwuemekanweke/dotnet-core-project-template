@@ -1,4 +1,13 @@
+using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
+using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
+using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
+using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Application.Authentication.Features.SignUp;
+using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
+using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
+using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
+using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Application;
@@ -7,13 +16,15 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddScoped<Authentication.Features.SignUp.SignUpHandler>();
-        services.AddScoped<Authentication.Features.SignUpOtp.SignUpOtpHandler>();
-        services.AddScoped<Authentication.Features.SignIn.SignInHandler>();
-        services.AddScoped<Authentication.Features.RequestPasswordReset.RequestPasswordResetHandler>();
-        services.AddScoped<Stakeholders.Features.UploadAvatar.UploadAvatarHandler>();
-        services.AddScoped<Stakeholders.Features.UpdateProfile.UpdateProfileHandler>();
-        services.AddScoped<Providers.Features.ActivateProvider.ActivateProviderHandler>();
+        services.AddScoped<GoogleSignUpHandler>();
+        services.AddScoped<GoogleSignInHandler>();
+        services.AddScoped<SignUpHandler>();
+        services.AddScoped<SignUpOtpHandler>();
+        services.AddScoped<SignInHandler>();
+        services.AddScoped<RequestPasswordResetHandler>();
+        services.AddScoped<UploadAvatarHandler>();
+        services.AddScoped<UpdateProfileHandler>();
+        services.AddScoped<ActivateProviderHandler>();
         services.AddScoped<GetCountriesHandler>();
 
         return services;

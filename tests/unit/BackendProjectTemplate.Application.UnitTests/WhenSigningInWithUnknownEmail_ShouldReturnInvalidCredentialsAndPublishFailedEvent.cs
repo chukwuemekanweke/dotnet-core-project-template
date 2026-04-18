@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using NSubstitute;
 using Shouldly;
 
@@ -17,7 +18,7 @@ public sealed class WhenSigningInWithUnknownEmail_ShouldReturnInvalidCredentials
         var userAgent = AuthenticationTestData.UserAgent();
 
         var context = new AuthenticationFlowTestContext();
-        context.IdentityService.FindByEmailAsync(email).Returns((BackendProjectTemplate.Domain.Authentication.Entities.AppUser?)null);
+        context.IdentityService.FindByEmailAsync(email).Returns((AppUser?)null);
 
         var result = await context.CreateSignInHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateSignInCommand(

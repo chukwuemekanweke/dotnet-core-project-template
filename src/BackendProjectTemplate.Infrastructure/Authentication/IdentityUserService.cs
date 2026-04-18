@@ -12,6 +12,9 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
     public Task<AppUser?> FindByEmailAsync(string email) =>
         userManager.FindByEmailAsync(email);
 
+    public Task<AppUser?> FindByLoginAsync(string loginProvider, string providerKey) =>
+        userManager.FindByLoginAsync(loginProvider, providerKey);
+
     public Task<bool> IsLockedOutAsync(AppUser user) =>
         userManager.IsLockedOutAsync(user);
 
@@ -21,8 +24,14 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
         return lockoutEnd?.ToUniversalTime();
     }
 
+    public Task<IdentityResult> CreateAsync(AppUser user) =>
+        userManager.CreateAsync(user);
+
     public Task<IdentityResult> CreateAsync(AppUser user, string password) =>
         userManager.CreateAsync(user, password);
+
+    public Task<IdentityResult> AddLoginAsync(AppUser user, string loginProvider, string providerKey, string displayName) =>
+        userManager.AddLoginAsync(user, new UserLoginInfo(loginProvider, providerKey, displayName));
 
     public Task<string> GenerateSignUpOtpAsync(AppUser user) =>
         userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider);

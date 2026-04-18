@@ -1,0 +1,6 @@
+namespace BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
+
+public sealed record GoogleSignInResponse(
+    string AccessToken,
+    DateTimeOffset ExpiresAtUtc,
+    string TokenType);

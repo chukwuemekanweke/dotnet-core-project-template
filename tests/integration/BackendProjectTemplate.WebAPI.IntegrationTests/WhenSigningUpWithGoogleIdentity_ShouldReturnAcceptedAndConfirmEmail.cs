@@ -1,30 +1,29 @@
-using System.Net;
-using System.Net.Http.Json;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.WebAPI;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests;
 
 [Collection(nameof(ContainersCollection))]
-public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(ContainersFixture fixture)
+public sealed class WhenSigningUpWithGoogleIdentity_ShouldReturnAcceptedAndConfirmEmail(ContainersFixture fixture)
     : WebApiIntegrationTestBase(fixture), IAsyncLifetime
 {
-    private const string Password = "P@ssw0rd123!";
-
     private string _email = string.Empty;
     private Guid _tenantId;
     private Guid _countryId;
     private bool _createdCountryForTest;
-    private SignUpRequest _request = default!;
+    private string _idToken = string.Empty;
+    private GoogleSignUpRequest _request = default!;
     private HttpResponseMessage? _response;
 
     public async Task InitializeAsync()
@@ -46,38 +45,46 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
     [Fact]
     public async Task Verify()
     {
-        GivenANewEmailAddress();
-        await WhenSigningUp();
-        await ThenTheRequestIsAcceptedAndUserCreatedEventIsQueued();
+        await GivenAValidGoogleIdentity();
+        await WhenSigningUpWithGoogle();
+        await ThenTheRequestIsAcceptedAndTheEmailIsConfirmed();
 
-        void GivenANewEmailAddress()
+        async Task GivenAValidGoogleIdentity()
         {
             _email = WebApiIntegrationTestData.Email();
-            _request = new SignUpRequest(
-                _email,
-                Password,
-                Password,
+            _idToken = $"google-sign-up-{Guid.CreateVersion7():N}";
+            GoogleIdentityTokenService.Register(
+                _idToken,
+                new GoogleIdentityTokenPayload(Guid.CreateVersion7().ToString("N"), _email, "Google User"));
+
+            _request = new GoogleSignUpRequest(
+                _idToken,
                 _countryId,
                 WebApiIntegrationTestData.FirstName(),
                 WebApiIntegrationTestData.LastName());
+
+            await Task.CompletedTask;
         }
 
-        async Task WhenSigningUp()
+        async Task WhenSigningUpWithGoogle()
         {
-            _response = await Client.PostAsJsonAsync(EndpointUrl.Registrations.V1, _request);
+            _response = await Client.PostAsJsonAsync(EndpointUrl.GoogleRegistrations.V1, _request);
         }
 
-        async Task ThenTheRequestIsAcceptedAndUserCreatedEventIsQueued()
+        async Task ThenTheRequestIsAcceptedAndTheEmailIsConfirmed()
         {
             _response.ShouldNotBeNull();
             _response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
 
             using var scope = CreateScope();
-            var repository = scope.ServiceProvider.GetRequiredService<IRepository<OutboxMessage>>();
-            var outboxMessages = await repository.ListAsync(new UserCreatedOutboxMessagesSpecification());
+            var userRepository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
+            var outboxRepository = scope.ServiceProvider.GetRequiredService<IRepository<OutboxMessage>>();
+            var user = await userRepository.GetByEmailAsync(_email);
+            var outboxMessages = await outboxRepository.ListAsync(new UserCreatedOutboxMessagesSpecification());
 
+            user.ShouldNotBeNull();
+            user.EmailConfirmed.ShouldBeTrue();
             outboxMessages.Count.ShouldBe(1);
-            outboxMessages[0].SentAtUtc.ShouldBeNull();
         }
     }
 

@@ -1,4 +1,7 @@
-using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using System.Net;
+using System.Net.Http.Json;
+using BackendProjectTemplate.Application.Authentication.Constants;
+using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -8,22 +11,19 @@ using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests;
 
 [Collection(nameof(ContainersCollection))]
-public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(ContainersFixture fixture)
+public sealed class WhenSigningInWithRegisteredGoogleIdentity_ShouldReturnAccessToken(ContainersFixture fixture)
     : WebApiIntegrationTestBase(fixture), IAsyncLifetime
 {
-    private const string Password = "P@ssw0rd123!";
-
     private string _email = string.Empty;
     private string _firstName = string.Empty;
     private string _lastName = string.Empty;
+    private string _idToken = string.Empty;
+    private string _googleSubject = string.Empty;
     private Guid _tenantId;
     private Guid _countryId;
     private Guid _stakeholderId;
@@ -37,7 +37,7 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
         _tenantId = Guid.CreateVersion7();
         Client.DefaultRequestHeaders.Add("X-Tenant-Id", _tenantId.ToString());
         _countryId = await ResolveCountryIdAsync();
-        await CreateVerifiedUserAsync();
+        await CreateRegisteredGoogleUserAsync();
     }
 
     public async Task DisposeAsync()
@@ -50,18 +50,18 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
     [Fact]
     public async Task Verify()
     {
-        SignInResponse? payload = default;
+        GoogleSignInResponse? payload = default;
 
-        await WhenSigningIn();
+        await WhenSigningInWithGoogle();
         ThenAnAccessTokenIsReturned();
 
-        async Task WhenSigningIn()
+        async Task WhenSigningInWithGoogle()
         {
             _response = await Client.PostAsJsonAsync(
-                EndpointUrl.Sessions.V1,
-                new SignInRequest(_email, Password));
+                EndpointUrl.Sessions.GoogleV1,
+                new GoogleSignInRequest(_idToken));
 
-            payload = await _response.Content.ReadFromJsonAsync<SignInResponse>();
+            payload = await _response.Content.ReadFromJsonAsync<GoogleSignInResponse>();
         }
 
         void ThenAnAccessTokenIsReturned()
@@ -72,11 +72,17 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
         }
     }
 
-    private async Task CreateVerifiedUserAsync()
+    private async Task CreateRegisteredGoogleUserAsync()
     {
         _email = WebApiIntegrationTestData.Email();
         _firstName = WebApiIntegrationTestData.FirstName();
         _lastName = WebApiIntegrationTestData.LastName();
+        _googleSubject = Guid.CreateVersion7().ToString("N");
+        _idToken = $"google-sign-in-{Guid.CreateVersion7():N}";
+        GoogleIdentityTokenService.Register(
+            _idToken,
+            new GoogleIdentityTokenPayload(_googleSubject, _email, "Google User"));
+
         using var scope = CreateScope();
         var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
         var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
@@ -87,12 +93,17 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
 
         var now = timeProvider.GetUtcNow();
         var user = AppUser.Create(_email, _firstName, _lastName, now);
-        var createResult = await identityService.CreateAsync(user, Password);
+        user.MarkEmailVerified(now);
+
+        var createResult = await identityService.CreateAsync(user);
         createResult.Succeeded.ShouldBeTrue();
 
-        user.MarkEmailVerified(now);
-        var updateResult = await identityService.UpdateAsync(user);
-        updateResult.Succeeded.ShouldBeTrue();
+        var addLoginResult = await identityService.AddLoginAsync(
+            user,
+            ExternalLoginProviders.Google,
+            _googleSubject,
+            ExternalLoginProviders.Google);
+        addLoginResult.Succeeded.ShouldBeTrue();
 
         var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
         var stakeholder = Stakeholder.Create(_tenantId, _countryId, stakeholderType.Id, _firstName, _lastName, now);

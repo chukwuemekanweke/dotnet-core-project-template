@@ -7,9 +7,12 @@ public interface IAuthenticationIdentityService
 {
     Task<AppUser?> FindByIdAsync(Guid userId);
     Task<AppUser?> FindByEmailAsync(string email);
+    Task<AppUser?> FindByLoginAsync(string loginProvider, string providerKey);
     Task<bool> IsLockedOutAsync(AppUser user);
     Task<DateTimeOffset?> GetLockoutEndUtcAsync(AppUser user);
+    Task<IdentityResult> CreateAsync(AppUser user);
     Task<IdentityResult> CreateAsync(AppUser user, string password);
+    Task<IdentityResult> AddLoginAsync(AppUser user, string loginProvider, string providerKey, string displayName);
     Task<string> GenerateSignUpOtpAsync(AppUser user);
     Task<bool> VerifySignUpOtpAsync(AppUser user, string otp);
     Task<bool> CheckPasswordAsync(AppUser user, string password);

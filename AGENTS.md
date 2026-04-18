@@ -136,3 +136,5 @@ Matching WebAPI request DTO location:
 - In method signatures, use `CancellationToken cancellationToken` and do not use a default value (do not write `= default`).
 - ASP.NET Core Identity is the authentication base. Do not reintroduce custom authentication flows when built-in Identity behavior is sufficient.
 - Keep application dependencies narrow. If wrapping `UserManager`, expose only the methods the application currently uses.
+- Always simplify type and namespace usage inside files. Do not use fully qualified type names when a `using` directive makes the code clearer.
+- When multiple types have the same name, prefer `using` aliases for the ambiguous types instead of leaving fully qualified names inline throughout the file.
