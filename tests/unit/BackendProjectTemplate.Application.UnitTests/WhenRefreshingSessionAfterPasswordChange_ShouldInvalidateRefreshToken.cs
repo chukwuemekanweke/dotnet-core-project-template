@@ -34,7 +34,7 @@ public sealed class WhenRefreshingSessionAfterPasswordChange_ShouldInvalidateRef
         context.IdentityService.GetSecurityStampAsync(user).Returns("current-stamp");
 
         var result = await context.CreateRefreshSessionHandler().HandleAsync(
-            new RefreshSessionCommand("refresh-token"),
+            AuthenticationFlowTestContext.CreateRefreshSessionCommand("refresh-token"),
             CancellationToken.None);
 
         result.Status.ShouldBe(RefreshSessionStatus.InvalidRefreshToken);

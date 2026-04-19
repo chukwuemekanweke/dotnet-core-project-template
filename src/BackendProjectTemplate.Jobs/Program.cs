@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Jobs.Authentication;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Jobs.HealthChecks;
@@ -16,6 +17,7 @@ builder.Services.AddSqlServerWritePersistence(builder.Configuration);
 builder.Services.AddSqlServerReadPersistence(builder.Configuration);
 builder.Services.AddRabbitMqOutboxDispatching(builder.Configuration);
 builder.Services.AddOutboxMessageProcessing(builder.Configuration);
+builder.Services.AddIpAddressLocationEnrichment(builder.Configuration);
 builder.Services.AddJobsHealthChecks();
 builder.Services.AddJobsOpenTelemetry(builder.Configuration);
 

@@ -22,6 +22,7 @@ public static class Observability
             public const string UserSignInSuccessful = "authentication.user_sign_in_successful";
             public const string UserSignInFailed = "authentication.user_sign_in_failed";
             public const string UserSignedOut = "authentication.user_signed_out";
+            public const string UserAccessTokenRefreshed = "authentication.user_access_token_refreshed";
         }
 
         public static class Notifications

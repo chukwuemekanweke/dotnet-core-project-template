@@ -1,5 +1,8 @@
 using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
@@ -8,7 +11,9 @@ public sealed class RefreshSessionHandler(
     IAuthenticationIdentityService identityService,
     IAccessTokenService accessTokenService,
     IRefreshTokenService refreshTokenService,
+    IEventPublisher eventPublisher,
     AppUserStakeholderResolver appUserStakeholderResolver,
+    ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -54,10 +59,37 @@ public sealed class RefreshSessionHandler(
         var accessToken = accessTokenService.Generate(user, currentStakeholder.StakeholderId);
         var refreshToken = await refreshTokenService.RotateAsync(currentRefreshToken, user, cancellationToken);
 
+        await PublishTokenRefreshedAsync(
+            stakeholderId: currentStakeholder.StakeholderId,
+            ipAddress: request.IpAddress,
+            userAgent: request.UserAgent,
+            cancellationToken);
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new RefreshSessionResult(
             RefreshSessionStatus.Success,
             new AuthenticationTokens(accessToken, refreshToken));
+    }
+
+    private async Task PublishTokenRefreshedAsync(
+        Guid stakeholderId,
+        string ipAddress,
+        string userAgent,
+        CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow();
+
+        await eventPublisher.PublishAsync(new UserAccessTokenRefreshed(ipAddress, userAgent)
+        {
+            StakeholderId = stakeholderId,
+            OccuredAt = now
+        }, cancellationToken);
+
+        var properties = new Dictionary<string, string>
+        {
+            [Observability.StakeholderIdPropertyName] = stakeholderId.ToString()
+        };
+        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserAccessTokenRefreshed, properties);
     }
 }

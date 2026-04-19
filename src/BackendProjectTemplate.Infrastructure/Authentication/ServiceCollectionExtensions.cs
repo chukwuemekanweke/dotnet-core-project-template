@@ -1,13 +1,12 @@
-using System.Text;
 using BackendProjectTemplate.Domain.Common.Caching;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
@@ -51,6 +50,8 @@ public static class ServiceCollectionExtensions
     {
         services.Configure<GoogleAuthenticationOptions>(configuration.GetSection(GoogleAuthenticationOptions.SectionName));
         services.Configure<RefreshTokenOptions>(configuration.GetSection(RefreshTokenOptions.SectionName));
+        services.AddSingleton<IUserAgentParserService, UserAgentParserService>();
+
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
         services.AddSingleton<IAccessTokenRevocationService, AccessTokenRevocationService>();
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
@@ -58,6 +59,24 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<ITwoFactorOtpService, TwoFactorOtpService>();
         services.AddScoped<IOtpDeliveryService, LoggingOtpDeliveryService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddIpGeolocationServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<IpApiComOptions>(configuration.GetSection(IpApiComOptions.SectionName));
+        services.Configure<IpInfoOptions>(configuration.GetSection(IpInfoOptions.SectionName));
+        services.Configure<IpWhoIsOptions>(configuration.GetSection(IpWhoIsOptions.SectionName));
+
+        services.AddHttpClient("IpApiComClient", client => client.Timeout = TimeSpan.FromSeconds(5));
+        services.AddHttpClient("IpInfoClient", client => client.Timeout = TimeSpan.FromSeconds(5));
+        services.AddHttpClient("IpWhoIsClient", client => client.Timeout = TimeSpan.FromSeconds(5));
+
+        services.AddSingleton<IIpGeolocationProvider, IpApiComClient>();
+        services.AddSingleton<IIpGeolocationProvider, IpInfoClient>();
+        services.AddSingleton<IIpGeolocationProvider, IpWhoIsClient>();
+        services.AddSingleton<IIpGeolocationService, IpGeolocationService>();
 
         return services;
     }

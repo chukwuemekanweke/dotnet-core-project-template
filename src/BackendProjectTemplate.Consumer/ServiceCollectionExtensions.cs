@@ -5,6 +5,7 @@ using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
 using ResetPassword = BackendProjectTemplate.Contracts.Commands.Authentication.ResetPasswordCommand;
 using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications.SendNotificationCommand;
+using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.UserAccessTokenRefreshed;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
 using UserSignInSuccessfulEvent = BackendProjectTemplate.Contracts.Events.UserSignInSuccessful;
@@ -15,6 +16,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSubscribers(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddScoped<ILoginActivityIpAddressResolver, LoginActivityIpAddressResolver>();
+
         var options = configuration
             .GetSection(RabbitMqMessagingOptions.SectionName)
             .Get<RabbitMqMessagingOptions>()
@@ -56,6 +59,7 @@ public static class ServiceCollectionExtensions
             .AddSubscriber(subscriberConfig, builder => builder
                 .AddHandler<UserCreatedEvent, UserCreatedHandler>()
                 .AddHandler<UserSignInSuccessfulEvent, UserSignInSuccessfulHandler>()
+                .AddHandler<UserAccessTokenRefreshedEvent, UserAccessTokenRefreshedHandler>()
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>())
             .AddConsumer(consumerConfig, builder => builder
                 .AddHandler<ResetPassword, ResetPasswordHandler>()

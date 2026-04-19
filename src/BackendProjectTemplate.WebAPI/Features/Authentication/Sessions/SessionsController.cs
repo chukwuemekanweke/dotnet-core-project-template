@@ -151,8 +151,11 @@ public sealed class SessionsController(
             return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
 
-        var result = await refreshSessionHandler.HandleAsync(
-            new RefreshSessionCommand(request.RefreshToken),
+var result = await refreshSessionHandler.HandleAsync(
+            new RefreshSessionCommand(
+                request.RefreshToken,
+                HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                Request.Headers.UserAgent.ToString()),
             cancellationToken);
 
         return result.Status switch

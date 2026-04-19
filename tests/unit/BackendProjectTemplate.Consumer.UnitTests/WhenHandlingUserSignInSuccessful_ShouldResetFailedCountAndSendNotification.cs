@@ -1,7 +1,8 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
-using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -25,6 +26,9 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var loginActivityIpAddressResolver = Substitute.For<ILoginActivityIpAddressResolver>();
+        var loginActivityRepository = Substitute.For<IRepository<LoginActivity>>();
+        var userAgentParserService = Substitute.For<IUserAgentParserService>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
@@ -42,8 +46,22 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
         identityService.ResetAccessFailedCountAsync(user).Returns(IdentityResult.Success);
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(stakeholderId, appUserId, email, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
+        userAgentParserService.Parse(userAgent).Returns(new UserAgentInfo("Desktop", "Windows", "Chrome"));
+        loginActivityIpAddressResolver.ResolveAsync(ipAddress, Arg.Any<CancellationToken>())
+            .Returns(new LoginActivityIpAddressResolution(Guid.CreateVersion7(), null));
 
-        await new UserSignInSuccessfulHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork).HandleAsync(
+        await new UserSignInSuccessfulHandler(
+            customTelemetryContext,
+            currentActorAccessor,
+            messageContext,
+            identityService,
+            stakeholderReadModelRepository,
+            commandSender,
+            loginActivityIpAddressResolver,
+            loginActivityRepository,
+            unitOfWork,
+            userAgentParserService,
+            TimeProvider.System).HandleAsync(
             new UserSignInSuccessful(ipAddress, userAgent)
             {
                 StakeholderId = stakeholderId,
@@ -64,6 +82,8 @@ public sealed class WhenHandlingUserSignInSuccessful_ShouldResetFailedCountAndSe
                 ((EmailNotificationContent)command.NotificationContent).Content["IpAddress"] == ipAddress &&
                 ((EmailNotificationContent)command.NotificationContent).Content["UserAgent"] == userAgent),
             Arg.Any<CancellationToken>());
+        await loginActivityIpAddressResolver.Received(1).ResolveAsync(ipAddress, Arg.Any<CancellationToken>());
+        await loginActivityRepository.Received(1).AddAsync(Arg.Any<LoginActivity>(), Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

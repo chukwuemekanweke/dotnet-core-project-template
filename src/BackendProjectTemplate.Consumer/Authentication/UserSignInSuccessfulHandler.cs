@@ -1,5 +1,7 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -18,7 +20,11 @@ public sealed class UserSignInSuccessfulHandler(
     IAuthenticationIdentityService identityService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
-    IUnitOfWork unitOfWork) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext)
+    ILoginActivityIpAddressResolver loginActivityIpAddressResolver,
+    IRepository<LoginActivity> loginActivityRepository,
+    IUnitOfWork unitOfWork,
+    IUserAgentParserService userAgentParserService,
+    TimeProvider timeProvider) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext)
 {
     protected override async Task HandleAsyncInternal(UserSignInSuccessful message, CancellationToken cancellationToken)
     {
@@ -46,6 +52,22 @@ public sealed class UserSignInSuccessfulHandler(
         {
             throw new InvalidOperationException($"Failed to reset access-failed count for user {user.Id}.");
         }
+
+        var userAgentInfo = userAgentParserService.Parse(message.UserAgent);
+        var ipAddressResolution = await loginActivityIpAddressResolver.ResolveAsync(message.IpAddress, cancellationToken);
+
+        var loginActivity = LoginActivity.CreateInitialLogin(
+            stakeholder.StakeholderId,
+            stakeholder.TenantId,
+            ipAddressResolution.IpAddressId,
+            ipAddressResolution.IpAddressLocationId,
+            message.UserAgent,
+            userAgentInfo.DeviceName,
+            userAgentInfo.DevicePlatform,
+            userAgentInfo.BrowserName,
+            timeProvider.GetUtcNow());
+
+        await loginActivityRepository.AddAsync(loginActivity, cancellationToken);
 
         await commandSender.SendAsync(
             new SendNotificationCommand(

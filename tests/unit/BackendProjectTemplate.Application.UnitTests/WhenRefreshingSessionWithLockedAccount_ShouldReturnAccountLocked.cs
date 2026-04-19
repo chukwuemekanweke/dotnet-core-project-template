@@ -38,7 +38,7 @@ public sealed class WhenRefreshingSessionWithLockedAccount_ShouldReturnAccountLo
         context.IdentityService.GetLockoutEndUtcAsync(user).Returns(lockedUntilUtc);
 
         var result = await context.CreateRefreshSessionHandler().HandleAsync(
-            new RefreshSessionCommand("refresh-token"),
+            AuthenticationFlowTestContext.CreateRefreshSessionCommand("refresh-token"),
             CancellationToken.None);
 
         result.Status.ShouldBe(RefreshSessionStatus.AccountLocked);

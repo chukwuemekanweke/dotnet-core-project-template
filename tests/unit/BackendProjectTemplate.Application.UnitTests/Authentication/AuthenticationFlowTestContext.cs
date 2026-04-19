@@ -98,7 +98,9 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         AccessTokenService,
         RefreshTokenService,
+        EventPublisher,
         AppUserStakeholderResolver,
+        CustomTelemetryContext,
         UnitOfWork,
         Clock);
     public RequestPasswordResetHandler CreateRequestPasswordResetHandler() => new(
@@ -191,6 +193,15 @@ internal sealed class AuthenticationFlowTestContext
             resolvedPassword,
             confirmPassword ?? resolvedPassword);
     }
+
+    public static RefreshSessionCommand CreateRefreshSessionCommand(
+        string? refreshToken = null,
+        string? ipAddress = null,
+        string? userAgent = null) =>
+        new(
+            refreshToken ?? "refresh-token",
+            ipAddress ?? AuthenticationTestData.IpAddress(),
+            userAgent ?? AuthenticationTestData.UserAgent());
 
     public AppUser CreateUser(
         string? email = null,

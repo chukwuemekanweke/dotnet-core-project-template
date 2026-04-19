@@ -1,5 +1,7 @@
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -24,6 +26,9 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutStakeholderActorId_Sh
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var loginActivityIpAddressResolver = Substitute.For<ILoginActivityIpAddressResolver>();
+        var loginActivityRepository = Substitute.For<IRepository<LoginActivity>>();
+        var userAgentParserService = Substitute.For<IUserAgentParserService>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var ipAddress = ConsumerTestData.IpAddress();
         var userAgent = ConsumerTestData.UserAgent();
@@ -38,7 +43,11 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutStakeholderActorId_Sh
             identityService,
             stakeholderReadModelRepository,
             commandSender,
-            unitOfWork).HandleAsync(
+            loginActivityIpAddressResolver,
+            loginActivityRepository,
+            unitOfWork,
+            userAgentParserService,
+            TimeProvider.System).HandleAsync(
                 new UserSignInSuccessful(ipAddress, userAgent)
                 {
                     TenantId = tenantId

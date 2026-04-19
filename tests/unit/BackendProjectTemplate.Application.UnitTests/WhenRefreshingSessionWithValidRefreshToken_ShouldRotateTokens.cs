@@ -46,7 +46,7 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_ShouldRotateToken
             .Returns(expectedRefreshToken);
 
         var result = await context.CreateRefreshSessionHandler().HandleAsync(
-            new RefreshSessionCommand("refresh-token"),
+            AuthenticationFlowTestContext.CreateRefreshSessionCommand("refresh-token"),
             CancellationToken.None);
 
         result.Status.ShouldBe(RefreshSessionStatus.Success);

@@ -16,7 +16,7 @@ builder.Services.AddSingleton<WorkerReadinessState>();
 builder.Services.AddSqlServerWritePersistence(builder.Configuration);
 builder.Services.AddSqlServerReadPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
-builder.Services.AddAuthenticationServices();
+builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddRedisCaching(builder.Configuration);
 builder.Services.AddTransactionalOutbox();
 builder.Services.AddNotificationServices(builder.Configuration);
