@@ -1,6 +1,8 @@
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
 using Shouldly;
@@ -16,13 +18,16 @@ public sealed class WhenCompletingPasswordResetWithValidOtp_ShouldResetPassword
         var user = context.CreateUser();
         var otp = AuthenticationTestData.Otp();
         var password = AuthenticationTestData.StrongPassword();
-        const string resetToken = "reset-token";
+        var stakeholderId = Guid.CreateVersion7();
 
         context.IdentityService.FindByEmailAsync(user.Email!).Returns(user);
         context.TwoFactorOtpService.ValidateOtpAsync(user.Id, otp, OtpIntent.PasswordReset, Arg.Any<CancellationToken>())
             .Returns(true);
-        context.IdentityService.GeneratePasswordResetTokenAsync(user).Returns(resetToken);
-        context.IdentityService.ResetPasswordAsync(user, resetToken, password).Returns(IdentityResult.Success);
+        context.IdentityService.ResetPasswordAsync(user, password).Returns(IdentityResult.Success);
+        context.AppUserStakeholderRepository.FirstOrDefaultAsync(
+                Arg.Any<ISpecification<AppUserStakeholder>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(AppUserStakeholder.Create(user.Id, stakeholderId, context.Clock.GetUtcNow()));
 
         var result = await context.CreateCompletePasswordResetHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateCompletePasswordResetCommand(

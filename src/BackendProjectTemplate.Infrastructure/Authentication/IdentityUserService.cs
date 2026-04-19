@@ -42,11 +42,11 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
     public Task<bool> VerifySignUpOtpAsync(AppUser user, string otp) =>
         userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider, otp);
 
-    public Task<string> GeneratePasswordResetTokenAsync(AppUser user) =>
-        userManager.GeneratePasswordResetTokenAsync(user);
-
-    public Task<IdentityResult> ResetPasswordAsync(AppUser user, string resetToken, string newPassword) =>
-        userManager.ResetPasswordAsync(user, resetToken, newPassword);
+    public async Task<IdentityResult> ResetPasswordAsync(AppUser user, string newPassword)
+    {
+        var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+        return await userManager.ResetPasswordAsync(user, resetToken, newPassword);
+    }
 
     public Task<bool> CheckPasswordAsync(AppUser user, string password) =>
         userManager.CheckPasswordAsync(user, password);

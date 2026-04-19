@@ -26,6 +26,8 @@ public sealed class WhenCompletingPasswordResetWithInvalidOtp_ShouldReturnInvali
             CancellationToken.None);
 
         result.Status.ShouldBe(CompletePasswordResetStatus.InvalidOtp);
-        await context.IdentityService.DidNotReceive().GeneratePasswordResetTokenAsync(Arg.Any<Domain.Authentication.Entities.AppUser>());
+        await context.IdentityService.DidNotReceive().ResetPasswordAsync(
+            Arg.Any<Domain.Authentication.Entities.AppUser>(),
+            Arg.Any<string>());
     }
 }

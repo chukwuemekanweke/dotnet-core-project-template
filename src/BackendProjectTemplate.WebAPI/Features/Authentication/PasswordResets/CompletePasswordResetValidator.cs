@@ -13,7 +13,7 @@ public sealed class CompletePasswordResetValidator : AbstractValidator<CompleteP
         RuleFor(request => request.Otp)
             .NotEmpty()
             .Length(6)
-            .Matches("^[0-9]{6}$");
+            .Matches("^[a-zA-Z0-9]{6}$");
 
         RuleFor(request => request.Password)
             .NotEmpty()

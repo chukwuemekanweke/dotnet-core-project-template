@@ -107,6 +107,7 @@ internal sealed class AuthenticationFlowTestContext
     public CompletePasswordResetHandler CreateCompletePasswordResetHandler() => new(
         IdentityService,
         TwoFactorOtpService,
+        AppUserStakeholderRepository,
         CustomTelemetryContext,
         UnitOfWork);
 

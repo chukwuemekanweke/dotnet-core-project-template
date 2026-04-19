@@ -1,12 +1,15 @@
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 
 public sealed class CompletePasswordResetHandler(
     IAuthenticationIdentityService identityService,
     ITwoFactorOtpService twoFactorOtpService,
+    IRepository<AppUserStakeholder> appUserStakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
 {
@@ -31,8 +34,7 @@ public sealed class CompletePasswordResetHandler(
             return new CompletePasswordResetResult(CompletePasswordResetStatus.InvalidOtp);
         }
 
-        var resetToken = await identityService.GeneratePasswordResetTokenAsync(user);
-        var resetResult = await identityService.ResetPasswordAsync(user, resetToken, request.Password);
+        var resetResult = await identityService.ResetPasswordAsync(user, request.Password);
         if (!resetResult.Succeeded)
         {
             return new CompletePasswordResetResult(
@@ -41,15 +43,29 @@ public sealed class CompletePasswordResetHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        var stakeholderId = await GetRequiredStakeholderIdAsync(user.Id, cancellationToken);
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetCompleted,
             new Dictionary<string, string>
             {
-                [Observability.UserIdPropertyName] = user.Id.ToString(),
-                ["Email"] = normalizedEmail
+                [Observability.StakeholderIdPropertyName] = stakeholderId.ToString()
             });
 
         return new CompletePasswordResetResult(CompletePasswordResetStatus.Success);
+    }
+
+    private async Task<Guid> GetRequiredStakeholderIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
+            new AppUserStakeholderByAppUserIdSpecification(userId),
+            cancellationToken);
+        if (appUserStakeholder is null)
+        {
+            throw new InvalidOperationException(
+                $"Unable to resolve stakeholder for user '{userId}' during password reset completion.");
+        }
+
+        return appUserStakeholder.StakeholderId;
     }
 }
