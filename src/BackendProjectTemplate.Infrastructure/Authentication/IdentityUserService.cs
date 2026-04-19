@@ -15,6 +15,9 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
     public Task<AppUser?> FindByLoginAsync(string loginProvider, string providerKey) =>
         userManager.FindByLoginAsync(loginProvider, providerKey);
 
+    public Task<string> GetSecurityStampAsync(AppUser user) =>
+        userManager.GetSecurityStampAsync(user);
+
     public Task<bool> IsLockedOutAsync(AppUser user) =>
         userManager.IsLockedOutAsync(user);
 

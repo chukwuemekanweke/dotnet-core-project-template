@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
+using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
@@ -20,6 +21,7 @@ internal sealed class AuthenticationFlowTestContext
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero));
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
     public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
+    public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
     public IOtpDeliveryService OtpDeliveryService { get; } = Substitute.For<IOtpDeliveryService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
@@ -70,6 +72,7 @@ internal sealed class AuthenticationFlowTestContext
     public SignInHandler CreateSignInHandler() => new(
         IdentityService,
         AccessTokenService,
+        RefreshTokenService,
         EventPublisher,
         AppUserStakeholderRepository,
         CustomTelemetryContext,
@@ -79,9 +82,17 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         GoogleIdentityTokenService,
         AccessTokenService,
+        RefreshTokenService,
         EventPublisher,
         AppUserStakeholderRepository,
         CustomTelemetryContext,
+        UnitOfWork,
+        Clock);
+    public RefreshSessionHandler CreateRefreshSessionHandler() => new(
+        IdentityService,
+        AccessTokenService,
+        RefreshTokenService,
+        AppUserStakeholderRepository,
         UnitOfWork,
         Clock);
     public RequestPasswordResetHandler CreateRequestPasswordResetHandler() => new(

@@ -31,6 +31,7 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_ShouldReturnAccess
 
         var context = new AuthenticationFlowTestContext();
         var expectedToken = new AccessToken(token, now.AddHours(1));
+        var expectedRefreshToken = new RefreshToken("refresh-token", now.AddDays(30));
 
         context.GoogleIdentityTokenService.ValidateAsync("google-id-token", Arg.Any<CancellationToken>())
             .Returns(new GoogleIdentityTokenPayload(subject, email, "Google User"));
@@ -40,6 +41,7 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_ShouldReturnAccess
                 Arg.Any<CancellationToken>())
             .Returns(appUserStakeholder);
         context.AccessTokenService.Generate(user, stakeholderId).Returns(expectedToken);
+        context.RefreshTokenService.IssueAsync(user, Arg.Any<CancellationToken>()).Returns(expectedRefreshToken);
 
         var result = await context.CreateGoogleSignInHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateGoogleSignInCommand(
@@ -49,7 +51,9 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_ShouldReturnAccess
             CancellationToken.None);
 
         result.Status.ShouldBe(GoogleSignInStatus.Success);
-        result.AccessToken.ShouldBe(expectedToken);
+        result.Tokens.ShouldNotBeNull();
+        result.Tokens.AccessToken.ShouldBe(expectedToken);
+        result.Tokens.RefreshToken.ShouldBe(expectedRefreshToken);
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserSignInSuccessful>(message =>
                 message.IpAddress == ipAddress &&

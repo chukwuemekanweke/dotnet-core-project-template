@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
         Validate(options.AuthenticatedGlobalPolicy, nameof(RateLimitingOptions.AuthenticatedGlobalPolicy));
         Validate(options.AnonymousGlobalPolicy, nameof(RateLimitingOptions.AnonymousGlobalPolicy));
         Validate(options.SignInPolicy, nameof(RateLimitingOptions.SignInPolicy));
+        Validate(options.RefreshSessionPolicy, nameof(RateLimitingOptions.RefreshSessionPolicy));
         Validate(options.SignUpPolicy, nameof(RateLimitingOptions.SignUpPolicy));
         Validate(options.EmailConfirmationPolicy, nameof(RateLimitingOptions.EmailConfirmationPolicy));
         Validate(options.PasswordResetPolicy, nameof(RateLimitingOptions.PasswordResetPolicy));
@@ -27,6 +28,10 @@ public static class ServiceCollectionExtensions
             rateLimiterOptions.AddPolicy(
                 RateLimitingPolicyNames.SignInPolicy,
                 context => CreateFixedWindowPartition(options.SignInPolicy, ResolveClientIpPartitionKey(context)));
+
+            rateLimiterOptions.AddPolicy(
+                RateLimitingPolicyNames.RefreshSessionPolicy,
+                context => CreateFixedWindowPartition(options.RefreshSessionPolicy, ResolveClientIpPartitionKey(context)));
 
             rateLimiterOptions.AddPolicy(
                 RateLimitingPolicyNames.SignUpPolicy,

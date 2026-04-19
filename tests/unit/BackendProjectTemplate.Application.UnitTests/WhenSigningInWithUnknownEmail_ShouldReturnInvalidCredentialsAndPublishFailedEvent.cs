@@ -29,7 +29,7 @@ public sealed class WhenSigningInWithUnknownEmail_ShouldReturnInvalidCredentials
             CancellationToken.None);
 
         result.Status.ShouldBe(SignInStatus.InvalidCredentials);
-        result.AccessToken.ShouldBeNull();
+        result.Tokens.ShouldBeNull();
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserSignInFailed>(message =>
                 message.EmailAddress == email &&

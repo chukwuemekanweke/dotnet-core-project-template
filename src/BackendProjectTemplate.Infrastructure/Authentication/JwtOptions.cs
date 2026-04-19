@@ -7,5 +7,5 @@ public sealed class JwtOptions
     public string Issuer { get; init; } = "BackendProjectTemplate";
     public string Audience { get; init; } = "BackendProjectTemplate.Clients";
     public string SigningKey { get; init; } = "super-secret-template-signing-key-change-me";
-    public int LifetimeMinutes { get; init; } = 60;
+    public int LifetimeMinutes { get; init; } = 5;
 }

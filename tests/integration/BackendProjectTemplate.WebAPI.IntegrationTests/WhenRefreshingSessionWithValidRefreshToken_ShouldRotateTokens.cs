@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http.Json;
+using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
@@ -8,15 +11,12 @@ using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests;
 
 [Collection(nameof(ContainersCollection))]
-public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(ContainersFixture fixture)
+public sealed class WhenRefreshingSessionWithValidRefreshToken_ShouldRotateTokens(ContainersFixture fixture)
     : WebApiIntegrationTestBase(fixture), IAsyncLifetime
 {
     private const string Password = "P@ssw0rd123!";
@@ -29,7 +29,8 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
     private Guid _stakeholderId;
     private Guid _stakeholderTypeId;
     private bool _createdCountryForTest;
-    private HttpResponseMessage? _response;
+    private HttpResponseMessage? _signInResponse;
+    private HttpResponseMessage? _refreshResponse;
 
     public async Task InitializeAsync()
     {
@@ -42,7 +43,8 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
 
     public async Task DisposeAsync()
     {
-        _response?.Dispose();
+        _signInResponse?.Dispose();
+        _refreshResponse?.Dispose();
         await DeleteAuthenticationRecordsAsync();
         await DisposeClientAsync();
     }
@@ -50,26 +52,43 @@ public sealed class WhenSigningInWithVerifiedUser_ShouldReturnAccessToken(Contai
     [Fact]
     public async Task Verify()
     {
-        SignInResponse? payload = default;
+        SignInResponse? signInPayload = default;
+        RefreshSessionResponse? refreshPayload = default;
 
         await WhenSigningIn();
-        ThenAnAccessTokenIsReturned();
+        await WhenRefreshingSession();
+        ThenRotatedTokensAreReturned();
 
         async Task WhenSigningIn()
         {
-            _response = await Client.PostAsJsonAsync(
+            _signInResponse = await Client.PostAsJsonAsync(
                 EndpointUrl.Sessions.V1,
                 new SignInRequest(_email, Password));
 
-            payload = await _response.Content.ReadFromJsonAsync<SignInResponse>();
+            signInPayload = await _signInResponse.Content.ReadFromJsonAsync<SignInResponse>();
         }
 
-        void ThenAnAccessTokenIsReturned()
+        async Task WhenRefreshingSession()
         {
-            _response.ShouldNotBeNull();
-            _response.StatusCode.ShouldBe(HttpStatusCode.OK);
-            string.IsNullOrWhiteSpace(payload?.AccessToken).ShouldBeFalse();
-            string.IsNullOrWhiteSpace(payload?.RefreshToken).ShouldBeFalse();
+            _refreshResponse = await Client.PostAsJsonAsync(
+                EndpointUrl.Sessions.RefreshV1,
+                new RefreshSessionRequest(signInPayload!.RefreshToken));
+
+            refreshPayload = await _refreshResponse.Content.ReadFromJsonAsync<RefreshSessionResponse>();
+        }
+
+        void ThenRotatedTokensAreReturned()
+        {
+            _signInResponse.ShouldNotBeNull();
+            _refreshResponse.ShouldNotBeNull();
+            _signInResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+            _refreshResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+            string.IsNullOrWhiteSpace(signInPayload?.AccessToken).ShouldBeFalse();
+            string.IsNullOrWhiteSpace(signInPayload?.RefreshToken).ShouldBeFalse();
+            string.IsNullOrWhiteSpace(refreshPayload?.AccessToken).ShouldBeFalse();
+            string.IsNullOrWhiteSpace(refreshPayload?.RefreshToken).ShouldBeFalse();
+            refreshPayload!.AccessToken.ShouldNotBe(signInPayload!.AccessToken);
+            refreshPayload.RefreshToken.ShouldNotBe(signInPayload.RefreshToken);
         }
     }
 

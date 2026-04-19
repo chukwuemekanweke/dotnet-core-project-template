@@ -1,6 +1,6 @@
-namespace BackendProjectTemplate.Application.Authentication.Features.SignIn;
+namespace BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 
-public sealed record SignInResponse(
+public sealed record RefreshSessionResponse(
     string AccessToken,
     DateTimeOffset ExpiresAtUtc,
     string RefreshToken,

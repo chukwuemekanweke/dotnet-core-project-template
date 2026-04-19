@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
+using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
@@ -11,15 +12,17 @@ namespace BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 
 [ApiController]
 [ApiVersion("1.0")]
-[EnableRateLimiting(RateLimitingPolicyNames.SignInPolicy)]
 [Route(EndpointUrl.Sessions.Route)]
 public sealed class SessionsController(
     SignInHandler handler,
     GoogleSignInHandler googleSignInHandler,
+    RefreshSessionHandler refreshSessionHandler,
     IValidator<SignInRequest> validator,
-    IValidator<GoogleSignInRequest> googleSignInValidator) : ControllerBase
+    IValidator<GoogleSignInRequest> googleSignInValidator,
+    IValidator<RefreshSessionRequest> refreshSessionValidator) : ControllerBase
 {
     [HttpPost]
+    [EnableRateLimiting(RateLimitingPolicyNames.SignInPolicy)]
     [ProducesResponseType<SignInResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -46,8 +49,10 @@ public sealed class SessionsController(
         return result.Status switch
         {
             SignInStatus.Success => Ok(new SignInResponse(
-                result.AccessToken!.Value,
-                result.AccessToken.ExpiresAtUtc,
+                result.Tokens!.AccessToken.Value,
+                result.Tokens.AccessToken.ExpiresAtUtc,
+                result.Tokens.RefreshToken.Value,
+                result.Tokens.RefreshToken.ExpiresAtUtc,
                 "Bearer")),
             SignInStatus.EmailNotVerified => Problem(
                 statusCode: StatusCodes.Status403Forbidden,
@@ -67,6 +72,7 @@ public sealed class SessionsController(
     }
 
     [HttpPost("google")]
+    [EnableRateLimiting(RateLimitingPolicyNames.SignInPolicy)]
     [ProducesResponseType<GoogleSignInResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -92,8 +98,10 @@ public sealed class SessionsController(
         return result.Status switch
         {
             GoogleSignInStatus.Success => Ok(new GoogleSignInResponse(
-                result.AccessToken!.Value,
-                result.AccessToken.ExpiresAtUtc,
+                result.Tokens!.AccessToken.Value,
+                result.Tokens.AccessToken.ExpiresAtUtc,
+                result.Tokens.RefreshToken.Value,
+                result.Tokens.RefreshToken.ExpiresAtUtc,
                 "Bearer")),
             GoogleSignInStatus.InvalidGoogleToken => Problem(
                 statusCode: StatusCodes.Status401Unauthorized,
@@ -117,6 +125,52 @@ public sealed class SessionsController(
                 statusCode: StatusCodes.Status401Unauthorized,
                 title: "Google sign-in failed",
                 detail: "The Google sign-in request could not be completed.")
+        };
+    }
+
+    [HttpPost("refresh")]
+    [EnableRateLimiting(RateLimitingPolicyNames.RefreshSessionPolicy)]
+    [ProducesResponseType<RefreshSessionResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status423Locked)]
+    public async Task<ActionResult<RefreshSessionResponse>> Refresh(
+        [FromBody] RefreshSessionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await refreshSessionValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
+        }
+
+        var result = await refreshSessionHandler.HandleAsync(
+            new RefreshSessionCommand(request.RefreshToken),
+            cancellationToken);
+
+        return result.Status switch
+        {
+            RefreshSessionStatus.Success => Ok(new RefreshSessionResponse(
+                result.Tokens!.AccessToken.Value,
+                result.Tokens.AccessToken.ExpiresAtUtc,
+                result.Tokens.RefreshToken.Value,
+                result.Tokens.RefreshToken.ExpiresAtUtc,
+                "Bearer")),
+            RefreshSessionStatus.EmailNotVerified => Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: "Email not verified",
+                detail: "The linked account email must be verified before attempting to refresh the session."),
+            RefreshSessionStatus.AccountLocked => Problem(
+                statusCode: StatusCodes.Status423Locked,
+                title: "Account locked",
+                detail: result.LockedUntilUtc.HasValue
+                    ? $"The account is locked until {result.LockedUntilUtc.Value:O}."
+                    : "The account is currently locked."),
+            _ => Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Invalid refresh token",
+                detail: "The supplied refresh token is invalid, expired, or no longer active.")
         };
     }
 }

@@ -9,6 +9,7 @@ public sealed class RateLimitingOptions
     public SlidingWindowPolicyOptions AnonymousGlobalPolicy { get; init; } = new(30, 1, 3, 0);
 
     public FixedWindowPolicyOptions SignInPolicy { get; init; } = new(5, 2, 0);
+    public FixedWindowPolicyOptions RefreshSessionPolicy { get; init; } = new(10, 5, 0);
 
     public FixedWindowPolicyOptions SignUpPolicy { get; init; } = new(5, 10, 0);
 

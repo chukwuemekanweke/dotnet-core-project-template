@@ -13,6 +13,7 @@ public sealed class GoogleSignInHandler(
     IAuthenticationIdentityService identityService,
     IGoogleIdentityTokenService googleIdentityTokenService,
     IAccessTokenService accessTokenService,
+    IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
     IRepository<AppUserStakeholder> appUserStakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
@@ -76,6 +77,7 @@ public sealed class GoogleSignInHandler(
 
         var currentStakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
         var accessToken = accessTokenService.Generate(user, currentStakeholder.StakeholderId);
+        var refreshToken = await refreshTokenService.IssueAsync(user, cancellationToken);
 
         await PublishSuccessfulAsync(
             stakeholderId: currentStakeholder.StakeholderId,
@@ -85,7 +87,7 @@ public sealed class GoogleSignInHandler(
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new GoogleSignInResult(GoogleSignInStatus.Success, accessToken);
+        return new GoogleSignInResult(GoogleSignInStatus.Success, new AuthenticationTokens(accessToken, refreshToken));
     }
 
     private async Task PublishSuccessfulAsync(

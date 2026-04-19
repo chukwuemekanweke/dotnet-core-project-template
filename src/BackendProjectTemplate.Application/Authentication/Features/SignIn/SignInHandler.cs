@@ -11,6 +11,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignIn;
 public sealed class SignInHandler(
     IAuthenticationIdentityService identityService,
     IAccessTokenService accessTokenService,
+    IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
     IRepository<AppUserStakeholder> appUserStakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
@@ -84,6 +85,7 @@ public sealed class SignInHandler(
 
         var currentStakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
         var accessToken = accessTokenService.Generate(user, currentStakeholder.StakeholderId);
+        var refreshToken = await refreshTokenService.IssueAsync(user, cancellationToken);
 
         await PublishSuccessfulAsync(
             stakeholderId: currentStakeholder.StakeholderId,
@@ -93,7 +95,7 @@ public sealed class SignInHandler(
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new SignInResult(SignInStatus.Success, accessToken);
+        return new SignInResult(SignInStatus.Success, new AuthenticationTokens(accessToken, refreshToken));
     }
 
     private async Task PublishSuccessfulAsync(

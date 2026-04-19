@@ -8,6 +8,7 @@ public interface IAuthenticationIdentityService
     Task<AppUser?> FindByIdAsync(Guid userId);
     Task<AppUser?> FindByEmailAsync(string email);
     Task<AppUser?> FindByLoginAsync(string loginProvider, string providerKey);
+    Task<string> GetSecurityStampAsync(AppUser user);
     Task<bool> IsLockedOutAsync(AppUser user);
     Task<DateTimeOffset?> GetLockoutEndUtcAsync(AppUser user);
     Task<IdentityResult> CreateAsync(AppUser user);

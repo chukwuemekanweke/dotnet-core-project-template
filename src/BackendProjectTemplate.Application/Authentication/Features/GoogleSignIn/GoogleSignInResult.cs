@@ -4,7 +4,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.GoogleSignI
 
 public sealed record GoogleSignInResult(
     GoogleSignInStatus Status,
-    AccessToken? AccessToken,
+    AuthenticationTokens? Tokens,
     DateTimeOffset? LockedUntilUtc = null);
 
 public enum GoogleSignInStatus

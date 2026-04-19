@@ -47,9 +47,11 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<GoogleAuthenticationOptions>(configuration.GetSection(GoogleAuthenticationOptions.SectionName));
+        services.Configure<RefreshTokenOptions>(configuration.GetSection(RefreshTokenOptions.SectionName));
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
         services.AddScoped<IGoogleIdentityTokenService, GoogleIdentityTokenService>();
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<ITwoFactorOtpService, TwoFactorOtpService>();
         services.AddScoped<IOtpDeliveryService, LoggingOtpDeliveryService>();
 

@@ -40,7 +40,7 @@ public sealed class WhenSigningInWithLockedAccount_ShouldReturnAccountLockedAndP
             CancellationToken.None);
 
         result.Status.ShouldBe(SignInStatus.AccountLocked);
-        result.AccessToken.ShouldBeNull();
+        result.Tokens.ShouldBeNull();
         result.LockedUntilUtc.ShouldBe(lockedUntilUtc);
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserSignInFailed>(message =>

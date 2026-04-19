@@ -2,7 +2,10 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignIn;
 
-public sealed record SignInResult(SignInStatus Status, AccessToken? AccessToken, DateTimeOffset? LockedUntilUtc = null);
+public sealed record SignInResult(
+    SignInStatus Status,
+    AuthenticationTokens? Tokens,
+    DateTimeOffset? LockedUntilUtc = null);
 
 public enum SignInStatus
 {
