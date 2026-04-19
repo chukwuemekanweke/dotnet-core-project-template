@@ -25,8 +25,6 @@ public sealed class AppUser : IdentityUser<Guid>, IAuditableEntity, ISoftDelete
     public bool IsDeleted { get; private set; }
     public DateTimeOffset? DeletedAtUtc { get; private set; }
     public string? DeletedBy { get; private set; }
-    public ICollection<AuthenticationRefreshToken> RefreshTokens { get; private set; } = [];
-
     public static AppUser Create(string email, DateTimeOffset utcNow) =>
         new(email, utcNow);
 

@@ -10,6 +10,7 @@ namespace BackendProjectTemplate.Infrastructure.Authentication;
 
 public sealed class RefreshTokenService(
     IRepository<AuthenticationRefreshToken> refreshTokenRepository,
+    IAuthenticationIdentityService identityService,
     IOptions<RefreshTokenOptions> options,
     TimeProvider timeProvider) : IRefreshTokenService
 {
@@ -20,10 +21,11 @@ public sealed class RefreshTokenService(
         var utcNow = timeProvider.GetUtcNow();
         var rawToken = GenerateRawToken();
         var expiresAtUtc = utcNow.AddDays(_options.LifetimeDays);
+        var securityStamp = await GetRequiredSecurityStampAsync(user, cancellationToken);
         var refreshToken = AuthenticationRefreshToken.Create(
             user.Id,
             ComputeHash(rawToken),
-            user.SecurityStamp ?? string.Empty,
+            securityStamp,
             expiresAtUtc,
             utcNow);
 
@@ -64,5 +66,16 @@ public sealed class RefreshTokenService(
         var tokenBytes = Encoding.UTF8.GetBytes(refreshToken);
         var hashBytes = SHA256.HashData(tokenBytes);
         return Convert.ToHexString(hashBytes);
+    }
+
+    private async Task<string> GetRequiredSecurityStampAsync(AppUser user, CancellationToken cancellationToken)
+    {
+        var securityStamp = await identityService.GetSecurityStampAsync(user);
+        if (string.IsNullOrWhiteSpace(securityStamp))
+        {
+            throw new InvalidOperationException($"Security stamp is missing for user '{user.Id}'.");
+        }
+
+        return securityStamp;
     }
 }

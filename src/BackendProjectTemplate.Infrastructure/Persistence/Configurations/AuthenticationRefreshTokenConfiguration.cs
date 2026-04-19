@@ -16,7 +16,7 @@ public sealed class AuthenticationRefreshTokenConfiguration : IEntityTypeConfigu
         builder.HasIndex(refreshToken => refreshToken.AppUserId);
 
         builder.HasOne(refreshToken => refreshToken.AppUser)
-            .WithMany(user => user.RefreshTokens)
+            .WithMany()
             .HasForeignKey(refreshToken => refreshToken.AppUserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
