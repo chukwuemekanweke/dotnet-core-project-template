@@ -65,13 +65,42 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddIpGeolocationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        var ipApiComOptions = configuration
+            .GetSection(IpApiComOptions.SectionName)
+            .Get<IpApiComOptions>()
+            ?? throw new InvalidOperationException($"Configuration section '{IpApiComOptions.SectionName}' is required.");
+        var ipInfoOptions = configuration
+            .GetSection(IpInfoOptions.SectionName)
+            .Get<IpInfoOptions>()
+            ?? throw new InvalidOperationException($"Configuration section '{IpInfoOptions.SectionName}' is required.");
+        var ipWhoIsOptions = configuration
+            .GetSection(IpWhoIsOptions.SectionName)
+            .Get<IpWhoIsOptions>()
+            ?? throw new InvalidOperationException($"Configuration section '{IpWhoIsOptions.SectionName}' is required.");
+
+        ipApiComOptions.Validate();
+        ipInfoOptions.Validate();
+        ipWhoIsOptions.Validate();
+
         services.Configure<IpApiComOptions>(configuration.GetSection(IpApiComOptions.SectionName));
         services.Configure<IpInfoOptions>(configuration.GetSection(IpInfoOptions.SectionName));
         services.Configure<IpWhoIsOptions>(configuration.GetSection(IpWhoIsOptions.SectionName));
 
-        services.AddHttpClient("IpApiComClient", client => client.Timeout = TimeSpan.FromSeconds(5));
-        services.AddHttpClient("IpInfoClient", client => client.Timeout = TimeSpan.FromSeconds(5));
-        services.AddHttpClient("IpWhoIsClient", client => client.Timeout = TimeSpan.FromSeconds(5));
+        services.AddHttpClient(HttpClientNames.IpApiCom, client =>
+        {
+            client.BaseAddress = new Uri(ipApiComOptions.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+        services.AddHttpClient(HttpClientNames.IpInfo, client =>
+        {
+            client.BaseAddress = new Uri(ipInfoOptions.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+        services.AddHttpClient(HttpClientNames.IpWhoIs, client =>
+        {
+            client.BaseAddress = new Uri(ipWhoIsOptions.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
 
         services.AddSingleton<IIpGeolocationProvider, IpApiComClient>();
         services.AddSingleton<IIpGeolocationProvider, IpInfoClient>();

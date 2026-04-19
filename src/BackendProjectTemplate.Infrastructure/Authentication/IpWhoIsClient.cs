@@ -12,7 +12,7 @@ internal sealed class IpWhoIsClient(IHttpClientFactory httpClientFactory, IOptio
         PropertyNameCaseInsensitive = true
     };
 
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("IpWhoIsClient");
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient(HttpClientNames.IpWhoIs);
     private readonly string _apiKey = options.Value.ApiKey;
     private readonly AsyncPolicy<IpGeolocation?> _retryPolicy = Policy<IpGeolocation?>
         .Handle<HttpRequestException>()
@@ -45,8 +45,8 @@ internal sealed class IpWhoIsClient(IHttpClientFactory httpClientFactory, IOptio
 
     private string BuildRequestUri(string ipAddress) =>
         string.IsNullOrWhiteSpace(_apiKey)
-            ? $"https://ipwho.is/{ipAddress}"
-            : $"https://ipwho.is/{ipAddress}?key={_apiKey}";
+            ? $"/{ipAddress}"
+            : $"/{ipAddress}?key={_apiKey}";
 
     private sealed record IpWhoIsResponse(bool Success, string? City, string? Region, string? Country);
 }

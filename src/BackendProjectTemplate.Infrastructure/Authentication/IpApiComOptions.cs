@@ -4,5 +4,10 @@ public sealed class IpApiComOptions
 {
     public const string SectionName = "IpGeolocation:IpApiCom";
 
-    public string ApiBaseUrl { get; set; } = "http://ip-api.com";
+    public string BaseUrl { get; init; } = string.Empty;
+
+    public void Validate()
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(BaseUrl);
+    }
 }

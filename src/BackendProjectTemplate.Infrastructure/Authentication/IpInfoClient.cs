@@ -12,7 +12,7 @@ internal sealed class IpInfoClient(IHttpClientFactory httpClientFactory, IOption
         PropertyNameCaseInsensitive = true
     };
 
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("IpInfoClient");
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient(HttpClientNames.IpInfo);
     private readonly string _accessToken = options.Value.AccessToken;
     private readonly AsyncPolicy<IpGeolocation?> _retryPolicy = Policy<IpGeolocation?>
         .Handle<HttpRequestException>()
@@ -45,8 +45,8 @@ internal sealed class IpInfoClient(IHttpClientFactory httpClientFactory, IOption
 
     private string BuildRequestUri(string ipAddress) =>
         string.IsNullOrWhiteSpace(_accessToken)
-            ? $"https://ipinfo.io/{ipAddress}/json"
-            : $"https://ipinfo.io/{ipAddress}/json?token={_accessToken}";
+            ? $"/{ipAddress}/json"
+            : $"/{ipAddress}/json?token={_accessToken}";
 
     private sealed record IpInfoResponse(string? City, string? Region, string? Country);
 }

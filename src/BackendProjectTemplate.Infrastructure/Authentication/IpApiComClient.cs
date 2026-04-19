@@ -1,19 +1,17 @@
 using System.Text.Json;
 using BackendProjectTemplate.Domain.Authentication.Services;
-using Microsoft.Extensions.Options;
 using Polly;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 
-internal sealed class IpApiComClient(IHttpClientFactory httpClientFactory, IOptions<IpApiComOptions> options) : IIpGeolocationProvider
+internal sealed class IpApiComClient(IHttpClientFactory httpClientFactory) : IIpGeolocationProvider
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("IpApiComClient");
-    private readonly string _apiBaseUrl = options.Value.ApiBaseUrl;
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient(HttpClientNames.IpApiCom);
     private readonly AsyncPolicy<IpGeolocation?> _retryPolicy = Policy<IpGeolocation?>
         .Handle<HttpRequestException>()
         .Or<TaskCanceledException>()
@@ -26,9 +24,7 @@ internal sealed class IpApiComClient(IHttpClientFactory httpClientFactory, IOpti
 
     private async Task<IpGeolocation?> GetGeolocationCoreAsync(string ipAddress, CancellationToken cancellationToken)
     {
-        using var response = await _httpClient.GetAsync(
-            $"{_apiBaseUrl}/json/{ipAddress}?fields=status,country,regionName,city",
-            cancellationToken);
+        using var response = await _httpClient.GetAsync($"/json/{ipAddress}?fields=status,country,regionName,city", cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             return null;
