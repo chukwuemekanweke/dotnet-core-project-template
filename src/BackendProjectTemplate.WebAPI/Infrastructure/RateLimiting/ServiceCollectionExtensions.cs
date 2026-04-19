@@ -41,6 +41,10 @@ public static class ServiceCollectionExtensions
                 RateLimitingPolicyNames.EmailConfirmationPolicy,
                 context => CreateFixedWindowPartition(options.EmailConfirmationPolicy, ResolveClientIpPartitionKey(context)));
 
+            rateLimiterOptions.AddPolicy(
+                RateLimitingPolicyNames.PasswordResetPolicy,
+                context => CreateFixedWindowPartition(options.PasswordResetPolicy, ResolveClientIpPartitionKey(context)));
+
             rateLimiterOptions.OnRejected = async (context, cancellationToken) =>
             {
                 TimeSpan? retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterValue)

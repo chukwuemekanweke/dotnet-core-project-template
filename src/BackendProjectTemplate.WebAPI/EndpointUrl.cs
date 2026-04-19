@@ -38,6 +38,7 @@ public static class EndpointUrl
     {
         public const string Route = $"api/{Versions.V1Route}/authentication/password-resets";
         public static readonly string V1 = ToV1(Route);
+        public static readonly string CompletionsV1 = $"{V1}/completions";
     }
 
     public static class Countries

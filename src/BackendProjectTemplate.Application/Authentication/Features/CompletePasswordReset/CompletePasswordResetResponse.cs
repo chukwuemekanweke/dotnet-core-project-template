@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
+
+public sealed record CompletePasswordResetResponse(string Message);

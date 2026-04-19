@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
+using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
@@ -22,6 +23,7 @@ internal sealed class AuthenticationFlowTestContext
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
     public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
+    public ITwoFactorOtpService TwoFactorOtpService { get; } = Substitute.For<ITwoFactorOtpService>();
     public IOtpDeliveryService OtpDeliveryService { get; } = Substitute.For<IOtpDeliveryService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
@@ -102,6 +104,11 @@ internal sealed class AuthenticationFlowTestContext
         CurrentActor,
         CustomTelemetryContext,
         UnitOfWork);
+    public CompletePasswordResetHandler CreateCompletePasswordResetHandler() => new(
+        IdentityService,
+        TwoFactorOtpService,
+        CustomTelemetryContext,
+        UnitOfWork);
 
     public static SignUpCommand CreateSignUpCommand(
         string? email = null,
@@ -161,6 +168,21 @@ internal sealed class AuthenticationFlowTestContext
 
     public static RequestPasswordResetCommand CreateRequestPasswordResetCommand(string? email = null) =>
         new(email ?? AuthenticationTestData.Email());
+
+    public static CompletePasswordResetCommand CreateCompletePasswordResetCommand(
+        string? email = null,
+        string? otp = null,
+        string? password = null,
+        string? confirmPassword = null)
+    {
+        var resolvedPassword = password ?? AuthenticationTestData.StrongPassword();
+
+        return new CompletePasswordResetCommand(
+            email ?? AuthenticationTestData.Email(),
+            otp ?? AuthenticationTestData.Otp(),
+            resolvedPassword,
+            confirmPassword ?? resolvedPassword);
+    }
 
     public AppUser CreateUser(
         string? email = null,
