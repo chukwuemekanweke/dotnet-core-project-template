@@ -104,7 +104,7 @@ public sealed class WhenUsingProtectedEndpointAfterLogout_ShouldRejectTheAccessT
             _signInResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
             _updateProfileBeforeLogoutResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
             _logoutResponse.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-            _updateProfileAfterLogoutResponse.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+            _updateProfileAfterLogoutResponse.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         }
     }
 

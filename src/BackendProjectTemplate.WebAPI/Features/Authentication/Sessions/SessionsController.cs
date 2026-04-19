@@ -181,7 +181,9 @@ public sealed class SessionsController(
     }
 
     [HttpPost("logout")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(
+        AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
+        Policy = AuthorizationPolicyNames.RequireActiveSession)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)

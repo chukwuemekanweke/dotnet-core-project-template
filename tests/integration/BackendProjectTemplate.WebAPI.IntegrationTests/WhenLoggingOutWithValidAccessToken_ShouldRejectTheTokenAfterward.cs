@@ -92,7 +92,7 @@ public sealed class WhenLoggingOutWithValidAccessToken_ShouldRejectTheTokenAfter
             _logoutResponse.StatusCode.ShouldBe(
                 HttpStatusCode.NoContent,
                 $"Logout failed. Body: {logoutBody}. WWW-Authenticate: {logoutAuthenticateHeader}");
-            _logoutAfterRevocationResponse.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+            _logoutAfterRevocationResponse.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         }
     }
 

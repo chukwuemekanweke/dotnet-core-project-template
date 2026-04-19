@@ -3,6 +3,7 @@ using BackendProjectTemplate.Domain.Common.Caching;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,12 +66,20 @@ public static class ServiceCollectionExtensions
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddSingleton<IConfigureOptions<JwtBearerOptions>, ConfigureJwtBearerOptions>();
+        services.AddSingleton<IAuthorizationHandler, ActiveSessionAuthorizationHandler>();
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer();
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(
+                AuthorizationPolicyNames.RequireActiveSession,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new ActiveSessionRequirement()));
+        });
 
         return services;
     }

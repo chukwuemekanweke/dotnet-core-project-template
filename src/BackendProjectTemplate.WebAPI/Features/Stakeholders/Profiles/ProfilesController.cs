@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Authorize]
+[Authorize(Policy = AuthorizationPolicyNames.RequireActiveSession)]
 [Route($"{EndpointUrl.Stakeholders.Route}/me/profile")]
 public sealed class ProfilesController(
     UploadAvatarHandler uploadAvatarHandler,

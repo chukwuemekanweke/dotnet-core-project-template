@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Providers;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Authorize]
+[Authorize(Policy = AuthorizationPolicyNames.RequireActiveSession)]
 [Route(EndpointUrl.Providers.Route)]
 public sealed class ProvidersController(ActivateProviderHandler activateProviderHandler) : ControllerBase
 {
