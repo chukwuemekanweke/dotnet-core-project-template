@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        services.AddScoped<AppUserStakeholderResolver>();
         services.AddScoped<GoogleSignUpHandler>();
         services.AddScoped<GoogleSignInHandler>();
         services.AddScoped<CompletePasswordResetHandler>();

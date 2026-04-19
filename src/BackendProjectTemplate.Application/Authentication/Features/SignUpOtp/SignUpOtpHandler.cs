@@ -1,17 +1,16 @@
+using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 
 public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
     IEventPublisher eventPublisher,
-    IRepository<AppUserStakeholder> appUserStakeholderRepository,
+    AppUserStakeholderResolver appUserStakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -36,11 +35,7 @@ public sealed class SignUpOtpHandler(
 
         var now = timeProvider.GetUtcNow();
         user.MarkEmailVerified(now);
-        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
-            new AppUserStakeholderByAppUserIdSpecification(user.Id),
-            cancellationToken)
-            ?? throw new InvalidOperationException(
-                $"Unable to resolve stakeholder for user '{user.Id}' during OTP confirmation.");
+        var appUserStakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
         var updateResult = await identityService.UpdateAsync(user);

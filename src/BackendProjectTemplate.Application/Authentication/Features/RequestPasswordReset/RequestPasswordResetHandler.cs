@@ -1,18 +1,17 @@
+using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
 using BackendProjectTemplate.Contracts.Commands.Authentication;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 
 public sealed class RequestPasswordResetHandler(
     IAuthenticationIdentityService identityService,
     ICommandSender commandSender,
-    IRepository<AppUserStakeholder> appUserStakeholderRepository,
+    AppUserStakeholderResolver appUserStakeholderResolver,
     ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
@@ -28,10 +27,7 @@ public sealed class RequestPasswordResetHandler(
             return new RequestPasswordResetResult(RequestPasswordResetStatus.UserNotFound);
         }
 
-        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
-            new AppUserStakeholderByAppUserIdSpecification(user.Id),
-            cancellationToken)
-            ?? throw new InvalidOperationException($"Unable to resolve stakeholder for user '{user.Id}' during password reset request.");
+        var appUserStakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
 
         await commandSender.SendAsync(
             new ResetPasswordCommand

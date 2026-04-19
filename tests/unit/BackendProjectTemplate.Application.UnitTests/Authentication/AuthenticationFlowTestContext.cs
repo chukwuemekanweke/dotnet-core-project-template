@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
@@ -33,6 +34,7 @@ internal sealed class AuthenticationFlowTestContext
     public IRepository<StakeholderType> StakeholderTypeRepository { get; } = Substitute.For<IRepository<StakeholderType>>();
     public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
     public IRepository<AppUserStakeholder> AppUserStakeholderRepository { get; } = Substitute.For<IRepository<AppUserStakeholder>>();
+    public AppUserStakeholderResolver AppUserStakeholderResolver => new(AppUserStakeholderRepository);
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public IUnitOfWorkTransaction Transaction { get; } = Substitute.For<IUnitOfWorkTransaction>();
 
@@ -67,7 +69,7 @@ internal sealed class AuthenticationFlowTestContext
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(
         IdentityService,
         EventPublisher,
-        AppUserStakeholderRepository,
+        AppUserStakeholderResolver,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -76,7 +78,7 @@ internal sealed class AuthenticationFlowTestContext
         AccessTokenService,
         RefreshTokenService,
         EventPublisher,
-        AppUserStakeholderRepository,
+        AppUserStakeholderResolver,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -86,7 +88,7 @@ internal sealed class AuthenticationFlowTestContext
         AccessTokenService,
         RefreshTokenService,
         EventPublisher,
-        AppUserStakeholderRepository,
+        AppUserStakeholderResolver,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -94,20 +96,20 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         AccessTokenService,
         RefreshTokenService,
-        AppUserStakeholderRepository,
+        AppUserStakeholderResolver,
         UnitOfWork,
         Clock);
     public RequestPasswordResetHandler CreateRequestPasswordResetHandler() => new(
         IdentityService,
         CommandSender,
-        AppUserStakeholderRepository,
+        AppUserStakeholderResolver,
         CurrentActor,
         CustomTelemetryContext,
         UnitOfWork);
     public CompletePasswordResetHandler CreateCompletePasswordResetHandler() => new(
         IdentityService,
         TwoFactorOtpService,
-        AppUserStakeholderRepository,
+        AppUserStakeholderResolver,
         CustomTelemetryContext,
         UnitOfWork);
 

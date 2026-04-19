@@ -1,10 +1,9 @@
+using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignIn;
 
@@ -13,7 +12,7 @@ public sealed class SignInHandler(
     IAccessTokenService accessTokenService,
     IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
-    IRepository<AppUserStakeholder> appUserStakeholderRepository,
+    AppUserStakeholderResolver appUserStakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -39,7 +38,7 @@ public sealed class SignInHandler(
         if (await identityService.IsLockedOutAsync(user))
         {
             var lockedUntilUtc = await identityService.GetLockoutEndUtcAsync(user);
-            var stakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
+            var stakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
 
             await PublishFailedAsync(
                 stakeholderId: stakeholder.StakeholderId,
@@ -55,7 +54,7 @@ public sealed class SignInHandler(
 
         if (!user.EmailConfirmed)
         {
-            var stakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
+            var stakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
             await PublishFailedAsync(
                 stakeholderId: stakeholder.StakeholderId,
                 emailAddress: user.Email ?? request.Email,
@@ -70,7 +69,7 @@ public sealed class SignInHandler(
 
         if (!await identityService.CheckPasswordAsync(user, request.Password))
         {
-            var stakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
+            var stakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
             await PublishFailedAsync(
                 stakeholderId: stakeholder.StakeholderId,
                 emailAddress: user.Email ?? request.Email,
@@ -83,7 +82,7 @@ public sealed class SignInHandler(
             return new SignInResult(SignInStatus.InvalidCredentials, null);
         }
 
-        var currentStakeholder = await GetRequiredStakeholderAsync(user.Id, cancellationToken);
+        var currentStakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
         var accessToken = accessTokenService.Generate(user, currentStakeholder.StakeholderId);
         var refreshToken = await refreshTokenService.IssueAsync(user, cancellationToken);
 
@@ -147,18 +146,5 @@ public sealed class SignInHandler(
         }
 
         customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInFailed, properties);
-    }
-
-    private async Task<AppUserStakeholder> GetRequiredStakeholderAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
-            new AppUserStakeholderByAppUserIdSpecification(userId),
-            cancellationToken);
-        if (appUserStakeholder is null)
-        {
-            throw new InvalidOperationException($"Unable to resolve stakeholder for user '{userId}'.");
-        }
-
-        return appUserStakeholder;
     }
 }
