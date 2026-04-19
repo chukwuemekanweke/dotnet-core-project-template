@@ -5,8 +5,7 @@ using BackendProjectTemplate.Domain.Common.Persistence;
 namespace BackendProjectTemplate.Consumer.Authentication;
 
 public sealed class LoginActivityIpAddressResolver(
-    IRepository<IpAddress> ipAddressRepository,
-    IRepository<IpAddressLocation> ipAddressLocationRepository) : ILoginActivityIpAddressResolver
+    IRepository<IpAddress> ipAddressRepository) : ILoginActivityIpAddressResolver
 {
     public async Task<LoginActivityIpAddressResolution> ResolveAsync(string ipAddress, CancellationToken cancellationToken)
     {
@@ -21,10 +20,8 @@ public sealed class LoginActivityIpAddressResolver(
             await ipAddressRepository.AddAsync(persistedIpAddress, cancellationToken);
         }
 
-        var currentIpAddressLocation = await ipAddressLocationRepository.FirstOrDefaultAsync(
-            new CurrentIpAddressLocationByIpAddressIdSpecification(persistedIpAddress.Id),
-            cancellationToken);
-
-        return new LoginActivityIpAddressResolution(persistedIpAddress.Id, currentIpAddressLocation?.Id);
+        return new LoginActivityIpAddressResolution(
+            persistedIpAddress.Id,
+            persistedIpAddress.GetCurrentLocation()?.Id);
     }
 }

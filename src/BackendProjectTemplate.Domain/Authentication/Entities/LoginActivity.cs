@@ -2,7 +2,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Authentication.Entities;
 
-public sealed class LoginActivity : Entity
+public sealed class LoginActivity : Entity, IAggregateRoot
 {
     private const int MaxUserAgentLength = 500;
     private const int MaxDeviceNameLength = 200;

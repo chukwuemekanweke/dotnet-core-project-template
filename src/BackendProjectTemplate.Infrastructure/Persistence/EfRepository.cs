@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BackendProjectTemplate.Infrastructure.Persistence;
 
 public sealed class EfRepository<TEntity>(AppDbContext dbContext) : IRepository<TEntity>
-    where TEntity : Entity
+    where TEntity : Entity, IAggregateRoot
 {
     public Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Set<TEntity>().FirstOrDefaultAsync(entity => entity.Id == id, cancellationToken);

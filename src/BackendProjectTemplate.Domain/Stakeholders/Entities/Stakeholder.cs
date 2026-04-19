@@ -2,7 +2,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Stakeholders.Entities;
 
-public sealed class Stakeholder : Entity
+public sealed class Stakeholder : Entity, IAggregateRoot
 {
     private const int MaxFirstNameLength = 100;
     private const int MaxLastNameLength = 100;

@@ -3,7 +3,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Notifications.Entities;
 
-public sealed class EmailNotificationTemplate : Entity
+public sealed class EmailNotificationTemplate : Entity, IAggregateRoot
 {
     private EmailNotificationTemplate()
     {

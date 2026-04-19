@@ -8,7 +8,7 @@ public enum ProviderType
     FileStorage = 2
 }
 
-public sealed class Provider : Entity
+public sealed class Provider : Entity, IAggregateRoot
 {
     private Provider()
     {

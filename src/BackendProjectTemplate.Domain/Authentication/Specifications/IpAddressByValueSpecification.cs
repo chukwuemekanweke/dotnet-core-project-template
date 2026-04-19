@@ -8,6 +8,7 @@ public sealed class IpAddressByValueSpecification : Specification<IpAddress>
     public IpAddressByValueSpecification(string value)
     {
         Where(ipAddress => ipAddress.Value == value);
+        AddInclude(ipAddress => ipAddress.Locations);
         ApplyPaging(0, 1);
         EnableTracking();
     }

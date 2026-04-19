@@ -2,7 +2,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Common.Persistence;
 
-public interface IRepository<TEntity> where TEntity : Entity
+public interface IRepository<TEntity> where TEntity : Entity, IAggregateRoot
 {
     Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TEntity?> FirstOrDefaultAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);

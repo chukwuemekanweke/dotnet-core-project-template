@@ -2,9 +2,10 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Authentication.Entities;
 
-public sealed class IpAddress : Entity
+public sealed class IpAddress : Entity, IAggregateRoot
 {
     private const int MaxValueLength = 45;
+    private readonly List<IpAddressLocation> locations = [];
 
     private IpAddress()
     {
@@ -17,7 +18,7 @@ public sealed class IpAddress : Entity
 
     public string Value { get; private set; } = string.Empty;
     public DateTimeOffset? LocationLookupTimestampUtc { get; private set; }
-    public ICollection<IpAddressLocation> Locations { get; private set; } = [];
+    public IReadOnlyCollection<IpAddressLocation> Locations => locations;
 
     public static IpAddress Create(string value) => new(value);
 
@@ -27,7 +28,7 @@ public sealed class IpAddress : Entity
     }
 
     public IpAddressLocation? GetCurrentLocation() =>
-        Locations.FirstOrDefault(location => location.IsCurrentLocation);
+        locations.FirstOrDefault(location => location.IsCurrentLocation);
 
     public void ApplyLocationResolution(
         string? city,
@@ -40,7 +41,7 @@ public sealed class IpAddress : Entity
         var currentLocation = GetCurrentLocation();
         if (currentLocation is null)
         {
-            Locations.Add(IpAddressLocation.Create(Id, city, state, country, resolvedAtUtc));
+            locations.Add(IpAddressLocation.Create(Id, city, state, country, resolvedAtUtc));
             return;
         }
 
@@ -50,7 +51,7 @@ public sealed class IpAddress : Entity
         }
 
         currentLocation.MarkAsHistorical();
-        Locations.Add(IpAddressLocation.Create(Id, city, state, country, resolvedAtUtc));
+        locations.Add(IpAddressLocation.Create(Id, city, state, country, resolvedAtUtc));
     }
 
     private static string NormalizeValue(string value)

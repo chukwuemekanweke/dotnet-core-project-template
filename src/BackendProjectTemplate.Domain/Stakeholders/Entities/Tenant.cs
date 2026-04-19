@@ -2,7 +2,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Stakeholders.Entities;
 
-public sealed class Tenant : Entity
+public sealed class Tenant : Entity, IAggregateRoot
 {
     private Tenant()
     {

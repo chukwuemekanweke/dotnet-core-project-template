@@ -2,7 +2,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Stakeholders.Entities;
 
-public sealed class StakeholderType : Entity
+public sealed class StakeholderType : Entity, IAggregateRoot
 {
     private StakeholderType()
     {

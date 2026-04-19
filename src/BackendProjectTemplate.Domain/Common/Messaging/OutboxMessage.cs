@@ -2,7 +2,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Common.Messaging;
 
-public sealed class OutboxMessage : Entity
+public sealed class OutboxMessage : Entity, IAggregateRoot
 {
     private OutboxMessage()
     {

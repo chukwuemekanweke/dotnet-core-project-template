@@ -3,7 +3,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Notifications.Entities;
 
-public sealed class EmailNotificationLog : Entity
+public sealed class EmailNotificationLog : Entity, IAggregateRoot
 {
     private const int MaxFailureReasonLength = 4000;
 

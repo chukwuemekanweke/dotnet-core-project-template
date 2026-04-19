@@ -17,6 +17,9 @@ public sealed class IpAddressConfiguration : IEntityTypeConfiguration<IpAddress>
             .HasForeignKey(ipAddressLocation => ipAddressLocation.IpAddressId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Navigation(ipAddress => ipAddress.Locations)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.HasIndex(ipAddress => ipAddress.Value).IsUnique();
         builder.HasIndex(ipAddress => ipAddress.LocationLookupTimestampUtc);
     }

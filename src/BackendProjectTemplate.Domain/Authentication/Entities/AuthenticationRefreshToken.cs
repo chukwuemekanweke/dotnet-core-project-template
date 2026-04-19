@@ -2,7 +2,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Authentication.Entities;
 
-public sealed class AuthenticationRefreshToken : Entity
+public sealed class AuthenticationRefreshToken : Entity, IAggregateRoot
 {
     private AuthenticationRefreshToken()
     {

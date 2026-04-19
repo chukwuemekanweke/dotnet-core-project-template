@@ -2,7 +2,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.ReferenceData.Entities;
 
-public sealed class Country : Entity
+public sealed class Country : Entity, IAggregateRoot
 {
     private Country()
     {
