@@ -3,6 +3,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
+using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
@@ -24,6 +25,7 @@ internal sealed class AuthenticationFlowTestContext
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
     public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
+    public IAccessTokenRevocationService AccessTokenRevocationService { get; } = Substitute.For<IAccessTokenRevocationService>();
     public ITwoFactorOtpService TwoFactorOtpService { get; } = Substitute.For<ITwoFactorOtpService>();
     public IOtpDeliveryService OtpDeliveryService { get; } = Substitute.For<IOtpDeliveryService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
@@ -112,6 +114,9 @@ internal sealed class AuthenticationFlowTestContext
         AppUserStakeholderResolver,
         CustomTelemetryContext,
         UnitOfWork);
+    public LogoutSessionHandler CreateLogoutSessionHandler() => new(
+        AccessTokenRevocationService,
+        CustomTelemetryContext);
 
     public static SignUpCommand CreateSignUpCommand(
         string? email = null,

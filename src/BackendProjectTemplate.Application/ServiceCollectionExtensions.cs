@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
+using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
@@ -23,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GoogleSignUpHandler>();
         services.AddScoped<GoogleSignInHandler>();
         services.AddScoped<CompletePasswordResetHandler>();
+        services.AddScoped<LogoutSessionHandler>();
         services.AddScoped<RefreshSessionHandler>();
         services.AddScoped<SignUpHandler>();
         services.AddScoped<SignUpOtpHandler>();

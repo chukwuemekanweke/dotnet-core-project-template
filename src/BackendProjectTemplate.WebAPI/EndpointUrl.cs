@@ -26,6 +26,7 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
         public static readonly string GoogleV1 = $"{V1}/google";
         public static readonly string RefreshV1 = $"{V1}/refresh";
+        public static readonly string LogoutV1 = $"{V1}/logout";
     }
 
     public static class GoogleRegistrations

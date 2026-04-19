@@ -1,12 +1,17 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
+using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 
@@ -16,6 +21,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 public sealed class SessionsController(
     SignInHandler handler,
     GoogleSignInHandler googleSignInHandler,
+    LogoutSessionHandler logoutSessionHandler,
     RefreshSessionHandler refreshSessionHandler,
     IValidator<SignInRequest> validator,
     IValidator<GoogleSignInRequest> googleSignInValidator,
@@ -172,5 +178,69 @@ public sealed class SessionsController(
                 title: "Invalid refresh token",
                 detail: "The supplied refresh token is invalid, expired, or no longer active.")
         };
+    }
+
+    [HttpPost("logout")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    {
+        var bearerToken = ResolveBearerToken(Request);
+        if (string.IsNullOrWhiteSpace(bearerToken))
+        {
+            return Unauthorized();
+        }
+
+        JwtSecurityToken jwt;
+        try
+        {
+            jwt = new JwtSecurityTokenHandler().ReadJwtToken(bearerToken);
+        }
+        catch (ArgumentException)
+        {
+            return Unauthorized();
+        }
+
+        DateTimeOffset? expiresAtUtc = jwt.ValidTo == DateTime.MinValue
+            ? null
+            : new DateTimeOffset(DateTime.SpecifyKind(jwt.ValidTo, DateTimeKind.Utc));
+        if (!expiresAtUtc.HasValue)
+        {
+            return Unauthorized();
+        }
+
+        var tokenId = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value
+            ?? jwt.Claims.FirstOrDefault(claim => claim.Type == JwtRegisteredClaimNames.Jti)?.Value;
+        if (string.IsNullOrWhiteSpace(tokenId))
+        {
+            return Unauthorized();
+        }
+
+        Guid? stakeholderId = null;
+        var stakeholderClaim = User.FindFirst(CustomClaimTypes.StakeholderId)?.Value
+            ?? jwt.Claims.FirstOrDefault(claim => claim.Type == CustomClaimTypes.StakeholderId)?.Value;
+        if (Guid.TryParse(stakeholderClaim, out var parsedStakeholderId))
+        {
+            stakeholderId = parsedStakeholderId;
+        }
+
+        var result = await logoutSessionHandler.HandleAsync(
+            new LogoutSessionCommand(tokenId, expiresAtUtc.Value, stakeholderId),
+            cancellationToken);
+
+        return result.Status switch
+        {
+            LogoutSessionStatus.Success => NoContent(),
+            _ => Unauthorized()
+        };
+    }
+
+    private static string? ResolveBearerToken(HttpRequest request)
+    {
+        var authorizationHeader = request.Headers.Authorization.ToString();
+        return authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? authorizationHeader["Bearer ".Length..].Trim()
+            : null;
     }
 }
