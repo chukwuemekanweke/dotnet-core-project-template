@@ -1,13 +1,13 @@
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Storage;
-using BackendProjectTemplate.Domain.Stakeholders.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
 
 namespace BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 
 public sealed class UploadAvatarHandler(
     ICurrentActor currentActor,
-    IAppUserStakeholderRepository appUserStakeholderRepository,
+    IRepository<Stakeholder> stakeholderRepository,
     IObjectStorageService objectStorageService,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -31,8 +31,8 @@ public sealed class UploadAvatarHandler(
                 Error: "Avatar must be an image file with size up to 2 MB.");
         }
 
-        var appUserStakeholder = await appUserStakeholderRepository.GetByStakeholderIdAsync(stakeholderId, cancellationToken);
-        if (appUserStakeholder is null)
+        var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId, cancellationToken);
+        if (stakeholder is null)
         {
             return new UploadAvatarResult(UploadAvatarStatus.StakeholderNotFound);
         }
@@ -44,12 +44,12 @@ public sealed class UploadAvatarHandler(
         }
 
         var objectKey =
-            $"tenants/{appUserStakeholder.Stakeholder.TenantId}/stakeholders/{appUserStakeholder.Stakeholder.Id}/avatar/{Guid.CreateVersion7():N}{fileExtension.ToLowerInvariant()}";
+            $"tenants/{stakeholder.TenantId}/stakeholders/{stakeholder.Id}/avatar/{Guid.CreateVersion7():N}{fileExtension.ToLowerInvariant()}";
         var avatarUrl = await objectStorageService.UploadPublicAsync(
             new ObjectStorageUploadRequest(objectKey, command.Content, command.ContentType),
             cancellationToken);
 
-        appUserStakeholder.Stakeholder.SetAvatarUrl(avatarUrl, timeProvider.GetUtcNow());
+        stakeholder.SetAvatarUrl(avatarUrl, timeProvider.GetUtcNow());
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new UploadAvatarResult(UploadAvatarStatus.Success, avatarUrl);

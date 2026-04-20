@@ -7,7 +7,6 @@ using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Domain.Stakeholders.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 using Microsoft.AspNetCore.Identity;
 
@@ -20,7 +19,6 @@ public sealed class GoogleSignUpHandler(
     ICurrentActor currentActor,
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
-    IAppUserStakeholderRepository appUserStakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -85,6 +83,7 @@ public sealed class GoogleSignUpHandler(
         }
 
         var stakeholder = Stakeholder.Create(
+            user.Id,
             tenantId,
             request.CountryId,
             stakeholderType.Id,
@@ -92,9 +91,6 @@ public sealed class GoogleSignUpHandler(
             request.LastName,
             now);
         await stakeholderRepository.AddAsync(stakeholder, cancellationToken);
-
-        var appUserStakeholder = AppUserStakeholder.Create(user.Id, stakeholder.Id, now);
-        await appUserStakeholderRepository.AddAsync(appUserStakeholder, cancellationToken);
 
         await eventPublisher.PublishAsync(new UserCreated
         {

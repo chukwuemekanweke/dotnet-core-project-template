@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
+using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -8,7 +8,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.CompletePas
 public sealed class CompletePasswordResetHandler(
     IAuthenticationIdentityService identityService,
     ITwoFactorOtpService twoFactorOtpService,
-    AppUserStakeholderResolver appUserStakeholderResolver,
+    StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
 {
@@ -42,7 +42,7 @@ public sealed class CompletePasswordResetHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        var stakeholderId = await appUserStakeholderResolver.GetRequiredStakeholderIdAsync(user.Id, cancellationToken);
+        var stakeholderId = await stakeholderResolver.GetRequiredIdAsync(user.Id, cancellationToken);
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetCompleted,

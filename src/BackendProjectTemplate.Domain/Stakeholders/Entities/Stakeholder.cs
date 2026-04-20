@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -13,6 +14,7 @@ public sealed class Stakeholder : Entity, IAggregateRoot
     }
 
     private Stakeholder(
+        Guid appUserId,
         Guid tenantId,
         Guid countryId,
         Guid stakeholderTypeId,
@@ -20,6 +22,7 @@ public sealed class Stakeholder : Entity, IAggregateRoot
         string lastName,
         DateTimeOffset utcNow)
     {
+        AppUserId = appUserId;
         TenantId = tenantId;
         CountryId = countryId;
         StakeholderTypeId = stakeholderTypeId;
@@ -28,6 +31,7 @@ public sealed class Stakeholder : Entity, IAggregateRoot
         IsVerified = false;
     }
 
+    public Guid AppUserId { get; private set; }
     public Guid TenantId { get; private set; }
     public Guid CountryId { get; private set; }
     public Guid StakeholderTypeId { get; private set; }
@@ -35,18 +39,18 @@ public sealed class Stakeholder : Entity, IAggregateRoot
     public string LastName { get; private set; } = string.Empty;
     public string? AvatarUrl { get; private set; }
     public bool IsVerified { get; private set; }
+    public AppUser AppUser { get; private set; } = null!;
     public StakeholderType StakeholderType { get; private set; } = null!;
 
-    public ICollection<AppUserStakeholder> AppUserStakeholders { get; private set; } = [];
-
     public static Stakeholder Create(
+        Guid appUserId,
         Guid tenantId,
         Guid countryId,
         Guid stakeholderTypeId,
         string firstName,
         string lastName,
         DateTimeOffset utcNow) =>
-        new(tenantId, countryId, stakeholderTypeId, firstName, lastName, utcNow);
+        new(appUserId, tenantId, countryId, stakeholderTypeId, firstName, lastName, utcNow);
 
     public void UpdateProfile(string firstName, string lastName, DateTimeOffset utcNow)
     {

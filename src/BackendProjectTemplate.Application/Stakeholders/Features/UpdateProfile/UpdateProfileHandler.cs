@@ -1,12 +1,12 @@
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Stakeholders.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
 
 namespace BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
 
 public sealed class UpdateProfileHandler(
     ICurrentActor currentActor,
-    IAppUserStakeholderRepository appUserStakeholderRepository,
+    IRepository<Stakeholder> stakeholderRepository,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -24,13 +24,13 @@ public sealed class UpdateProfileHandler(
                 "FirstName and LastName are required.");
         }
 
-        var appUserStakeholder = await appUserStakeholderRepository.GetByStakeholderIdAsync(stakeholderId, cancellationToken);
-        if (appUserStakeholder is null)
+        var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId, cancellationToken);
+        if (stakeholder is null)
         {
             return new UpdateProfileResult(UpdateProfileStatus.StakeholderNotFound);
         }
 
-        appUserStakeholder.Stakeholder.UpdateProfile(command.FirstName, command.LastName, timeProvider.GetUtcNow());
+        stakeholder.UpdateProfile(command.FirstName, command.LastName, timeProvider.GetUtcNow());
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new UpdateProfileResult(UpdateProfileStatus.Success);

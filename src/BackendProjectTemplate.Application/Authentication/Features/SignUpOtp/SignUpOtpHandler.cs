@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
+using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -10,7 +10,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
     IEventPublisher eventPublisher,
-    AppUserStakeholderResolver appUserStakeholderResolver,
+    StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -35,7 +35,7 @@ public sealed class SignUpOtpHandler(
 
         var now = timeProvider.GetUtcNow();
         user.MarkEmailVerified(now);
-        var appUserStakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
+        var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
         var updateResult = await identityService.UpdateAsync(user);
@@ -46,14 +46,14 @@ public sealed class SignUpOtpHandler(
 
         await eventPublisher.PublishAsync(new UserEmailConfirmed
         {
-            StakeholderId = appUserStakeholder.StakeholderId,
+            StakeholderId = stakeholder.Id,
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         var properties = new Dictionary<string, string>
         {
-            [Observability.StakeholderIdPropertyName] = appUserStakeholder.StakeholderId.ToString()
+            [Observability.StakeholderIdPropertyName] = stakeholder.Id.ToString()
         };
 
         customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.OtpConfirmed, properties);

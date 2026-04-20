@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
+using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -12,7 +12,7 @@ public sealed class RefreshSessionHandler(
     IAccessTokenService accessTokenService,
     IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
-    AppUserStakeholderResolver appUserStakeholderResolver,
+    StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -55,12 +55,12 @@ public sealed class RefreshSessionHandler(
             return new RefreshSessionResult(RefreshSessionStatus.EmailNotVerified, null);
         }
 
-        var currentStakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
-        var accessToken = accessTokenService.Generate(user, currentStakeholder.StakeholderId);
+        var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
+        var accessToken = accessTokenService.Generate(user, currentStakeholder.Id);
         var refreshToken = await refreshTokenService.RotateAsync(currentRefreshToken, user, cancellationToken);
 
         await PublishTokenRefreshedAsync(
-            stakeholderId: currentStakeholder.StakeholderId,
+            stakeholderId: currentStakeholder.Id,
             ipAddress: request.IpAddress,
             userAgent: request.UserAgent,
             cancellationToken);

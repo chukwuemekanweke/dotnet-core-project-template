@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
+using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Commands.Authentication;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -11,7 +11,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.RequestPass
 public sealed class RequestPasswordResetHandler(
     IAuthenticationIdentityService identityService,
     ICommandSender commandSender,
-    AppUserStakeholderResolver appUserStakeholderResolver,
+    StakeholderResolver stakeholderResolver,
     ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
@@ -27,12 +27,12 @@ public sealed class RequestPasswordResetHandler(
             return new RequestPasswordResetResult(RequestPasswordResetStatus.UserNotFound);
         }
 
-        var appUserStakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
+        var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
 
         await commandSender.SendAsync(
             new ResetPasswordCommand
             {
-                StakeholderId = appUserStakeholder.StakeholderId,
+                StakeholderId = stakeholder.Id,
                 TenantId = tenantId
             },
             cancellationToken);
@@ -42,7 +42,7 @@ public sealed class RequestPasswordResetHandler(
             Observability.EventNames.Authentication.PasswordResetRequested,
             new Dictionary<string, string>
             {
-                [Observability.StakeholderIdPropertyName] = appUserStakeholder.StakeholderId.ToString(),
+                [Observability.StakeholderIdPropertyName] = stakeholder.Id.ToString(),
                 ["Email"] = normalizedEmail
             });
 

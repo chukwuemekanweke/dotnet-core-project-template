@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
+using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Application.Authentication.Constants;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -14,7 +14,7 @@ public sealed class GoogleSignInHandler(
     IAccessTokenService accessTokenService,
     IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
-    AppUserStakeholderResolver appUserStakeholderResolver,
+    StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -45,10 +45,10 @@ public sealed class GoogleSignInHandler(
         if (await identityService.IsLockedOutAsync(user))
         {
             var lockedUntilUtc = await identityService.GetLockoutEndUtcAsync(user);
-            var stakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
+            var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
 
             await PublishFailedAsync(
-                stakeholderId: stakeholder.StakeholderId,
+                stakeholderId: stakeholder.Id,
                 emailAddress: user.Email ?? googleIdentity.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
@@ -61,9 +61,9 @@ public sealed class GoogleSignInHandler(
 
         if (!user.EmailConfirmed)
         {
-            var stakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
+            var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
             await PublishFailedAsync(
-                stakeholderId: stakeholder.StakeholderId,
+                stakeholderId: stakeholder.Id,
                 emailAddress: user.Email ?? googleIdentity.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
@@ -74,12 +74,12 @@ public sealed class GoogleSignInHandler(
             return new GoogleSignInResult(GoogleSignInStatus.EmailNotVerified, null);
         }
 
-        var currentStakeholder = await appUserStakeholderResolver.GetRequiredStakeholderAsync(user.Id, cancellationToken);
-        var accessToken = accessTokenService.Generate(user, currentStakeholder.StakeholderId);
+        var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
+        var accessToken = accessTokenService.Generate(user, currentStakeholder.Id);
         var refreshToken = await refreshTokenService.IssueAsync(user, cancellationToken);
 
         await PublishSuccessfulAsync(
-            stakeholderId: currentStakeholder.StakeholderId,
+            stakeholderId: currentStakeholder.Id,
             emailAddress: user.Email ?? googleIdentity.Email,
             ipAddress: request.IpAddress,
             userAgent: request.UserAgent,

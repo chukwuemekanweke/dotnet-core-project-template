@@ -24,7 +24,6 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<TenantEmailBaseTemplate> TenantEmailBaseTemplates => Set<TenantEmailBaseTemplate>();
     public DbSet<Stakeholder> Stakeholders => Set<Stakeholder>();
     public DbSet<StakeholderType> StakeholderTypes => Set<StakeholderType>();
-    public DbSet<AppUserStakeholder> AppUserStakeholders => Set<AppUserStakeholder>();
     public DbSet<AuthenticationRefreshToken> AuthenticationRefreshTokens => Set<AuthenticationRefreshToken>();
     public DbSet<IpAddress> IpAddresses => Set<IpAddress>();
     public DbSet<IpAddressLocation> IpAddressLocations => Set<IpAddressLocation>();

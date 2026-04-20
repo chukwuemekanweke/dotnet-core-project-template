@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
 using Shouldly;
@@ -20,19 +21,17 @@ public sealed class WhenSigningInWithLockedAccount_ShouldReturnAccountLockedAndP
         var lockedUntilUtc = new DateTimeOffset(2026, 4, 7, 12, 0, 0, TimeSpan.Zero);
         var ipAddress = AuthenticationTestData.IpAddress();
         var userAgent = AuthenticationTestData.UserAgent();
-        var stakeholderId = Guid.CreateVersion7();
-
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
         var user = AppUser.Create(email, firstName, lastName, now);
         user.MarkEmailVerified(now);
-        var appUserStakeholder = AppUserStakeholder.Create(user.Id, stakeholderId, now);
+        var stakeholder = Stakeholder.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), firstName, lastName, now);
 
         var context = new AuthenticationFlowTestContext();
         context.IdentityService.FindByEmailAsync(email).Returns(user);
         context.IdentityService.IsLockedOutAsync(user).Returns(true);
         context.IdentityService.GetLockoutEndUtcAsync(user).Returns(lockedUntilUtc);
-        context.AppUserStakeholderRepository.GetByAppUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(appUserStakeholder);
+        context.StakeholderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Stakeholder>>(), Arg.Any<CancellationToken>())
+            .Returns(stakeholder);
 
         var result = await context.CreateSignInHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateSignInCommand(email, password, ipAddress, userAgent),
@@ -47,7 +46,7 @@ public sealed class WhenSigningInWithLockedAccount_ShouldReturnAccountLockedAndP
                 message.IpAddress == ipAddress &&
                 message.UserAgent == userAgent &&
                 message.FailureReason == UserSignInFailureReasons.LockedOut &&
-                message.StakeholderId == stakeholderId),
+                message.StakeholderId == stakeholder.Id),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await context.IdentityService.DidNotReceive().CheckPasswordAsync(Arg.Any<AppUser>(), Arg.Any<string>());

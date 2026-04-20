@@ -8,27 +8,27 @@ namespace BackendProjectTemplate.Infrastructure.Persistence;
 public sealed class StakeholderReadModelRepository(AppReadDbContext dbContext) : IStakeholderReadModelRepository
 {
     public async Task<StakeholderReadModel?> GetByAppUserIdAsync(Guid appUserId, CancellationToken cancellationToken = default) =>
-        await dbContext.AppUserStakeholders
-            .Where(appUserStakeholder => appUserStakeholder.AppUserId == appUserId)
+        await dbContext.Stakeholders
+            .Where(stakeholder => stakeholder.AppUserId == appUserId)
             .Select(CreateReadModel())
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<StakeholderReadModel?> GetByStakeholderIdAsync(Guid stakeholderId, CancellationToken cancellationToken = default)
-        => await dbContext.AppUserStakeholders
-            .Where(appUserStakeholder => appUserStakeholder.StakeholderId == stakeholderId)
+        => await dbContext.Stakeholders
+            .Where(stakeholder => stakeholder.Id == stakeholderId)
             .Select(CreateReadModel())
             .FirstOrDefaultAsync(cancellationToken);
 
-    private static Expression<Func<AppUserStakeholder, StakeholderReadModel>> CreateReadModel() =>
-        appUserStakeholder => new StakeholderReadModel(
-            appUserStakeholder.StakeholderId,
-            appUserStakeholder.AppUserId,
-            appUserStakeholder.AppUser.Email ?? string.Empty,
-            appUserStakeholder.Stakeholder.TenantId,
-            appUserStakeholder.Stakeholder.CountryId,
-            appUserStakeholder.Stakeholder.StakeholderTypeId,
-            appUserStakeholder.Stakeholder.FirstName,
-            appUserStakeholder.Stakeholder.LastName,
-            appUserStakeholder.Stakeholder.AvatarUrl,
-            appUserStakeholder.Stakeholder.IsVerified);
+    private static Expression<Func<Stakeholder, StakeholderReadModel>> CreateReadModel() =>
+        stakeholder => new StakeholderReadModel(
+            stakeholder.Id,
+            stakeholder.AppUserId,
+            stakeholder.AppUser.Email ?? string.Empty,
+            stakeholder.TenantId,
+            stakeholder.CountryId,
+            stakeholder.StakeholderTypeId,
+            stakeholder.FirstName,
+            stakeholder.LastName,
+            stakeholder.AvatarUrl,
+            stakeholder.IsVerified);
 }

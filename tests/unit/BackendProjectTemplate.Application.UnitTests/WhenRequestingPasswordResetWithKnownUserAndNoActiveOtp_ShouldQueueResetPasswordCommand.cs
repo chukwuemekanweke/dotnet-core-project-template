@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.RequestPassword
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
 using Shouldly;
@@ -16,14 +17,21 @@ public sealed class WhenRequestingPasswordResetWithKnownUserAndNoActiveOtp_Shoul
         var context = new AuthenticationFlowTestContext();
         var tenantId = Guid.CreateVersion7();
         var user = context.CreateUser();
-        var stakeholderId = Guid.CreateVersion7();
+        var stakeholder = Stakeholder.Create(
+            user.Id,
+            tenantId,
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            AuthenticationTestData.FirstName(),
+            AuthenticationTestData.LastName(),
+            context.Clock.GetUtcNow());
 
         context.CurrentActor.TenantId.Returns(tenantId);
         context.IdentityService.FindByEmailAsync(user.Email!).Returns(user);
-        context.AppUserStakeholderRepository.GetByAppUserIdAsync(
-                user.Id,
+        context.StakeholderRepository.FirstOrDefaultAsync(
+                Arg.Any<ISpecification<Stakeholder>>(),
                 Arg.Any<CancellationToken>())
-            .Returns(AppUserStakeholder.Create(user.Id, stakeholderId, context.Clock.GetUtcNow()));
+            .Returns(stakeholder);
 
         var result = await context.CreateRequestPasswordResetHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateRequestPasswordResetCommand(user.Email),
@@ -33,7 +41,7 @@ public sealed class WhenRequestingPasswordResetWithKnownUserAndNoActiveOtp_Shoul
         await context.CommandSender.Received(1).SendAsync(
             Arg.Is<ResetPasswordCommand>(command =>
                 command.TenantId == tenantId &&
-                command.StakeholderId == stakeholderId),
+                command.StakeholderId == stakeholder.Id),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

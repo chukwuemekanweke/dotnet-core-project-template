@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
 using Shouldly;
@@ -16,7 +17,6 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_ShouldRotateToken
         var email = AuthenticationTestData.Email();
         var firstName = AuthenticationTestData.FirstName();
         var lastName = AuthenticationTestData.LastName();
-        var stakeholderId = Guid.CreateVersion7();
         var securityStamp = Guid.CreateVersion7().ToString("N");
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
         var user = AppUser.Create(email, firstName, lastName, now);
@@ -29,7 +29,7 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_ShouldRotateToken
             securityStamp,
             now.AddDays(30),
             now);
-        var appUserStakeholder = AppUserStakeholder.Create(user.Id, stakeholderId, now);
+        var stakeholder = Stakeholder.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), firstName, lastName, now);
         var expectedAccessToken = new AccessToken("access-token", now.AddMinutes(5));
         var expectedRefreshToken = new RefreshToken("refresh-token", now.AddDays(30));
 
@@ -38,9 +38,9 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_ShouldRotateToken
             .Returns(storedRefreshToken);
         context.IdentityService.FindByIdAsync(user.Id).Returns(user);
         context.IdentityService.GetSecurityStampAsync(user).Returns(securityStamp);
-        context.AppUserStakeholderRepository.GetByAppUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(appUserStakeholder);
-        context.AccessTokenService.Generate(user, stakeholderId).Returns(expectedAccessToken);
+        context.StakeholderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Stakeholder>>(), Arg.Any<CancellationToken>())
+            .Returns(stakeholder);
+        context.AccessTokenService.Generate(user, stakeholder.Id).Returns(expectedAccessToken);
         context.RefreshTokenService.RotateAsync(storedRefreshToken, user, Arg.Any<CancellationToken>())
             .Returns(expectedRefreshToken);
 

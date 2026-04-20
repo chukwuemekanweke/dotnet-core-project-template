@@ -8,6 +8,7 @@ public sealed class WhenCreatingStakeholder_ShouldSetStakeholderTypeAndAuditFiel
     [Fact]
     public void Verify()
     {
+        var appUserId = Guid.CreateVersion7();
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
         var stakeholderTypeId = Guid.CreateVersion7();
@@ -15,8 +16,9 @@ public sealed class WhenCreatingStakeholder_ShouldSetStakeholderTypeAndAuditFiel
         const string lastName = "Lovelace";
         var now = new DateTimeOffset(2026, 4, 6, 0, 0, 0, TimeSpan.Zero);
 
-        var stakeholder = Stakeholder.Create(tenantId, countryId, stakeholderTypeId, firstName, lastName, now);
+        var stakeholder = Stakeholder.Create(appUserId, tenantId, countryId, stakeholderTypeId, firstName, lastName, now);
 
+        stakeholder.AppUserId.ShouldBe(appUserId);
         stakeholder.TenantId.ShouldBe(tenantId);
         stakeholder.CountryId.ShouldBe(countryId);
         stakeholder.StakeholderTypeId.ShouldBe(stakeholderTypeId);

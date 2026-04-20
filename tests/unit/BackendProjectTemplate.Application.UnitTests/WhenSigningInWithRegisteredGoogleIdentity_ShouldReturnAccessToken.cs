@@ -3,6 +3,7 @@ using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
 using Shouldly;
@@ -19,14 +20,13 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_ShouldReturnAccess
         var lastName = AuthenticationTestData.LastName();
         var ipAddress = AuthenticationTestData.IpAddress();
         var userAgent = AuthenticationTestData.UserAgent();
-        var stakeholderId = Guid.CreateVersion7();
         var subject = Guid.CreateVersion7().ToString("N");
         const string token = "signed-jwt";
 
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
         var user = AppUser.Create(email, firstName, lastName, now);
         user.MarkEmailVerified(now);
-        var appUserStakeholder = AppUserStakeholder.Create(user.Id, stakeholderId, now);
+        var stakeholder = Stakeholder.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), firstName, lastName, now);
 
         var context = new AuthenticationFlowTestContext();
         var expectedToken = new AccessToken(token, now.AddHours(1));
@@ -35,11 +35,11 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_ShouldReturnAccess
         context.GoogleIdentityTokenService.ValidateAsync("google-id-token", Arg.Any<CancellationToken>())
             .Returns(new GoogleIdentityTokenPayload(subject, email, "Google User"));
         context.IdentityService.FindByLoginAsync("Google", subject).Returns(user);
-        context.AppUserStakeholderRepository.GetByAppUserIdAsync(
-                user.Id,
+        context.StakeholderRepository.FirstOrDefaultAsync(
+                Arg.Any<ISpecification<Stakeholder>>(),
                 Arg.Any<CancellationToken>())
-            .Returns(appUserStakeholder);
-        context.AccessTokenService.Generate(user, stakeholderId).Returns(expectedToken);
+            .Returns(stakeholder);
+        context.AccessTokenService.Generate(user, stakeholder.Id).Returns(expectedToken);
         context.RefreshTokenService.IssueAsync(user, Arg.Any<CancellationToken>()).Returns(expectedRefreshToken);
 
         var result = await context.CreateGoogleSignInHandler().HandleAsync(
@@ -57,7 +57,7 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_ShouldReturnAccess
             Arg.Is<UserSignInSuccessful>(message =>
                 message.IpAddress == ipAddress &&
                 message.UserAgent == userAgent &&
-                message.StakeholderId == stakeholderId),
+                message.StakeholderId == stakeholder.Id),
             Arg.Any<CancellationToken>());
     }
 }

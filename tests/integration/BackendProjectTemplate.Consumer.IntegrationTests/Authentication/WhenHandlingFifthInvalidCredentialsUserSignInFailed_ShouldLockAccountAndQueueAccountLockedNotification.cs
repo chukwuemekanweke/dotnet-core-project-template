@@ -153,12 +153,10 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldLo
         updateResult.Succeeded.ShouldBeTrue();
 
         var stakeholderType = StakeholderType.Create(_tenantId, "Individual Customer", "individual_customer", now);
-        var stakeholder = Stakeholder.Create(_tenantId, _countryId, stakeholderType.Id, _firstName, _lastName, now);
-        var appUserStakeholder = AppUserStakeholder.Create(user.Id, stakeholder.Id, now);
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, _firstName, _lastName, now);
 
         await dbContext.StakeholderTypes.AddAsync(stakeholderType);
         await dbContext.Stakeholders.AddAsync(stakeholder);
-        await dbContext.AppUserStakeholders.AddAsync(appUserStakeholder);
         await dbContext.SaveChangesAsync();
 
         _userId = user.Id;
@@ -181,15 +179,6 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_ShouldLo
         if (outboxMessages.Count > 0)
         {
             dbContext.OutboxMessages.RemoveRange(outboxMessages);
-        }
-
-        var appUserStakeholders = await dbContext.AppUserStakeholders
-            .Where(link => link.AppUserId == _userId || link.StakeholderId == _stakeholderId)
-            .ToListAsync();
-
-        if (appUserStakeholders.Count > 0)
-        {
-            dbContext.AppUserStakeholders.RemoveRange(appUserStakeholders);
         }
 
         var stakeholders = await dbContext.Stakeholders
