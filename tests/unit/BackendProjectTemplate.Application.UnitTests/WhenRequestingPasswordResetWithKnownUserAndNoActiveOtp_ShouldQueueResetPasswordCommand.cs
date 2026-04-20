@@ -3,7 +3,6 @@ using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 using NSubstitute;
 using Shouldly;
 
@@ -21,8 +20,8 @@ public sealed class WhenRequestingPasswordResetWithKnownUserAndNoActiveOtp_Shoul
 
         context.CurrentActor.TenantId.Returns(tenantId);
         context.IdentityService.FindByEmailAsync(user.Email!).Returns(user);
-        context.AppUserStakeholderRepository.FirstOrDefaultAsync(
-                Arg.Any<AppUserStakeholderByAppUserIdSpecification>(),
+        context.AppUserStakeholderRepository.GetByAppUserIdAsync(
+                user.Id,
                 Arg.Any<CancellationToken>())
             .Returns(AppUserStakeholder.Create(user.Id, stakeholderId, context.Clock.GetUtcNow()));
 

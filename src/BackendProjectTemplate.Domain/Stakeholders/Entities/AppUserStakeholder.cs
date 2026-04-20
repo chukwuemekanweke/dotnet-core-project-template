@@ -3,7 +3,7 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Stakeholders.Entities;
 
-public sealed class AppUserStakeholder : Entity, IAggregateRoot
+public sealed class AppUserStakeholder : Entity
 {
     private AppUserStakeholder()
     {

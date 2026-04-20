@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
@@ -24,8 +23,8 @@ public sealed class WhenCompletingPasswordResetWithValidOtp_ShouldResetPassword
         context.TwoFactorOtpService.ValidateOtpAsync(user.Id, otp, OtpIntent.PasswordReset, Arg.Any<CancellationToken>())
             .Returns(true);
         context.IdentityService.ResetPasswordAsync(user, password).Returns(IdentityResult.Success);
-        context.AppUserStakeholderRepository.FirstOrDefaultAsync(
-                Arg.Any<ISpecification<AppUserStakeholder>>(),
+        context.AppUserStakeholderRepository.GetByAppUserIdAsync(
+                user.Id,
                 Arg.Any<CancellationToken>())
             .Returns(AppUserStakeholder.Create(user.Id, stakeholderId, context.Clock.GetUtcNow()));
 

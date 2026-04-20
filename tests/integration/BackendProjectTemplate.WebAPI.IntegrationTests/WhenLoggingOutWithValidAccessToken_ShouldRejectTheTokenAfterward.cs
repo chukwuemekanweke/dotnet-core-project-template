@@ -8,6 +8,7 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Persistence;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -106,7 +107,7 @@ public sealed class WhenLoggingOutWithValidAccessToken_ShouldRejectTheTokenAfter
         var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
-        var appUserStakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<AppUserStakeholder>>();
+        var appUserStakeholderRepository = scope.ServiceProvider.GetRequiredService<IAppUserStakeholderRepository>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var now = timeProvider.GetUtcNow();
@@ -124,7 +125,7 @@ public sealed class WhenLoggingOutWithValidAccessToken_ShouldRejectTheTokenAfter
 
         await stakeholderTypeRepository.AddAsync(stakeholderType);
         await stakeholderRepository.AddAsync(stakeholder);
-        await appUserStakeholderRepository.AddAsync(appUserStakeholder);
+        await appUserStakeholderRepository.AddAsync(appUserStakeholder, CancellationToken.None);
         await unitOfWork.SaveChangesAsync();
 
         _stakeholderId = stakeholder.Id;
@@ -140,14 +141,14 @@ public sealed class WhenLoggingOutWithValidAccessToken_ShouldRejectTheTokenAfter
 
         using var scope = CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
-        var appUserStakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<AppUserStakeholder>>();
+        var appUserStakeholderRepository = scope.ServiceProvider.GetRequiredService<IAppUserStakeholderRepository>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var user = await repository.GetByEmailAsync(_email);
 
-        var appUserStakeholders = await appUserStakeholderRepository.ListAsync(new AppUserStakeholderByStakeholderIdCleanupSpecification(_stakeholderId));
+        var appUserStakeholders = await appUserStakeholderRepository.ListByStakeholderIdAsync(_stakeholderId, CancellationToken.None);
         foreach (var link in appUserStakeholders)
         {
             appUserStakeholderRepository.Remove(link);
@@ -211,14 +212,6 @@ public sealed class WhenLoggingOutWithValidAccessToken_ShouldRejectTheTokenAfter
         public FirstCountrySpecification()
         {
             ApplyPaging(0, 1);
-        }
-    }
-
-    private sealed class AppUserStakeholderByStakeholderIdCleanupSpecification : Specification<AppUserStakeholder>
-    {
-        public AppUserStakeholderByStakeholderIdCleanupSpecification(Guid stakeholderId)
-        {
-            Where(link => link.StakeholderId == stakeholderId);
         }
     }
 

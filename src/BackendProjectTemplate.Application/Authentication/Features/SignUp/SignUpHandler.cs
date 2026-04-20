@@ -7,6 +7,7 @@ using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 using Microsoft.AspNetCore.Identity;
 
@@ -18,7 +19,7 @@ public sealed class SignUpHandler(
     ICurrentActor currentActor,
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
-    IRepository<AppUserStakeholder> appUserStakeholderRepository,
+    IAppUserStakeholderRepository appUserStakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)

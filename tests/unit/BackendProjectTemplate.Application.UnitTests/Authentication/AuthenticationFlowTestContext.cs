@@ -15,6 +15,7 @@ using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Persistence;
 using NSubstitute;
 
 namespace BackendProjectTemplate.Application.UnitTests.Authentication;
@@ -35,7 +36,7 @@ internal sealed class AuthenticationFlowTestContext
     public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
     public IRepository<StakeholderType> StakeholderTypeRepository { get; } = Substitute.For<IRepository<StakeholderType>>();
     public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
-    public IRepository<AppUserStakeholder> AppUserStakeholderRepository { get; } = Substitute.For<IRepository<AppUserStakeholder>>();
+    public IAppUserStakeholderRepository AppUserStakeholderRepository { get; } = Substitute.For<IAppUserStakeholderRepository>();
     public AppUserStakeholderResolver AppUserStakeholderResolver => new(AppUserStakeholderRepository);
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public IUnitOfWorkTransaction Transaction { get; } = Substitute.For<IUnitOfWorkTransaction>();

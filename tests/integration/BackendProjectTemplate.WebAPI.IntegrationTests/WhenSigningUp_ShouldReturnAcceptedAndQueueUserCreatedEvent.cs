@@ -6,6 +6,7 @@ using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Persistence;
 using BackendProjectTemplate.WebAPI;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
@@ -91,7 +92,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
         using var scope = CreateScope();
         var userRepository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
         var outboxRepository = scope.ServiceProvider.GetRequiredService<IRepository<OutboxMessage>>();
-        var appUserStakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<AppUserStakeholder>>();
+        var appUserStakeholderRepository = scope.ServiceProvider.GetRequiredService<IAppUserStakeholderRepository>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
@@ -100,8 +101,7 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
 
         if (user is not null)
         {
-            var link = await appUserStakeholderRepository.FirstOrDefaultAsync(
-                new AppUserStakeholderByAppUserIdCleanupSpecification(user.Id));
+            var link = await appUserStakeholderRepository.GetByAppUserIdAsync(user.Id, CancellationToken.None);
             if (link is not null)
             {
                 var stakeholder = await stakeholderRepository.GetByIdAsync(link.StakeholderId);
@@ -194,14 +194,6 @@ public sealed class WhenSigningUp_ShouldReturnAcceptedAndQueueUserCreatedEvent(C
         public FirstCountrySpecification()
         {
             ApplyPaging(0, 1);
-        }
-    }
-
-    private sealed class AppUserStakeholderByAppUserIdCleanupSpecification : Specification<AppUserStakeholder>
-    {
-        public AppUserStakeholderByAppUserIdCleanupSpecification(Guid appUserId)
-        {
-            Where(link => link.AppUserId == appUserId);
         }
     }
 

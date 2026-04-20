@@ -3,7 +3,6 @@ using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
 using Shouldly;
@@ -36,8 +35,8 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_ShouldReturnAccess
         context.GoogleIdentityTokenService.ValidateAsync("google-id-token", Arg.Any<CancellationToken>())
             .Returns(new GoogleIdentityTokenPayload(subject, email, "Google User"));
         context.IdentityService.FindByLoginAsync("Google", subject).Returns(user);
-        context.AppUserStakeholderRepository.FirstOrDefaultAsync(
-                Arg.Any<ISpecification<AppUserStakeholder>>(),
+        context.AppUserStakeholderRepository.GetByAppUserIdAsync(
+                user.Id,
                 Arg.Any<CancellationToken>())
             .Returns(appUserStakeholder);
         context.AccessTokenService.Generate(user, stakeholderId).Returns(expectedToken);

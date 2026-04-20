@@ -2,7 +2,6 @@ using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
 using Shouldly;
@@ -39,7 +38,7 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_ShouldRotateToken
             .Returns(storedRefreshToken);
         context.IdentityService.FindByIdAsync(user.Id).Returns(user);
         context.IdentityService.GetSecurityStampAsync(user).Returns(securityStamp);
-        context.AppUserStakeholderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<AppUserStakeholder>>(), Arg.Any<CancellationToken>())
+        context.AppUserStakeholderRepository.GetByAppUserIdAsync(user.Id, Arg.Any<CancellationToken>())
             .Returns(appUserStakeholder);
         context.AccessTokenService.Generate(user, stakeholderId).Returns(expectedAccessToken);
         context.RefreshTokenService.RotateAsync(storedRefreshToken, user, Arg.Any<CancellationToken>())

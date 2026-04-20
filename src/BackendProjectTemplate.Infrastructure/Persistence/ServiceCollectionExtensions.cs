@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
+using BackendProjectTemplate.Domain.Stakeholders.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IAppUserRepository, AppUserRepository>();
+        services.AddScoped<IAppUserStakeholderRepository, AppUserStakeholderRepository>();
         services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
 
         return services;

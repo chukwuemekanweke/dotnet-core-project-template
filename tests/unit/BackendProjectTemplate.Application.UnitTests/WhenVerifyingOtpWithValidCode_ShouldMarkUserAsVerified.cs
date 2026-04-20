@@ -2,7 +2,6 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
@@ -28,8 +27,8 @@ public sealed class WhenVerifyingOtpWithValidCode_ShouldMarkUserAsVerified
         context.IdentityService.FindByEmailAsync(email).Returns(user);
         context.IdentityService.VerifySignUpOtpAsync(user, otp).Returns(true);
         context.IdentityService.UpdateAsync(Arg.Is<AppUser>(candidate => candidate.EmailConfirmed)).Returns(IdentityResult.Success);
-        context.AppUserStakeholderRepository.FirstOrDefaultAsync(
-                Arg.Any<ISpecification<AppUserStakeholder>>(),
+        context.AppUserStakeholderRepository.GetByAppUserIdAsync(
+                user.Id,
                 Arg.Any<CancellationToken>())
             .Returns(appUserStakeholder);
 

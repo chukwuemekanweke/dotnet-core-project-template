@@ -1,16 +1,13 @@
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Domain.Stakeholders.Specifications;
+using BackendProjectTemplate.Domain.Stakeholders.Persistence;
 
 namespace BackendProjectTemplate.Application.Authentication.AppUserStakeholders;
 
-public sealed class AppUserStakeholderResolver(IRepository<AppUserStakeholder> appUserStakeholderRepository)
+public sealed class AppUserStakeholderResolver(IAppUserStakeholderRepository appUserStakeholderRepository)
 {
     public async Task<AppUserStakeholder> GetRequiredStakeholderAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
-            new AppUserStakeholderByAppUserIdSpecification(userId),
-            cancellationToken);
+        var appUserStakeholder = await appUserStakeholderRepository.GetByAppUserIdAsync(userId, cancellationToken);
         if (appUserStakeholder is null)
         {
             throw new InvalidOperationException($"Unable to resolve stakeholder for user '{userId}'.");

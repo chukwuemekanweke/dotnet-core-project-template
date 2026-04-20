@@ -3,7 +3,6 @@ using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
 using Shouldly;
@@ -35,7 +34,7 @@ public sealed class WhenSigningInWithConfirmedUser_ShouldReturnAccessToken
 
         context.IdentityService.FindByEmailAsync(email).Returns(user);
         context.IdentityService.CheckPasswordAsync(user, password).Returns(true);
-        context.AppUserStakeholderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<AppUserStakeholder>>(), Arg.Any<CancellationToken>())
+        context.AppUserStakeholderRepository.GetByAppUserIdAsync(user.Id, Arg.Any<CancellationToken>())
             .Returns(appUserStakeholder);
         context.AccessTokenService.Generate(user, stakeholderId).Returns(expectedToken);
         context.RefreshTokenService.IssueAsync(user, Arg.Any<CancellationToken>()).Returns(expectedRefreshToken);

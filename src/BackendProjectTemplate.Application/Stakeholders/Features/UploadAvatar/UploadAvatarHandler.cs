@@ -1,14 +1,13 @@
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Storage;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Domain.Stakeholders.Specifications;
+using BackendProjectTemplate.Domain.Stakeholders.Persistence;
 
 namespace BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 
 public sealed class UploadAvatarHandler(
     ICurrentActor currentActor,
-    IRepository<AppUserStakeholder> appUserStakeholderRepository,
+    IAppUserStakeholderRepository appUserStakeholderRepository,
     IObjectStorageService objectStorageService,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -32,9 +31,7 @@ public sealed class UploadAvatarHandler(
                 Error: "Avatar must be an image file with size up to 2 MB.");
         }
 
-        var appUserStakeholder = await appUserStakeholderRepository.FirstOrDefaultAsync(
-            new AppUserStakeholderByStakeholderIdSpecification(stakeholderId),
-            cancellationToken);
+        var appUserStakeholder = await appUserStakeholderRepository.GetByStakeholderIdAsync(stakeholderId, cancellationToken);
         if (appUserStakeholder is null)
         {
             return new UploadAvatarResult(UploadAvatarStatus.StakeholderNotFound);
@@ -53,7 +50,6 @@ public sealed class UploadAvatarHandler(
             cancellationToken);
 
         appUserStakeholder.Stakeholder.SetAvatarUrl(avatarUrl, timeProvider.GetUtcNow());
-        appUserStakeholderRepository.Update(appUserStakeholder);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new UploadAvatarResult(UploadAvatarStatus.Success, avatarUrl);

@@ -2,7 +2,6 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
 using Shouldly;
@@ -32,7 +31,7 @@ public sealed class WhenSigningInWithLockedAccount_ShouldReturnAccountLockedAndP
         context.IdentityService.FindByEmailAsync(email).Returns(user);
         context.IdentityService.IsLockedOutAsync(user).Returns(true);
         context.IdentityService.GetLockoutEndUtcAsync(user).Returns(lockedUntilUtc);
-        context.AppUserStakeholderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<AppUserStakeholder>>(), Arg.Any<CancellationToken>())
+        context.AppUserStakeholderRepository.GetByAppUserIdAsync(user.Id, Arg.Any<CancellationToken>())
             .Returns(appUserStakeholder);
 
         var result = await context.CreateSignInHandler().HandleAsync(
