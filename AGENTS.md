@@ -91,6 +91,8 @@ Matching WebAPI request DTO location:
   - `Consumer`
   - `Jobs`
 - Within a test project, mirror the production project structure where practical.
+- Each feature worked on should have its own folder in both the relevant unit test project and integration test project, consistent with the repository's vertical slice architecture.
+- All test case files for a feature should live inside that feature folder.
 - Example: `Jobs` tests should group scenarios under folders like `HealthChecks`, `OutboxProcessing`, and `Infrastructure` instead of keeping all files flat.
 
 ### Unit test rules
@@ -98,7 +100,16 @@ Matching WebAPI request DTO location:
 - Use `NSubstitute` for mocks, substitutes, and fakes.
 - Use `Shouldly` for assertions.
 - Keep one test case per file.
-- Name unit test files and classes with `When_X_Should_Y`.
+- Name unit test files and classes with `When_{ActionUnderTest}_With{ParametersOfTest}_Should`.
+- Keep the class name focused on the action and scenario, and move the outcome into the test method name.
+- Do not append the asserted outcome to the file name or class name after `Should`.
+- The file name and class name must stop at `Should`. The outcome belongs only in the test method name.
+- Example file and class name: `When_CompletingPasswordReset_WithValidOtp_Should`
+- Example test method name: `ResetPassword`
+- For every WebAPI controller created, add a set of unit tests for the controller that covers happy paths, failure paths, and edge cases.
+- For every handler created in the application layer, add a set of unit tests for the handler that covers happy paths, failure paths, and edge cases.
+- For every handler created in the Consumer layer, add a set of unit tests for the handler that covers happy paths, failure paths, and edge cases.
+- For every background service created in the Jobs layer, add a set of unit tests for the background service that covers happy paths, failure paths, and edge cases.
 - Prefer method-local scenario variables over repeated string literals.
 - Reuse helper factory methods or test context builders where available.
 - Keep unit tests focused on the behavior of the unit under test, not infrastructure wiring.
@@ -106,8 +117,17 @@ Matching WebAPI request DTO location:
 ### Integration test rules
 
 - Integration tests should cover the happy path only.
+- For each endpoint, keep a single happy path test that covers the most logical end-to-end behavior of that flow.
 - Focus on the path that gives the most meaningful end-to-end code-path coverage.
+- When additional integration tests exist around related behaviors, the primary expectation is still that the happy path is what defines the core scenario coverage.
+- For every WebAPI action method added to any controller, add an integration test for that action method.
+- For every handler added to the Consumer project, add an integration test for that handler.
+- For every background service added to the Jobs project, add an integration test for that background service.
 - Keep one endpoint scenario per file.
+- Prefer the same naming convention as unit tests for new integration tests when practical:
+  `When_{ActionUnderTest}_With{ParametersOfTest}_Should`
+  Then use the test method name for the outcome being asserted.
+- Do not append the asserted outcome to integration test file names or class names after `Should`.
 - Each integration test class must implement `IAsyncLifetime`.
 - Use `InitializeAsync` for:
   - seeding data required by the scenario
