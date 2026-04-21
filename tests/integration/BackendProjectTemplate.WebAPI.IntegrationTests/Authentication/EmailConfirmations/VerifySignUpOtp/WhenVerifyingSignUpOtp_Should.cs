@@ -1,16 +1,15 @@
-using System.Net;
-using System.Net.Http.Json;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.WebAPI;
 using BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmations;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests;
 

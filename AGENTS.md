@@ -93,6 +93,9 @@ Matching WebAPI request DTO location:
 - Within a test project, mirror the production project structure where practical.
 - Each feature worked on should have its own folder in both the relevant unit test project and integration test project, consistent with the repository's vertical slice architecture.
 - All test case files for a feature should live inside that feature folder.
+- If a feature controller exposes multiple action methods or endpoints, create a subfolder per endpoint beneath that controller's feature folder.
+- Put the integration test file for each endpoint inside that endpoint folder.
+- Example: `Authentication/Sessions/SignIn`, `Authentication/Sessions/Refresh`, and `Authentication/Sessions/Logout` should each hold the integration tests for that specific endpoint flow.
 - Example: `Jobs` tests should group scenarios under folders like `HealthChecks`, `OutboxProcessing`, and `Infrastructure` instead of keeping all files flat.
 
 ### Unit test rules
@@ -121,6 +124,7 @@ Matching WebAPI request DTO location:
 - Focus on the path that gives the most meaningful end-to-end code-path coverage.
 - When additional integration tests exist around related behaviors, the primary expectation is still that the happy path is what defines the core scenario coverage.
 - For every WebAPI action method added to any controller, add an integration test for that action method.
+- When a controller has multiple action methods, organize those integration tests under endpoint-specific subfolders inside the controller's feature folder instead of keeping the files flat.
 - For every handler added to the Consumer project, add an integration test for that handler.
 - For every background service added to the Jobs project, add an integration test for that background service.
 - Keep one endpoint scenario per file.
@@ -138,7 +142,7 @@ Matching WebAPI request DTO location:
   - clearing test doubles or in-memory stores used by the test
 - Cleanup should be explicit and targeted.
 - Do not use vague global wipes when only a small set of records were touched.
-- Use `Given / When / Then` structure only inside the method under test, typically as local anonymous functions inside `Verify()`.
+- Use `Given / When / Then` structure only inside the method under test, typically as local anonymous functions inside the test method.
 - Helper methods outside `Verify()` should use normal verb-based names.
 
 ### Current integration testing conventions
