@@ -93,9 +93,12 @@ Matching WebAPI request DTO location:
 - Within a test project, mirror the production project structure where practical.
 - Each feature worked on should have its own folder in both the relevant unit test project and integration test project, consistent with the repository's vertical slice architecture.
 - All test case files for a feature should live inside that feature folder.
+- Application unit tests must not be kept flat at the project root. Place them in folders that mirror the corresponding application feature path.
 - If a feature controller exposes multiple action methods or endpoints, create a subfolder per endpoint beneath that controller's feature folder.
-- Put the integration test file for each endpoint inside that endpoint folder.
+- If a controller exposes only one endpoint, keep that integration test directly inside the controller's feature folder rather than creating a one-off endpoint subfolder.
+- Put the integration test file for each endpoint inside the appropriate feature folder or endpoint subfolder.
 - Example: `Authentication/Sessions/SignIn`, `Authentication/Sessions/Refresh`, and `Authentication/Sessions/Logout` should each hold the integration tests for that specific endpoint flow.
+- Example: `ReferenceData/Countries` can hold the integration test file directly when `CountriesController` exposes only one endpoint.
 - Example: `Jobs` tests should group scenarios under folders like `HealthChecks`, `OutboxProcessing`, and `Infrastructure` instead of keeping all files flat.
 
 ### Unit test rules
@@ -125,6 +128,7 @@ Matching WebAPI request DTO location:
 - When additional integration tests exist around related behaviors, the primary expectation is still that the happy path is what defines the core scenario coverage.
 - For every WebAPI action method added to any controller, add an integration test for that action method.
 - When a controller has multiple action methods, organize those integration tests under endpoint-specific subfolders inside the controller's feature folder instead of keeping the files flat.
+- When a controller has only one action method, keep that integration test in the controller's feature folder without adding an extra endpoint folder.
 - For every handler added to the Consumer project, add an integration test for that handler.
 - For every background service added to the Jobs project, add an integration test for that background service.
 - Keep one endpoint scenario per file.
