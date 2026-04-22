@@ -13,6 +13,8 @@ public sealed class SendNotificationHandler(
     IMessageContext messageContext,
     IEmailNotificationService emailNotificationService) : BaseMessageHandler<SendNotificationCommand>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(SendNotificationCommand message, CancellationToken cancellationToken)
     {
         try
@@ -35,7 +37,7 @@ public sealed class SendNotificationHandler(
 
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Notifications.EmailSent,
-            ObservabilityEventProperties.Create(currentActorAccessor, message.StakeholderId));
+            ObservabilityEventProperties.Create(CurrentActorAccessor, message.StakeholderId));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(SendNotificationCommand message)
