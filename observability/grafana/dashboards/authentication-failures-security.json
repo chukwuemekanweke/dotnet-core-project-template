@@ -30,7 +30,7 @@
       },
       "id": 1,
       "options": {
-        "content": "## Authentication Failures And Security\nBusiness failure panels in this dashboard currently reflect the implemented custom failure event coverage.\n\n### Queryable business failure event today\n- `SignInFailureProcessed` from `BackendProjectTemplate.Consumer`\n\n### Remaining gap\n- other auth flows still rely on HTTP health and exception metrics until explicit failure custom events are added for those journeys.",
+        "content": "## Authentication Failures And Security\nBusiness failure panels in this dashboard are backed by explicit auth failure events.\n\n### Queryable business failure events today\n- `PasswordSignUpFailed`\n- `GoogleSignUpFailed`\n- `EmailConfirmationFailed`\n- `PasswordResetRequestFailed`\n- `PasswordResetCompletionFailed`\n- `SignInFailureProcessed`\n\nSign-in continues to use `SignInFailureProcessed` as the explicit failure signal instead of request-side `...Failed` events.",
         "mode": "markdown"
       },
       "pluginVersion": "12.0.0",
@@ -90,13 +90,13 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({service_name=\"BackendProjectTemplate.Consumer\"} | json | custom_event_name=\"SignInFailureProcessed\" [$__range]))",
+          "expr": "sum(count_over_time({service_name=~\"BackendProjectTemplate.WebAPI|BackendProjectTemplate.Consumer\"} | json | custom_event_name=~\"PasswordSignUpFailed|GoogleSignUpFailed|EmailConfirmationFailed|PasswordResetRequestFailed|PasswordResetCompletionFailed|SignInFailureProcessed\" [$__range]))",
           "legendFormat": "",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Sign-In Failures Processed",
+      "title": "Explicit Auth Failures",
       "type": "stat"
     },
     {
@@ -387,13 +387,13 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum by (failure_reason) (count_over_time({service_name=\"BackendProjectTemplate.Consumer\"} | json | custom_event_name=\"SignInFailureProcessed\" | failure_reason!=\"\" [$__interval]))",
+          "expr": "sum by (failure_reason) (count_over_time({service_name=~\"BackendProjectTemplate.WebAPI|BackendProjectTemplate.Consumer\"} | json | custom_event_name=~\"PasswordSignUpFailed|GoogleSignUpFailed|EmailConfirmationFailed|PasswordResetRequestFailed|PasswordResetCompletionFailed|SignInFailureProcessed\" | failure_reason!=\"\" [$__interval]))",
           "legendFormat": "{{failure_reason}}",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Sign-In Failures By Reason",
+      "title": "Authentication Failures By Reason",
       "type": "timeseries"
     },
     {

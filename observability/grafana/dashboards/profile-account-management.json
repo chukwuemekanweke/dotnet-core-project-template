@@ -30,7 +30,7 @@
       },
       "id": 1,
       "options": {
-        "content": "## Profile And Account Management\nBusiness-event panels in this dashboard are backed by the custom telemetry events emitted for the authenticated profile flows.\n\n### Queryable business events today\n- `ProfileUpdateCompleted`\n- `AvatarUploadCompleted`\n\nFailure analysis for these flows still relies on HTTP status and exception metrics until explicit failure custom events are added.",
+        "content": "## Profile And Account Management\nBusiness-event panels in this dashboard are backed by the custom telemetry events emitted for the authenticated profile flows.\n\n### Queryable business events today\n- `ProfileUpdateCompleted`\n- `ProfileUpdateFailed`\n- `AvatarUploadCompleted`\n- `AvatarUploadFailed`",
         "mode": "markdown"
       },
       "pluginVersion": "12.0.0",
@@ -391,6 +391,28 @@
           "legendFormat": "Avatar Uploaded",
           "queryType": "range",
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({service_name=\"BackendProjectTemplate.WebAPI\"} | json | custom_event_name=\"ProfileUpdateFailed\" [$__interval]))",
+          "legendFormat": "Profile Update Failed",
+          "queryType": "range",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({service_name=\"BackendProjectTemplate.WebAPI\"} | json | custom_event_name=\"AvatarUploadFailed\" [$__interval]))",
+          "legendFormat": "Avatar Upload Failed",
+          "queryType": "range",
+          "refId": "D"
         }
       ],
       "title": "Profile Business Events Over Time",
@@ -457,13 +479,13 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(http_server_request_duration_seconds_count{job=\"backend-template-webapi\",http_route=~\".*stakeholders/me/profile.*\",http_response_status_code=~\"4..|5..\"}[$__rate_interval]))",
+          "expr": "sum(count_over_time({service_name=\"BackendProjectTemplate.WebAPI\"} | json | custom_event_name=~\"ProfileUpdateFailed|AvatarUploadFailed\" [$__range]))",
           "legendFormat": "",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Profile Error Rate",
+      "title": "Explicit Profile Failures",
       "type": "stat"
     },
     {

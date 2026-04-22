@@ -20,11 +20,14 @@ public static class Observability
         {
             public const string PasswordSignUpStarted = "PasswordSignUpStarted";
             public const string PasswordSignUpCompleted = "PasswordSignUpCompleted";
+            public const string PasswordSignUpFailed = "PasswordSignUpFailed";
             public const string GoogleSignUpStarted = "GoogleSignUpStarted";
             public const string GoogleSignUpCompleted = "GoogleSignUpCompleted";
+            public const string GoogleSignUpFailed = "GoogleSignUpFailed";
             public const string EmailConfirmationOtpSent = "EmailConfirmationOtpSent";
             public const string EmailConfirmationStarted = "EmailConfirmationStarted";
             public const string EmailConfirmationCompleted = "EmailConfirmationCompleted";
+            public const string EmailConfirmationFailed = "EmailConfirmationFailed";
             public const string PasswordSignInStarted = "PasswordSignInStarted";
             public const string PasswordSignInCompleted = "PasswordSignInCompleted";
             public const string GoogleSignInStarted = "GoogleSignInStarted";
@@ -32,13 +35,17 @@ public static class Observability
             public const string SignInPostProcessingCompleted = "SignInPostProcessingCompleted";
             public const string SignInFailureProcessed = "SignInFailureProcessed";
             public const string PasswordResetRequested = "PasswordResetRequested";
+            public const string PasswordResetRequestFailed = "PasswordResetRequestFailed";
             public const string PasswordResetOtpSent = "PasswordResetOtpSent";
             public const string PasswordResetCompleted = "PasswordResetCompleted";
+            public const string PasswordResetCompletionFailed = "PasswordResetCompletionFailed";
             public const string SignOutCompleted = "SignOutCompleted";
             public const string SessionRefreshCompleted = "SessionRefreshCompleted";
             public const string SessionRefreshPostProcessingCompleted = "SessionRefreshPostProcessingCompleted";
             public const string ProfileUpdateCompleted = "ProfileUpdateCompleted";
+            public const string ProfileUpdateFailed = "ProfileUpdateFailed";
             public const string AvatarUploadCompleted = "AvatarUploadCompleted";
+            public const string AvatarUploadFailed = "AvatarUploadFailed";
         }
 
         public static class Notifications

@@ -17,6 +17,9 @@ public sealed class UpdateProfileHandler(
         if (!Guid.TryParse(currentActor.ActorId, out var stakeholderId))
         {
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.NotAuthenticated);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.ProfileUpdateFailed,
+                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.NotAuthenticated));
             return new UpdateProfileResult(UpdateProfileStatus.NotAuthenticated);
         }
 
@@ -24,6 +27,9 @@ public sealed class UpdateProfileHandler(
         {
             customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.ToString());
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.ValidationFailed);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.ProfileUpdateFailed,
+                ObservabilityEventProperties.Create(currentActor, stakeholderId, ObservabilityFailureReasons.ValidationFailed));
             return new UpdateProfileResult(
                 UpdateProfileStatus.ValidationFailed,
                 "FirstName and LastName are required.");
@@ -34,6 +40,9 @@ public sealed class UpdateProfileHandler(
         {
             customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.ToString());
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.StakeholderNotFound);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.ProfileUpdateFailed,
+                ObservabilityEventProperties.Create(currentActor, stakeholderId, ObservabilityFailureReasons.StakeholderNotFound));
             return new UpdateProfileResult(UpdateProfileStatus.StakeholderNotFound);
         }
 

@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Observability;
 using NSubstitute;
 using Shouldly;
 
@@ -29,6 +30,10 @@ public sealed class WhenCompletingPasswordResetWithInvalidOtp_Should
         await context.IdentityService.DidNotReceive().ResetPasswordAsync(
             Arg.Any<Domain.Authentication.Entities.AppUser>(),
             Arg.Any<string>());
+        context.CustomTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Authentication.PasswordResetCompletionFailed,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.FailureReasonPropertyName] == ObservabilityFailureReasons.InvalidOtp));
     }
 }
 

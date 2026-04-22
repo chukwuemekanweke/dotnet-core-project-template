@@ -29,5 +29,9 @@ public sealed class When_UpdatingProfile_WithAnonymousActor_Should
             CancellationToken.None);
 
         result.Status.ShouldBe(UpdateProfileStatus.NotAuthenticated);
+        customTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Authentication.ProfileUpdateFailed,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.FailureReasonPropertyName] == ObservabilityFailureReasons.NotAuthenticated));
     }
 }

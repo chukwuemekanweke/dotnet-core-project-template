@@ -32,5 +32,9 @@ public sealed class When_UploadingAvatar_WithInvalidContentType_Should
             CancellationToken.None);
 
         result.Status.ShouldBe(UploadAvatarStatus.InvalidFile);
+        customTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Authentication.AvatarUploadFailed,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.FailureReasonPropertyName] == ObservabilityFailureReasons.InvalidFile));
     }
 }

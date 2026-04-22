@@ -140,11 +140,14 @@ These are the current business custom events for the implemented scope.
 
 - `PasswordSignUpStarted`
 - `PasswordSignUpCompleted`
+- `PasswordSignUpFailed`
 - `GoogleSignUpStarted`
 - `GoogleSignUpCompleted`
+- `GoogleSignUpFailed`
 - `EmailConfirmationOtpSent`
 - `EmailConfirmationStarted`
 - `EmailConfirmationCompleted`
+- `EmailConfirmationFailed`
 - `PasswordSignInStarted`
 - `PasswordSignInCompleted`
 - `GoogleSignInStarted`
@@ -152,13 +155,17 @@ These are the current business custom events for the implemented scope.
 - `SignInPostProcessingCompleted`
 - `SignInFailureProcessed`
 - `PasswordResetRequested`
+- `PasswordResetRequestFailed`
 - `PasswordResetOtpSent`
 - `PasswordResetCompleted`
+- `PasswordResetCompletionFailed`
 - `SignOutCompleted`
 - `SessionRefreshCompleted`
 - `SessionRefreshPostProcessingCompleted`
 - `ProfileUpdateCompleted`
+- `ProfileUpdateFailed`
 - `AvatarUploadCompleted`
+- `AvatarUploadFailed`
 
 ### Notifications
 
@@ -169,7 +176,7 @@ These are the current business custom events for the implemented scope.
 These names exist or may exist conceptually, but are not part of the preferred current auth/profile custom-event story:
 
 - onboarding started/completed events for sign-up and profile update
-- generic `...Failed` custom events for API auth flows where a `Started` event plus missing `Completed` event and failure context is sufficient
+- request-side `PasswordSignInFailed` / `GoogleSignInFailed` events, because sign-in uses `SignInFailureProcessed` as the explicit failure signal
 
 ## Failure Reason Catalog
 
@@ -209,6 +216,7 @@ Expected business events:
 
 - `PasswordSignUpStarted`
 - `PasswordSignUpCompleted`
+- `PasswordSignUpFailed`
 - `EmailConfirmationOtpSent`
 
 Failure context currently expected:
@@ -226,6 +234,7 @@ Expected business events:
 
 - `GoogleSignUpStarted`
 - `GoogleSignUpCompleted`
+- `GoogleSignUpFailed`
 
 Failure context currently expected:
 
@@ -244,6 +253,7 @@ Expected business events:
 
 - `EmailConfirmationStarted`
 - `EmailConfirmationCompleted`
+- `EmailConfirmationFailed`
 
 Failure context currently expected:
 
@@ -306,8 +316,10 @@ Entry points:
 Expected business events:
 
 - `PasswordResetRequested`
+- `PasswordResetRequestFailed`
 - `PasswordResetOtpSent`
 - `PasswordResetCompleted`
+- `PasswordResetCompletionFailed`
 
 Failure context currently expected:
 
@@ -346,6 +358,7 @@ Entry point:
 Expected business event:
 
 - `ProfileUpdateCompleted`
+- `ProfileUpdateFailed`
 
 Failure context currently expected:
 
@@ -362,6 +375,7 @@ Entry point:
 Expected business event:
 
 - `AvatarUploadCompleted`
+- `AvatarUploadFailed`
 
 Failure context currently expected:
 
@@ -430,7 +444,7 @@ Purpose:
 
 Recommended panels:
 
-- count of requests/messages carrying `failure_reason`
+- count of explicit auth failure events
 - sign-up failures by `failure_reason`
 - email confirmation failures by `failure_reason`
 - password reset failures by `failure_reason`
@@ -561,6 +575,7 @@ That work is still pending.
 - `flow.id` propagation through commands and events
 - consumer enforcement that shared messages must inherit from `BaseCommand` or `BaseEvent`
 - milestone custom events for the implemented auth/profile scope
+- explicit business failure custom events for sign-up, email confirmation, password reset, profile update, and avatar upload
 - structured business-event logs for `AddCustomEvent(...)`
 - Loki datasource provisioning
 - Grafana dashboard JSON for authentication overview, authentication failures/security, and profile/account management
@@ -576,7 +591,7 @@ That work is still pending.
 
 The next observability deliverable after this spec should be one of:
 
-1. deeper auth failure-event coverage beyond `SignInFailureProcessed`
+1. derived rates and alert thresholds for the new failure-event panels
 2. alert thresholds and SLO definitions for the current dashboards
 3. technical-health instrumentation for dependencies such as notifications and cache/OTP persistence
 

@@ -31,6 +31,9 @@ public sealed class SignUpHandler(
         if (await identityService.FindByEmailAsync(request.Email) is not null)
         {
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.DuplicateEmail);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.PasswordSignUpFailed,
+                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.DuplicateEmail));
             return new SignUpResult(SignUpStatus.DuplicateEmail);
         }
 
@@ -47,10 +50,16 @@ public sealed class SignUpHandler(
             if (createResult.Errors.Any(error => error.Code is nameof(IdentityErrorDescriber.DuplicateEmail) or nameof(IdentityErrorDescriber.DuplicateUserName)))
             {
                 customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.DuplicateEmail);
+                customTelemetryContext.AddCustomEvent(
+                    Observability.EventNames.Authentication.PasswordSignUpFailed,
+                    ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.DuplicateEmail));
                 return new SignUpResult(SignUpStatus.DuplicateEmail);
             }
 
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.ValidationFailed);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.PasswordSignUpFailed,
+                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.ValidationFailed));
             return new SignUpResult(SignUpStatus.ValidationFailed, createResult.ToValidationDictionary());
         }
 

@@ -21,6 +21,9 @@ public sealed class UploadAvatarHandler(
         if (!Guid.TryParse(currentActor.ActorId, out var stakeholderId))
         {
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.NotAuthenticated);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.AvatarUploadFailed,
+                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.NotAuthenticated));
             return new UploadAvatarResult(UploadAvatarStatus.NotAuthenticated);
         }
 
@@ -31,6 +34,9 @@ public sealed class UploadAvatarHandler(
         {
             customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.ToString());
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidFile);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.AvatarUploadFailed,
+                ObservabilityEventProperties.Create(currentActor, stakeholderId, ObservabilityFailureReasons.InvalidFile));
             return new UploadAvatarResult(
                 UploadAvatarStatus.InvalidFile,
                 Error: "Avatar must be an image file with size up to 2 MB.");
@@ -41,6 +47,9 @@ public sealed class UploadAvatarHandler(
         {
             customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.ToString());
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.StakeholderNotFound);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.AvatarUploadFailed,
+                ObservabilityEventProperties.Create(currentActor, stakeholderId, ObservabilityFailureReasons.StakeholderNotFound));
             return new UploadAvatarResult(UploadAvatarStatus.StakeholderNotFound);
         }
 

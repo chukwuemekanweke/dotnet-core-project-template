@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Observability;
 using Microsoft.AspNetCore.Identity;
 using NSubstitute;
 using Shouldly;
@@ -39,6 +40,10 @@ public sealed class WhenSigningUpWithRejectedPassword_Should
         await context.EventPublisher.DidNotReceive().PublishAsync(
             Arg.Any<UserCreated>(),
             Arg.Any<CancellationToken>());
+        context.CustomTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Authentication.PasswordSignUpFailed,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.FailureReasonPropertyName] == ObservabilityFailureReasons.ValidationFailed));
     }
 }
 

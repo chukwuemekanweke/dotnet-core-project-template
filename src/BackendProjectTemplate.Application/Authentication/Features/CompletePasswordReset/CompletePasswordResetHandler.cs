@@ -23,6 +23,9 @@ public sealed class CompletePasswordResetHandler(
         if (user is null)
         {
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.UserNotFound);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.PasswordResetCompletionFailed,
+                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.UserNotFound));
             return new CompletePasswordResetResult(CompletePasswordResetStatus.UserNotFound);
         }
 
@@ -34,6 +37,9 @@ public sealed class CompletePasswordResetHandler(
         if (!otpIsValid)
         {
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidOtp);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.PasswordResetCompletionFailed,
+                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.InvalidOtp));
             return new CompletePasswordResetResult(CompletePasswordResetStatus.InvalidOtp);
         }
 
@@ -41,6 +47,9 @@ public sealed class CompletePasswordResetHandler(
         if (!resetResult.Succeeded)
         {
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.ValidationFailed);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.PasswordResetCompletionFailed,
+                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.ValidationFailed));
             return new CompletePasswordResetResult(
                 CompletePasswordResetStatus.ValidationFailed,
                 resetResult.ToValidationDictionary());

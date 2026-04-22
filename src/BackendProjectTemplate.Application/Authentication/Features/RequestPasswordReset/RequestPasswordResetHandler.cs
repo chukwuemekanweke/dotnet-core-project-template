@@ -25,6 +25,9 @@ public sealed class RequestPasswordResetHandler(
         if (user is null)
         {
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.UserNotFound);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.PasswordResetRequestFailed,
+                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.UserNotFound));
             return new RequestPasswordResetResult(RequestPasswordResetStatus.UserNotFound);
         }
 
