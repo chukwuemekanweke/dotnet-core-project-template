@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -13,6 +14,7 @@ public sealed class RefreshSessionHandler(
     IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
+    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -83,13 +85,12 @@ public sealed class RefreshSessionHandler(
         await eventPublisher.PublishAsync(new UserAccessTokenRefreshed(ipAddress, userAgent)
         {
             StakeholderId = stakeholderId,
+            FlowId = currentActor.FlowId,
             OccuredAt = now
         }, cancellationToken);
 
-        var properties = new Dictionary<string, string>
-        {
-            [Observability.StakeholderIdPropertyName] = stakeholderId.ToString()
-        };
-        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserAccessTokenRefreshed, properties);
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.SessionRefreshCompleted,
+            ObservabilityEventProperties.Create(currentActor, stakeholderId));
     }
 }

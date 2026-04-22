@@ -24,6 +24,7 @@ public sealed class RequestPasswordResetHandler(
         var user = await identityService.FindByEmailAsync(normalizedEmail);
         if (user is null)
         {
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.UserNotFound);
             return new RequestPasswordResetResult(RequestPasswordResetStatus.UserNotFound);
         }
 
@@ -40,11 +41,7 @@ public sealed class RequestPasswordResetHandler(
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetRequested,
-            new Dictionary<string, string>
-            {
-                [Observability.StakeholderIdPropertyName] = stakeholder.Id.ToString(),
-                ["Email"] = normalizedEmail
-            });
+            ObservabilityEventProperties.Create(currentActor, stakeholder.Id));
 
         return new RequestPasswordResetResult(RequestPasswordResetStatus.Success);
     }

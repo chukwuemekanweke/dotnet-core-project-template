@@ -24,10 +24,13 @@ public sealed class SignUpHandler(
 {
     public async Task<SignUpResult> HandleAsync(SignUpCommand request, CancellationToken cancellationToken)
     {
-        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.SignUpRequested);
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.PasswordSignUpStarted,
+            ObservabilityEventProperties.Create(currentActor));
 
         if (await identityService.FindByEmailAsync(request.Email) is not null)
         {
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.DuplicateEmail);
             return new SignUpResult(SignUpStatus.DuplicateEmail);
         }
 
@@ -43,9 +46,11 @@ public sealed class SignUpHandler(
         {
             if (createResult.Errors.Any(error => error.Code is nameof(IdentityErrorDescriber.DuplicateEmail) or nameof(IdentityErrorDescriber.DuplicateUserName)))
             {
+                customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.DuplicateEmail);
                 return new SignUpResult(SignUpStatus.DuplicateEmail);
             }
 
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.ValidationFailed);
             return new SignUpResult(SignUpStatus.ValidationFailed, createResult.ToValidationDictionary());
         }
 
@@ -71,14 +76,14 @@ public sealed class SignUpHandler(
         await eventPublisher.PublishAsync(new UserCreated
         {
             StakeholderId = stakeholder.Id,
+            FlowId = currentActor.FlowId,
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserCreated, new Dictionary<string, string>
-        {
-            [Observability.StakeholderIdPropertyName] = stakeholder.Id.ToString()
-        });
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.PasswordSignUpCompleted,
+            ObservabilityEventProperties.Create(currentActor, stakeholder.Id));
 
         return new SignUpResult(SignUpStatus.Accepted);
     }

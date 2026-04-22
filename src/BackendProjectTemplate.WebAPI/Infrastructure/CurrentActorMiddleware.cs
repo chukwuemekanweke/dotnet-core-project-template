@@ -27,7 +27,9 @@ public sealed class CurrentActorMiddleware(RequestDelegate next)
             correlationId = Activity.Current?.Id ?? Guid.CreateVersion7().ToString("N");
         }
 
-        currentActorAccessor.Set(actorId, tenantId, correlationId);
+        var flowId = ResolveFlowId(context);
+        currentActorAccessor.Set(actorId, tenantId, correlationId, flowId);
+        context.Response.Headers[Domain.Common.Observability.Observability.FlowIdHeaderName] = flowId;
         await next(context);
     }
 
@@ -55,5 +57,13 @@ public sealed class CurrentActorMiddleware(RequestDelegate next)
 
         return (context.User.Identity?.IsAuthenticated == true ? context.User.Identity.Name : null)
             ?? "anonymous";
+    }
+
+    private static string ResolveFlowId(HttpContext context)
+    {
+        var flowId = context.Request.Headers[Domain.Common.Observability.Observability.FlowIdHeaderName].ToString();
+        return string.IsNullOrWhiteSpace(flowId)
+            ? Guid.CreateVersion7().ToString("N")
+            : flowId;
     }
 }

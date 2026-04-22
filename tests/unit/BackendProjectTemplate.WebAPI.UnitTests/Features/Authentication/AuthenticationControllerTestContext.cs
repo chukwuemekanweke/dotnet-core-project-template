@@ -42,6 +42,8 @@ internal sealed class AuthenticationControllerTestContext
     public AuthenticationControllerTestContext()
     {
         CurrentActor.TenantId.Returns(Guid.CreateVersion7());
+        CurrentActor.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
+        CurrentActor.FlowId.Returns(Guid.CreateVersion7().ToString("N"));
         UnitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Transaction));
     }
@@ -73,6 +75,7 @@ internal sealed class AuthenticationControllerTestContext
         RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
+        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -84,6 +87,7 @@ internal sealed class AuthenticationControllerTestContext
         RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
+        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -94,12 +98,14 @@ internal sealed class AuthenticationControllerTestContext
         RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
+        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
 
     public LogoutSessionHandler CreateLogoutSessionHandler() => new(
         AccessTokenRevocationService,
+        CurrentActor,
         CustomTelemetryContext);
 
     public RequestPasswordResetHandler CreateRequestPasswordResetHandler() => new(
@@ -114,6 +120,7 @@ internal sealed class AuthenticationControllerTestContext
         IdentityService,
         TwoFactorOtpService,
         StakeholderResolver,
+        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork);
 
@@ -121,6 +128,7 @@ internal sealed class AuthenticationControllerTestContext
         IdentityService,
         EventPublisher,
         StakeholderResolver,
+        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);

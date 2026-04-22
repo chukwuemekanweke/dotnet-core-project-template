@@ -89,10 +89,9 @@ public sealed class UserSignInSuccessfulHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
-        CustomTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInSuccessful, new Dictionary<string, string>
-        {
-            [Observability.StakeholderIdPropertyName] = stakeholder.StakeholderId.ToString()
-        });
+        CustomTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.SignInPostProcessingCompleted,
+            ObservabilityEventProperties.Create(currentActorAccessor, stakeholder.StakeholderId));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserSignInSuccessful message)

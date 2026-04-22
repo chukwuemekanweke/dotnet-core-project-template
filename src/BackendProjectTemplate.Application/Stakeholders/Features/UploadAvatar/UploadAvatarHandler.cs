@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -9,6 +10,7 @@ public sealed class UploadAvatarHandler(
     ICurrentActor currentActor,
     IRepository<Stakeholder> stakeholderRepository,
     IObjectStorageService objectStorageService,
+    ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -18,6 +20,7 @@ public sealed class UploadAvatarHandler(
     {
         if (!Guid.TryParse(currentActor.ActorId, out var stakeholderId))
         {
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.NotAuthenticated);
             return new UploadAvatarResult(UploadAvatarStatus.NotAuthenticated);
         }
 
@@ -26,6 +29,8 @@ public sealed class UploadAvatarHandler(
             string.IsNullOrWhiteSpace(command.ContentType) ||
             !command.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
         {
+            customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.ToString());
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidFile);
             return new UploadAvatarResult(
                 UploadAvatarStatus.InvalidFile,
                 Error: "Avatar must be an image file with size up to 2 MB.");
@@ -34,6 +39,8 @@ public sealed class UploadAvatarHandler(
         var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId, cancellationToken);
         if (stakeholder is null)
         {
+            customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.ToString());
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.StakeholderNotFound);
             return new UploadAvatarResult(UploadAvatarStatus.StakeholderNotFound);
         }
 
@@ -51,6 +58,9 @@ public sealed class UploadAvatarHandler(
 
         stakeholder.SetAvatarUrl(avatarUrl, timeProvider.GetUtcNow());
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.AvatarUploadCompleted,
+            ObservabilityEventProperties.Create(currentActor, stakeholderId));
 
         return new UploadAvatarResult(UploadAvatarStatus.Success, avatarUrl);
     }

@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
 
@@ -5,6 +6,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.LogoutSessi
 
 public sealed class LogoutSessionHandler(
     IAccessTokenRevocationService accessTokenRevocationService,
+    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext)
 {
     public async Task<LogoutSessionResult> HandleAsync(LogoutSessionCommand request, CancellationToken cancellationToken)
@@ -19,11 +21,8 @@ public sealed class LogoutSessionHandler(
         if (request.StakeholderId.HasValue)
         {
             customTelemetryContext.AddCustomEvent(
-                Observability.EventNames.Authentication.UserSignedOut,
-                new Dictionary<string, string>
-                {
-                    [Observability.StakeholderIdPropertyName] = request.StakeholderId.Value.ToString()
-                });
+                Observability.EventNames.Authentication.SignOutCompleted,
+                ObservabilityEventProperties.Create(currentActor, request.StakeholderId.Value));
         }
 
         return new LogoutSessionResult(LogoutSessionStatus.Success);

@@ -53,10 +53,9 @@ public sealed class UserAccessTokenRefreshedHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
-        CustomTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserAccessTokenRefreshed, new Dictionary<string, string>
-        {
-            [Observability.StakeholderIdPropertyName] = stakeholder.StakeholderId.ToString()
-        });
+        CustomTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.SessionRefreshPostProcessingCompleted,
+            ObservabilityEventProperties.Create(currentActorAccessor, stakeholder.StakeholderId));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserAccessTokenRefreshed message)

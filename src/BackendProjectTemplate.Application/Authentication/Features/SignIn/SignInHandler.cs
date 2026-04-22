@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -13,12 +14,17 @@ public sealed class SignInHandler(
     IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
+    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
     public async Task<SignInResult> HandleAsync(SignInCommand request, CancellationToken cancellationToken)
     {
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.PasswordSignInStarted,
+            ObservabilityEventProperties.Create(currentActor));
+
         var user = await identityService.FindByEmailAsync(request.Email);
 
         if (user is null)
@@ -88,7 +94,6 @@ public sealed class SignInHandler(
 
         await PublishSuccessfulAsync(
             stakeholderId: currentStakeholder.Id,
-            emailAddress: user.Email ?? request.Email,
             ipAddress: request.IpAddress,
             userAgent: request.UserAgent,
             cancellationToken);
@@ -99,7 +104,6 @@ public sealed class SignInHandler(
 
     private async Task PublishSuccessfulAsync(
         Guid stakeholderId,
-        string emailAddress,
         string ipAddress,
         string userAgent,
         CancellationToken cancellationToken)
@@ -109,14 +113,13 @@ public sealed class SignInHandler(
         await eventPublisher.PublishAsync(new UserSignInSuccessful(ipAddress, userAgent)
         {
             StakeholderId = stakeholderId,
+            FlowId = currentActor.FlowId,
             OccuredAt = now
         }, cancellationToken);
 
-        var properties = new Dictionary<string, string>
-        {
-            [Observability.StakeholderIdPropertyName] = stakeholderId.ToString()
-        };
-        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInSuccessful, properties);
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.PasswordSignInCompleted,
+            ObservabilityEventProperties.Create(currentActor, stakeholderId));
     }
 
     private async Task PublishFailedAsync(
@@ -132,19 +135,15 @@ public sealed class SignInHandler(
         await eventPublisher.PublishAsync(new UserSignInFailed(emailAddress, ipAddress, userAgent, failureReason)
         {
             StakeholderId = stakeholderId,
+            FlowId = currentActor.FlowId,
             OccuredAt = now
         }, cancellationToken);
 
-        var properties = new Dictionary<string, string>
-        {
-            ["FailureReason"] = failureReason
-        };
-
         if (stakeholderId.HasValue)
         {
-            properties[Observability.StakeholderIdPropertyName] = stakeholderId.Value.ToString();
+            customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.Value.ToString());
         }
 
-        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInFailed, properties);
+        customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, failureReason);
     }
 }

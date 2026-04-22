@@ -47,13 +47,8 @@ public sealed class UserSignInFailedHandler(
         {
             stakeholder = await stakeholderReadModelRepository.GetByStakeholderIdAsync(message.StakeholderId.Value, cancellationToken);
         }
-        var properties = new Dictionary<string, string>
-        {
-            ["FailureReason"] = message.FailureReason
-        };
         if (stakeholder is not null)
         {
-            properties[Observability.StakeholderIdPropertyName] = stakeholder.StakeholderId.ToString();
             CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
         }
 
@@ -86,10 +81,14 @@ public sealed class UserSignInFailedHandler(
                 },
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            properties["LockedUntilUtc"] = lockedUntilUtc.ToString("O");
         }
 
-        CustomTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.UserSignInFailed, properties);
+        CustomTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.SignInFailureProcessed,
+            ObservabilityEventProperties.Create(
+                currentActorAccessor,
+                stakeholder?.StakeholderId,
+                message.FailureReason));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserSignInFailed message)

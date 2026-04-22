@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -9,6 +10,7 @@ public sealed class CompletePasswordResetHandler(
     IAuthenticationIdentityService identityService,
     ITwoFactorOtpService twoFactorOtpService,
     StakeholderResolver stakeholderResolver,
+    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
 {
@@ -20,6 +22,7 @@ public sealed class CompletePasswordResetHandler(
         var user = await identityService.FindByEmailAsync(normalizedEmail);
         if (user is null)
         {
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.UserNotFound);
             return new CompletePasswordResetResult(CompletePasswordResetStatus.UserNotFound);
         }
 
@@ -30,12 +33,14 @@ public sealed class CompletePasswordResetHandler(
             cancellationToken);
         if (!otpIsValid)
         {
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidOtp);
             return new CompletePasswordResetResult(CompletePasswordResetStatus.InvalidOtp);
         }
 
         var resetResult = await identityService.ResetPasswordAsync(user, request.Password);
         if (!resetResult.Succeeded)
         {
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.ValidationFailed);
             return new CompletePasswordResetResult(
                 CompletePasswordResetStatus.ValidationFailed,
                 resetResult.ToValidationDictionary());
@@ -46,10 +51,7 @@ public sealed class CompletePasswordResetHandler(
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetCompleted,
-            new Dictionary<string, string>
-            {
-                [Observability.StakeholderIdPropertyName] = stakeholderId.ToString()
-            });
+            ObservabilityEventProperties.Create(currentActor, stakeholderId));
 
         return new CompletePasswordResetResult(CompletePasswordResetStatus.Success);
     }

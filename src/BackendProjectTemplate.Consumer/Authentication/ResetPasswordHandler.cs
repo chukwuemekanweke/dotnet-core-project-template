@@ -69,11 +69,8 @@ public sealed class ResetPasswordHandler(
 
         CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
-            Observability.EventNames.Authentication.PasswordResetRequested,
-            new Dictionary<string, string>
-            {
-                [Observability.StakeholderIdPropertyName] = stakeholder.StakeholderId.ToString()
-            });
+            Observability.EventNames.Authentication.PasswordResetOtpSent,
+            ObservabilityEventProperties.Create(currentActorAccessor, stakeholder.StakeholderId));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(ResetPasswordCommand message)

@@ -35,12 +35,11 @@ public sealed class SendNotificationHandler(
 
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Notifications.EmailSent,
-            new Dictionary<string, string>
-            {
-                ["NotificationType"] = message.NotificationType.ToString(),
-                ["NotificationMedium"] = message.NotificationMedium.ToString(),
-                ["TenantId"] = message.TenantId.ToString(),
-                ["CountryId"] = message.CountryId.ToString()
-            });
+            ObservabilityEventProperties.Create(currentActorAccessor, message.StakeholderId));
+    }
+
+    protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(SendNotificationCommand message)
+    {
+        yield break;
     }
 }

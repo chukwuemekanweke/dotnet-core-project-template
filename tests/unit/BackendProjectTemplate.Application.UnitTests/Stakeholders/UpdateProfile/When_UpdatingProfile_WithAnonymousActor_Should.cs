@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
@@ -13,11 +14,13 @@ public sealed class When_UpdatingProfile_WithAnonymousActor_Should
     public async Task ReturnNotAuthenticated()
     {
         var currentActor = Substitute.For<ICurrentActor>();
+        var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         currentActor.ActorId.Returns(string.Empty);
 
         var sut = new UpdateProfileHandler(
             currentActor,
             Substitute.For<IRepository<Stakeholder>>(),
+            customTelemetryContext,
             Substitute.For<IUnitOfWork>(),
             TimeProvider.System);
 

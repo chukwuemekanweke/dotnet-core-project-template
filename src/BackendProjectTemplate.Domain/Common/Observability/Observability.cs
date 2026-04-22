@@ -3,31 +3,54 @@ namespace BackendProjectTemplate.Domain.Common.Observability;
 public static class Observability
 {
     public const string ActivitySourceName = "BackendProjectTemplate";
+    public const string FlowIdHeaderName = "X-Flow-Id";
 
-    public const string MessageTypePropertyName = "MessageType";
-    public const string MessageIdPropertyName = "MessageId";
-    public const string UserIdPropertyName = "UserId";
-    public const string StakeholderIdPropertyName = "StakeholderId";
+    public const string MessageTypePropertyName = "message_type";
+    public const string MessageIdPropertyName = "message_id";
+    public const string UserIdPropertyName = "user_id";
+    public const string StakeholderIdPropertyName = "stakeholder_id";
+    public const string TenantIdPropertyName = "tenant_id";
+    public const string CorrelationIdPropertyName = "correlation_id";
+    public const string FlowIdPropertyName = "flow.id";
+    public const string FailureReasonPropertyName = "failure_reason";
 
     public static class EventNames
     {
         public static class Authentication
         {
-            public const string SignUpRequested = "authentication.signup_requested";
-            public const string PasswordResetRequested = "authentication.password_reset_requested";
-            public const string PasswordResetCompleted = "authentication.password_reset_completed";
-            public const string UserCreated = "authentication.user_created";
-            public const string UserCreatedProcessed = "authentication.user_created_processed";
-            public const string OtpConfirmed = "authentication.otp_confirmed";
-            public const string UserSignInSuccessful = "authentication.user_sign_in_successful";
-            public const string UserSignInFailed = "authentication.user_sign_in_failed";
-            public const string UserSignedOut = "authentication.user_signed_out";
-            public const string UserAccessTokenRefreshed = "authentication.user_access_token_refreshed";
+            public const string PasswordSignUpStarted = "PasswordSignUpStarted";
+            public const string PasswordSignUpCompleted = "PasswordSignUpCompleted";
+            public const string GoogleSignUpStarted = "GoogleSignUpStarted";
+            public const string GoogleSignUpCompleted = "GoogleSignUpCompleted";
+            public const string EmailConfirmationOtpSent = "EmailConfirmationOtpSent";
+            public const string EmailConfirmationStarted = "EmailConfirmationStarted";
+            public const string EmailConfirmationCompleted = "EmailConfirmationCompleted";
+            public const string PasswordSignInStarted = "PasswordSignInStarted";
+            public const string PasswordSignInCompleted = "PasswordSignInCompleted";
+            public const string GoogleSignInStarted = "GoogleSignInStarted";
+            public const string GoogleSignInCompleted = "GoogleSignInCompleted";
+            public const string SignInPostProcessingCompleted = "SignInPostProcessingCompleted";
+            public const string SignInFailureProcessed = "SignInFailureProcessed";
+            public const string PasswordResetRequested = "PasswordResetRequested";
+            public const string PasswordResetOtpSent = "PasswordResetOtpSent";
+            public const string PasswordResetCompleted = "PasswordResetCompleted";
+            public const string SignOutCompleted = "SignOutCompleted";
+            public const string SessionRefreshCompleted = "SessionRefreshCompleted";
+            public const string SessionRefreshPostProcessingCompleted = "SessionRefreshPostProcessingCompleted";
+            public const string ProfileUpdateCompleted = "ProfileUpdateCompleted";
+            public const string AvatarUploadCompleted = "AvatarUploadCompleted";
         }
 
         public static class Notifications
         {
-            public const string EmailSent = "notifications.email_sent";
+            public const string EmailSent = "EmailNotificationSent";
+        }
+
+        public static class Onboarding
+        {
+            public const string Started = "OnboardingStarted";
+            public const string ProfileCompleted = "OnboardingProfileCompleted";
+            public const string Completed = "OnboardingCompleted";
         }
     }
 }

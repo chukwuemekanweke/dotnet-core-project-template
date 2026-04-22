@@ -16,6 +16,11 @@ internal sealed class CommandSender(
             message.StakeholderId = stakeholderId;
         }
 
+        if (string.IsNullOrWhiteSpace(message.FlowId))
+        {
+            message.FlowId = currentActor.FlowId;
+        }
+
         if (message.TenantId == Guid.Empty && currentActor.TenantId.HasValue)
         {
             message.TenantId = currentActor.TenantId.Value;

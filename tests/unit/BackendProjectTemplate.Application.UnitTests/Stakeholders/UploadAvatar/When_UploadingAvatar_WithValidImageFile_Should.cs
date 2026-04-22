@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -16,6 +17,7 @@ public sealed class When_UploadingAvatar_WithValidImageFile_Should
         var currentActor = Substitute.For<ICurrentActor>();
         var stakeholderRepository = Substitute.For<IRepository<Stakeholder>>();
         var objectStorageService = Substitute.For<IObjectStorageService>();
+        var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 21, 12, 0, 0, TimeSpan.Zero));
         var stakeholderId = Guid.CreateVersion7();
@@ -39,6 +41,7 @@ public sealed class When_UploadingAvatar_WithValidImageFile_Should
             currentActor,
             stakeholderRepository,
             objectStorageService,
+            customTelemetryContext,
             unitOfWork,
             timeProvider);
 

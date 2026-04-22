@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -11,25 +12,33 @@ public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
+    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
     public async Task<SignUpOtpResult> HandleAsync(SignUpOtpCommand request, CancellationToken cancellationToken)
     {
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.EmailConfirmationStarted,
+            ObservabilityEventProperties.Create(currentActor));
+
         var user = await identityService.FindByEmailAsync(request.Email);
         if (user is null)
         {
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidOtp);
             return new SignUpOtpResult(SignUpOtpStatus.InvalidOtp);
         }
 
         if (user.EmailConfirmed)
         {
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.AlreadyConfirmed);
             return new SignUpOtpResult(SignUpOtpStatus.AlreadyVerified);
         }
 
         if (!await identityService.VerifySignUpOtpAsync(user, request.Otp))
         {
+            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidOtp);
             return new SignUpOtpResult(SignUpOtpStatus.InvalidOtp);
         }
 
@@ -47,16 +56,14 @@ public sealed class SignUpOtpHandler(
         await eventPublisher.PublishAsync(new UserEmailConfirmed
         {
             StakeholderId = stakeholder.Id,
+            FlowId = currentActor.FlowId,
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        var properties = new Dictionary<string, string>
-        {
-            [Observability.StakeholderIdPropertyName] = stakeholder.Id.ToString()
-        };
-
-        customTelemetryContext.AddCustomEvent(Observability.EventNames.Authentication.OtpConfirmed, properties);
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.EmailConfirmationCompleted,
+            ObservabilityEventProperties.Create(currentActor, stakeholder.Id));
 
         return new SignUpOtpResult(SignUpOtpStatus.Success);
     }

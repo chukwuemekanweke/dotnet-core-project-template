@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
@@ -14,6 +15,7 @@ public sealed class When_UpdatingProfile_WithValidActorAndPayload_Should
     {
         var currentActor = Substitute.For<ICurrentActor>();
         var stakeholderRepository = Substitute.For<IRepository<Stakeholder>>();
+        var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 21, 12, 0, 0, TimeSpan.Zero));
         var stakeholderId = Guid.CreateVersion7();
@@ -30,7 +32,7 @@ public sealed class When_UpdatingProfile_WithValidActorAndPayload_Should
         stakeholderRepository.GetByIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(stakeholder);
 
-        var sut = new UpdateProfileHandler(currentActor, stakeholderRepository, unitOfWork, timeProvider);
+        var sut = new UpdateProfileHandler(currentActor, stakeholderRepository, customTelemetryContext, unitOfWork, timeProvider);
 
         var result = await sut.HandleAsync(
             new UpdateProfileCommand("Jane", "Doe"),

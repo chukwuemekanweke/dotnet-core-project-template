@@ -39,14 +39,16 @@ public abstract class BaseMessageHandler<TMessage>(
             currentActorAccessor.Set(
                 baseEvent.StakeholderId?.ToString() ?? ActorDefaults.SystemActorId,
                 baseEvent.TenantId,
-                messageContext.CorrelationId);
+                messageContext.CorrelationId,
+                baseEvent.FlowId ?? string.Empty);
 
             CustomTelemetryContext
                 .SetProperty(Observability.MessageIdPropertyName, baseEvent.MessageId.ToString())
                 .SetProperty("OccurredAt", baseEvent.OccuredAt.ToString("O"))
                 .SetProperty(Observability.StakeholderIdPropertyName, baseEvent.StakeholderId?.ToString() ?? string.Empty)
-                .SetProperty("TenantId", baseEvent.TenantId.ToString())
-                .SetProperty("CorrelationId", messageContext.CorrelationId);
+                .SetProperty(Observability.TenantIdPropertyName, baseEvent.TenantId.ToString())
+                .SetProperty(Observability.CorrelationIdPropertyName, messageContext.CorrelationId)
+                .SetProperty(Observability.FlowIdPropertyName, baseEvent.FlowId ?? string.Empty);
         }
         else if (message is BaseCommand baseCommand)
         {
@@ -63,21 +65,21 @@ public abstract class BaseMessageHandler<TMessage>(
             currentActorAccessor.Set(
                 baseCommand.StakeholderId?.ToString() ?? ActorDefaults.SystemActorId,
                 baseCommand.TenantId,
-                messageContext.CorrelationId);
+                messageContext.CorrelationId,
+                baseCommand.FlowId ?? string.Empty);
 
             CustomTelemetryContext
                 .SetProperty(Observability.MessageIdPropertyName, baseCommand.MessageId.ToString())
                 .SetProperty("RequestedAt", baseCommand.RequestedAt.ToString("O"))
                 .SetProperty(Observability.StakeholderIdPropertyName, baseCommand.StakeholderId?.ToString() ?? string.Empty)
-                .SetProperty("TenantId", baseCommand.TenantId.ToString())
-                .SetProperty("CorrelationId", messageContext.CorrelationId);
+                .SetProperty(Observability.TenantIdPropertyName, baseCommand.TenantId.ToString())
+                .SetProperty(Observability.CorrelationIdPropertyName, messageContext.CorrelationId)
+                .SetProperty(Observability.FlowIdPropertyName, baseCommand.FlowId ?? string.Empty);
         }
         else
         {
-            currentActorAccessor.Set(
-                ActorDefaults.SystemActorId,
-                null,
-                Activity.Current?.Id ?? Guid.CreateVersion7().ToString("N"));
+            throw new CannotProcessMessageNonTransientException(
+                $"{typeof(TMessage).Name} must inherit from {nameof(BaseCommand)} or {nameof(BaseEvent)}.");
         }
 
         foreach (var telemetryParameter in GetTelemetryParameters(message))

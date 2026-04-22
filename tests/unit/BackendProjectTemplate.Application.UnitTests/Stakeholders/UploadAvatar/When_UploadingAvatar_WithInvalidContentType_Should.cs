@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -14,6 +15,7 @@ public sealed class When_UploadingAvatar_WithInvalidContentType_Should
     public async Task ReturnInvalidFile()
     {
         var currentActor = Substitute.For<ICurrentActor>();
+        var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         currentActor.ActorId.Returns(Guid.CreateVersion7().ToString());
 
         await using var stream = new MemoryStream([1, 2, 3]);
@@ -21,6 +23,7 @@ public sealed class When_UploadingAvatar_WithInvalidContentType_Should
             currentActor,
             Substitute.For<IRepository<Stakeholder>>(),
             Substitute.For<IObjectStorageService>(),
+            customTelemetryContext,
             Substitute.For<IUnitOfWork>(),
             TimeProvider.System);
 

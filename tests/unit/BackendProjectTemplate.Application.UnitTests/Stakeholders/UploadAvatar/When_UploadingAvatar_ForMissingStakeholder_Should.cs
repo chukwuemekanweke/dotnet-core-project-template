@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -15,6 +16,7 @@ public sealed class When_UploadingAvatar_ForMissingStakeholder_Should
     {
         var currentActor = Substitute.For<ICurrentActor>();
         var stakeholderRepository = Substitute.For<IRepository<Stakeholder>>();
+        var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var stakeholderId = Guid.CreateVersion7();
         await using var stream = new MemoryStream([1, 2, 3]);
 
@@ -26,6 +28,7 @@ public sealed class When_UploadingAvatar_ForMissingStakeholder_Should
             currentActor,
             stakeholderRepository,
             Substitute.For<IObjectStorageService>(),
+            customTelemetryContext,
             Substitute.For<IUnitOfWork>(),
             TimeProvider.System);
 

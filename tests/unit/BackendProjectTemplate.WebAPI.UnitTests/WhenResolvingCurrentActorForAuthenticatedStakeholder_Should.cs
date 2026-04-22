@@ -45,12 +45,14 @@ public sealed class WhenResolvingCurrentActorForAuthenticatedStakeholder_Should
         public string ActorId { get; private set; } = string.Empty;
         public Guid? TenantId { get; private set; }
         public string CorrelationId { get; private set; } = string.Empty;
+        public string FlowId { get; private set; } = string.Empty;
 
-        public void Set(string actorId, Guid? tenantId, string correlationId)
+        public void Set(string actorId, Guid? tenantId, string correlationId, string flowId)
         {
             ActorId = actorId;
             TenantId = tenantId;
             CorrelationId = correlationId;
+            FlowId = flowId;
         }
     }
 
