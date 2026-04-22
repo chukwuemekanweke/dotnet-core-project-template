@@ -193,7 +193,7 @@ services:
       - "3100:3100"
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.124.0
+    image: otel/opentelemetry-collector-contrib:latest
     command:
       - --config=/etc/otel-collector/config.yml
     volumes:
