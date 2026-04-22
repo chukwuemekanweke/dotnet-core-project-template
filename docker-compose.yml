@@ -3,7 +3,12 @@ services:
     build:
       context: .
       dockerfile: src/BackendProjectTemplate.DatabaseMigrator/Dockerfile
+      args:
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_PAT: ${GITHUB_PAT}
     environment:
+      GITHUB_USERNAME: ${GITHUB_USERNAME}
+      GITHUB_PAT: ${GITHUB_PAT}
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__SqlServerWrite: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
     ports:
@@ -23,7 +28,12 @@ services:
     build:
       context: .
       dockerfile: src/BackendProjectTemplate.WebAPI/Dockerfile
+      args:
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_PAT: ${GITHUB_PAT}
     environment:
+      GITHUB_USERNAME: ${GITHUB_USERNAME}
+      GITHUB_PAT: ${GITHUB_PAT}
       ASPNETCORE_ENVIRONMENT: Container
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__SqlServerWrite: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
@@ -59,7 +69,12 @@ services:
     build:
       context: .
       dockerfile: src/BackendProjectTemplate.Consumer/Dockerfile
+      args:
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_PAT: ${GITHUB_PAT}
     environment:
+      GITHUB_USERNAME: ${GITHUB_USERNAME}
+      GITHUB_PAT: ${GITHUB_PAT}
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__SqlServerWrite: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
       ConnectionStrings__SqlServerRead: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
@@ -98,7 +113,12 @@ services:
     build:
       context: .
       dockerfile: src/BackendProjectTemplate.Jobs/Dockerfile
+      args:
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_PAT: ${GITHUB_PAT}
     environment:
+      GITHUB_USERNAME: ${GITHUB_USERNAME}
+      GITHUB_PAT: ${GITHUB_PAT}
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__SqlServerWrite: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
       ConnectionStrings__SqlServerRead: Server=mssql,1433;Database=BackendProjectTemplateDb;User Id=sa;Password=Your_strong_Password123!;TrustServerCertificate=True;
