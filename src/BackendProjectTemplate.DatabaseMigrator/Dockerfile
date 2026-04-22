@@ -20,6 +20,7 @@ ENV GITHUB_USERNAME=$GITHUB_USERNAME
 ENV GITHUB_PAT=$GITHUB_PAT
 
 WORKDIR /src
+COPY ["Nuget.config", "."]
 COPY ["Directory.Packages.props", "."]
 COPY ["Directory.Build.props", "."]
 COPY ["src/BackendProjectTemplate.DatabaseMigrator/BackendProjectTemplate.DatabaseMigrator.csproj", "src/BackendProjectTemplate.DatabaseMigrator/"]
