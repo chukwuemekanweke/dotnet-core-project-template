@@ -40,7 +40,7 @@ public sealed class WhenApplyingSpecification_Should
         public OrderedPagedUsersSpecification()
         {
             Where(user => user.Email != null && user.Email.Contains("@example.com"));
-            ApplyOrderByDescending(user => user.Email);
+            ApplyOrderByDescending(user => user.Email!);
             ApplyPaging(0, 2);
         }
     }

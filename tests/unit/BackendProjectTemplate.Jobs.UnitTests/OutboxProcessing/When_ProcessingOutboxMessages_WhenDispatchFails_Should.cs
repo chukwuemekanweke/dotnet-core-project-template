@@ -43,7 +43,7 @@ public sealed class When_ProcessingOutboxMessages_WhenDispatchFails_Should
         await sut.StopAsync(CancellationToken.None);
 
         message.AttemptCount.ShouldBe(1);
-        message.LastError.ShouldContain("boom");
+        message.LastError!.ShouldContain("boom");
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

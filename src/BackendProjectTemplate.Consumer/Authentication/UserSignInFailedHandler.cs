@@ -21,6 +21,8 @@ public sealed class UserSignInFailedHandler(
     IUnitOfWork unitOfWork,
     ILogger<UserSignInFailedHandler> logger) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(UserSignInFailed message, CancellationToken cancellationToken)
     {
         var user = await identityService.FindByEmailAsync(message.EmailAddress);
@@ -86,7 +88,7 @@ public sealed class UserSignInFailedHandler(
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.SignInFailureProcessed,
             ObservabilityEventProperties.Create(
-                currentActorAccessor,
+                CurrentActorAccessor,
                 stakeholder?.StakeholderId,
                 message.FailureReason));
     }

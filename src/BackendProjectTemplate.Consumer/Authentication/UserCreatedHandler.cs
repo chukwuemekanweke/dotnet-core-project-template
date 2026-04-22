@@ -17,6 +17,8 @@ public sealed class UserCreatedHandler(
     IOtpDeliveryService otpDeliveryService,
     ILogger<UserCreatedHandler> logger) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(UserCreated message, CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
@@ -55,7 +57,7 @@ public sealed class UserCreatedHandler(
         CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSent,
-            ObservabilityEventProperties.Create(currentActorAccessor, stakeholder.StakeholderId));
+            ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholder.StakeholderId));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserCreated message)

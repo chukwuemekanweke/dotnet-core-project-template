@@ -20,6 +20,8 @@ public sealed class ResetPasswordHandler(
     ICommandSender commandSender,
     IUnitOfWork unitOfWork) : BaseMessageHandler<ResetPasswordCommand>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(ResetPasswordCommand message, CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
@@ -70,7 +72,7 @@ public sealed class ResetPasswordHandler(
         CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetOtpSent,
-            ObservabilityEventProperties.Create(currentActorAccessor, stakeholder.StakeholderId));
+            ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholder.StakeholderId));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(ResetPasswordCommand message)

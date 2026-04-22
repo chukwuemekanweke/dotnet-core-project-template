@@ -21,6 +21,8 @@ public sealed class UserAccessTokenRefreshedHandler(
     IUserAgentParserService userAgentParserService,
     TimeProvider timeProvider) : BaseMessageHandler<UserAccessTokenRefreshed>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(UserAccessTokenRefreshed message, CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
@@ -55,7 +57,7 @@ public sealed class UserAccessTokenRefreshedHandler(
         CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.SessionRefreshPostProcessingCompleted,
-            ObservabilityEventProperties.Create(currentActorAccessor, stakeholder.StakeholderId));
+            ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholder.StakeholderId));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserAccessTokenRefreshed message)

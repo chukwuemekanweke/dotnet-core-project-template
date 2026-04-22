@@ -26,6 +26,8 @@ public sealed class UserSignInSuccessfulHandler(
     IUserAgentParserService userAgentParserService,
     TimeProvider timeProvider) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(UserSignInSuccessful message, CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
@@ -91,7 +93,7 @@ public sealed class UserSignInSuccessfulHandler(
         CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.SignInPostProcessingCompleted,
-            ObservabilityEventProperties.Create(currentActorAccessor, stakeholder.StakeholderId));
+            ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholder.StakeholderId));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserSignInSuccessful message)

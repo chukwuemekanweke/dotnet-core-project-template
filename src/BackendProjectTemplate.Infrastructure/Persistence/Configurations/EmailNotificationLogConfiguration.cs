@@ -66,7 +66,7 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
 
     private static ValueComparer<Dictionary<string, string>> GetNotificationContentComparer() =>
         new(
-            (left, right) => left.OrderBy(pair => pair.Key).SequenceEqual(right.OrderBy(pair => pair.Key)),
+            (left, right) => left!.OrderBy(pair => pair.Key).SequenceEqual(right!.OrderBy(pair => pair.Key)),
             dictionary => dictionary
                 .OrderBy(pair => pair.Key, StringComparer.Ordinal)
                 .Aggregate(0, (hash, pair) => HashCode.Combine(hash, pair.Key, pair.Value)),
