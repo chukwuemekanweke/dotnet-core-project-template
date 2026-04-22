@@ -3,7 +3,9 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using OpenTelemetry.Logs;
 
 namespace BackendProjectTemplate.Infrastructure.Observability;
 
@@ -42,6 +44,18 @@ public static class ServiceCollectionExtensions
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
                 .AddPrometheusExporter();
+        });
+
+        services.AddLogging(logging =>
+        {
+            logging.AddOpenTelemetry(options =>
+            {
+                options.IncludeFormattedMessage = true;
+                options.IncludeScopes = false;
+                options.ParseStateValues = true;
+                options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName));
+                options.AddOtlpExporter(exporterOptions => exporterOptions.Endpoint = new Uri(otlpEndpoint));
+            });
         });
 
         return services;

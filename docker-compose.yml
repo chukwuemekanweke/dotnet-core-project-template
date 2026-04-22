@@ -33,7 +33,7 @@ services:
       Jwt__Audience: BackendProjectTemplate.Clients
       Jwt__SigningKey: super-secret-template-signing-key-change-me
       OpenTelemetry__ServiceName: BackendProjectTemplate.WebAPI
-      OpenTelemetry__OtlpEndpoint: http://tempo:4317
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
       Database__InitializeOnStartup: "false"
     depends_on:
       database-migrator:
@@ -44,7 +44,7 @@ services:
         condition: service_started
       prometheus:
         condition: service_started
-      tempo:
+      otel-collector:
         condition: service_started
     ports:
       - "8080:8080"
@@ -73,7 +73,7 @@ services:
       Messaging__RabbitMq__EventsExchange: x.events.backendprojecttemplate
       Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
       OpenTelemetry__ServiceName: BackendProjectTemplate.Consumer
-      OpenTelemetry__OtlpEndpoint: http://tempo:4317
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
     depends_on:
       database-migrator:
         condition: service_healthy
@@ -83,7 +83,7 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
-      tempo:
+      otel-collector:
         condition: service_started
     ports:
       - "8082:8080"
@@ -111,7 +111,8 @@ services:
       Messaging__RabbitMq__VirtualHost: /
       Messaging__RabbitMq__EventsExchange: x.events.backendprojecttemplate
       Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
-      OpenTelemetry__OtlpEndpoint: http://tempo:4317
+      OpenTelemetry__ServiceName: BackendProjectTemplate.Jobs
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
     depends_on:
       database-migrator:
         condition: service_healthy
@@ -121,7 +122,7 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
-      tempo:
+      otel-collector:
         condition: service_started
     ports:
       - "8083:8080"
@@ -181,13 +182,35 @@ services:
       - ./observability/tempo/tempo.yml:/etc/tempo.yml:ro
     ports:
       - "3200:3200"
+
+  loki:
+    image: grafana/loki:3.5.0
+    command:
+      - -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./observability/loki/loki.yml:/etc/loki/loki.yml:ro
+    ports:
+      - "3100:3100"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.124.0
+    command:
+      - --config=/etc/otel-collector/config.yml
+    volumes:
+      - ./observability/otel-collector/otel-collector.yml:/etc/otel-collector/config.yml:ro
+    depends_on:
+      - tempo
+      - loki
+    ports:
       - "4317:4317"
+      - "4318:4318"
 
   grafana:
     image: grafana/grafana:12.0.0
     depends_on:
       - prometheus
       - tempo
+      - loki
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin

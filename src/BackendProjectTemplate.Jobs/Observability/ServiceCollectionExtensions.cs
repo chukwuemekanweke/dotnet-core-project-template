@@ -1,6 +1,7 @@
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using OpenTelemetry.Logs;
 
 namespace BackendProjectTemplate.Jobs.Observability;
 
@@ -27,6 +28,23 @@ public static class ServiceCollectionExtensions
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
             });
+
+        var serviceName = configuration["OpenTelemetry:ServiceName"] ?? "BackendProjectTemplate.Jobs";
+        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            services.AddLogging(logging =>
+            {
+                logging.AddOpenTelemetry(options =>
+                {
+                    options.IncludeFormattedMessage = true;
+                    options.IncludeScopes = false;
+                    options.ParseStateValues = true;
+                    options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName));
+                    options.AddOtlpExporter(exporterOptions => exporterOptions.Endpoint = new Uri(otlpEndpoint));
+                });
+            });
+        }
 
         return services;
     }
