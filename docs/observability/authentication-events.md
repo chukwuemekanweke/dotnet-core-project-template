@@ -522,7 +522,7 @@ Suggested formulas:
 
 ## SLO And Alert Definitions
 
-These are the current SLO targets represented in the provisioned dashboards. They are deliberately pragmatic starting values and should be tuned against real production baselines.
+These are the current SLO targets represented in the provisioned dashboards and Grafana-managed alert rules. They are deliberately pragmatic starting values and should be tuned against real production baselines.
 
 ### Authentication SLOs
 
@@ -541,11 +541,18 @@ These are the current SLO targets represented in the provisioned dashboards. The
 
 ### Alert Definitions
 
-- Sign-in failure processed count increases 3x above the previous 1-hour baseline for 15 minutes.
+- Sign-in failure processed count exceeds 20 events in 15 minutes.
 - Auth 5xx rate is greater than 1% for 10 minutes.
-- Auth 429 rate spikes for 15 minutes.
+- Auth 429 rate exceeds 0.05 requests per second for 15 minutes.
 - Password reset completion failures exceed 5 events in 15 minutes.
 - Email confirmation failures exceed 10 events in 15 minutes.
+
+The provisioned local/dev alert rules use starter fixed thresholds where a baseline comparison is not yet available:
+
+- Auth 429 rate greater than `0.05` requests per second for 15 minutes.
+- Sign-in failure processed count greater than `20` events in 15 minutes.
+
+Provisioned alerts intentionally use only existing business custom events and existing HTTP metrics. They do not add new telemetry payloads, technical-health custom events, counters, stopwatch timing, or extra instrumentation.
 
 ## Query Expectations
 
@@ -603,6 +610,7 @@ Technical health should stay separate from business custom events. The currently
 - derived rate panels for current auth/profile dashboards
 - SLO target panels for current auth/profile dashboards
 - alert definition panels for current auth/security dashboards
+- Grafana-managed alert rules for current auth/profile SLOs and starter failure thresholds
 
 ### Still pending
 
@@ -613,8 +621,8 @@ Technical health should stay separate from business custom events. The currently
 
 The next observability deliverable after this spec should be one of:
 
-1. Grafana-managed alert rules or alert provisioning for the SLO and alert definitions above
-2. stronger security analytics using safe identifiers, such as hashed email/IP values where appropriate
-3. payment observability design and implementation once payment workflows exist
+1. stronger security analytics using safe identifiers, such as hashed email/IP values where appropriate
+2. payment observability design and implementation once payment workflows exist
 
 Do not expand custom-event payloads ad hoc while doing that follow-up work. Keep changes aligned with this document unless the observability contract is intentionally revised first.
+

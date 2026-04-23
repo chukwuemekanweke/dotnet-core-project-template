@@ -697,7 +697,7 @@
                                    },
                        "options":  {
                                        "mode":  "markdown",
-                                       "content":  "## Alert Definitions\n- Sign-in failures increase 3x above the previous 1-hour baseline for 15 minutes.\n- Auth 5xx rate is greater than 1% for 10 minutes.\n- Auth 429 rate spikes for 15 minutes.\n- Password reset completion failures exceed 5 events in 15 minutes.\n- Email confirmation failures exceed 10 events in 15 minutes."
+                                       "content":  "## Alert Definitions\n- Sign-in failures exceed 20 processed events in 15 minutes.\n- Auth 5xx rate is greater than 1% for 10 minutes.\n- Auth 429 rate exceeds 0.05 requests per second for 15 minutes.\n- Password reset completion failures exceed 5 events in 15 minutes.\n- Email confirmation failures exceed 10 events in 15 minutes."
                                    }
                    },
                    {
@@ -891,3 +891,4 @@
     "version":  2,
     "weekStart":  ""
 }
+
