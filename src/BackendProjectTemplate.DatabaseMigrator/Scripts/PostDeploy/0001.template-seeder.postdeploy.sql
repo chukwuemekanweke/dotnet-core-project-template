@@ -1,4 +1,4 @@
-﻿/*
+/*
     Seeds [reference_data].[Countries] using Flagpedia country codes and flag URLs,
     and REST Countries dialing codes.
     Sources:
@@ -360,7 +360,7 @@ MERGE [stakeholders].[Tenants] AS [Target]
 USING
 (
 VALUES
-    (CAST('00000000-0000-0000-0000-000000000000' AS uniqueidentifier), N'Default Tenant', N'default')
+    (CAST('1203d9d1-2a6b-48ef-9cc1-e561a23aff72' AS uniqueidentifier), N'Default Tenant', N'default')
 ) AS [Source] ([Id], [Name], [BrandKey])
 ON [Target].[Id] = [Source].[Id]
 WHEN MATCHED AND
@@ -391,6 +391,46 @@ VALUES
 );
 
 /*
+    Seeds [stakeholders].[StakeholderTypes].
+
+    Defines the default stakeholder types available in the system.
+*/
+
+MERGE [stakeholders].[StakeholderTypes] AS [Target]
+USING
+(
+    VALUES
+    (CAST('65018401-f34e-422a-ad65-ed4b4a5ed266' AS uniqueidentifier), N'Customer', N'customer')
+) AS [Source] ([TenantId], [Name], [Key])
+ON [Target].[TenantId] = [Source].[TenantId] AND [Target].[Key] = [Source].[Key]
+WHEN MATCHED AND
+(
+    [Target].[Name] <> [Source].[Name]
+)
+THEN UPDATE SET
+    [Name] = [Source].[Name],
+    [UpdatedAtUtc] = @UtcNow
+WHEN NOT MATCHED BY TARGET
+THEN INSERT
+(
+    [Id],
+    [TenantId],
+    [Name],
+    [Key],
+    [CreatedAtUtc],
+    [UpdatedAtUtc]
+)
+VALUES
+(
+    [Source].[TenantId],
+    [Source].[TenantId],
+    [Source].[Name],
+    [Source].[Key],
+    @UtcNow,
+    @UtcNow
+);
+
+/*
     Seeds [notifications].[EmailNotificationTemplates].
 
     Subject supports named placeholders in the form {{:PlaceholderName:}}.
@@ -400,7 +440,7 @@ VALUES
 MERGE [notifications].[EmailNotificationTemplates] AS [Target]
 USING
 (
-VALUES
+    VALUES
     (1, N'Account created notification', N'Welcome to {{:Product:}}', N'AccountCreated.html'),
     (2, N'Email confirmation OTP notification', N'Please confirm your email', N'ConfirmEmail.html'),
     (3, N'Reset password OTP notification', N'Reset your password', N'ResetPassword.html'),
