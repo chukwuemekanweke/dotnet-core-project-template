@@ -6,6 +6,7 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" />
     <PackageReference Include="Chidelu.Integration.Messaging.RabbitMQ.Publisher" />
+    <PackageReference Include="Mailtrap" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
 
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
