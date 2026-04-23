@@ -18,7 +18,8 @@ public sealed class ResetPasswordHandler(
     ITwoFactorOtpService twoFactorOtpService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
-    IUnitOfWork unitOfWork) : BaseMessageHandler<ResetPasswordCommand>(customTelemetryContext, currentActorAccessor, messageContext)
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : BaseMessageHandler<ResetPasswordCommand>(customTelemetryContext, currentActorAccessor, messageContext)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -61,7 +62,7 @@ public sealed class ResetPasswordHandler(
                         ["FirstName"] = stakeholder.FirstName,
                         ["LastName"] = stakeholder.LastName,
                         ["OtpCode"] = otp.Code,
-                        ["OtpExpiresAtUtc"] = otp.ExpiresAtUtc.ToString("O")
+                        ["OtpExpiresAtUtc"] = OtpExpiryFormatter.Format(otp.ExpiresAtUtc, timeProvider.GetUtcNow())
                     }))
             {
                 StakeholderId = stakeholder.StakeholderId

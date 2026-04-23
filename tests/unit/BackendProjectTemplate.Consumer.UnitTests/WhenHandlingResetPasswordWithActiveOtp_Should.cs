@@ -42,7 +42,8 @@ public sealed class WhenHandlingResetPasswordWithActiveOtp_Should
             twoFactorOtpService,
             stakeholderReadModelRepository,
             commandSender,
-            unitOfWork).HandleAsync(
+            unitOfWork,
+            TimeProvider.System).HandleAsync(
             new ResetPasswordCommand
             {
                 StakeholderId = stakeholderId,

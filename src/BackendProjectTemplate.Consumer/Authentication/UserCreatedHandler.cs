@@ -61,6 +61,8 @@ public sealed class UserCreatedHandler(
         }
 
         var otpCode = await identityService.GenerateSignUpOtpAsync(user);
+        var now = timeProvider.GetUtcNow();
+        var expiresAtUtc = now.Add(lockoutOptions.Value.Duration);
         await commandSender.SendAsync(
             new SendNotificationCommand(
                 stakeholder.TenantId,
@@ -74,7 +76,7 @@ public sealed class UserCreatedHandler(
                         ["FirstName"] = stakeholder.FirstName,
                         ["LastName"] = stakeholder.LastName,
                         ["OtpCode"] = otpCode,
-                        ["OtpExpiresAtUtc"] = timeProvider.GetUtcNow().Add(lockoutOptions.Value.Duration).ToString("O"),
+                        ["OtpExpiresAtUtc"] = OtpExpiryFormatter.Format(expiresAtUtc, now),
                         ["VerifyUrl"] = string.Empty,
                         ["Product"] = "BackendProjectTemplate"
                     }))
@@ -93,4 +95,5 @@ public sealed class UserCreatedHandler(
     {
         yield break;
     }
+
 }

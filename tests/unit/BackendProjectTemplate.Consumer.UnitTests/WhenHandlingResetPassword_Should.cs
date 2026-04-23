@@ -24,6 +24,7 @@ public sealed class WhenHandlingResetPassword_Should
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 23, 10, 0, 0, TimeSpan.Zero));
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
         var stakeholderId = Guid.CreateVersion7();
@@ -31,7 +32,7 @@ public sealed class WhenHandlingResetPassword_Should
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
         var email = ConsumerTestData.Email();
-        var otp = new TwoFactorOtp(ConsumerTestData.Otp(), DateTimeOffset.UtcNow.AddMinutes(2));
+        var otp = new TwoFactorOtp(ConsumerTestData.Otp(), timeProvider.GetUtcNow().AddMinutes(2));
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         twoFactorOtpService.OtpExistsAsync(appUserId, OtpIntent.PasswordReset, Arg.Any<CancellationToken>())
@@ -53,7 +54,8 @@ public sealed class WhenHandlingResetPassword_Should
             twoFactorOtpService,
             stakeholderReadModelRepository,
             commandSender,
-            unitOfWork).HandleAsync(
+            unitOfWork,
+            timeProvider).HandleAsync(
             new ResetPasswordCommand
             {
                 StakeholderId = stakeholderId,
@@ -72,7 +74,8 @@ public sealed class WhenHandlingResetPassword_Should
                 ((EmailNotificationContent)command.NotificationContent).To == email &&
                 ((EmailNotificationContent)command.NotificationContent).Content["FirstName"] == firstName &&
                 ((EmailNotificationContent)command.NotificationContent).Content["LastName"] == lastName &&
-                ((EmailNotificationContent)command.NotificationContent).Content["OtpCode"] == otp.Code),
+                ((EmailNotificationContent)command.NotificationContent).Content["OtpCode"] == otp.Code &&
+                ((EmailNotificationContent)command.NotificationContent).Content["OtpExpiresAtUtc"] == OtpExpiryFormatter.Format(otp.ExpiresAtUtc, timeProvider.GetUtcNow())),
             Arg.Any<CancellationToken>());
         await twoFactorOtpService.Received(1).GenerateOtpAsync(
             appUserId,
@@ -81,6 +84,11 @@ public sealed class WhenHandlingResetPassword_Should
             6,
             false);
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
 

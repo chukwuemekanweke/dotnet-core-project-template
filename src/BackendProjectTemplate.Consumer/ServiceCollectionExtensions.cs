@@ -7,6 +7,7 @@ using ResetPassword = BackendProjectTemplate.Contracts.Commands.Authentication.R
 using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications.SendNotificationCommand;
 using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.UserAccessTokenRefreshed;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
+using UserEmailConfirmedEvent = BackendProjectTemplate.Contracts.Events.UserEmailConfirmed;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
 using UserSignInSuccessfulEvent = BackendProjectTemplate.Contracts.Events.UserSignInSuccessful;
 
@@ -58,6 +59,7 @@ public static class ServiceCollectionExtensions
         services
             .AddSubscriber(subscriberConfig, builder => builder
                 .AddHandler<UserCreatedEvent, UserCreatedHandler>()
+                .AddHandler<UserEmailConfirmedEvent, UserEmailConfirmedHandler>()
                 .AddHandler<UserSignInSuccessfulEvent, UserSignInSuccessfulHandler>()
                 .AddHandler<UserAccessTokenRefreshedEvent, UserAccessTokenRefreshedHandler>()
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>())
