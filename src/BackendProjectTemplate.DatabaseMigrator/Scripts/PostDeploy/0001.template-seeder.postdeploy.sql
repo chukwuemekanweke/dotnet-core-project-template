@@ -301,19 +301,31 @@ VALUES
     @UtcNow
 );
 
-/*
-    Seeds [infrastructure].[Providers].
 
-    Provider credentials and secrets should remain in configuration or a secret store.
-    This table only controls the selectable provider definitions.
-*/
+UPDATE [infrastructure].[Providers]
+SET
+    [IsActive] = 0,
+    [UpdatedAtUtc] = @UtcNow
+WHERE [ProviderType] = 1
+    AND [ProviderKey] <> N'mailtrap'
+    AND [IsActive] = 1;
+
+UPDATE [infrastructure].[Providers]
+SET
+    [IsActive] = 0,
+    [IsDeleted] = 1,
+    [DeletedAtUtc] = @UtcNow,
+    [DeletedBy] = N'system',
+    [UpdatedAtUtc] = @UtcNow
+WHERE [ProviderType] = 1
+    AND [ProviderKey] = N'logging'
+    AND [IsDeleted] = 0;
 
 MERGE [infrastructure].[Providers] AS [Target]
 USING
 (
 VALUES
-    (1, N'Logging (Stub)', N'logging', 1),
-    (1, N'Mailtrap', N'mailtrap', 0),
+    (1, N'Mailtrap', N'mailtrap', 1),
     (2, N'Noop (Stub)', N'noop', 1),
     (2, N'Cloudflare R2', N'cloudflare-r2', 0)
 ) AS [Source] ([ProviderType], [ProviderName], [ProviderKey], [IsActive])

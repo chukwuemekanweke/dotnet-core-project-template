@@ -10,6 +10,8 @@
 *.userosscache
 *.sln.docstates
 *.env
+docker-compose.local.ps1
+docker-compose.local.sh
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

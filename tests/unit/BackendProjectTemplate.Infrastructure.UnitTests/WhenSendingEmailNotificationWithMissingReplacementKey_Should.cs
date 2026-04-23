@@ -59,7 +59,7 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
                 }));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Provider.Create(ProviderType.Email, "Logging", "logging", true, now));
+            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -77,7 +77,7 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
                 "Moveaex",
                 "moveaex",
                 now));
-        transportProvider.ProviderKey.Returns("logging");
+        transportProvider.ProviderKey.Returns("mailtrap");
         hostEnvironment.ContentRootPath.Returns(templateRoot);
 
         var sut = new EmailNotificationDispatcher(

@@ -87,6 +87,7 @@ services:
       Messaging__RabbitMq__VirtualHost: /
       Messaging__RabbitMq__EventsExchange: x.events.backendprojecttemplate
       Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
+      Notifications__Email__Mailtrap__ApiToken: ${MAILTRAP_TOKEN}
       OpenTelemetry__ServiceName: BackendProjectTemplate.Consumer
       OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
     depends_on:

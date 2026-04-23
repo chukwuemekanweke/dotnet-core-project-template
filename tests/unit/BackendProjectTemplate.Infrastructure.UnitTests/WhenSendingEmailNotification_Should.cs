@@ -89,7 +89,7 @@ public sealed class WhenSendingEmailNotification_Should
                 Bcc: ["bcc-one@test.local"]));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Provider.Create(ProviderType.Email, "Logging", "logging", true, now));
+            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now));
         templateRepository.FirstOrDefaultAsync(Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(), Arg.Any<CancellationToken>())
             .Returns(EmailNotificationTemplate.Create(
                 NotificationType.SignInSuccessful,
@@ -99,7 +99,7 @@ public sealed class WhenSendingEmailNotification_Should
                 now));
         tenantRepository.FirstOrDefaultAsync(Arg.Any<TenantByIdSpecification>(), Arg.Any<CancellationToken>())
             .Returns(Tenant.Create(tenantId, "Moveaex", "moveaex", now));
-        transportProvider.ProviderKey.Returns("logging");
+        transportProvider.ProviderKey.Returns("mailtrap");
         hostEnvironment.ContentRootPath.Returns(templateRoot);
 
         var sut = new EmailNotificationDispatcher(
