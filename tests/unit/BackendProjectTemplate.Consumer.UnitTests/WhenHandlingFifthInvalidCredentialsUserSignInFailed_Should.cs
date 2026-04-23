@@ -36,6 +36,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
         var userAgent = ConsumerTestData.UserAgent();
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 7, 10, 0, 0, TimeSpan.Zero));
         var lockedUntilUtc = new DateTimeOffset(2026, 4, 7, 12, 0, 0, TimeSpan.Zero);
         var user = AppUser.Create(email, firstName, lastName, DateTimeOffset.UtcNow);
 
@@ -47,7 +48,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(stakeholderId, Guid.CreateVersion7(), email, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
 
-        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
+        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, timeProvider, logger).HandleAsync(
             new UserSignInFailed(
                 email,
                 ipAddress,
@@ -68,9 +69,14 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
                 command.StakeholderId == stakeholderId &&
                 command.NotificationContent is EmailNotificationContent &&
                 ((EmailNotificationContent)command.NotificationContent).To == email &&
-                ((EmailNotificationContent)command.NotificationContent).Content["LockedUntilUtc"] == lockedUntilUtc.ToString("O")),
+                ((EmailNotificationContent)command.NotificationContent).Content["LockedUntilUtc"] == NotificationDateTimeFormatter.Format(lockedUntilUtc, timeProvider.GetUtcNow())),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
 

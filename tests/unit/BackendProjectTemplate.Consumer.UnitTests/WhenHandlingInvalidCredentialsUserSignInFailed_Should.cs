@@ -41,7 +41,7 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
         identityService.AccessFailedAsync(user).Returns(IdentityResult.Success);
         identityService.IsLockedOutAsync(user).Returns(false);
 
-        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, logger).HandleAsync(
+        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, TimeProvider.System, logger).HandleAsync(
             new UserSignInFailed(
                 email,
                 ipAddress,

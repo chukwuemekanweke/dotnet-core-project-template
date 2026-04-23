@@ -19,6 +19,7 @@ public sealed class UserSignInFailedHandler(
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
+    TimeProvider timeProvider,
     ILogger<UserSignInFailedHandler> logger) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor, messageContext)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
@@ -76,7 +77,7 @@ public sealed class UserSignInFailedHandler(
                         user.Email ?? message.EmailAddress,
                         new Dictionary<string, string>
                         {
-                            ["LockedUntilUtc"] = lockedUntilUtc.ToString("O")
+                            ["LockedUntilUtc"] = NotificationDateTimeFormatter.Format(lockedUntilUtc, timeProvider.GetUtcNow())
                         }))
                 {
                     StakeholderId = stakeholder.StakeholderId

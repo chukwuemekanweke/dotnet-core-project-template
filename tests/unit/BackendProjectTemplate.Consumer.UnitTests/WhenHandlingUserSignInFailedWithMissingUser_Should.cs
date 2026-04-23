@@ -43,6 +43,7 @@ public sealed class WhenHandlingUserSignInFailedWithMissingUser_Should
             stakeholderReadModelRepository,
             commandSender,
             unitOfWork,
+            TimeProvider.System,
             logger).HandleAsync(
                 new UserSignInFailed(
                     email,

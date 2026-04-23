@@ -76,7 +76,7 @@ public sealed class WhenHandlingUserCreated_Should
                 firstName,
                 lastName,
                 otpCode,
-                OtpExpiryFormatter.Format(timeProvider.GetUtcNow().Add(lockoutOptions.Value.Duration), timeProvider.GetUtcNow()))),
+                NotificationDateTimeFormatter.Format(timeProvider.GetUtcNow().Add(lockoutOptions.Value.Duration), timeProvider.GetUtcNow()))),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

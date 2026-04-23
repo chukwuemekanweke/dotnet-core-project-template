@@ -76,7 +76,7 @@ public sealed class UserCreatedHandler(
                         ["FirstName"] = stakeholder.FirstName,
                         ["LastName"] = stakeholder.LastName,
                         ["OtpCode"] = otpCode,
-                        ["OtpExpiresAtUtc"] = OtpExpiryFormatter.Format(expiresAtUtc, now),
+                        ["OtpExpiresAtUtc"] = NotificationDateTimeFormatter.Format(expiresAtUtc, now),
                         ["VerifyUrl"] = string.Empty,
                         ["Product"] = "BackendProjectTemplate"
                     }))
