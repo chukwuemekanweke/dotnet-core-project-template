@@ -72,6 +72,7 @@ services:
       args:
         GITHUB_USERNAME: ${GITHUB_USERNAME}
         GITHUB_PAT: ${GITHUB_PAT}
+        MAILTRAP_TOKEN: ${MAILTRAP_TOKEN}
     environment:
       GITHUB_USERNAME: ${GITHUB_USERNAME}
       GITHUB_PAT: ${GITHUB_PAT}

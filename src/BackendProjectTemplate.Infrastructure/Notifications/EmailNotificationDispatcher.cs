@@ -6,6 +6,7 @@ using BackendProjectTemplate.Domain.Notifications.Specifications;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -21,7 +22,8 @@ internal sealed class EmailNotificationDispatcher(
     IHostEnvironment hostEnvironment,
     IOptions<EmailNotificationsOptions> options,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider) : IEmailNotificationService
+    TimeProvider timeProvider,
+    ILogger<EmailNotificationDispatcher>? logger = null) : IEmailNotificationService
 {
     private static readonly Regex PlaceholderPattern = new(@"\{\{:(?<key>[A-Za-z0-9_]+):\}\}", RegexOptions.CultureInvariant);
     private static readonly Regex PlaceholderFragmentPattern = new(@"\{\{:|:\}\}", RegexOptions.CultureInvariant);
@@ -36,18 +38,33 @@ internal sealed class EmailNotificationDispatcher(
                 $"Notification content '{command.NotificationContent.GetType().Name}' is not valid for email delivery.");
         }
 
-        var emailNotificationLog = EmailNotificationLog.Create(
-            command.MessageId,
-            command.TenantId,
-            command.CountryId,
-            command.NotificationType,
-            NotificationContentObfuscator.Obfuscate(content.Content),
-            content.To,
-            JoinRecipients(content.Cc),
-            JoinRecipients(content.Bcc));
+        var emailNotificationLog = await emailNotificationLogRepository.FirstOrDefaultAsync(
+            new EmailNotificationLogByMessageIdSpecification(command.MessageId),
+            cancellationToken);
+        if (emailNotificationLog?.IsSent is true)
+        {
+            logger?.LogWarning(
+                "Skipping email notification for message {MessageId} because it has already been sent.",
+                command.MessageId);
 
-        await emailNotificationLogRepository.AddAsync(emailNotificationLog, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        if (emailNotificationLog is null)
+        {
+            emailNotificationLog = EmailNotificationLog.Create(
+                command.MessageId,
+                command.TenantId,
+                command.CountryId,
+                command.NotificationType,
+                NotificationContentObfuscator.Obfuscate(content.Content),
+                content.To,
+                JoinRecipients(content.Cc),
+                JoinRecipients(content.Bcc));
+
+            await emailNotificationLogRepository.AddAsync(emailNotificationLog, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         try
         {
