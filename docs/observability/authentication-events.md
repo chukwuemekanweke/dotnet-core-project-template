@@ -173,9 +173,8 @@ These are the current business custom events for the implemented scope.
 
 ### Deferred / intentionally unused right now
 
-These names exist or may exist conceptually, but are not part of the preferred current auth/profile custom-event story:
+These names may exist conceptually, but are not part of the preferred current auth/profile custom-event story:
 
-- onboarding started/completed events for sign-up and profile update
 - request-side `PasswordSignInFailed` / `GoogleSignInFailed` events, because sign-in uses `SignInFailureProcessed` as the explicit failure signal
 
 ## Failure Reason Catalog
@@ -521,6 +520,33 @@ Suggested formulas:
 - password reset completion rate = `PasswordResetCompleted / PasswordResetRequested`
 - session refresh post-processing completion rate = `SessionRefreshPostProcessingCompleted / SessionRefreshCompleted`
 
+## SLO And Alert Definitions
+
+These are the current SLO targets represented in the provisioned dashboards. They are deliberately pragmatic starting values and should be tuned against real production baselines.
+
+### Authentication SLOs
+
+- Password sign-up completion rate: `PasswordSignUpCompleted / PasswordSignUpStarted >= 95%` over 30 minutes.
+- Email confirmation completion rate: `EmailConfirmationCompleted / EmailConfirmationStarted >= 90%` over 1 hour.
+- Password sign-in completion rate: `PasswordSignInCompleted / PasswordSignInStarted >= 95%` over 15 minutes.
+- Password reset completion rate: `PasswordResetCompleted / PasswordResetRequested >= 90%` over 30 minutes.
+- Session refresh post-processing completion rate: `SessionRefreshPostProcessingCompleted / SessionRefreshCompleted >= 99%` over 15 minutes.
+
+### Profile SLOs
+
+- Profile update success rate: `ProfileUpdateCompleted / (ProfileUpdateCompleted + ProfileUpdateFailed) >= 99%` over 30 minutes.
+- Avatar upload success rate: `AvatarUploadCompleted / (AvatarUploadCompleted + AvatarUploadFailed) >= 98%` over 30 minutes.
+- Profile endpoint 5xx rate: less than 1% over 10 minutes.
+- Profile endpoint p95 latency: less than 500 ms over 10 minutes.
+
+### Alert Definitions
+
+- Sign-in failure processed count increases 3x above the previous 1-hour baseline for 15 minutes.
+- Auth 5xx rate is greater than 1% for 10 minutes.
+- Auth 429 rate spikes for 15 minutes.
+- Password reset completion failures exceed 5 events in 15 minutes.
+- Email confirmation failures exceed 10 events in 15 minutes.
+
 ## Query Expectations
 
 The current local observability stack uses:
@@ -554,16 +580,10 @@ The datasource contract must support:
 
 The business custom events above do not replace technical telemetry.
 
-Technical health still needs its own layer for:
+Technical health should stay separate from business custom events. The currently supported technical layer is limited to existing OpenTelemetry/Prometheus signals:
 
 - HTTP latency and status codes
 - exceptions by type
-- dependency latency
-- OTP provider reliability
-- notification delivery reliability
-- queue / outbox / consumer lag
-
-That work is still pending.
 
 ## Current Status
 
@@ -580,10 +600,12 @@ That work is still pending.
 - Loki datasource provisioning
 - Grafana dashboard JSON for authentication overview, authentication failures/security, and profile/account management
 - LogQL panel queries for the currently emitted auth/profile events
+- derived rate panels for current auth/profile dashboards
+- SLO target panels for current auth/profile dashboards
+- alert definition panels for current auth/security dashboards
 
 ### Still pending
 
-- alert thresholds and SLO targets
 - explicit security panels such as failed sign-ins by IP/email
 - payment observability design and implementation
 
@@ -591,8 +613,8 @@ That work is still pending.
 
 The next observability deliverable after this spec should be one of:
 
-1. derived rates and alert thresholds for the new failure-event panels
-2. alert thresholds and SLO definitions for the current dashboards
-3. technical-health instrumentation for dependencies such as notifications and cache/OTP persistence
+1. Grafana-managed alert rules or alert provisioning for the SLO and alert definitions above
+2. stronger security analytics using safe identifiers, such as hashed email/IP values where appropriate
+3. payment observability design and implementation once payment workflows exist
 
 Do not expand custom-event payloads ad hoc while doing that follow-up work. Keep changes aligned with this document unless the observability contract is intentionally revised first.

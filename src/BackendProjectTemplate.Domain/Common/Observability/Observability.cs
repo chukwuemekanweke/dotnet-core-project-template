@@ -52,12 +52,5 @@ public static class Observability
         {
             public const string EmailSent = "EmailNotificationSent";
         }
-
-        public static class Onboarding
-        {
-            public const string Started = "OnboardingStarted";
-            public const string ProfileCompleted = "OnboardingProfileCompleted";
-            public const string Completed = "OnboardingCompleted";
-        }
     }
 }
