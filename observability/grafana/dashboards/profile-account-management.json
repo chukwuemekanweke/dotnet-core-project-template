@@ -45,7 +45,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "value"
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -107,7 +107,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "value"
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -426,7 +426,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "background"
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
