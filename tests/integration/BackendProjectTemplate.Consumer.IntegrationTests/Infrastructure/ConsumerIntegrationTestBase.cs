@@ -20,7 +20,6 @@ public abstract class ConsumerIntegrationTestBase : IAsyncLifetime
     }
 
     protected HttpClient Client { get; private set; } = default!;
-    protected TestOtpDeliveryService OtpDeliveryService => _factory.OtpDeliveryService;
 
     public virtual Task InitializeAsync() => InitializeClientAsync();
 

@@ -18,14 +18,11 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
 {
     private readonly ContainersFixture _fixture;
     private IHost _host = default!;
-    private TestOtpDeliveryService _otpDeliveryService = default!;
 
     protected ConsumerWorkerIntegrationTestBase(ContainersFixture fixture)
     {
         _fixture = fixture;
     }
-
-    protected TestOtpDeliveryService OtpDeliveryService => _otpDeliveryService;
 
     public virtual async Task InitializeAsync()
     {
@@ -37,7 +34,6 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
     public virtual async Task DisposeAsync()
     {
         await DisposeWorkerTestAsync();
-        _otpDeliveryService.Clear();
         await DisposeHostAsync();
     }
 
@@ -87,8 +83,6 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
 
     private async Task InitializeHostAsync()
     {
-        _otpDeliveryService = new TestOtpDeliveryService();
-
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -124,9 +118,6 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddNotificationServices(configuration);
         builder.Services.AddCustomTelemetryContext();
         builder.Services.AddBackendTelemetry(configuration);
-        builder.Services.RemoveAll<IOtpDeliveryService>();
-        builder.Services.AddSingleton(_otpDeliveryService);
-        builder.Services.AddSingleton<IOtpDeliveryService>(_otpDeliveryService);
         builder.Services.AddSubscribers(configuration);
         RegisterTestServices(builder.Services);
 

@@ -1,10 +1,15 @@
+using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using BackendProjectTemplate.Infrastructure.Authentication;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
+using Microsoft.Extensions.Options;
 
 namespace BackendProjectTemplate.Consumer.Authentication;
 
@@ -14,7 +19,10 @@ public sealed class UserCreatedHandler(
     IMessageContext messageContext,
     IAuthenticationIdentityService identityService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
-    IOtpDeliveryService otpDeliveryService,
+    ICommandSender commandSender,
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider,
+    IOptions<AuthenticationLockoutOptions> lockoutOptions,
     ILogger<UserCreatedHandler> logger) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
@@ -53,7 +61,28 @@ public sealed class UserCreatedHandler(
         }
 
         var otpCode = await identityService.GenerateSignUpOtpAsync(user);
-        await otpDeliveryService.SendSignUpOtpAsync(user, otpCode, cancellationToken);
+        await commandSender.SendAsync(
+            new SendNotificationCommand(
+                stakeholder.TenantId,
+                stakeholder.CountryId,
+                NotificationType.EmailConfirmationOtp,
+                NotificationMedium.Email,
+                new EmailNotificationContent(
+                    stakeholder.EmailAddress,
+                    new Dictionary<string, string>
+                    {
+                        ["FirstName"] = stakeholder.FirstName,
+                        ["LastName"] = stakeholder.LastName,
+                        ["OtpCode"] = otpCode,
+                        ["OtpExpiresAtUtc"] = timeProvider.GetUtcNow().Add(lockoutOptions.Value.Duration).ToString("O"),
+                        ["VerifyUrl"] = string.Empty,
+                        ["Product"] = "BackendProjectTemplate"
+                    }))
+            {
+                StakeholderId = stakeholder.StakeholderId
+            },
+            cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSent,

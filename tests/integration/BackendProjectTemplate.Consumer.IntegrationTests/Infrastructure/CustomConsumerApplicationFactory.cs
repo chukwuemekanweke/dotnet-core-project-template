@@ -1,4 +1,3 @@
-using BackendProjectTemplate.Domain.Common.Authentication;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -17,9 +16,6 @@ public sealed class CustomConsumerApplicationFactory(
     string rabbitMqPassword,
     string rabbitMqVirtualHost) : WebApplicationFactory<Program>
 {
-    public TestOtpDeliveryService OtpDeliveryService =>
-        Services.GetRequiredService<TestOtpDeliveryService>();
-
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("IntegrationTests");
@@ -48,9 +44,6 @@ public sealed class CustomConsumerApplicationFactory(
 
         builder.ConfigureServices(services =>
         {
-            services.RemoveAll<IOtpDeliveryService>();
-            services.AddSingleton<TestOtpDeliveryService>();
-            services.AddSingleton<IOtpDeliveryService>(provider => provider.GetRequiredService<TestOtpDeliveryService>());
             services.RemoveAll<IHostedService>();
             services.AddHostedService<TestReadyWorker>();
         });

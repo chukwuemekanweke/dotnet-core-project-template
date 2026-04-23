@@ -1,8 +1,11 @@
+using System.Text.Json;
 using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
+using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Chidelu.Integration.Messaging.RabbitMQ.Core;
@@ -20,6 +23,8 @@ public sealed class WhenHandlingUserCreated_Should(ContainersFixture fixture)
     : ConsumerWorkerIntegrationTestBase(fixture)
 {
     private const string Password = "P@ssw0rd123!";
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
+
     private readonly ContainersFixture _fixture = fixture;
     private string _email = string.Empty;
     private string _firstName = string.Empty;
@@ -35,10 +40,10 @@ public sealed class WhenHandlingUserCreated_Should(ContainersFixture fixture)
     protected override Task DisposeWorkerTestAsync() => DeleteAuthenticationRecordsAsync();
 
     [Fact]
-    public async Task GenerateAndDeliverSignUpOtp()
+    public async Task GenerateSignUpOtpAndQueueNotificationCommand()
     {
         await WhenPublishingUserCreated();
-        await ThenTheSignUpOtpIsGeneratedAndDelivered();
+        await ThenTheSignUpOtpNotificationCommandIsQueued();
 
         async Task WhenPublishingUserCreated()
         {
@@ -72,21 +77,55 @@ public sealed class WhenHandlingUserCreated_Should(ContainersFixture fixture)
                 });
         }
 
-        async Task ThenTheSignUpOtpIsGeneratedAndDelivered()
+        async Task ThenTheSignUpOtpNotificationCommandIsQueued()
         {
-            await WaitForConditionAsync(() =>
-                Task.FromResult(!string.IsNullOrWhiteSpace(OtpDeliveryService.GetCode(_email))));
+            await WaitForConditionAsync(async () =>
+            {
+                using var scope = CreateDbContextScope();
+                var command = await scope.DbContext.OutboxMessages
+                    .Where(message =>
+                        message.Kind == OutboxMessageKind.Command &&
+                        message.Type == typeof(SendNotificationCommand).FullName! &&
+                        message.Payload.Contains(_email))
+                    .OrderByDescending(message => message.EnqueuedAtUtc)
+                    .FirstOrDefaultAsync();
 
-            var otpCode = OtpDeliveryService.GetCode(_email);
-            otpCode.ShouldNotBeNull();
+                return command is not null;
+            });
+
+            using var assertionScope = CreateDbContextScope();
+            var outboxMessage = await assertionScope.DbContext.OutboxMessages
+                .Where(message =>
+                    message.Kind == OutboxMessageKind.Command &&
+                    message.Type == typeof(SendNotificationCommand).FullName! &&
+                    message.Payload.Contains(_email))
+                .OrderByDescending(message => message.EnqueuedAtUtc)
+                .FirstAsync();
+
+            var command = JsonSerializer.Deserialize<SendNotificationCommand>(outboxMessage.Payload, SerializerOptions);
+
+            command.ShouldNotBeNull();
+            command.TenantId.ShouldBe(_tenantId);
+            command.CountryId.ShouldBe(_countryId);
+            command.StakeholderId.ShouldBe(_stakeholderId);
+            command.NotificationType.ShouldBe(NotificationType.EmailConfirmationOtp);
+            command.NotificationMedium.ShouldBe(NotificationMedium.Email);
+            command.NotificationContent.ShouldBeOfType<EmailNotificationContent>();
+
+            var content = (EmailNotificationContent)command.NotificationContent;
+            content.To.ShouldBe(_email);
+            content.Content["FirstName"].ShouldBe(_firstName);
+            content.Content["LastName"].ShouldBe(_lastName);
+            content.Content["OtpCode"].ShouldNotBeNullOrWhiteSpace();
+            content.Content["OtpExpiresAtUtc"].ShouldNotBeNullOrWhiteSpace();
+            content.Content["Product"].ShouldBe("BackendProjectTemplate");
 
             using var scope = CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
             var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
             var user = await repository.GetByEmailAsync(_email);
-
             user.ShouldNotBeNull();
-            (await identityService.VerifySignUpOtpAsync(user, otpCode)).ShouldBeTrue();
+            (await identityService.VerifySignUpOtpAsync(user, content.Content["OtpCode"])).ShouldBeTrue();
         }
     }
 
@@ -134,6 +173,17 @@ public sealed class WhenHandlingUserCreated_Should(ContainersFixture fixture)
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var user = await repository.GetByEmailAsync(_email);
+
+        var outboxMessages = await dbContext.OutboxMessages
+            .Where(message =>
+                message.Kind == OutboxMessageKind.Command &&
+                message.Type == typeof(SendNotificationCommand).FullName! &&
+                message.Payload.Contains(_email))
+            .ToListAsync();
+        if (outboxMessages.Count > 0)
+        {
+            dbContext.OutboxMessages.RemoveRange(outboxMessages);
+        }
 
         var stakeholders = await dbContext.Stakeholders
             .Where(stakeholder => stakeholder.Id == _stakeholderId)

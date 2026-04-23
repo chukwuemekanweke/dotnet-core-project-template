@@ -25,6 +25,8 @@ public static class ServiceCollectionExtensions
 
         lockoutOptions.Validate();
 
+        services.Configure<AuthenticationLockoutOptions>(configuration.GetSection(AuthenticationLockoutOptions.SectionName));
+
         services
             .AddDataProtection()
             .SetApplicationName("BackendProjectTemplate");
@@ -63,7 +65,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGoogleIdentityTokenService, GoogleIdentityTokenService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<ITwoFactorOtpService, TwoFactorOtpService>();
-        services.AddScoped<IOtpDeliveryService, LoggingOtpDeliveryService>();
 
         return services;
     }

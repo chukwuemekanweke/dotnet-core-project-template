@@ -1,12 +1,17 @@
 using BackendProjectTemplate.Consumer.Authentication;
+using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using BackendProjectTemplate.Infrastructure.Authentication;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 
 namespace BackendProjectTemplate.Consumer.UnitTests;
@@ -14,15 +19,18 @@ namespace BackendProjectTemplate.Consumer.UnitTests;
 public sealed class WhenHandlingUserCreated_Should
 {
     [Fact]
-    public async Task GenerateAndDeliverSignUpOtp()
+    public async Task GenerateSignUpOtpAndQueueNotificationCommand()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var messageContext = Substitute.For<IMessageContext>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
-        var otpDeliveryService = Substitute.For<IOtpDeliveryService>();
+        var commandSender = Substitute.For<ICommandSender>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var logger = Substitute.For<ILogger<UserCreatedHandler>>();
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 23, 10, 0, 0, TimeSpan.Zero));
+        var lockoutOptions = Options.Create(new AuthenticationLockoutOptions { Duration = TimeSpan.FromHours(12) });
         var stakeholderId = Guid.CreateVersion7();
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
@@ -44,7 +52,10 @@ public sealed class WhenHandlingUserCreated_Should
             messageContext,
             identityService,
             stakeholderReadModelRepository,
-            otpDeliveryService,
+            commandSender,
+            unitOfWork,
+            timeProvider,
+            lockoutOptions,
             logger).HandleAsync(
             new UserCreated
             {
@@ -55,7 +66,53 @@ public sealed class WhenHandlingUserCreated_Should
 
         await identityService.Received(1).GenerateSignUpOtpAsync(user);
         await identityService.Received(1).FindByIdAsync(user.Id);
-        await otpDeliveryService.Received(1).SendSignUpOtpAsync(user, otpCode, Arg.Any<CancellationToken>());
+        await commandSender.Received(1).SendAsync(
+            Arg.Is<SendNotificationCommand>(command => HasExpectedNotificationCommand(
+                command,
+                tenantId,
+                countryId,
+                stakeholderId,
+                email,
+                firstName,
+                lastName,
+                otpCode,
+                timeProvider.GetUtcNow().Add(lockoutOptions.Value.Duration).ToString("O"))),
+            Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    private static bool HasExpectedNotificationCommand(
+        SendNotificationCommand command,
+        Guid tenantId,
+        Guid countryId,
+        Guid stakeholderId,
+        string email,
+        string firstName,
+        string lastName,
+        string otpCode,
+        string otpExpiresAtUtc)
+    {
+        if (command.NotificationContent is not EmailNotificationContent content)
+        {
+            return false;
+        }
+
+        return command.TenantId == tenantId &&
+            command.CountryId == countryId &&
+            command.NotificationType == NotificationType.EmailConfirmationOtp &&
+            command.NotificationMedium == NotificationMedium.Email &&
+            command.StakeholderId == stakeholderId &&
+            content.To == email &&
+            content.Content["FirstName"] == firstName &&
+            content.Content["LastName"] == lastName &&
+            content.Content["OtpCode"] == otpCode &&
+            content.Content["OtpExpiresAtUtc"] == otpExpiresAtUtc &&
+            content.Content["Product"] == "BackendProjectTemplate";
+    }
+
+    private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
 
