@@ -29,7 +29,8 @@ public sealed class When_SigningInWithGoogle_WithInvalidModel_Should
             context.CreateRefreshSessionHandler(),
             validator,
             googleValidator,
-            refreshValidator);
+            refreshValidator,
+            context.Clock);
 
         var result = await sut.HandleGoogle(request, CancellationToken.None);
 

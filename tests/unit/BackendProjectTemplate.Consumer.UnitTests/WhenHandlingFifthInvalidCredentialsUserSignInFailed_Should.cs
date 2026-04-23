@@ -4,6 +4,7 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Formatting;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -69,7 +70,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
                 command.StakeholderId == stakeholderId &&
                 command.NotificationContent is EmailNotificationContent &&
                 ((EmailNotificationContent)command.NotificationContent).To == email &&
-                ((EmailNotificationContent)command.NotificationContent).Content["LockedUntilUtc"] == NotificationDateTimeFormatter.Format(lockedUntilUtc, timeProvider.GetUtcNow())),
+                ((EmailNotificationContent)command.NotificationContent).Content["LockedUntilUtc"] == DateTimeFormatter.FormatHumanReadableUtc(lockedUntilUtc, timeProvider.GetUtcNow())),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

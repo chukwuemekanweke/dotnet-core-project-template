@@ -57,7 +57,8 @@ public sealed class When_RefreshingSession_WithValidRefreshToken_Should
             context.CreateRefreshSessionHandler(),
             validator,
             googleValidator,
-            refreshValidator)
+            refreshValidator,
+            context.Clock)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

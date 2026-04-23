@@ -4,6 +4,7 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Formatting;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -76,7 +77,7 @@ public sealed class WhenHandlingUserCreated_Should
                 firstName,
                 lastName,
                 otpCode,
-                NotificationDateTimeFormatter.Format(timeProvider.GetUtcNow().Add(lockoutOptions.Value.Duration), timeProvider.GetUtcNow()))),
+                DateTimeFormatter.FormatHumanReadableUtc(timeProvider.GetUtcNow().Add(lockoutOptions.Value.Duration), timeProvider.GetUtcNow()))),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

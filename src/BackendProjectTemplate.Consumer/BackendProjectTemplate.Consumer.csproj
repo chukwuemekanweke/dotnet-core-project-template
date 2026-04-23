@@ -8,7 +8,6 @@
   <ItemGroup>
     <PackageReference Include="Chidelu.Integration.Messaging.RabbitMQ.Consumer" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Humanizer.Core" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />

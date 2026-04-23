@@ -1,6 +1,6 @@
 using System.Net;
-using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Formatting;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
@@ -14,10 +14,10 @@ using Shouldly;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication.Sessions;
 
-public sealed class When_SigningIn_WithValidCredentials_Should
+public sealed class When_SigningIn_WithLockedAccount_Should
 {
     [Fact]
-    public async Task ReturnAccessToken()
+    public async Task ReturnFormattedProblemDetails()
     {
         var context = new AuthenticationControllerTestContext();
         var validator = Substitute.For<IValidator<SignInRequest>>();
@@ -25,20 +25,17 @@ public sealed class When_SigningIn_WithValidCredentials_Should
         var refreshValidator = Substitute.For<IValidator<RefreshSessionRequest>>();
         var request = new SignInRequest("jane@example.com", "P@ssw0rd123!");
         var user = context.CreateUser(request.Email);
-        user.MarkEmailVerified(context.Clock.GetUtcNow());
         var stakeholder = context.CreateStakeholder(user.Id);
+        var lockedUntilUtc = context.Clock.GetUtcNow().AddHours(2);
 
         validator.ValidateAsync(request, Arg.Any<CancellationToken>()).Returns(new ValidationResult());
         context.IdentityService.FindByEmailAsync(request.Email).Returns(user);
-        context.IdentityService.CheckPasswordAsync(user, request.Password).Returns(true);
+        context.IdentityService.IsLockedOutAsync(user).Returns(true);
+        context.IdentityService.GetLockoutEndUtcAsync(user).Returns(lockedUntilUtc);
         context.StakeholderRepository.FirstOrDefaultAsync(
                 Arg.Any<ISpecification<Stakeholder>>(),
                 Arg.Any<CancellationToken>())
             .Returns(stakeholder);
-        context.AccessTokenService.Generate(user, stakeholder.Id)
-            .Returns(new AccessToken("access-token", context.Clock.GetUtcNow().AddMinutes(15)));
-        context.RefreshTokenService.IssueAsync(user, Arg.Any<CancellationToken>())
-            .Returns(new RefreshToken("refresh-token", context.Clock.GetUtcNow().AddDays(7)));
 
         var sut = new SessionsController(
             context.CreateSignInHandler(),
@@ -58,9 +55,10 @@ public sealed class When_SigningIn_WithValidCredentials_Should
 
         var result = await sut.Handle(request, CancellationToken.None);
 
-        var ok = result.Result.ShouldBeOfType<OkObjectResult>();
-        var payload = ok.Value.ShouldBeOfType<SignInResponse>();
-        payload.AccessToken.ShouldBe("access-token");
-        payload.RefreshToken.ShouldBe("refresh-token");
+        var problem = result.Result.ShouldBeOfType<ObjectResult>();
+        problem.StatusCode.ShouldBe(StatusCodes.Status423Locked);
+        var details = problem.Value.ShouldBeOfType<ProblemDetails>();
+        details.Detail.ShouldBe(
+            $"The account is locked until {DateTimeFormatter.FormatHumanReadableUtc(lockedUntilUtc, context.Clock.GetUtcNow())}.");
     }
 }

@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Commands.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Formatting;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -62,7 +63,7 @@ public sealed class ResetPasswordHandler(
                         ["FirstName"] = stakeholder.FirstName,
                         ["LastName"] = stakeholder.LastName,
                         ["OtpCode"] = otp.Code,
-                        ["OtpExpiresAtUtc"] = NotificationDateTimeFormatter.Format(otp.ExpiresAtUtc, timeProvider.GetUtcNow())
+                        ["OtpExpiresAtUtc"] = DateTimeFormatter.FormatHumanReadableUtc(otp.ExpiresAtUtc, timeProvider.GetUtcNow())
                     }))
             {
                 StakeholderId = stakeholder.StakeholderId

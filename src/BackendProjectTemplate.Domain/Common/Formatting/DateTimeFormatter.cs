@@ -1,11 +1,11 @@
 using Humanizer;
 using System.Globalization;
 
-namespace BackendProjectTemplate.Consumer.Authentication;
+namespace BackendProjectTemplate.Domain.Common.Formatting;
 
-public static class NotificationDateTimeFormatter
+public static class DateTimeFormatter
 {
-    public static string Format(DateTimeOffset utcDateTime, DateTimeOffset now)
+    public static string FormatHumanReadableUtc(DateTimeOffset utcDateTime, DateTimeOffset now)
     {
         var formattedDateTime = utcDateTime.UtcDateTime.ToString(
             "dddd, MMMM d, yyyy 'at' h:mm tt 'UTC'",

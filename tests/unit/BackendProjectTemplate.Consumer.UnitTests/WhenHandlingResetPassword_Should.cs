@@ -3,6 +3,7 @@ using BackendProjectTemplate.Contracts.Commands.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Formatting;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -75,7 +76,7 @@ public sealed class WhenHandlingResetPassword_Should
                 ((EmailNotificationContent)command.NotificationContent).Content["FirstName"] == firstName &&
                 ((EmailNotificationContent)command.NotificationContent).Content["LastName"] == lastName &&
                 ((EmailNotificationContent)command.NotificationContent).Content["OtpCode"] == otp.Code &&
-                ((EmailNotificationContent)command.NotificationContent).Content["OtpExpiresAtUtc"] == NotificationDateTimeFormatter.Format(otp.ExpiresAtUtc, timeProvider.GetUtcNow())),
+                ((EmailNotificationContent)command.NotificationContent).Content["OtpExpiresAtUtc"] == DateTimeFormatter.FormatHumanReadableUtc(otp.ExpiresAtUtc, timeProvider.GetUtcNow())),
             Arg.Any<CancellationToken>());
         await twoFactorOtpService.Received(1).GenerateOtpAsync(
             appUserId,

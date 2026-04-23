@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Formatting;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -76,7 +77,7 @@ public sealed class UserCreatedHandler(
                         ["FirstName"] = stakeholder.FirstName,
                         ["LastName"] = stakeholder.LastName,
                         ["OtpCode"] = otpCode,
-                        ["OtpExpiresAtUtc"] = NotificationDateTimeFormatter.Format(expiresAtUtc, now),
+                        ["OtpExpiresAtUtc"] = DateTimeFormatter.FormatHumanReadableUtc(expiresAtUtc, now),
                         ["VerifyUrl"] = string.Empty,
                         ["Product"] = "BackendProjectTemplate"
                     }))

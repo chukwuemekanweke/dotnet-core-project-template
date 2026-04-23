@@ -4,6 +4,7 @@ using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Formatting;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
@@ -25,7 +26,8 @@ public sealed class SessionsController(
     RefreshSessionHandler refreshSessionHandler,
     IValidator<SignInRequest> validator,
     IValidator<GoogleSignInRequest> googleSignInValidator,
-    IValidator<RefreshSessionRequest> refreshSessionValidator) : ControllerBase
+    IValidator<RefreshSessionRequest> refreshSessionValidator,
+    TimeProvider timeProvider) : ControllerBase
 {
     [HttpPost]
     [EnableRateLimiting(RateLimitingPolicyNames.SignInPolicy)]
@@ -68,7 +70,7 @@ public sealed class SessionsController(
                 statusCode: StatusCodes.Status423Locked,
                 title: "Account locked",
                 detail: result.LockedUntilUtc.HasValue
-                    ? $"The account is locked until {result.LockedUntilUtc.Value:O}."
+                    ? $"The account is locked until {DateTimeFormatter.FormatHumanReadableUtc(result.LockedUntilUtc.Value, timeProvider.GetUtcNow())}."
                     : "The account is currently locked."),
             _ => Problem(
                 statusCode: StatusCodes.Status401Unauthorized,
@@ -125,7 +127,7 @@ public sealed class SessionsController(
                 statusCode: StatusCodes.Status423Locked,
                 title: "Account locked",
                 detail: result.LockedUntilUtc.HasValue
-                    ? $"The account is locked until {result.LockedUntilUtc.Value:O}."
+                    ? $"The account is locked until {DateTimeFormatter.FormatHumanReadableUtc(result.LockedUntilUtc.Value, timeProvider.GetUtcNow())}."
                     : "The account is currently locked."),
             _ => Problem(
                 statusCode: StatusCodes.Status401Unauthorized,
@@ -151,7 +153,7 @@ public sealed class SessionsController(
             return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
 
-var result = await refreshSessionHandler.HandleAsync(
+        var result = await refreshSessionHandler.HandleAsync(
             new RefreshSessionCommand(
                 request.RefreshToken,
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
@@ -174,7 +176,7 @@ var result = await refreshSessionHandler.HandleAsync(
                 statusCode: StatusCodes.Status423Locked,
                 title: "Account locked",
                 detail: result.LockedUntilUtc.HasValue
-                    ? $"The account is locked until {result.LockedUntilUtc.Value:O}."
+                    ? $"The account is locked until {DateTimeFormatter.FormatHumanReadableUtc(result.LockedUntilUtc.Value, timeProvider.GetUtcNow())}."
                     : "The account is currently locked."),
             _ => Problem(
                 statusCode: StatusCodes.Status401Unauthorized,
