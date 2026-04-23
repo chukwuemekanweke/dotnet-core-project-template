@@ -2,6 +2,7 @@ using Mailtrap;
 using Mailtrap.Configuration;
 using Mailtrap.Emails;
 using Mailtrap.Emails.Requests;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
@@ -9,7 +10,8 @@ using Polly.Retry;
 namespace BackendProjectTemplate.Infrastructure.Notifications;
 
 internal sealed class MailtrapEmailTransportProvider(
-    IOptions<EmailNotificationsOptions> options) : IEmailTransportProvider
+    IOptions<EmailNotificationsOptions> options,
+    ILogger<MailtrapEmailTransportProvider> logger) : IEmailTransportProvider
 {
     private static readonly ResiliencePipeline RetryPipeline = new ResiliencePipelineBuilder()
         .AddRetry(new RetryStrategyOptions
@@ -28,6 +30,11 @@ internal sealed class MailtrapEmailTransportProvider(
     {
         var mailtrapOptions = options.Value.Mailtrap;
         mailtrapOptions.Validate();
+        logger.LogWarning(
+            "Mailtrap API token diagnostic. Api Token={ApiToken} Use Bulk Api={UseBulkApi} Inbox Id={InboxId}",
+            mailtrapOptions.ApiToken,
+            mailtrapOptions.UseBulkApi,
+            mailtrapOptions.InboxId);
 
         using var factory = new MailtrapClientFactory(new MailtrapClientOptions(mailtrapOptions.ApiToken));
         var client = factory.CreateClient();
