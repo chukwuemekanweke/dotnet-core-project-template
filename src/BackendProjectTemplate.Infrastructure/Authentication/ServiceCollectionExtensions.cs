@@ -4,6 +4,7 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,10 @@ public static class ServiceCollectionExtensions
             .Get<AuthenticationLockoutOptions>() ?? new AuthenticationLockoutOptions();
 
         lockoutOptions.Validate();
+
+        services
+            .AddDataProtection()
+            .SetApplicationName("BackendProjectTemplate");
 
         services
             .AddIdentityCore<AppUser>(options =>

@@ -185,6 +185,18 @@ services:
       timeout: 5s
       retries: 12
 
+  rabbitscout:
+    image: ghcr.io/ralve-org/rabbitscout:latest
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 15672
+      RABBITMQ_PROTOCOL: http
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "3001:3000"
+
   prometheus:
     image: prom/prometheus:v3.4.1
     command:
