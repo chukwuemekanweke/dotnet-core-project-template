@@ -400,8 +400,13 @@ MERGE [stakeholders].[StakeholderTypes] AS [Target]
 USING
 (
     VALUES
-    (CAST('65018401-f34e-422a-ad65-ed4b4a5ed266' AS uniqueidentifier), N'Customer', N'customer')
-) AS [Source] ([TenantId], [Name], [Key])
+    (
+        CAST('65018401-f34e-422a-ad65-ed4b4a5ed266' AS uniqueidentifier),
+        CAST('1203d9d1-2a6b-48ef-9cc1-e561a23aff72' AS uniqueidentifier),
+        N'Customer',
+        N'customer'
+    )
+) AS [Source] ([Id], [TenantId], [Name], [Key])
 ON [Target].[TenantId] = [Source].[TenantId] AND [Target].[Key] = [Source].[Key]
 WHEN MATCHED AND
 (
@@ -422,7 +427,7 @@ THEN INSERT
 )
 VALUES
 (
-    [Source].[TenantId],
+    [Source].[Id],
     [Source].[TenantId],
     [Source].[Name],
     [Source].[Key],
