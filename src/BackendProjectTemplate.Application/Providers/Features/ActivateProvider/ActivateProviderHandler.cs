@@ -1,6 +1,6 @@
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
+using BackendProjectTemplate.Domain.Providers.Entities;
 
 namespace BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 
@@ -24,20 +24,25 @@ public sealed class ActivateProviderHandler(
                 $"No provider with key '{command.ProviderKey}' was found for type '{command.ProviderType}'.");
         }
 
-        var utcNow = timeProvider.GetUtcNow();
-        foreach (var provider in providers)
+        var activeProviders = providers.Where(provider => provider.Id != selectedProvider.Id && provider.IsActive).ToList();
+        foreach (var provider in activeProviders)
         {
-            var shouldBeActive = provider.Id == selectedProvider.Id;
-            if (provider.IsActive == shouldBeActive)
-            {
-                continue;
-            }
-
-            provider.SetActive(shouldBeActive, utcNow);
+            provider.SetActive(false);
             providerRepository.Update(provider);
         }
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (activeProviders.Count > 0)
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        if (!selectedProvider.IsActive)
+        {
+            selectedProvider.SetActive(true);
+            providerRepository.Update(selectedProvider);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        
         return new ActivateProviderResult(ActivateProviderStatus.Success);
     }
 }

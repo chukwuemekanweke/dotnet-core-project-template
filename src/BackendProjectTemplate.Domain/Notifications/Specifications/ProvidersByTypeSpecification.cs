@@ -1,5 +1,5 @@
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Domain.Providers.Entities;
 
 namespace BackendProjectTemplate.Domain.Notifications.Specifications;
 

@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Domain.Providers.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -31,7 +31,7 @@ public sealed class ProviderConfiguration : IEntityTypeConfiguration<Provider>
             .HasFilter("[IsDeleted] = 0");
 
         builder.HasIndex(provider => new { provider.ProviderType, provider.IsActive })
-            .HasFilter("[ProviderType] IS NOT NULL AND [IsActive] = 1 AND [IsDeleted] = 0")
+            .HasFilter("[IsActive] = 1 AND [IsDeleted] = 0")
             .IsUnique();
     }
 }

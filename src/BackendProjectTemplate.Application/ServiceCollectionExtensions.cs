@@ -9,6 +9,12 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
+using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
+using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
+using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
+using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
+using BackendProjectTemplate.Application.Payments.Features.ProcessStripeWebhook;
+using BackendProjectTemplate.Application.Payments.Features.ReconcilePayments;
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
 using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
@@ -33,7 +39,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UploadAvatarHandler>();
         services.AddScoped<UpdateProfileHandler>();
         services.AddScoped<ActivateProviderHandler>();
+        services.AddScoped<ActivatePaymentProviderHandler>();
         services.AddScoped<GetCountriesHandler>();
+        services.AddScoped<InitiatePaymentHandler>();
+        services.AddScoped<ProcessSafeHavenWebhookHandler>();
+        services.AddScoped<ProcessCredoWebhookHandler>();
+        services.AddScoped<ProcessStripeWebhookHandler>();
+        services.AddScoped<PaymentReconciliationService>();
 
         return services;
     }

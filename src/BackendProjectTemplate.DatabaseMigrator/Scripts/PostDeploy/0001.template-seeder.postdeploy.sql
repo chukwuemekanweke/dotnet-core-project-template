@@ -327,7 +327,10 @@ USING
 VALUES
     (1, N'Mailtrap', N'mailtrap', 1),
     (2, N'Noop (Stub)', N'noop', 1),
-    (2, N'Cloudflare R2', N'cloudflare-r2', 0)
+    (2, N'Cloudflare R2', N'cloudflare-r2', 0),
+    (3, N'SafeHaven', N'safehaven', 1),
+    (3, N'Credo', N'credo', 1),
+    (3, N'Stripe', N'stripe', 1)
 ) AS [Source] ([ProviderType], [ProviderName], [ProviderKey], [IsActive])
 ON [Target].[ProviderType] = [Source].[ProviderType] AND [Target].[ProviderKey] = [Source].[ProviderKey]
 WHEN MATCHED AND
@@ -356,6 +359,92 @@ VALUES
     [Source].[ProviderType],
     [Source].[ProviderName],
     [Source].[ProviderKey],
+    [Source].[IsActive],
+    @UtcNow,
+    @UtcNow
+);
+
+MERGE [payments].[Currencies] AS [Target]
+USING
+(
+VALUES
+    (N'NGN', N'Naira', 1),
+    (N'USD', N'US Dollar', 1)
+) AS [Source] ([CurrencyCode], [CurrencyName], [IsActive])
+ON [Target].[CurrencyCode] = [Source].[CurrencyCode]
+WHEN MATCHED AND
+(
+    [Target].[CurrencyName] <> [Source].[CurrencyName]
+    OR [Target].[IsActive] <> [Source].[IsActive]
+)
+THEN UPDATE SET
+    [CurrencyName] = [Source].[CurrencyName],
+    [IsActive] = [Source].[IsActive],
+    [UpdatedAtUtc] = @UtcNow
+WHEN NOT MATCHED BY TARGET
+THEN INSERT
+(
+    [Id],
+    [CurrencyCode],
+    [CurrencyName],
+    [IsActive],
+    [CreatedAtUtc],
+    [UpdatedAtUtc]
+)
+VALUES
+(
+    NEWID(),
+    [Source].[CurrencyCode],
+    [Source].[CurrencyName],
+    [Source].[IsActive],
+    @UtcNow,
+    @UtcNow
+);
+
+MERGE [payments].[CountryCurrencies] AS [Target]
+USING
+(
+    SELECT
+        NEWID() AS [Id],
+        [Countries].[Id] AS [CountryId],
+        [Currencies].[Id] AS [CurrencyId],
+        CAST(1 AS bit) AS [IsDefault],
+        CAST(1 AS bit) AS [IsActive]
+    FROM [reference_data].[Countries] AS [Countries]
+    INNER JOIN [payments].[Currencies] AS [Currencies]
+        ON [Currencies].[CurrencyCode] =
+            CASE
+                WHEN [Countries].[ShortCode] = N'NG' THEN N'NGN'
+                ELSE N'USD'
+            END
+) AS [Source]
+ON [Target].[CountryId] = [Source].[CountryId] AND [Target].[CurrencyId] = [Source].[CurrencyId]
+WHEN MATCHED AND
+(
+    [Target].[IsDefault] <> [Source].[IsDefault]
+    OR [Target].[IsActive] <> [Source].[IsActive]
+)
+THEN UPDATE SET
+    [IsDefault] = [Source].[IsDefault],
+    [IsActive] = [Source].[IsActive],
+    [UpdatedAtUtc] = @UtcNow
+WHEN NOT MATCHED BY TARGET
+THEN INSERT
+(
+    [Id],
+    [CountryId],
+    [CurrencyId],
+    [IsDefault],
+    [IsActive],
+    [CreatedAtUtc],
+    [UpdatedAtUtc]
+)
+VALUES
+(
+    [Source].[Id],
+    [Source].[CountryId],
+    [Source].[CurrencyId],
+    [Source].[IsDefault],
     [Source].[IsActive],
     @UtcNow,
     @UtcNow

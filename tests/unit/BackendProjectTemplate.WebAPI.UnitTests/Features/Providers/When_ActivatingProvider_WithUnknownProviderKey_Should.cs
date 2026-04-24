@@ -1,6 +1,6 @@
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.WebAPI.Features.Providers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +23,9 @@ public sealed class When_ActivatingProvider_WithUnknownProviderKey_Should
                 Provider.Create(ProviderType.Email, "Primary", "primary", true, DateTimeOffset.UtcNow)
             ]);
 
-        var sut = new ProvidersController(new ActivateProviderHandler(repository, unitOfWork, TimeProvider.System));
+        var sut = new ProvidersController(
+            new ActivateProviderHandler(repository, unitOfWork, TimeProvider.System),
+            new ActivateProviderValidator());
 
         var result = await sut.ActivateProvider(request, CancellationToken.None);
 

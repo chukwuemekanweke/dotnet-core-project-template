@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
+
+public sealed record ProcessSafeHavenWebhookCommand(string RawPayload);

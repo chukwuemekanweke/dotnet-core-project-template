@@ -1,7 +1,7 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +12,9 @@ namespace BackendProjectTemplate.WebAPI.Features.Providers;
 [ApiVersion("1.0")]
 [Authorize(Policy = AuthorizationPolicyNames.RequireActiveSession)]
 [Route(EndpointUrl.Providers.Route)]
-public sealed class ProvidersController(ActivateProviderHandler activateProviderHandler) : ControllerBase
+public sealed class ProvidersController(
+    ActivateProviderHandler activateProviderHandler,
+    ActivateProviderValidator validator) : ControllerBase
 {
     [HttpPut("active")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -23,10 +25,13 @@ public sealed class ProvidersController(ActivateProviderHandler activateProvider
         [FromBody] ActivateProviderRequest request,
         CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse<ProviderType>(request.ProviderType, true, out var providerType))
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
         {
-            return BadRequest("ProviderType must be one of: Email, FileStorage.");
+            return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
+
+        _ = Enum.TryParse(request.ProviderType, true, out Domain.Providers.Entities.ProviderType providerType);
 
         var result = await activateProviderHandler.HandleAsync(
             new ActivateProviderCommand(providerType, request.ProviderKey),

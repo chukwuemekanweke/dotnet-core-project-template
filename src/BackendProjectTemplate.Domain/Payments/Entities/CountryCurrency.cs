@@ -1,0 +1,38 @@
+using BackendProjectTemplate.Domain.Common.Entities;
+
+namespace BackendProjectTemplate.Domain.Payments.Entities;
+
+public sealed class CountryCurrency : Entity, IAggregateRoot
+{
+    private CountryCurrency()
+    {
+    }
+
+    private CountryCurrency(Guid countryId, Guid currencyId, bool isDefault, bool isActive)
+    {
+        CountryId = countryId;
+        CurrencyId = currencyId;
+        IsDefault = isDefault;
+        IsActive = isActive;
+    }
+
+    public Guid CountryId { get; private set; }
+    public Guid CurrencyId { get; private set; }
+    public bool IsDefault { get; private set; }
+    public bool IsActive { get; private set; }
+
+    public static CountryCurrency Create(
+        Guid countryId,
+        Guid currencyId,
+        bool isDefault,
+        bool isActive,
+        DateTimeOffset utcNow) =>
+        new(countryId, currencyId, isDefault, isActive);
+
+    public void SetState(bool isDefault, bool isActive, DateTimeOffset utcNow)
+    {
+        IsDefault = isDefault;
+        IsActive = isActive;
+        Touch(utcNow);
+    }
+}

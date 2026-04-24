@@ -1,0 +1,5 @@
+using BackendProjectTemplate.Contracts.Payments;
+
+namespace BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
+
+public sealed record ProcessPaymentWebhookResult(WebhookProcessingStatus Status);

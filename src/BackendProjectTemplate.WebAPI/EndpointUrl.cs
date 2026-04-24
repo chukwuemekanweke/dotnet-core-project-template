@@ -60,6 +60,40 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
     }
 
+    public static class Payments
+    {
+        public const string Route = $"api/{Versions.V1Route}/payments";
+        public static readonly string V1 = ToV1(Route);
+        public static readonly string InitiateV1 = $"{V1}/initiate";
+    }
+
+    public static class PaymentProviders
+    {
+        public const string Route = $"api/{Versions.V1Route}/payment-providers";
+        public static readonly string V1 = ToV1(Route);
+    }
+
+    public static class PaymentWebhooks
+    {
+        public static class SafeHaven
+        {
+            public const string Route = $"api/{Versions.V1Route}/payments/webhooks/safehaven";
+            public static readonly string V1 = ToV1(Route);
+        }
+
+        public static class Credo
+        {
+            public const string Route = $"api/{Versions.V1Route}/payments/webhooks/credo";
+            public static readonly string V1 = ToV1(Route);
+        }
+
+        public static class Stripe
+        {
+            public const string Route = $"api/{Versions.V1Route}/payments/webhooks/stripe";
+            public static readonly string V1 = ToV1(Route);
+        }
+    }
+
     private static string ToV1(string routeTemplate) =>
         routeTemplate.Replace(Versions.V1Route, Versions.V1, StringComparison.Ordinal);
 }
