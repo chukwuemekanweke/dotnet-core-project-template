@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.Domain.Payments.Specifications;
@@ -51,7 +52,7 @@ public sealed class InitiatePaymentHandler(
                 cancellationToken)
             ?? throw new InvalidOperationException($"Payment provider '{command.PaymentProviderId}' is not active.");
 
-        var paymentProviderConfiguration = await paymentProviderConfigurationRepository.FirstOrDefaultAsync(
+        _ = await paymentProviderConfigurationRepository.FirstOrDefaultAsync(
                 new EnabledPaymentProviderConfigurationSpecification(command.PaymentProviderId, command.CurrencyId, command.PaymentIntent),
                 cancellationToken)
             ?? throw new InvalidOperationException(
@@ -93,11 +94,10 @@ public sealed class InitiatePaymentHandler(
 
         paymentTransaction.MarkInitiated(
             initiationResult.ProviderReference,
-            initiationResult.PaymentStatus,
-            paymentProviderConfiguration.PaymentMethodType,
             initiationResult.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
             initiationResult.ExpiresAtUtc,
-            "payment_initiated");
+            KnownPaymentTransactionChangeReasons.PaymentInitiated);
+        paymentTransaction.SetPaymentMethodType(initiationResult.PaymentMethodType);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

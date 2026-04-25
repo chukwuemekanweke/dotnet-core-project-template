@@ -9,13 +9,15 @@ public sealed class PaymentProviderConfiguration : Entity, IAggregateRoot
     {
     }
 
-    private PaymentProviderConfiguration(
+    internal PaymentProviderConfiguration(
+        Guid id,
         Guid paymentProviderId,
         Guid currencyId,
         PaymentIntent paymentIntent,
         PaymentMethodType paymentMethodType,
         bool isEnabled)
     {
+        Id = id;
         PaymentProviderId = paymentProviderId;
         CurrencyId = currencyId;
         PaymentIntent = paymentIntent;
@@ -29,17 +31,9 @@ public sealed class PaymentProviderConfiguration : Entity, IAggregateRoot
     public PaymentMethodType PaymentMethodType { get; private set; }
     public bool IsEnabled { get; private set; }
 
-    public static PaymentProviderConfiguration Create(
-        Guid paymentProviderId,
-        Guid currencyId,
-        PaymentIntent paymentIntent,
-        PaymentMethodType paymentMethodType,
-        bool isEnabled,
-        DateTimeOffset utcNow) =>
-        new(paymentProviderId, currencyId, paymentIntent, paymentMethodType, isEnabled);
-
-    public void SetEnabled(bool isEnabled)
+    internal void Update(PaymentMethodType paymentMethodType, bool isEnabled)
     {
+        PaymentMethodType = paymentMethodType;
         IsEnabled = isEnabled;
     }
 }

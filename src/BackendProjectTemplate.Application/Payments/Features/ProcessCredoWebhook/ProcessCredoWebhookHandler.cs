@@ -33,9 +33,11 @@ public sealed class ProcessCredoWebhookHandler(
                 string.Equals(service.ProviderKey, paymentProvider.ProviderKey, StringComparison.OrdinalIgnoreCase))
             ?? throw new PaymentProviderResolutionException(
                 $"No payment provider service is registered for '{paymentProvider.ProviderKey}'.");
+
         var validationResult = await paymentProviderService.ValidateWebhookAsync(
             new PaymentProviderWebhookValidationRequest(command.RawPayload),
             cancellationToken);
+
         var parseResult = await paymentProviderService.ParseWebhookAsync(
             new PaymentProviderWebhookParseRequest(command.RawPayload),
             cancellationToken);
@@ -47,7 +49,7 @@ public sealed class ProcessCredoWebhookHandler(
                 cancellationToken);
             if (existingWebhook is not null)
             {
-                return new ProcessPaymentWebhookResult(WebhookProcessingStatus.Duplicate);
+                return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Duplicate);
             }
         }
 
@@ -68,7 +70,7 @@ public sealed class ProcessCredoWebhookHandler(
         {
             inbox.MarkIgnored("invalid_signature", now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            return new ProcessPaymentWebhookResult(WebhookProcessingStatus.Ignored);
+            return new ProcessPaymentWebhookResult(WebhookReceiptStatus.InvalidSignature);
         }
 
         var paymentTransaction = await ResolvePaymentTransactionAsync(parseResult, cancellationToken);
@@ -76,14 +78,12 @@ public sealed class ProcessCredoWebhookHandler(
         {
             inbox.MarkIgnored("transaction_not_found_or_unmapped_status", now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            return new ProcessPaymentWebhookResult(WebhookProcessingStatus.Ignored);
+            return new ProcessPaymentWebhookResult(WebhookReceiptStatus.UnidentifiedTransaction);
         }
 
-        var webhookStatus = await ApplyPaymentStatusAsync(paymentTransaction, parseResult, eventPublisher, now, cancellationToken);
-        MarkInbox(inbox, webhookStatus, parseResult.StatusChangeReason, now);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new ProcessPaymentWebhookResult(webhookStatus);
+        return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Persisted);
     }
 
     private async Task<PaymentTransaction?> ResolvePaymentTransactionAsync(
@@ -109,77 +109,5 @@ public sealed class ProcessCredoWebhookHandler(
         }
 
         return null;
-    }
-
-    private static void MarkInbox(
-        PaymentWebhookInbox inbox,
-        WebhookProcessingStatus webhookStatus,
-        string? statusChangeReason,
-        DateTimeOffset utcNow)
-    {
-        switch (webhookStatus)
-        {
-            case WebhookProcessingStatus.Processed:
-                inbox.MarkProcessed(statusChangeReason, utcNow);
-                break;
-            case WebhookProcessingStatus.Duplicate:
-                inbox.MarkDuplicate(statusChangeReason ?? "duplicate_webhook", utcNow);
-                break;
-            default:
-                inbox.MarkIgnored(statusChangeReason, utcNow);
-                break;
-        }
-    }
-
-    private static async Task<WebhookProcessingStatus> ApplyPaymentStatusAsync(
-        PaymentTransaction paymentTransaction,
-        PaymentProviderWebhookParseResult parseResult,
-        IEventPublisher eventPublisher,
-        DateTimeOffset utcNow,
-        CancellationToken cancellationToken)
-    {
-        if (paymentTransaction.PaymentStatus == parseResult.PaymentStatus)
-        {
-            return WebhookProcessingStatus.Duplicate;
-        }
-
-        if (paymentTransaction.PaymentStatus == PaymentStatus.PendingInitiation)
-        {
-            paymentTransaction.MarkInitiatedForReconciliation();
-        }
-
-        var metadata = parseResult.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
-        switch (parseResult.PaymentStatus)
-        {
-            case PaymentStatus.Succeeded:
-                paymentTransaction.MarkSucceeded(parseResult.ProviderReference, parseResult.StatusChangeReason, metadata, utcNow);
-                await eventPublisher.PublishAsync(
-                    new SuccessfulPaymentConfirmed
-                    {
-                        PaymentTransactionId = paymentTransaction.Id,
-                        MerchantReference = paymentTransaction.MerchantReference,
-                        PaymentIntent = paymentTransaction.PaymentIntent,
-                        PaymentProviderId = paymentTransaction.PaymentProviderId,
-                        Amount = paymentTransaction.Amount,
-                        CurrencyId = paymentTransaction.CurrencyId,
-                        StakeholderId = paymentTransaction.StakeholderId,
-                        TenantId = paymentTransaction.TenantId,
-                        FlowId = string.Empty,
-                        OccuredAt = utcNow
-                    },
-                    cancellationToken);
-                return WebhookProcessingStatus.Processed;
-            case PaymentStatus.Failed:
-                paymentTransaction.MarkFailed(parseResult.ProviderReference, parseResult.FailureReason, parseResult.StatusChangeReason, metadata, utcNow);
-                return WebhookProcessingStatus.Processed;
-            case PaymentStatus.Processing:
-                paymentTransaction.MarkProcessing(parseResult.ProviderReference, parseResult.StatusChangeReason, metadata);
-                return WebhookProcessingStatus.Processed;
-            case PaymentStatus.AwaitingCustomerAction:
-                paymentTransaction.MarkAwaitingCustomerAction(parseResult.ProviderReference, parseResult.StatusChangeReason, metadata);
-                return WebhookProcessingStatus.Processed;
-            default:
-                return WebhookProcessingStatus.Ignored;
-        }
     }
 }

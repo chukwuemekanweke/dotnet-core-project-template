@@ -1,8 +1,8 @@
 using BackendProjectTemplate.Contracts.Events;
-using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.Domain.Payments.Specifications;
@@ -54,21 +54,10 @@ public sealed class PaymentReconciliationService(
                     transaction.PaymentIntent),
                 cancellationToken);
 
-            if (transaction.PaymentStatus == verificationResult.PaymentStatus)
-            {
-                transaction.RecordStatusCheck(now);
-                continue;
-            }
-
-            if (transaction.PaymentStatus == PaymentStatus.PendingInitiation)
-            {
-                transaction.MarkInitiatedForReconciliation();
-            }
-
             var metadata = verificationResult.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
-            switch (verificationResult.PaymentStatus)
+            switch (verificationResult.VerificationStatus)
             {
-                case PaymentStatus.Succeeded:
+                case PaymentProviderVerificationStatus.Succeeded when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Succeeded:
                     transaction.MarkSucceeded(verificationResult.ProviderReference, verificationResult.StatusChangeReason, metadata, now);
                     await eventPublisher.PublishAsync(
                         new SuccessfulPaymentConfirmed
@@ -86,7 +75,7 @@ public sealed class PaymentReconciliationService(
                         },
                         cancellationToken);
                     break;
-                case PaymentStatus.Failed:
+                case PaymentProviderVerificationStatus.Failed when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Failed:
                     transaction.MarkFailed(
                         verificationResult.ProviderReference,
                         verificationResult.FailureReason,
@@ -94,11 +83,7 @@ public sealed class PaymentReconciliationService(
                         metadata,
                         now);
                     break;
-                case PaymentStatus.Processing:
-                    transaction.MarkProcessing(verificationResult.ProviderReference, verificationResult.StatusChangeReason, metadata);
-                    break;
-                case PaymentStatus.AwaitingCustomerAction:
-                    transaction.MarkAwaitingCustomerAction(verificationResult.ProviderReference, verificationResult.StatusChangeReason, metadata);
+                case PaymentProviderVerificationStatus.Processing:
                     break;
             }
 

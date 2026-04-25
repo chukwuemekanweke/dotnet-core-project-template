@@ -1,9 +1,7 @@
-using BackendProjectTemplate.Contracts.Payments;
-
 namespace BackendProjectTemplate.Domain.Payments.Services;
 
 public sealed record PaymentProviderVerificationResult(
-    PaymentStatus PaymentStatus,
+    PaymentProviderVerificationStatus VerificationStatus,
     string? ProviderReference,
     string? FailureReason,
     string? StatusChangeReason,

@@ -32,7 +32,6 @@ internal sealed class SafeHavenPaymentProviderService(
 
         return new PaymentProviderInitiationResult(
             providerReference,
-            PaymentStatus.AwaitingCustomerAction,
             PaymentMethodType.BankTransfer,
             now.AddMinutes(30),
             new Dictionary<string, string>
@@ -85,8 +84,8 @@ internal sealed class SafeHavenPaymentProviderService(
             new PaymentProviderWebhookParseResult(
                 GetOptionalString(data, "merchantReference"),
                 GetOptionalString(data, "providerReference"),
-                GetOptionalString(root, "eventId"),
-                type,
+                $"{GetOptionalString(data, "merchantReference")}:{type}",
+                type ?? "safehaven.webhook",
                 PaymentStatus.Succeeded,
                 null,
                 "safehaven_transfer_successful",
@@ -100,28 +99,28 @@ internal sealed class SafeHavenPaymentProviderService(
         if (request.MerchantReference.Contains("success", StringComparison.OrdinalIgnoreCase))
         {
             return new PaymentProviderVerificationResult(
-                PaymentStatus.Succeeded,
+                PaymentProviderVerificationStatus.Succeeded,
                 request.ProviderReference ?? $"sh_{Guid.CreateVersion7():N}",
                 null,
-                "reconciliation_confirmed_success",
+                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess,
                 new Dictionary<string, string> { ["provider"] = providerKey });
         }
 
         if (request.MerchantReference.Contains("fail", StringComparison.OrdinalIgnoreCase))
         {
             return new PaymentProviderVerificationResult(
-                PaymentStatus.Failed,
+                PaymentProviderVerificationStatus.Failed,
                 request.ProviderReference,
                 "provider_reported_failure",
-                "reconciliation_confirmed_failure",
+                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure,
                 new Dictionary<string, string> { ["provider"] = providerKey });
         }
 
         return new PaymentProviderVerificationResult(
-            PaymentStatus.Processing,
+            PaymentProviderVerificationStatus.Processing,
             request.ProviderReference,
             null,
-            "reconciliation_still_processing",
+            KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
             new Dictionary<string, string> { ["provider"] = providerKey });
     }
 

@@ -31,7 +31,6 @@ internal sealed class CredoPaymentProviderService(
 
         return new PaymentProviderInitiationResult(
             providerReference,
-            PaymentStatus.AwaitingCustomerAction,
             PaymentMethodType.PaymentLink,
             now.AddMinutes(30),
             new Dictionary<string, string>
@@ -61,18 +60,35 @@ internal sealed class CredoPaymentProviderService(
     {
         using var document = JsonDocument.Parse(request.RawPayload);
         var root = document.RootElement;
-        var status = root.TryGetProperty("status", out var statusElement)
-            ? statusElement.GetString()
+        var eventName = GetOptionalString(root, "event");
+        var data = root.TryGetProperty("data", out var dataElement) ? dataElement : default;
+        var merchantReference = GetOptionalString(data, "businessRef");
+        var providerReference = GetOptionalString(data, "transRef");
+        PaymentStatus? paymentStatus = eventName switch
+        {
+            "transaction.successful" => PaymentStatus.Succeeded,
+            "transaction.failed" => PaymentStatus.Failed,
+            "transaction.transaction.transfer.reverse" => PaymentStatus.Failed,
+            _ => null
+        };
+        var failureReason = eventName switch
+        {
+            "transaction.failed" => "provider_reported_failure",
+            "transaction.transaction.transfer.reverse" => "provider_transfer_reversed",
+            _ => null
+        };
+        var webhookEventId = !string.IsNullOrWhiteSpace(merchantReference) && !string.IsNullOrWhiteSpace(eventName)
+            ? $"{merchantReference}:{eventName}"
             : null;
 
         return Task.FromResult(
             new PaymentProviderWebhookParseResult(
-                GetOptionalString(root, "merchantReference"),
-                GetOptionalString(root, "providerReference"),
-                GetOptionalString(root, "eventId"),
-                GetOptionalString(root, "eventName") ?? "payment.webhook",
-                MapStatus(status),
-                status is not null && status.Equals("failed", StringComparison.OrdinalIgnoreCase) ? "provider_reported_failure" : null,
+                merchantReference,
+                providerReference,
+                webhookEventId,
+                eventName ?? "payment.webhook",
+                paymentStatus,
+                failureReason,
                 "credo_webhook_received",
                 new Dictionary<string, string>()));
     }
@@ -84,40 +100,30 @@ internal sealed class CredoPaymentProviderService(
         if (request.MerchantReference.Contains("success", StringComparison.OrdinalIgnoreCase))
         {
             return new PaymentProviderVerificationResult(
-                PaymentStatus.Succeeded,
+                PaymentProviderVerificationStatus.Succeeded,
                 request.ProviderReference ?? $"cr_{Guid.CreateVersion7():N}",
                 null,
-                "reconciliation_confirmed_success",
+                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess,
                 new Dictionary<string, string> { ["provider"] = providerKey });
         }
 
         if (request.MerchantReference.Contains("fail", StringComparison.OrdinalIgnoreCase))
         {
             return new PaymentProviderVerificationResult(
-                PaymentStatus.Failed,
+                PaymentProviderVerificationStatus.Failed,
                 request.ProviderReference,
                 "provider_reported_failure",
-                "reconciliation_confirmed_failure",
+                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure,
                 new Dictionary<string, string> { ["provider"] = providerKey });
         }
 
         return new PaymentProviderVerificationResult(
-            PaymentStatus.Processing,
+            PaymentProviderVerificationStatus.Processing,
             request.ProviderReference,
             null,
-            "reconciliation_still_processing",
+            KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
             new Dictionary<string, string> { ["provider"] = providerKey });
     }
-
-    private static PaymentStatus? MapStatus(string? status) =>
-        status?.ToLowerInvariant() switch
-        {
-            "succeeded" or "success" => PaymentStatus.Succeeded,
-            "failed" => PaymentStatus.Failed,
-            "processing" => PaymentStatus.Processing,
-            "pending" or "awaiting_customer_action" => PaymentStatus.AwaitingCustomerAction,
-            _ => null
-        };
 
     private static string? GetOptionalString(JsonElement root, string propertyName) =>
         root.TryGetProperty(propertyName, out var property) ? property.GetString() : null;

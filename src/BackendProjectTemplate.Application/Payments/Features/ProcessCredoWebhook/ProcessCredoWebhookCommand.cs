@@ -1,3 +1,28 @@
 namespace BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 
-public sealed record ProcessCredoWebhookCommand(string RawPayload);
+public sealed record ProcessCredoWebhookCommand(CredoWebhook<object> Webhook, string RawPayload);
+
+public sealed record CredoWebhook<TData>(string Event, TData Data);
+
+public sealed record CredoWebhookData(
+    string BusinessCode,
+    string TransRef,
+    string BusinessRef,
+    decimal DebitedAmount,
+    decimal TransAmount,
+    decimal TransFeeAmount,
+    decimal SettlementAmount,
+    string CustomerId,
+    string TransactionDate,
+    int ChannelId,
+    string CurrencyCode,
+    int Status,
+    string PaymentMethodType,
+    string PaymentMethod,
+    CredoWebhookCustomer Customer);
+
+public sealed record CredoWebhookCustomer(
+    string CustomerEmail,
+    string FirstName,
+    string LastName,
+    string PhoneNumber);

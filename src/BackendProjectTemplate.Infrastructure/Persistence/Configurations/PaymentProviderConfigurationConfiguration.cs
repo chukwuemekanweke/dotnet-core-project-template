@@ -12,6 +12,9 @@ public sealed class PaymentProviderConfigurationConfiguration : IEntityTypeConfi
 
         builder.HasKey(configuration => configuration.Id);
 
+        builder.Property(configuration => configuration.PaymentProviderId)
+            .IsRequired();
+
         builder.Property(configuration => configuration.PaymentIntent)
             .IsRequired();
 
@@ -20,6 +23,10 @@ public sealed class PaymentProviderConfigurationConfiguration : IEntityTypeConfi
 
         builder.Property(configuration => configuration.IsEnabled)
             .IsRequired();
+
+        builder.HasOne<PaymentProvider>()
+            .WithMany(provider => provider.Configurations)
+            .HasForeignKey(configuration => configuration.PaymentProviderId);
 
         builder.HasIndex(configuration => new
             {

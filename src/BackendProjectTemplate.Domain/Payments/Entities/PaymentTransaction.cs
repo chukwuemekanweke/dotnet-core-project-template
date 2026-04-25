@@ -83,21 +83,23 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
 
     public void MarkInitiated(
         string providerReference,
-        PaymentStatus paymentStatus,
-        PaymentMethodType paymentMethodType,
         Dictionary<string, string>? providerPayloadMetadata,
         DateTimeOffset? expiresAtUtc,
         string? statusChangeReason)
     {
         EnsureCanTransitionFrom(PaymentStatus.PendingInitiation);
         ProviderReference = providerReference.Trim();
-        PaymentStatus = paymentStatus;
-        PaymentMethodType = paymentMethodType;
+        PaymentStatus = PaymentStatus.Initiated;
         ProviderPayloadMetadata = providerPayloadMetadata ?? [];
         ExpiresAtUtc = expiresAtUtc;
         StatusChangeReason = statusChangeReason;
         FailureReason = null;
         FailedAtUtc = null;
+    }
+
+    public void SetPaymentMethodType(PaymentMethodType paymentMethodType)
+    {
+        PaymentMethodType = paymentMethodType;
     }
 
     public void MarkSucceeded(
@@ -106,7 +108,7 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
         Dictionary<string, string>? providerPayloadMetadata,
         DateTimeOffset completedAtUtc)
     {
-        EnsureCanTransitionFrom(PaymentStatus.Initiated, PaymentStatus.AwaitingCustomerAction, PaymentStatus.Processing);
+        EnsureCanTransitionFrom(PaymentStatus.Initiated);
         ProviderReference = string.IsNullOrWhiteSpace(providerReference) ? ProviderReference : providerReference.Trim();
         PaymentStatus = PaymentStatus.Succeeded;
         StatusChangeReason = statusChangeReason;
@@ -123,43 +125,13 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
         Dictionary<string, string>? providerPayloadMetadata,
         DateTimeOffset failedAtUtc)
     {
-        EnsureCanTransitionFrom(PaymentStatus.Initiated, PaymentStatus.AwaitingCustomerAction, PaymentStatus.Processing);
+        EnsureCanTransitionFrom(PaymentStatus.Initiated);
         ProviderReference = string.IsNullOrWhiteSpace(providerReference) ? ProviderReference : providerReference.Trim();
         PaymentStatus = PaymentStatus.Failed;
         FailureReason = failureReason;
         StatusChangeReason = statusChangeReason;
         ProviderPayloadMetadata = providerPayloadMetadata ?? ProviderPayloadMetadata;
         FailedAtUtc = failedAtUtc;
-    }
-
-    public void MarkProcessing(
-        string? providerReference,
-        string? statusChangeReason,
-        Dictionary<string, string>? providerPayloadMetadata)
-    {
-        EnsureCanTransitionFrom(PaymentStatus.Initiated, PaymentStatus.AwaitingCustomerAction);
-        ProviderReference = string.IsNullOrWhiteSpace(providerReference) ? ProviderReference : providerReference.Trim();
-        PaymentStatus = PaymentStatus.Processing;
-        StatusChangeReason = statusChangeReason;
-        ProviderPayloadMetadata = providerPayloadMetadata ?? ProviderPayloadMetadata;
-    }
-
-    public void MarkAwaitingCustomerAction(
-        string? providerReference,
-        string? statusChangeReason,
-        Dictionary<string, string>? providerPayloadMetadata)
-    {
-        EnsureCanTransitionFrom(PaymentStatus.Initiated);
-        ProviderReference = string.IsNullOrWhiteSpace(providerReference) ? ProviderReference : providerReference.Trim();
-        PaymentStatus = PaymentStatus.AwaitingCustomerAction;
-        StatusChangeReason = statusChangeReason;
-        ProviderPayloadMetadata = providerPayloadMetadata ?? ProviderPayloadMetadata;
-    }
-
-    public void MarkInitiatedForReconciliation()
-    {
-        EnsureCanTransitionFrom(PaymentStatus.PendingInitiation);
-        PaymentStatus = PaymentStatus.Initiated;
     }
 
     public void RecordStatusCheck(DateTimeOffset utcNow) => LastStatusCheckAtUtc = utcNow;

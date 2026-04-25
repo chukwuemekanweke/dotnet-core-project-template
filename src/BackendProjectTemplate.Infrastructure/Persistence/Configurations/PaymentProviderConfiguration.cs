@@ -23,6 +23,10 @@ public sealed class PaymentProviderEntityConfiguration : IEntityTypeConfiguratio
         builder.Property(provider => provider.IsActive)
             .IsRequired();
 
+        builder.HasMany(provider => provider.Configurations)
+            .WithOne()
+            .HasForeignKey(configuration => configuration.PaymentProviderId);
+
         builder.HasIndex(provider => provider.ProviderKey)
             .IsUnique()
             .HasFilter("[IsDeleted] = 0");

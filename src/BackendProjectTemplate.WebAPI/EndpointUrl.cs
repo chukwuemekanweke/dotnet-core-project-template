@@ -86,12 +86,6 @@ public static class EndpointUrl
             public const string Route = $"api/{Versions.V1Route}/payments/webhooks/credo";
             public static readonly string V1 = ToV1(Route);
         }
-
-        public static class Stripe
-        {
-            public const string Route = $"api/{Versions.V1Route}/payments/webhooks/stripe";
-            public static readonly string V1 = ToV1(Route);
-        }
     }
 
     private static string ToV1(string routeTemplate) =>

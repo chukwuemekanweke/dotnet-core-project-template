@@ -327,10 +327,7 @@ USING
 VALUES
     (1, N'Mailtrap', N'mailtrap', 1),
     (2, N'Noop (Stub)', N'noop', 1),
-    (2, N'Cloudflare R2', N'cloudflare-r2', 0),
-    (3, N'SafeHaven', N'safehaven', 1),
-    (3, N'Credo', N'credo', 1),
-    (3, N'Stripe', N'stripe', 1)
+    (2, N'Cloudflare R2', N'cloudflare-r2', 0)
 ) AS [Source] ([ProviderType], [ProviderName], [ProviderKey], [IsActive])
 ON [Target].[ProviderType] = [Source].[ProviderType] AND [Target].[ProviderKey] = [Source].[ProviderKey]
 WHEN MATCHED AND
@@ -357,6 +354,43 @@ VALUES
 (
     NEWID(),
     [Source].[ProviderType],
+    [Source].[ProviderName],
+    [Source].[ProviderKey],
+    [Source].[IsActive],
+    @UtcNow,
+    @UtcNow
+);
+
+MERGE [payments].[PaymentProviders] AS [Target]
+USING
+(
+VALUES
+    (N'SafeHaven', N'safehaven', 1),
+    (N'Credo', N'credo', 1)
+) AS [Source] ([ProviderName], [ProviderKey], [IsActive])
+ON [Target].[ProviderKey] = [Source].[ProviderKey]
+WHEN MATCHED AND
+(
+    [Target].[ProviderName] <> [Source].[ProviderName]
+    OR [Target].[IsActive] <> [Source].[IsActive]
+)
+THEN UPDATE SET
+    [ProviderName] = [Source].[ProviderName],
+    [IsActive] = [Source].[IsActive],
+    [UpdatedAtUtc] = @UtcNow
+WHEN NOT MATCHED BY TARGET
+THEN INSERT
+(
+    [Id],
+    [ProviderName],
+    [ProviderKey],
+    [IsActive],
+    [CreatedAtUtc],
+    [UpdatedAtUtc]
+)
+VALUES
+(
+    NEWID(),
     [Source].[ProviderName],
     [Source].[ProviderKey],
     [Source].[IsActive],
@@ -446,6 +480,64 @@ VALUES
     [Source].[CurrencyId],
     [Source].[IsDefault],
     [Source].[IsActive],
+    @UtcNow,
+    @UtcNow
+);
+
+MERGE [payments].[PaymentProviderConfigurations] AS [Target]
+USING
+(
+    SELECT
+        [PaymentProviders].[Id] AS [PaymentProviderId],
+        [Currencies].[Id] AS [CurrencyId],
+        [Config].[PaymentIntent],
+        [Config].[PaymentMethodType],
+        [Config].[IsEnabled]
+    FROM
+    (
+        VALUES
+            (N'safehaven', N'NGN', 1, 2, CAST(1 AS bit)),
+            (N'safehaven', N'NGN', 2, 2, CAST(1 AS bit)),
+            (N'credo', N'NGN', 1, 1, CAST(1 AS bit)),
+            (N'credo', N'NGN', 2, 1, CAST(1 AS bit))
+    ) AS [Config] ([ProviderKey], [CurrencyCode], [PaymentIntent], [PaymentMethodType], [IsEnabled])
+    INNER JOIN [payments].[PaymentProviders] AS [PaymentProviders]
+        ON [PaymentProviders].[ProviderKey] = [Config].[ProviderKey]
+    INNER JOIN [payments].[Currencies] AS [Currencies]
+        ON [Currencies].[CurrencyCode] = [Config].[CurrencyCode]
+) AS [Source]
+ON [Target].[PaymentProviderId] = [Source].[PaymentProviderId]
+    AND [Target].[CurrencyId] = [Source].[CurrencyId]
+    AND [Target].[PaymentIntent] = [Source].[PaymentIntent]
+WHEN MATCHED AND
+(
+    [Target].[PaymentMethodType] <> [Source].[PaymentMethodType]
+    OR [Target].[IsEnabled] <> [Source].[IsEnabled]
+)
+THEN UPDATE SET
+    [PaymentMethodType] = [Source].[PaymentMethodType],
+    [IsEnabled] = [Source].[IsEnabled],
+    [UpdatedAtUtc] = @UtcNow
+WHEN NOT MATCHED BY TARGET
+THEN INSERT
+(
+    [Id],
+    [PaymentProviderId],
+    [CurrencyId],
+    [PaymentIntent],
+    [PaymentMethodType],
+    [IsEnabled],
+    [CreatedAtUtc],
+    [UpdatedAtUtc]
+)
+VALUES
+(
+    NEWID(),
+    [Source].[PaymentProviderId],
+    [Source].[CurrencyId],
+    [Source].[PaymentIntent],
+    [Source].[PaymentMethodType],
+    [Source].[IsEnabled],
     @UtcNow,
     @UtcNow
 );

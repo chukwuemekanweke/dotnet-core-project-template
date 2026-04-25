@@ -9,9 +9,7 @@ public sealed class PendingPaymentReconciliationSpecification : Specification<Pa
     public PendingPaymentReconciliationSpecification(DateTimeOffset staleThresholdUtc, DateTimeOffset nextCheckThresholdUtc, int batchSize)
     {
         Where(transaction =>
-            (transaction.PaymentStatus == PaymentStatus.Initiated ||
-             transaction.PaymentStatus == PaymentStatus.AwaitingCustomerAction ||
-             transaction.PaymentStatus == PaymentStatus.Processing) &&
+            transaction.PaymentStatus == PaymentStatus.Initiated &&
             transaction.CreatedAtUtc <= staleThresholdUtc &&
             (transaction.LastStatusCheckAtUtc == null || transaction.LastStatusCheckAtUtc <= nextCheckThresholdUtc));
         ApplyOrderBy(transaction => transaction.CreatedAtUtc);

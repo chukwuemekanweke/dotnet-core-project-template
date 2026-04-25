@@ -1,5 +1,11 @@
-using BackendProjectTemplate.Contracts.Payments;
-
 namespace BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 
-public sealed record ProcessPaymentWebhookResult(WebhookProcessingStatus Status);
+public sealed record ProcessPaymentWebhookResult(WebhookReceiptStatus Status);
+
+public enum WebhookReceiptStatus
+{
+    Persisted = 1,
+    InvalidSignature = 2,
+    UnidentifiedTransaction = 3,
+    Duplicate = 4
+}

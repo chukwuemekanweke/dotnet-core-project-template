@@ -22,11 +22,6 @@ public sealed class PaymentProvidersController(ActivatePaymentProviderHandler ha
         [FromBody] SetPaymentProviderActivationRequest request,
         CancellationToken cancellationToken)
     {
-        if (id == Guid.Empty)
-        {
-            return BadRequest("Payment provider id is required.");
-        }
-
         var result = await handler.HandleAsync(
             new ActivatePaymentProviderCommand(id, request.IsActive),
             cancellationToken);

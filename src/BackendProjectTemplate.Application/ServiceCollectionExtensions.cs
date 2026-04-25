@@ -13,7 +13,6 @@ using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvid
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
-using BackendProjectTemplate.Application.Payments.Features.ProcessStripeWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ReconcilePayments;
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
@@ -44,7 +43,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<InitiatePaymentHandler>();
         services.AddScoped<ProcessSafeHavenWebhookHandler>();
         services.AddScoped<ProcessCredoWebhookHandler>();
-        services.AddScoped<ProcessStripeWebhookHandler>();
         services.AddScoped<PaymentReconciliationService>();
 
         return services;
