@@ -1,0 +1,148 @@
+using System.Net;
+using System.Net.Http.Json;
+using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
+using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Shouldly;
+
+namespace BackendProjectTemplate.WebAPI.IntegrationTests.Payments.Webhooks.Credo;
+
+[Collection(nameof(ContainersCollection))]
+public sealed class When_ReceivingCredoWebhook_WithRecognizedTransaction_Should(ContainersFixture fixture)
+    : WebApiIntegrationTestBase(fixture), IAsyncLifetime
+{
+    private Guid _paymentProviderId;
+    private Guid _paymentTransactionId;
+    private Guid _webhookInboxId;
+    private HttpResponseMessage? _response;
+
+    public async Task InitializeAsync()
+    {
+        await InitializeClientAsync();
+        await SeedPaymentSetupAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        _response?.Dispose();
+        await DeleteSeedDataAsync();
+        await DisposeClientAsync();
+    }
+
+    [Fact]
+    public async Task PersistWebhook()
+    {
+        await WhenPostingWebhook();
+        await ThenTheWebhookIsPersisted();
+
+        async Task WhenPostingWebhook()
+        {
+            _response = await Client.PostAsJsonAsync(
+                EndpointUrl.PaymentWebhooks.Credo.V1,
+                new
+                {
+                    @event = CredoWebhookEvents.TransactionSuccessful,
+                    data = new
+                    {
+                        businessCode = "700607002190001",
+                        transRef = "trans-ref",
+                        businessRef = "merchant-ref",
+                        debitedAmount = 1000m,
+                        transAmount = 1000m,
+                        transFeeAmount = 15m,
+                        settlementAmount = 985m,
+                        customerId = "customer@example.com",
+                        transactionDate = "May 7, 2023, 1:37:53 AM",
+                        channelId = 1,
+                        currencyCode = "NGN",
+                        status = 0,
+                        paymentMethodType = "MasterCard",
+                        paymentMethod = "Card",
+                        customer = new
+                        {
+                            customerEmail = "customer@example.com",
+                            firstName = "John",
+                            lastName = "Doe",
+                            phoneNo = "23470122199999"
+                        }
+                    }
+                });
+        }
+
+        async Task ThenTheWebhookIsPersisted()
+        {
+            _response.ShouldNotBeNull();
+            _response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+            using var scope = CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
+            var inbox = await dbContext.PaymentWebhookInboxes
+                .OrderByDescending(item => item.CreatedAtUtc)
+                .FirstAsync(item => item.PaymentProviderId == _paymentProviderId);
+
+            _webhookInboxId = inbox.Id;
+            inbox.MerchantReference.ShouldBe("merchant-ref");
+            inbox.WebhookEventName.ShouldBe(CredoWebhookEvents.TransactionSuccessful);
+            inbox.WebhookProcessingStatus.ShouldBe(WebhookProcessingStatus.Received);
+        }
+    }
+
+    private async Task SeedPaymentSetupAsync()
+    {
+        using var scope = CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
+        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
+        var provider = PaymentProvider.Create("Credo", "credo", true, now);
+        var transaction = PaymentTransaction.Create(
+            "merchant-ref",
+            Contracts.Payments.PaymentIntent.WalletTopUp,
+            provider.Id,
+            1000m,
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            now);
+        transaction.MarkInitiated("trans-ref", null, null, "payment_initiated");
+
+        await dbContext.PaymentProviders.AddAsync(provider);
+        await dbContext.PaymentTransactions.AddAsync(transaction);
+        await dbContext.SaveChangesAsync();
+
+        _paymentProviderId = provider.Id;
+        _paymentTransactionId = transaction.Id;
+    }
+
+    private async Task DeleteSeedDataAsync()
+    {
+        using var scope = CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
+
+        if (_webhookInboxId != Guid.Empty)
+        {
+            var inbox = await dbContext.PaymentWebhookInboxes.FirstOrDefaultAsync(item => item.Id == _webhookInboxId);
+            if (inbox is not null)
+            {
+                dbContext.PaymentWebhookInboxes.Remove(inbox);
+            }
+        }
+
+        var transaction = await dbContext.PaymentTransactions.FirstOrDefaultAsync(item => item.Id == _paymentTransactionId);
+        if (transaction is not null)
+        {
+            dbContext.PaymentTransactions.Remove(transaction);
+        }
+
+        var provider = await dbContext.PaymentProviders.FirstOrDefaultAsync(item => item.Id == _paymentProviderId);
+        if (provider is not null)
+        {
+            dbContext.PaymentProviders.Remove(provider);
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+}

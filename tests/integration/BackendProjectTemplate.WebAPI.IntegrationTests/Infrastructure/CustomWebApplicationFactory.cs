@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Payments.Services;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 
@@ -36,6 +37,9 @@ public sealed class CustomWebApplicationFactory(string sqlServerConnectionString
         {
             services.RemoveAll<IGoogleIdentityTokenService>();
             services.AddSingleton<IGoogleIdentityTokenService>(GoogleIdentityTokenService);
+            services.RemoveAll<IPaymentProviderService>();
+            services.AddScoped<IPaymentProviderService, FakeCredoPaymentProviderService>();
+            services.AddScoped<IPaymentProviderService, FakeSafeHavenPaymentProviderService>();
         });
     }
 }

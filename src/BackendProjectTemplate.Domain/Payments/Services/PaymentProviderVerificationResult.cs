@@ -1,0 +1,8 @@
+namespace BackendProjectTemplate.Domain.Payments.Services;
+
+public sealed record PaymentProviderVerificationResult(
+    PaymentProviderVerificationStatus VerificationStatus,
+    string? ProviderReference,
+    string? FailureReason,
+    string? StatusChangeReason,
+    IReadOnlyDictionary<string, string> Metadata);

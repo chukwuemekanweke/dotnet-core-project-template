@@ -1,5 +1,7 @@
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Consumer.Notifications;
+using BackendProjectTemplate.Consumer.Payments;
+using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
@@ -8,6 +10,7 @@ using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications
 using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.UserAccessTokenRefreshed;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 using UserEmailConfirmedEvent = BackendProjectTemplate.Contracts.Events.UserEmailConfirmed;
+using SuccessfulPaymentConfirmedEvent = BackendProjectTemplate.Contracts.Events.SuccessfulPaymentConfirmed;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
 using UserSignInSuccessfulEvent = BackendProjectTemplate.Contracts.Events.UserSignInSuccessful;
 
@@ -62,10 +65,13 @@ public static class ServiceCollectionExtensions
                 .AddHandler<UserEmailConfirmedEvent, UserEmailConfirmedHandler>()
                 .AddHandler<UserSignInSuccessfulEvent, UserSignInSuccessfulHandler>()
                 .AddHandler<UserAccessTokenRefreshedEvent, UserAccessTokenRefreshedHandler>()
-                .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>())
+                .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>()
+                .AddHandler<SuccessfulPaymentConfirmedEvent, SuccessfulPaymentConfirmedHandler>())
             .AddConsumer(consumerConfig, builder => builder
                 .AddHandler<ResetPassword, ResetPasswordHandler>()
-                .AddHandler<SendNotification, SendNotificationHandler>())
+                .AddHandler<SendNotification, SendNotificationHandler>()
+                .AddHandler<CreditWalletCommand, CreditWalletHandler>()
+                .AddHandler<ActivateSubscriptionCommand, ActivateSubscriptionHandler>())
             .AddHostedService(serviceProvider => new Worker(
                 serviceProvider.GetRequiredKeyedService<ISubscriber>(subscriberConfig.Key),
                 serviceProvider.GetRequiredKeyedService<IConsumer>(consumerConfig.Key),

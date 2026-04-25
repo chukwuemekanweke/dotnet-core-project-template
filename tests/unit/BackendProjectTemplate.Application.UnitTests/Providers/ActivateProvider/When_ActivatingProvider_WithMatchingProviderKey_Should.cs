@@ -1,6 +1,6 @@
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Domain.Providers.Entities;
 using NSubstitute;
 using Shouldly;
 
@@ -29,7 +29,7 @@ public sealed class When_ActivatingProvider_WithMatchingProviderKey_Should
         result.Status.ShouldBe(ActivateProviderStatus.Success);
         activeProvider.IsActive.ShouldBeFalse();
         inactiveProvider.IsActive.ShouldBeTrue();
-        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider

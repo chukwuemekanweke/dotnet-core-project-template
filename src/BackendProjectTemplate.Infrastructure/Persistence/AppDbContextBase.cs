@@ -2,6 +2,8 @@ using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -17,8 +19,17 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     where TContext : DbContext
 {
     public DbSet<Country> Countries => Set<Country>();
+    public DbSet<Currency> Currencies => Set<Currency>();
+    public DbSet<CountryCurrency> CountryCurrencies => Set<CountryCurrency>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<Provider> Providers => Set<Provider>();
+    public DbSet<PaymentProvider> PaymentProviders => Set<PaymentProvider>();
+    public DbSet<PaymentProviderConfiguration> PaymentProviderConfigurations => Set<PaymentProviderConfiguration>();
+    public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+    public DbSet<PaymentWebhookInbox> PaymentWebhookInboxes => Set<PaymentWebhookInbox>();
+    public DbSet<Wallet> Wallets => Set<Wallet>();
+    public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
+    public DbSet<SubscriptionActivation> SubscriptionActivations => Set<SubscriptionActivation>();
     public DbSet<EmailNotificationTemplate> EmailNotificationTemplates => Set<EmailNotificationTemplate>();
     public DbSet<EmailNotificationLog> EmailNotificationLogs => Set<EmailNotificationLog>();
     public DbSet<TenantEmailBaseTemplate> TenantEmailBaseTemplates => Set<TenantEmailBaseTemplate>();

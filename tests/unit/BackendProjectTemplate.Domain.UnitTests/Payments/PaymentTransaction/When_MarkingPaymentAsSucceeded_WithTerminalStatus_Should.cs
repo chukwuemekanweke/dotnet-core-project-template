@@ -1,0 +1,31 @@
+using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common.Exceptions;
+using BackendProjectTemplate.Domain.Payments.Entities;
+using Shouldly;
+
+namespace BackendProjectTemplate.Domain.UnitTests.Payments.PaymentTransactions;
+
+public sealed class When_MarkingPaymentAsSucceeded_WithTerminalStatus_Should
+{
+    [Fact]
+    public void ThrowAggregateStateException()
+    {
+        var transaction = PaymentTransaction.Create(
+            "merchant-ref",
+            PaymentIntent.WalletTopUp,
+            Guid.CreateVersion7(),
+            1000m,
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            DateTimeOffset.UtcNow);
+
+        transaction.MarkInitiated("provider-ref", null, null, "payment_initiated");
+        transaction.MarkFailed("provider-ref", "failed", "provider_failed", null, DateTimeOffset.UtcNow);
+
+        Should.Throw<AggregateStateException>(() =>
+            transaction.MarkSucceeded("provider-ref", "success", null, DateTimeOffset.UtcNow));
+    }
+}

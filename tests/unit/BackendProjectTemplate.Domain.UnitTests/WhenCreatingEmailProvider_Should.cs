@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Domain.Providers.Entities;
 
 namespace BackendProjectTemplate.Domain.UnitTests;
 

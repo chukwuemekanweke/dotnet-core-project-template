@@ -1,6 +1,6 @@
 using BackendProjectTemplate.Domain.Common.Storage;
-using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
+using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.Domain.Common.Persistence;
 
 namespace BackendProjectTemplate.Infrastructure.Storage;

@@ -1,6 +1,6 @@
 using BackendProjectTemplate.Domain.Common.Entities;
 
-namespace BackendProjectTemplate.Domain.Notifications.Entities;
+namespace BackendProjectTemplate.Domain.Providers.Entities;
 
 public enum ProviderType
 {
@@ -14,7 +14,7 @@ public sealed class Provider : Entity, IAggregateRoot
     {
     }
 
-    private Provider(ProviderType providerType, string providerName, string providerKey, bool isActive, DateTimeOffset utcNow)
+    private Provider(ProviderType providerType, string providerName, string providerKey, bool isActive)
     {
         ProviderType = providerType;
         ProviderName = providerName.Trim();
@@ -33,11 +33,10 @@ public sealed class Provider : Entity, IAggregateRoot
         string providerKey,
         bool isActive,
         DateTimeOffset utcNow) =>
-        new(providerType, providerName, providerKey, isActive, utcNow);
+        new(providerType, providerName, providerKey, isActive);
 
-    public void SetActive(bool isActive, DateTimeOffset utcNow)
+    public void SetActive(bool isActive)
     {
         IsActive = isActive;
-        Touch(utcNow);
     }
 }

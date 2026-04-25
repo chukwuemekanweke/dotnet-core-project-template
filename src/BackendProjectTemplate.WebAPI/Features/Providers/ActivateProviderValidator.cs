@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Domain.Providers.Entities;
 using FluentValidation;
 
 namespace BackendProjectTemplate.WebAPI.Features.Providers;
