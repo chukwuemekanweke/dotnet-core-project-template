@@ -86,8 +86,8 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServerWrite"] = _fixture.SqlConnectionString,
-                ["ConnectionStrings:SqlServerRead"] = _fixture.SqlConnectionString,
+                ["ConnectionStrings:PostgresWrite"] = _fixture.PostgresConnectionString,
+                ["ConnectionStrings:PostgresRead"] = _fixture.PostgresConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
                 ["Messaging:RabbitMq:HostName"] = _fixture.RabbitMqHostName,
@@ -110,7 +110,7 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddDataProtection();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<WorkerReadinessState>();
-        builder.Services.AddSqlServerPersistence(configuration);
+        builder.Services.AddPostgresPersistence(configuration);
         builder.Services.AddIdentityUserManagement(configuration);
         builder.Services.AddAuthenticationServices();
         builder.Services.AddRedisCaching(configuration);

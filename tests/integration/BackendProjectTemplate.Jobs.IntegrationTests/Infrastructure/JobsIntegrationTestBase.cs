@@ -10,7 +10,7 @@ public abstract class JobsIntegrationTestBase
     protected JobsIntegrationTestBase(ContainersFixture fixture)
     {
         _factory = new CustomJobsApplicationFactory(
-            fixture.SqlConnectionString,
+            fixture.PostgresConnectionString,
             fixture.RedisConnectionString,
             fixture.RabbitMqHostName,
             fixture.RabbitMqPort,

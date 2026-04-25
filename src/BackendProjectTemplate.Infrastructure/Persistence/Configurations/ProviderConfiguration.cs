@@ -28,10 +28,10 @@ public sealed class ProviderConfiguration : IEntityTypeConfiguration<Provider>
 
         builder.HasIndex(provider => new { provider.ProviderType, provider.ProviderKey })
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
 
         builder.HasIndex(provider => new { provider.ProviderType, provider.IsActive })
-            .HasFilter("[IsActive] = 1 AND [IsDeleted] = 0")
+            .HasFilter("\"IsActive\" = TRUE AND \"IsDeleted\" = FALSE")
             .IsUnique();
     }
 }

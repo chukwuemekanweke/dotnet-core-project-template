@@ -12,10 +12,6 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<EmailNotificationLog> builder)
     {
         builder.ToTable("EmailNotificationLogs", SchemaNames.Notifications);
-        builder.ToTable(tableBuilder =>
-            tableBuilder.HasCheckConstraint(
-                "CK_EmailNotificationLogs_NotificationContent_IsJson",
-                "ISJSON([NotificationContent]) = 1"));
 
         builder.HasKey(log => log.Id);
 
@@ -35,7 +31,7 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
             .HasConversion(GetNotificationContentConverter())
             .Metadata.SetValueComparer(GetNotificationContentComparer());
         builder.Property(log => log.NotificationContent)
-            .HasColumnType("nvarchar(max)")
+            .HasColumnType("jsonb")
             .IsRequired();
 
         builder.Property(log => log.To)
@@ -56,7 +52,7 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
 
         builder.HasIndex(log => log.MessageId)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 
     private static ValueConverter<Dictionary<string, string>, string> GetNotificationContentConverter() =>

@@ -22,6 +22,6 @@ public sealed class WalletTransactionConfiguration : IEntityTypeConfiguration<Wa
 
         builder.HasIndex(transaction => transaction.PaymentTransactionId)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

@@ -10,7 +10,7 @@ public abstract class ConsumerIntegrationTestBase : IAsyncLifetime
     protected ConsumerIntegrationTestBase(ContainersFixture fixture)
     {
         _factory = new CustomConsumerApplicationFactory(
-            fixture.SqlConnectionString,
+            fixture.PostgresConnectionString,
             fixture.RedisConnectionString,
             fixture.RabbitMqHostName,
             fixture.RabbitMqPort,

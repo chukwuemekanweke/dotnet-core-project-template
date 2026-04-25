@@ -18,6 +18,6 @@ public sealed class StakeholderTypeConfiguration : IEntityTypeConfiguration<Stak
         builder.HasIndex(stakeholderType => stakeholderType.TenantId);
         builder.HasIndex(stakeholderType => new { stakeholderType.TenantId, stakeholderType.Key })
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

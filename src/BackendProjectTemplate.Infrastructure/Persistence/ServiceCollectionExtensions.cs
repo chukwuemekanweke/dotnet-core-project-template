@@ -11,7 +11,7 @@ namespace BackendProjectTemplate.Infrastructure.Persistence;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSqlServerWritePersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddPostgresWritePersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ICurrentActorAccessor, CurrentActorAccessor>();
         services.AddScoped<ICurrentActor>(serviceProvider => serviceProvider.GetRequiredService<ICurrentActorAccessor>());
@@ -19,7 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ObservabilityCommandInterceptor>();
 
         services.AddDbContext<AppDbContext>((serviceProvider, options) =>
-            options.UseSqlServer(GetRequiredConnectionString(configuration, "SqlServerWrite"))
+            options.UseNpgsql(GetRequiredConnectionString(configuration, "PostgresWrite"))
                 .AddInterceptors(
                     serviceProvider.GetRequiredService<AuditAndSoftDeleteInterceptor>(),
                     serviceProvider.GetRequiredService<ObservabilityCommandInterceptor>()));
@@ -31,12 +31,12 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddSqlServerReadPersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddPostgresReadPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ObservabilityCommandInterceptor>();
 
         services.AddDbContext<AppReadDbContext>((serviceProvider, options) =>
-            options.UseSqlServer(GetReadConnectionString(configuration))
+            options.UseNpgsql(GetReadConnectionString(configuration))
                 .AddInterceptors(serviceProvider.GetRequiredService<ObservabilityCommandInterceptor>()));
 
         services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
@@ -45,13 +45,13 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddSqlServerPersistence(this IServiceCollection services, IConfiguration configuration) =>
+    public static IServiceCollection AddPostgresPersistence(this IServiceCollection services, IConfiguration configuration) =>
         services
-            .AddSqlServerWritePersistence(configuration)
-            .AddSqlServerReadPersistence(configuration);
+            .AddPostgresWritePersistence(configuration)
+            .AddPostgresReadPersistence(configuration);
 
     private static string GetReadConnectionString(IConfiguration configuration) =>
-        GetRequiredConnectionString(configuration, "SqlServerRead");
+        GetRequiredConnectionString(configuration, "PostgresRead");
 
     private static string GetRequiredConnectionString(IConfiguration configuration, string name) =>
         configuration.GetConnectionString(name)

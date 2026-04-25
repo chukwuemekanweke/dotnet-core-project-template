@@ -25,6 +25,6 @@ public sealed class CurrencyConfiguration : IEntityTypeConfiguration<Currency>
 
         builder.HasIndex(currency => currency.CurrencyCode)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

@@ -21,7 +21,7 @@ public sealed class Wallet : Entity, IAggregateRoot
     public Guid TenantId { get; private set; }
     public Guid CurrencyId { get; private set; }
     public decimal Balance { get; private set; }
-    public byte[] RowVersion { get; private set; } = [];
+    public uint RowVersion { get; private set; }
 
     public static Wallet Create(Guid stakeholderId, Guid tenantId, Guid currencyId, DateTimeOffset utcNow) =>
         new(stakeholderId, tenantId, currencyId, 0m);

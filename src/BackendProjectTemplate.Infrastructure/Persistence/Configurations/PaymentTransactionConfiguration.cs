@@ -38,21 +38,20 @@ public sealed class PaymentTransactionConfiguration : IEntityTypeConfiguration<P
             .HasMaxLength(500);
 
         builder.Property(transaction => transaction.ProviderPayloadMetadata)
-            .HasColumnType("nvarchar(max)")
+            .HasColumnType("jsonb")
             .HasConversion(
                 value => Serialize(value),
                 value => Deserialize(value))
             .Metadata.SetValueComparer(DictionaryComparer);
 
-        builder.Property(transaction => transaction.RowVersion)
-            .IsRowVersion();
+        builder.UseXminAsConcurrencyToken();
 
         builder.HasIndex(transaction => transaction.MerchantReference)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
 
         builder.HasIndex(transaction => transaction.ProviderReference)
-            .HasFilter("[ProviderReference] IS NOT NULL AND [IsDeleted] = 0");
+            .HasFilter("\"ProviderReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
 
         builder.HasIndex(transaction => transaction.PaymentStatus);
         builder.HasIndex(transaction => transaction.PaymentIntent);

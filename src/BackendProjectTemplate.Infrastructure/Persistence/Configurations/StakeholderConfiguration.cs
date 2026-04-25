@@ -22,7 +22,7 @@ public sealed class StakeholderConfiguration : IEntityTypeConfiguration<Stakehol
 
         builder.HasIndex(stakeholder => stakeholder.AppUserId)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
         builder.HasIndex(stakeholder => stakeholder.TenantId);
         builder.HasIndex(stakeholder => stakeholder.CountryId);
         builder.HasIndex(stakeholder => stakeholder.StakeholderTypeId);

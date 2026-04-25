@@ -13,8 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<WorkerReadinessState>();
-builder.Services.AddSqlServerWritePersistence(builder.Configuration);
-builder.Services.AddSqlServerReadPersistence(builder.Configuration);
+builder.Services.AddPostgresWritePersistence(builder.Configuration);
+builder.Services.AddPostgresReadPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
 builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddRedisCaching(builder.Configuration);

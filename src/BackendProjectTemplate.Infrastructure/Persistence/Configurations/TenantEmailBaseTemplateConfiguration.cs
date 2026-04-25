@@ -20,11 +20,11 @@ public sealed class TenantEmailBaseTemplateConfiguration : IEntityTypeConfigurat
             .IsRequired();
 
         builder.Property(template => template.HtmlTemplate)
-            .HasColumnType("nvarchar(max)")
+            .HasColumnType("text")
             .IsRequired();
 
         builder.HasIndex(template => template.TenantId)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

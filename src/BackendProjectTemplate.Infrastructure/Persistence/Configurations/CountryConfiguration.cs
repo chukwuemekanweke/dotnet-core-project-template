@@ -18,6 +18,6 @@ public sealed class CountryConfiguration : IEntityTypeConfiguration<Country>
 
         builder.HasIndex(country => country.ShortCode)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

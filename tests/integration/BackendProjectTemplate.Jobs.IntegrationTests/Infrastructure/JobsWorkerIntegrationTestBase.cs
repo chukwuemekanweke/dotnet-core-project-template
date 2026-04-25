@@ -28,7 +28,7 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddLogging();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddBackgroundServiceReadinessTracking();
-        builder.Services.AddSqlServerPersistence(configuration);
+        builder.Services.AddPostgresPersistence(configuration);
         builder.Services.AddRabbitMqOutboxDispatching(configuration);
         registerWorkers(builder.Services, configuration);
 
@@ -112,8 +112,8 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServerWrite"] = _fixture.SqlConnectionString,
-                ["ConnectionStrings:SqlServerRead"] = _fixture.SqlConnectionString,
+                ["ConnectionStrings:PostgresWrite"] = _fixture.PostgresConnectionString,
+                ["ConnectionStrings:PostgresRead"] = _fixture.PostgresConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 [$"{OutboxProcessingOptions.SectionName}:BatchSize"] = "50",
                 [$"{OutboxProcessingOptions.SectionName}:PollIntervalSeconds"] = "1",

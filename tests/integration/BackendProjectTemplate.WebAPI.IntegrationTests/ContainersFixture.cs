@@ -1,5 +1,4 @@
-using Microsoft.Data.SqlClient;
-using Testcontainers.MsSql;
+using Testcontainers.PostgreSql;
 using Testcontainers.Redis;
 using Xunit.Sdk;
 
@@ -10,29 +9,28 @@ public sealed class ContainersCollection : ICollectionFixture<ContainersFixture>
 
 public sealed class ContainersFixture : IAsyncLifetime
 {
-    public MsSqlContainer SqlServer { get; private set; } = default!;
+    public PostgreSqlContainer Postgres { get; private set; } = default!;
     public RedisContainer Redis { get; private set; } = default!;
-    public string SqlConnectionString { get; private set; } = string.Empty;
+    public string PostgresConnectionString { get; private set; } = string.Empty;
     public string RedisConnectionString { get; private set; } = string.Empty;
 
     public async Task InitializeAsync()
     {
         try
         {
-            SqlServer = new MsSqlBuilder()
-                .WithPassword("Your_strong_Password123!")
+            var databaseName = $"backend_template_webapi_tests_{Guid.CreateVersion7():N}";
+
+            Postgres = new PostgreSqlBuilder()
+                .WithDatabase(databaseName)
+                .WithUsername("postgres")
+                .WithPassword("postgres")
                 .Build();
 
             Redis = new RedisBuilder().Build();
 
-            await Task.WhenAll(SqlServer.StartAsync(), Redis.StartAsync());
+            await Task.WhenAll(Postgres.StartAsync(), Redis.StartAsync());
 
-            SqlConnectionString = new SqlConnectionStringBuilder(SqlServer.GetConnectionString())
-            {
-                InitialCatalog = $"backend_template_webapi_tests_{Guid.CreateVersion7():N}",
-                TrustServerCertificate = true
-            }.ConnectionString;
-
+            PostgresConnectionString = Postgres.GetConnectionString();
             RedisConnectionString = Redis.GetConnectionString();
         }
         catch (Exception exception) when (exception.GetType().FullName?.Contains("DockerUnavailableException", StringComparison.Ordinal) == true)
@@ -50,9 +48,9 @@ public sealed class ContainersFixture : IAsyncLifetime
             tasks.Add(Redis.DisposeAsync().AsTask());
         }
 
-        if (SqlServer is not null)
+        if (Postgres is not null)
         {
-            tasks.Add(SqlServer.DisposeAsync().AsTask());
+            tasks.Add(Postgres.DisposeAsync().AsTask());
         }
 
         if (tasks.Count > 0)

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 namespace BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 
 public sealed class CustomJobsApplicationFactory(
-    string sqlServerConnectionString,
+    string postgresConnectionString,
     string redisConnectionString,
     string rabbitMqHostName,
     int rabbitMqPort,
@@ -24,8 +24,8 @@ public sealed class CustomJobsApplicationFactory(
         {
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServerWrite"] = sqlServerConnectionString,
-                ["ConnectionStrings:SqlServerRead"] = sqlServerConnectionString,
+                ["ConnectionStrings:PostgresWrite"] = postgresConnectionString,
+                ["ConnectionStrings:PostgresRead"] = postgresConnectionString,
                 ["ConnectionStrings:Redis"] = redisConnectionString,
                 ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
                 ["Messaging:RabbitMq:HostName"] = rabbitMqHostName,
