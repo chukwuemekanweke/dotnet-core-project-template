@@ -83,7 +83,7 @@ public sealed class ProcessCredoWebhookHandler(
     {
         var merchantReference = NormalizeOptional(webhook.Data.BusinessRef);
         var providerReference = NormalizeOptional(webhook.Data.TransRef);
-        var eventName = string.IsNullOrWhiteSpace(webhook.Event) ? "payment.webhook" : webhook.Event.Trim();
+        var eventName = GetRequiredEventName(webhook.Event);
         var webhookEventId = !string.IsNullOrWhiteSpace(merchantReference)
             ? $"{merchantReference}:{eventName}"
             : null;
@@ -93,7 +93,7 @@ public sealed class ProcessCredoWebhookHandler(
             providerReference,
             eventName,
             webhookEventId,
-            webhook.Event is "transaction.successful" or "transaction.failed" or "transaction.transaction.transfer.reverse");
+            eventName is CredoWebhookEvents.TransactionSuccessful or CredoWebhookEvents.TransactionFailed or CredoWebhookEvents.TransactionTransferReverse);
     }
 
     private async Task<PaymentTransaction?> ResolvePaymentTransactionAsync(
@@ -123,6 +123,11 @@ public sealed class ProcessCredoWebhookHandler(
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string GetRequiredEventName(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? throw new InvalidOperationException("Credo webhook event name is required.")
+            : value.Trim();
 
     private sealed record CredoWebhookDetails(
         string? MerchantReference,

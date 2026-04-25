@@ -41,7 +41,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ActivatePaymentProviderHandler>();
         services.AddScoped<GetCountriesHandler>();
         services.AddScoped<InitiatePaymentHandler>();
-        services.AddScoped<ProcessSafeHavenWebhookHandler>();
+        services.AddScoped<ProcessSafeHavenAccountCreditWebhookHandler>();
+        services.AddScoped<ProcessSafeHavenAccountDebitWebhookHandler>();
+        services.AddScoped<ProcessSafeHavenVirtualAccountTransferWebhookHandler>();
         services.AddScoped<ProcessCredoWebhookHandler>();
         services.AddScoped<PaymentReconciliationService>();
 

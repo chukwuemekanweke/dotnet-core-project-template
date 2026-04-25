@@ -13,7 +13,10 @@ namespace BackendProjectTemplate.WebAPI.Features.Payments.Webhooks.SafeHaven;
 [ApiVersion("1.0")]
 [AllowAnonymous]
 [Route(EndpointUrl.PaymentWebhooks.SafeHaven.Route)]
-public sealed class SafeHavenWebhooksController(ProcessSafeHavenWebhookHandler handler) : ControllerBase
+public sealed class SafeHavenWebhooksController(
+    ProcessSafeHavenAccountCreditWebhookHandler accountCreditHandler,
+    ProcessSafeHavenAccountDebitWebhookHandler accountDebitHandler,
+    ProcessSafeHavenVirtualAccountTransferWebhookHandler virtualAccountTransferHandler) : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
@@ -25,40 +28,72 @@ public sealed class SafeHavenWebhooksController(ProcessSafeHavenWebhookHandler h
 
         return request.Event switch
         {
-            SafeHavenWebhookEvents.AccountCredit => await HandleAsync(
+            SafeHavenWebhookEvents.AccountCredit => await HandleAccountCreditAsync(
                 request.Event,
                 Map(
                     request.Data.Deserialize<SafeHavenAccountCreditWebhookData>(JsonSerializerOptions)
                     ?? throw new JsonException("Unable to deserialize SafeHaven account credit webhook payload.")),
                 rawPayload,
                 cancellationToken),
-            SafeHavenWebhookEvents.AccountDebit => await HandleAsync(
+            SafeHavenWebhookEvents.AccountDebit => await HandleAccountDebitAsync(
                 request.Event,
                 Map(
                     request.Data.Deserialize<SafeHavenAccountDebitWebhookData>(JsonSerializerOptions)
                     ?? throw new JsonException("Unable to deserialize SafeHaven account debit webhook payload.")),
                 rawPayload,
                 cancellationToken),
-            SafeHavenWebhookEvents.VirtualAccountTransfer => await HandleAsync(
+            SafeHavenWebhookEvents.VirtualAccountTransfer => await HandleVirtualAccountTransferAsync(
                 request.Event,
                 Map(
                     request.Data.Deserialize<SafeHavenVirtualAccountTransferWebhookData>(JsonSerializerOptions)
                     ?? throw new JsonException("Unable to deserialize SafeHaven virtual account transfer webhook payload.")),
                 rawPayload,
                 cancellationToken),
-            _ => await HandleAsync(request.Event, request.Data, rawPayload, cancellationToken)
+            _ => throw new JsonException($"Unsupported SafeHaven webhook event '{request.Event}'.")
         };
     }
 
-    private async Task<IActionResult> HandleAsync<TData>(
+    private async Task<IActionResult> HandleAccountCreditAsync(
         string eventName,
-        TData data,
+        SafeHavenAccountCreditCommandData data,
         string rawPayload,
         CancellationToken cancellationToken)
     {
-        var command = new ProcessSafeHavenWebhookCommand<TData>(new SafeHavenWebhook<TData>(eventName, data), rawPayload);
+        var command = new ProcessSafeHavenWebhookCommand<SafeHavenAccountCreditCommandData>(
+            new SafeHavenWebhook<SafeHavenAccountCreditCommandData>(eventName, data),
+            rawPayload);
 
-        await handler.HandleAsync(command, cancellationToken);
+        await accountCreditHandler.HandleAsync(command, cancellationToken);
+
+        return Ok();
+    }
+
+    private async Task<IActionResult> HandleAccountDebitAsync(
+        string eventName,
+        SafeHavenAccountDebitCommandData data,
+        string rawPayload,
+        CancellationToken cancellationToken)
+    {
+        var command = new ProcessSafeHavenWebhookCommand<SafeHavenAccountDebitCommandData>(
+            new SafeHavenWebhook<SafeHavenAccountDebitCommandData>(eventName, data),
+            rawPayload);
+
+        await accountDebitHandler.HandleAsync(command, cancellationToken);
+
+        return Ok();
+    }
+
+    private async Task<IActionResult> HandleVirtualAccountTransferAsync(
+        string eventName,
+        SafeHavenVirtualAccountTransferCommandData data,
+        string rawPayload,
+        CancellationToken cancellationToken)
+    {
+        var command = new ProcessSafeHavenWebhookCommand<SafeHavenVirtualAccountTransferCommandData>(
+            new SafeHavenWebhook<SafeHavenVirtualAccountTransferCommandData>(eventName, data),
+            rawPayload);
+
+        await virtualAccountTransferHandler.HandleAsync(command, cancellationToken);
 
         return Ok();
     }

@@ -125,10 +125,3 @@ public sealed record SafeHavenVirtualAccountTransferWebhookData(
     [property: JsonPropertyName("createdAt")] DateTimeOffset CreatedAt,
     [property: JsonPropertyName("declinedAt")] DateTimeOffset? DeclinedAt,
     [property: JsonPropertyName("updatedAt")] DateTimeOffset UpdatedAt);
-
-public static class SafeHavenWebhookEvents
-{
-    public const string AccountCredit = "account.credit";
-    public const string AccountDebit = "account.debit";
-    public const string VirtualAccountTransfer = "virtualAccount.transfer";
-}

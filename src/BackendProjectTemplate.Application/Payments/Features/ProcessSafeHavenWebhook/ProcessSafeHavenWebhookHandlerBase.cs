@@ -9,7 +9,7 @@ using BackendProjectTemplate.Domain.Payments.Specifications;
 
 namespace BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 
-public sealed class ProcessSafeHavenWebhookHandler(
+public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
     IRepository<PaymentProvider> paymentProviderRepository,
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
@@ -17,7 +17,7 @@ public sealed class ProcessSafeHavenWebhookHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
-    public async Task<ProcessPaymentWebhookResult> HandleAsync<TData>(
+    public async Task<ProcessPaymentWebhookResult> HandleAsync(
         ProcessSafeHavenWebhookCommand<TData> command,
         CancellationToken cancellationToken)
     {
@@ -81,33 +81,18 @@ public sealed class ProcessSafeHavenWebhookHandler(
         return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Persisted);
     }
 
-    private static SafeHavenWebhookDetails CreateWebhookDetails<TData>(SafeHavenWebhook<TData> webhook)
-    {
-        var eventName = string.IsNullOrWhiteSpace(webhook.Event) ? "safehaven.webhook" : webhook.Event.Trim();
+    protected abstract SafeHavenWebhookDetails CreateWebhookDetails(SafeHavenWebhook<TData> webhook);
 
-        return webhook.Data switch
-        {
-            SafeHavenAccountCreditWebhookData data => new SafeHavenWebhookDetails(
-                NormalizeOptional(data.PaymentReference),
-                NormalizeOptional(data.Id),
-                eventName,
-                CreateWebhookEventId(data.PaymentReference, eventName),
-                false),
-            SafeHavenAccountDebitWebhookData data => new SafeHavenWebhookDetails(
-                NormalizeOptional(data.PaymentReference),
-                NormalizeOptional(data.Id),
-                eventName,
-                CreateWebhookEventId(data.PaymentReference, eventName),
-                false),
-            SafeHavenVirtualAccountTransferWebhookData data => new SafeHavenWebhookDetails(
-                NormalizeOptional(data.PaymentReference),
-                NormalizeOptional(data.Id),
-                eventName,
-                CreateWebhookEventId(data.PaymentReference, eventName),
-                true),
-            _ => new SafeHavenWebhookDetails(null, null, eventName, null, false)
-        };
-    }
+    protected static string GetRequiredEventName(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? throw new InvalidOperationException("SafeHaven webhook event name is required.")
+            : value.Trim();
+
+    protected static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    protected static string? CreateWebhookEventId(string? merchantReference, string eventName) =>
+        string.IsNullOrWhiteSpace(merchantReference) ? null : $"{merchantReference.Trim()}:{eventName}";
 
     private async Task<PaymentTransaction?> ResolvePaymentTransactionAsync(
         SafeHavenWebhookDetails webhookDetails,
@@ -133,17 +118,4 @@ public sealed class ProcessSafeHavenWebhookHandler(
 
         return null;
     }
-
-    private static string? CreateWebhookEventId(string? merchantReference, string eventName) =>
-        string.IsNullOrWhiteSpace(merchantReference) ? null : $"{merchantReference.Trim()}:{eventName}";
-
-    private static string? NormalizeOptional(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    private sealed record SafeHavenWebhookDetails(
-        string? MerchantReference,
-        string? ProviderReference,
-        string WebhookEventName,
-        string? WebhookEventId,
-        bool IsSupportedEvent);
 }
