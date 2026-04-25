@@ -16,8 +16,6 @@ public sealed class WalletConfiguration : IEntityTypeConfiguration<Wallet>
             .HasPrecision(18, 2)
             .IsRequired();
 
-        builder.UseXminAsConcurrencyToken();
-
         builder.HasIndex(wallet => new { wallet.StakeholderId, wallet.CurrencyId })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE");

@@ -44,8 +44,6 @@ public sealed class PaymentTransactionConfiguration : IEntityTypeConfiguration<P
                 value => Deserialize(value))
             .Metadata.SetValueComparer(DictionaryComparer);
 
-        builder.UseXminAsConcurrencyToken();
-
         builder.HasIndex(transaction => transaction.MerchantReference)
             .IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE");
