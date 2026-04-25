@@ -1,6 +1,6 @@
 namespace BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 
-public sealed record ProcessSafeHavenWebhookCommand(SafeHavenWebhook<object> Webhook, string RawPayload);
+public sealed record ProcessSafeHavenWebhookCommand<TData>(SafeHavenWebhook<TData> Webhook, string RawPayload);
 
 public sealed record SafeHavenWebhook<TData>(string Event, TData Data);
 
