@@ -3,6 +3,8 @@ using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using CredoCommandCustomer = BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook.CredoWebhookCustomer;
+using CredoCommandData = BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook.CredoWebhookData;
 
 namespace BackendProjectTemplate.WebAPI.Features.Payments.Webhooks.Credo;
 
@@ -18,7 +20,9 @@ public sealed class CredoWebhooksController(ProcessCredoWebhookHandler handler) 
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Handle([FromBody] CredoWebhookRequest request, CancellationToken cancellationToken)
     {
-        var command = new ProcessCredoWebhookCommand(CreateWebhook(request), JsonSerializer.Serialize(request, JsonSerializerOptions));
+        var command = new ProcessCredoWebhookCommand(
+            CreateWebhook(request),
+            JsonSerializer.Serialize(request, JsonSerializerOptions));
 
         await handler.HandleAsync(
             command,
@@ -27,9 +31,32 @@ public sealed class CredoWebhooksController(ProcessCredoWebhookHandler handler) 
         return Ok();
     }
 
-    private static CredoWebhook<object> CreateWebhook(CredoWebhookRequest request) =>
+    private static CredoWebhook CreateWebhook(CredoWebhookRequest request) =>
         new(
             request.Event,
-            request.Data.Deserialize<CredoWebhookData>(JsonSerializerOptions)
-            ?? throw new JsonException("Unable to deserialize Credo webhook payload."));
+            Map(
+                request.Data.Deserialize<CredoWebhookData>(JsonSerializerOptions)
+                ?? throw new JsonException("Unable to deserialize Credo webhook payload.")));
+
+    private static CredoCommandData Map(CredoWebhookData data) =>
+        new(
+            data.BusinessCode,
+            data.TransRef,
+            data.BusinessRef,
+            data.DebitedAmount,
+            data.TransAmount,
+            data.TransFeeAmount,
+            data.SettlementAmount,
+            data.CustomerId,
+            data.TransactionDate,
+            data.ChannelId,
+            data.CurrencyCode,
+            data.Status,
+            data.PaymentMethodType,
+            data.PaymentMethod,
+            new CredoCommandCustomer(
+                data.Customer.CustomerEmail,
+                data.Customer.FirstName,
+                data.Customer.LastName,
+                data.Customer.PhoneNumber));
 }

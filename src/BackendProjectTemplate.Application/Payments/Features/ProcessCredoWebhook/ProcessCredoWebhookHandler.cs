@@ -1,8 +1,6 @@
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
-using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Exceptions;
-using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -16,7 +14,6 @@ public sealed class ProcessCredoWebhookHandler(
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
-    IEventPublisher eventPublisher,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -37,15 +34,12 @@ public sealed class ProcessCredoWebhookHandler(
         var validationResult = await paymentProviderService.ValidateWebhookAsync(
             new PaymentProviderWebhookValidationRequest(command.RawPayload),
             cancellationToken);
+        var webhookDetails = CreateWebhookDetails(command.Webhook);
 
-        var parseResult = await paymentProviderService.ParseWebhookAsync(
-            new PaymentProviderWebhookParseRequest(command.RawPayload),
-            cancellationToken);
-
-        if (!string.IsNullOrWhiteSpace(parseResult.WebhookEventId))
+        if (!string.IsNullOrWhiteSpace(webhookDetails.WebhookEventId))
         {
             var existingWebhook = await paymentWebhookInboxRepository.FirstOrDefaultAsync(
-                new PaymentWebhookInboxByEventIdSpecification(paymentProvider.Id, parseResult.WebhookEventId),
+                new PaymentWebhookInboxByEventIdSpecification(paymentProvider.Id, webhookDetails.WebhookEventId),
                 cancellationToken);
             if (existingWebhook is not null)
             {
@@ -55,12 +49,11 @@ public sealed class ProcessCredoWebhookHandler(
 
         var inbox = PaymentWebhookInbox.Create(
             paymentProvider.Id,
-            parseResult.MerchantReference,
-            parseResult.ProviderReference,
-            parseResult.WebhookEventName,
-            parseResult.WebhookEventId,
+            webhookDetails.MerchantReference,
+            webhookDetails.ProviderReference,
+            webhookDetails.WebhookEventName,
+            webhookDetails.WebhookEventId,
             command.RawPayload,
-            parseResult.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
             validationResult.SignatureValidationStatus,
             validationResult.StatusChangeReason,
             now);
@@ -73,8 +66,8 @@ public sealed class ProcessCredoWebhookHandler(
             return new ProcessPaymentWebhookResult(WebhookReceiptStatus.InvalidSignature);
         }
 
-        var paymentTransaction = await ResolvePaymentTransactionAsync(parseResult, cancellationToken);
-        if (paymentTransaction is null || parseResult.PaymentStatus is null)
+        var paymentTransaction = await ResolvePaymentTransactionAsync(webhookDetails, cancellationToken);
+        if (paymentTransaction is null || !webhookDetails.IsSupportedEvent)
         {
             inbox.MarkIgnored("transaction_not_found_or_unmapped_status", now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -86,14 +79,31 @@ public sealed class ProcessCredoWebhookHandler(
         return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Persisted);
     }
 
+    private static CredoWebhookDetails CreateWebhookDetails(CredoWebhook webhook)
+    {
+        var merchantReference = NormalizeOptional(webhook.Data.BusinessRef);
+        var providerReference = NormalizeOptional(webhook.Data.TransRef);
+        var eventName = string.IsNullOrWhiteSpace(webhook.Event) ? "payment.webhook" : webhook.Event.Trim();
+        var webhookEventId = !string.IsNullOrWhiteSpace(merchantReference)
+            ? $"{merchantReference}:{eventName}"
+            : null;
+
+        return new CredoWebhookDetails(
+            merchantReference,
+            providerReference,
+            eventName,
+            webhookEventId,
+            webhook.Event is "transaction.successful" or "transaction.failed" or "transaction.transaction.transfer.reverse");
+    }
+
     private async Task<PaymentTransaction?> ResolvePaymentTransactionAsync(
-        PaymentProviderWebhookParseResult parseResult,
+        CredoWebhookDetails webhookDetails,
         CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(parseResult.MerchantReference))
+        if (!string.IsNullOrWhiteSpace(webhookDetails.MerchantReference))
         {
             var transactionByMerchantReference = await paymentTransactionRepository.FirstOrDefaultAsync(
-                new PaymentTransactionByMerchantReferenceSpecification(parseResult.MerchantReference),
+                new PaymentTransactionByMerchantReferenceSpecification(webhookDetails.MerchantReference),
                 cancellationToken);
             if (transactionByMerchantReference is not null)
             {
@@ -101,13 +111,23 @@ public sealed class ProcessCredoWebhookHandler(
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(parseResult.ProviderReference))
+        if (!string.IsNullOrWhiteSpace(webhookDetails.ProviderReference))
         {
             return await paymentTransactionRepository.FirstOrDefaultAsync(
-                new PaymentTransactionByProviderReferenceSpecification(parseResult.ProviderReference),
+                new PaymentTransactionByProviderReferenceSpecification(webhookDetails.ProviderReference),
                 cancellationToken);
         }
 
         return null;
     }
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private sealed record CredoWebhookDetails(
+        string? MerchantReference,
+        string? ProviderReference,
+        string WebhookEventName,
+        string? WebhookEventId,
+        bool IsSupportedEvent);
 }

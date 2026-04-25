@@ -12,7 +12,4 @@ public interface IPaymentProviderService
     Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
         PaymentProviderWebhookValidationRequest request,
         CancellationToken cancellationToken);
-    Task<PaymentProviderWebhookParseResult> ParseWebhookAsync(
-        PaymentProviderWebhookParseRequest request,
-        CancellationToken cancellationToken);
 }

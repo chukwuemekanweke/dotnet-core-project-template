@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Exceptions;
-using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -15,12 +14,11 @@ public sealed class ProcessSafeHavenWebhookHandler(
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
-    IEventPublisher eventPublisher,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
-    public async Task<ProcessPaymentWebhookResult> HandleAsync(
-        ProcessSafeHavenWebhookCommand command,
+    public async Task<ProcessPaymentWebhookResult> HandleAsync<TData>(
+        ProcessSafeHavenWebhookCommand<TData> command,
         CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
@@ -38,15 +36,12 @@ public sealed class ProcessSafeHavenWebhookHandler(
         var validationResult = await paymentProviderService.ValidateWebhookAsync(
             new PaymentProviderWebhookValidationRequest(command.RawPayload),
             cancellationToken);
+        var webhookDetails = CreateWebhookDetails(command.Webhook);
 
-        var parseResult = await paymentProviderService.ParseWebhookAsync(
-            new PaymentProviderWebhookParseRequest(command.RawPayload),
-            cancellationToken);
-
-        if (!string.IsNullOrWhiteSpace(parseResult.WebhookEventId))
+        if (!string.IsNullOrWhiteSpace(webhookDetails.WebhookEventId))
         {
             var existingWebhook = await paymentWebhookInboxRepository.FirstOrDefaultAsync(
-                new PaymentWebhookInboxByEventIdSpecification(paymentProvider.Id, parseResult.WebhookEventId),
+                new PaymentWebhookInboxByEventIdSpecification(paymentProvider.Id, webhookDetails.WebhookEventId),
                 cancellationToken);
             if (existingWebhook is not null)
             {
@@ -56,12 +51,11 @@ public sealed class ProcessSafeHavenWebhookHandler(
 
         var inbox = PaymentWebhookInbox.Create(
             paymentProvider.Id,
-            parseResult.MerchantReference,
-            parseResult.ProviderReference,
-            parseResult.WebhookEventName,
-            parseResult.WebhookEventId,
+            webhookDetails.MerchantReference,
+            webhookDetails.ProviderReference,
+            webhookDetails.WebhookEventName,
+            webhookDetails.WebhookEventId,
             command.RawPayload,
-            parseResult.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
             validationResult.SignatureValidationStatus,
             validationResult.StatusChangeReason,
             now);
@@ -74,8 +68,8 @@ public sealed class ProcessSafeHavenWebhookHandler(
             return new ProcessPaymentWebhookResult(WebhookReceiptStatus.InvalidSignature);
         }
 
-        var paymentTransaction = await ResolvePaymentTransactionAsync(parseResult, cancellationToken);
-        if (paymentTransaction is null || parseResult.PaymentStatus is null)
+        var paymentTransaction = await ResolvePaymentTransactionAsync(webhookDetails, cancellationToken);
+        if (paymentTransaction is null || !webhookDetails.IsSupportedEvent)
         {
             inbox.MarkIgnored("transaction_not_found_or_unmapped_status", now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -87,14 +81,42 @@ public sealed class ProcessSafeHavenWebhookHandler(
         return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Persisted);
     }
 
+    private static SafeHavenWebhookDetails CreateWebhookDetails<TData>(SafeHavenWebhook<TData> webhook)
+    {
+        var eventName = string.IsNullOrWhiteSpace(webhook.Event) ? "safehaven.webhook" : webhook.Event.Trim();
+
+        return webhook.Data switch
+        {
+            SafeHavenAccountCreditWebhookData data => new SafeHavenWebhookDetails(
+                NormalizeOptional(data.PaymentReference),
+                NormalizeOptional(data.Id),
+                eventName,
+                CreateWebhookEventId(data.PaymentReference, eventName),
+                false),
+            SafeHavenAccountDebitWebhookData data => new SafeHavenWebhookDetails(
+                NormalizeOptional(data.PaymentReference),
+                NormalizeOptional(data.Id),
+                eventName,
+                CreateWebhookEventId(data.PaymentReference, eventName),
+                false),
+            SafeHavenVirtualAccountTransferWebhookData data => new SafeHavenWebhookDetails(
+                NormalizeOptional(data.PaymentReference),
+                NormalizeOptional(data.Id),
+                eventName,
+                CreateWebhookEventId(data.PaymentReference, eventName),
+                true),
+            _ => new SafeHavenWebhookDetails(null, null, eventName, null, false)
+        };
+    }
+
     private async Task<PaymentTransaction?> ResolvePaymentTransactionAsync(
-        PaymentProviderWebhookParseResult parseResult,
+        SafeHavenWebhookDetails webhookDetails,
         CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(parseResult.MerchantReference))
+        if (!string.IsNullOrWhiteSpace(webhookDetails.MerchantReference))
         {
             var transactionByMerchantReference = await paymentTransactionRepository.FirstOrDefaultAsync(
-                new PaymentTransactionByMerchantReferenceSpecification(parseResult.MerchantReference),
+                new PaymentTransactionByMerchantReferenceSpecification(webhookDetails.MerchantReference),
                 cancellationToken);
             if (transactionByMerchantReference is not null)
             {
@@ -102,13 +124,26 @@ public sealed class ProcessSafeHavenWebhookHandler(
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(parseResult.ProviderReference))
+        if (!string.IsNullOrWhiteSpace(webhookDetails.ProviderReference))
         {
             return await paymentTransactionRepository.FirstOrDefaultAsync(
-                new PaymentTransactionByProviderReferenceSpecification(parseResult.ProviderReference),
+                new PaymentTransactionByProviderReferenceSpecification(webhookDetails.ProviderReference),
                 cancellationToken);
         }
 
         return null;
     }
+
+    private static string? CreateWebhookEventId(string? merchantReference, string eventName) =>
+        string.IsNullOrWhiteSpace(merchantReference) ? null : $"{merchantReference.Trim()}:{eventName}";
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private sealed record SafeHavenWebhookDetails(
+        string? MerchantReference,
+        string? ProviderReference,
+        string WebhookEventName,
+        string? WebhookEventId,
+        bool IsSupportedEvent);
 }

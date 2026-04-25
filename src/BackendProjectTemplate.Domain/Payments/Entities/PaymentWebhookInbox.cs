@@ -17,7 +17,6 @@ public sealed class PaymentWebhookInbox : Entity, IAggregateRoot
         string webhookEventName,
         string? webhookEventId,
         string rawPayload,
-        Dictionary<string, string>? metadata,
         SignatureValidationStatus signatureValidationStatus,
         string? statusChangeReason,
         DateTimeOffset receivedAtUtc)
@@ -28,7 +27,6 @@ public sealed class PaymentWebhookInbox : Entity, IAggregateRoot
         WebhookEventName = webhookEventName;
         WebhookEventId = webhookEventId;
         RawPayload = rawPayload;
-        Metadata = metadata ?? [];
         SignatureValidationStatus = signatureValidationStatus;
         WebhookProcessingStatus = WebhookProcessingStatus.Received;
         StatusChangeReason = statusChangeReason;
@@ -41,7 +39,6 @@ public sealed class PaymentWebhookInbox : Entity, IAggregateRoot
     public string WebhookEventName { get; private set; } = string.Empty;
     public string? WebhookEventId { get; private set; }
     public string RawPayload { get; private set; } = string.Empty;
-    public Dictionary<string, string> Metadata { get; private set; } = [];
     public WebhookProcessingStatus WebhookProcessingStatus { get; private set; }
     public SignatureValidationStatus SignatureValidationStatus { get; private set; }
     public string? StatusChangeReason { get; private set; }
@@ -57,7 +54,6 @@ public sealed class PaymentWebhookInbox : Entity, IAggregateRoot
         string webhookEventName,
         string? webhookEventId,
         string rawPayload,
-        Dictionary<string, string>? metadata,
         SignatureValidationStatus signatureValidationStatus,
         string? statusChangeReason,
         DateTimeOffset receivedAtUtc) =>
@@ -68,7 +64,6 @@ public sealed class PaymentWebhookInbox : Entity, IAggregateRoot
             webhookEventName.Trim(),
             NormalizeOptional(webhookEventId),
             rawPayload,
-            metadata,
             signatureValidationStatus,
             statusChangeReason,
             receivedAtUtc);

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Services;
@@ -54,45 +53,6 @@ internal sealed class CredoPaymentProviderService(
         CancellationToken cancellationToken) =>
         Task.FromResult(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.NotApplicable, "signature_not_configured"));
 
-    public Task<PaymentProviderWebhookParseResult> ParseWebhookAsync(
-        PaymentProviderWebhookParseRequest request,
-        CancellationToken cancellationToken)
-    {
-        using var document = JsonDocument.Parse(request.RawPayload);
-        var root = document.RootElement;
-        var eventName = GetOptionalString(root, "event");
-        var data = root.TryGetProperty("data", out var dataElement) ? dataElement : default;
-        var merchantReference = GetOptionalString(data, "businessRef");
-        var providerReference = GetOptionalString(data, "transRef");
-        PaymentStatus? paymentStatus = eventName switch
-        {
-            "transaction.successful" => PaymentStatus.Succeeded,
-            "transaction.failed" => PaymentStatus.Failed,
-            "transaction.transaction.transfer.reverse" => PaymentStatus.Failed,
-            _ => null
-        };
-        var failureReason = eventName switch
-        {
-            "transaction.failed" => "provider_reported_failure",
-            "transaction.transaction.transfer.reverse" => "provider_transfer_reversed",
-            _ => null
-        };
-        var webhookEventId = !string.IsNullOrWhiteSpace(merchantReference) && !string.IsNullOrWhiteSpace(eventName)
-            ? $"{merchantReference}:{eventName}"
-            : null;
-
-        return Task.FromResult(
-            new PaymentProviderWebhookParseResult(
-                merchantReference,
-                providerReference,
-                webhookEventId,
-                eventName ?? "payment.webhook",
-                paymentStatus,
-                failureReason,
-                "credo_webhook_received",
-                new Dictionary<string, string>()));
-    }
-
     private static PaymentProviderVerificationResult CreateVerificationResult(
         PaymentProviderVerificationRequest request,
         string providerKey)
@@ -125,6 +85,4 @@ internal sealed class CredoPaymentProviderService(
             new Dictionary<string, string> { ["provider"] = providerKey });
     }
 
-    private static string? GetOptionalString(JsonElement root, string propertyName) =>
-        root.TryGetProperty(propertyName, out var property) ? property.GetString() : null;
 }

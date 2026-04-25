@@ -1,4 +1,3 @@
-using System.Text.Json;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Services;
@@ -57,41 +56,6 @@ internal sealed class SafeHavenPaymentProviderService(
         CancellationToken cancellationToken) =>
         Task.FromResult(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.NotApplicable, "signature_not_configured"));
 
-    public Task<PaymentProviderWebhookParseResult> ParseWebhookAsync(
-        PaymentProviderWebhookParseRequest request,
-        CancellationToken cancellationToken)
-    {
-        using var document = JsonDocument.Parse(request.RawPayload);
-        var root = document.RootElement;
-        var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
-        var data = root.TryGetProperty("data", out var dataElement) ? dataElement : default;
-
-        if (!string.Equals(type, "transfer.successful", StringComparison.OrdinalIgnoreCase))
-        {
-            return Task.FromResult(
-                new PaymentProviderWebhookParseResult(
-                    null,
-                    null,
-                    null,
-                    type ?? "safehaven.webhook",
-                    null,
-                    null,
-                    "unsupported_safehaven_webhook_type",
-                    new Dictionary<string, string>()));
-        }
-
-        return Task.FromResult(
-            new PaymentProviderWebhookParseResult(
-                GetOptionalString(data, "merchantReference"),
-                GetOptionalString(data, "providerReference"),
-                $"{GetOptionalString(data, "merchantReference")}:{type}",
-                type ?? "safehaven.webhook",
-                PaymentStatus.Succeeded,
-                null,
-                "safehaven_transfer_successful",
-                new Dictionary<string, string>()));
-    }
-
     private static PaymentProviderVerificationResult CreateVerificationResult(
         PaymentProviderVerificationRequest request,
         string providerKey)
@@ -123,9 +87,4 @@ internal sealed class SafeHavenPaymentProviderService(
             KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
             new Dictionary<string, string> { ["provider"] = providerKey });
     }
-
-    private static string? GetOptionalString(JsonElement element, string propertyName) =>
-        element.ValueKind != JsonValueKind.Undefined && element.TryGetProperty(propertyName, out var property)
-            ? property.GetString()
-            : null;
 }
