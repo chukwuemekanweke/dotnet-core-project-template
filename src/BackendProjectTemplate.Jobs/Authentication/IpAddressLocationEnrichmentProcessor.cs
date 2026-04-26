@@ -24,7 +24,14 @@ public sealed class IpAddressLocationEnrichmentProcessor(
 
         do
         {
-            await ProcessBatchAsync(stoppingToken);
+            try
+            {
+                await ProcessBatchAsync(stoppingToken);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "IP address location enrichment iteration failed.");
+            }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }

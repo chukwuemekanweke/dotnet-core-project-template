@@ -14,6 +14,9 @@ using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<HostOptions>(options =>
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
+
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddBackgroundServiceReadinessTracking();
 builder.Services.AddApplication();
