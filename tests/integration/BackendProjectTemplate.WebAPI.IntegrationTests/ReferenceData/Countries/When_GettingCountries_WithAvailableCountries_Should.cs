@@ -19,6 +19,7 @@ public sealed class When_GettingCountries_WithAvailableCountries_Should(Containe
     public async Task InitializeAsync()
     {
         await InitializeClientAsync();
+        Client.DefaultRequestHeaders.Add("X-Tenant-Id", Guid.CreateVersion7().ToString());
         await SeedCountryAsync();
     }
 

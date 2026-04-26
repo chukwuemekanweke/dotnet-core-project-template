@@ -3,6 +3,8 @@ using System.Security.Claims;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BackendProjectTemplate.WebAPI.Infrastructure;
 
@@ -11,15 +13,35 @@ public sealed class CurrentActorMiddleware(RequestDelegate next)
     public async Task InvokeAsync(
         HttpContext context,
         ICurrentActorAccessor currentActorAccessor,
-        IStakeholderReadModelRepository stakeholderReadModelRepository)
+        IStakeholderReadModelRepository stakeholderReadModelRepository,
+        IProblemDetailsService problemDetailsService)
     {
-        var actorId = await ResolveActorIdAsync(context, stakeholderReadModelRepository);
-
         Guid? tenantId = null;
         if (Guid.TryParse(context.Request.Headers["X-Tenant-Id"], out var parsedTenantId))
         {
             tenantId = parsedTenantId;
         }
+
+        if (!IsExcludedFromTenantCheck(context.Request.Path))
+        {
+            if (!tenantId.HasValue)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await problemDetailsService.WriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = context,
+                    ProblemDetails = new ProblemDetails
+                    {
+                        Status = StatusCodes.Status400BadRequest,
+                        Title = "Missing tenant identifier",
+                        Detail = "The X-Tenant-Id header is required."
+                    }
+                });
+                return;
+            }
+        }
+
+        var actorId = await ResolveActorIdAsync(context, stakeholderReadModelRepository);
 
         var correlationId = context.TraceIdentifier;
         if (string.IsNullOrWhiteSpace(correlationId))
@@ -31,6 +53,14 @@ public sealed class CurrentActorMiddleware(RequestDelegate next)
         currentActorAccessor.Set(actorId, tenantId, correlationId, flowId);
         context.Response.Headers[Domain.Common.Observability.Observability.FlowIdHeaderName] = flowId;
         await next(context);
+    }
+
+    private static bool IsExcludedFromTenantCheck(PathString path)
+    {
+        return path.StartsWithSegments("/health")
+            || path.StartsWithSegments("/metrics")
+            || path == "/"
+            || path.StartsWithSegments("/api/v1/payments/webhooks");
     }
 
     private static async Task<string> ResolveActorIdAsync(

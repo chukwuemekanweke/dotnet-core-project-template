@@ -17,6 +17,7 @@ public sealed class WhenAuthPublicRateLimitIsExceeded_Should(ContainersFixture f
     public async Task InitializeAsync()
     {
         await InitializeClientAsync();
+        Client.DefaultRequestHeaders.Add("X-Tenant-Id", Guid.CreateVersion7().ToString());
     }
 
     public async Task DisposeAsync()
