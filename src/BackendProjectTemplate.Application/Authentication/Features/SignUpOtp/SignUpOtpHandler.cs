@@ -12,7 +12,6 @@ public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
-    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -21,7 +20,7 @@ public sealed class SignUpOtpHandler(
     {
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationStarted,
-            ObservabilityEventProperties.Create(currentActor));
+            ObservabilityEventProperties.Create(request.ActorContext));
 
         var user = await identityService.FindByEmailAsync(request.Email);
         if (user is null)
@@ -29,7 +28,7 @@ public sealed class SignUpOtpHandler(
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidOtp);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.EmailConfirmationFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.InvalidOtp));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.InvalidOtp));
             return new SignUpOtpResult(SignUpOtpStatus.InvalidOtp);
         }
 
@@ -38,7 +37,7 @@ public sealed class SignUpOtpHandler(
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.AlreadyConfirmed);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.EmailConfirmationFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.AlreadyConfirmed));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.AlreadyConfirmed));
             return new SignUpOtpResult(SignUpOtpStatus.AlreadyVerified);
         }
 
@@ -47,7 +46,7 @@ public sealed class SignUpOtpHandler(
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidOtp);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.EmailConfirmationFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.InvalidOtp));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.InvalidOtp));
             return new SignUpOtpResult(SignUpOtpStatus.InvalidOtp);
         }
 
@@ -65,14 +64,14 @@ public sealed class SignUpOtpHandler(
         await eventPublisher.PublishAsync(new UserEmailConfirmed
         {
             StakeholderId = stakeholder.Id,
-            FlowId = currentActor.FlowId,
+            FlowId = request.ActorContext.FlowId,
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationCompleted,
-            ObservabilityEventProperties.Create(currentActor, stakeholder.Id));
+            ObservabilityEventProperties.Create(request.ActorContext, stakeholder.Id));
 
         return new SignUpOtpResult(SignUpOtpStatus.Success);
     }

@@ -1,3 +1,4 @@
+using NSubstitute;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -44,7 +45,7 @@ public sealed class When_InitiatingPayment_WithValidRequest_Should
                 new Dictionary<string, string>()));
         context.PaymentProviderServices.Add(providerService);
 
-        var sut = new PaymentsController(context.CreateInitiatePaymentHandler(), new InitiatePaymentValidator());
+        var sut = new PaymentsController(context.CreateInitiatePaymentHandler(), new InitiatePaymentValidator(), context.CurrentActor);
 
         var result = await sut.Handle(request, CancellationToken.None);
 

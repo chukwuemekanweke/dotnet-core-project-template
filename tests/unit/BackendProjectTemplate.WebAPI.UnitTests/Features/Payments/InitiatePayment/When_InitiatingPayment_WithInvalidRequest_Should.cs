@@ -1,3 +1,4 @@
+using NSubstitute;
 using BackendProjectTemplate.WebAPI.Features.Payments.InitiatePayment;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;
@@ -10,7 +11,7 @@ public sealed class When_InitiatingPayment_WithInvalidRequest_Should
     public async Task ReturnBadRequest()
     {
         var context = new PaymentsControllerTestContext();
-        var sut = new PaymentsController(context.CreateInitiatePaymentHandler(), new InitiatePaymentValidator());
+        var sut = new PaymentsController(context.CreateInitiatePaymentHandler(), new InitiatePaymentValidator(), context.CurrentActor);
 
         var result = await sut.Handle(
             new InitiatePaymentRequest(0m, Guid.Empty, string.Empty, Guid.Empty),

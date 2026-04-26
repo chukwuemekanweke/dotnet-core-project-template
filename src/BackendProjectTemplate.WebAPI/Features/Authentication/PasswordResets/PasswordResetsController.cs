@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
@@ -19,7 +20,8 @@ public sealed class PasswordResetsController(
     RequestPasswordResetHandler handler,
     CompletePasswordResetHandler completePasswordResetHandler,
     IValidator<PasswordResetRequest> validator,
-    IValidator<CompletePasswordResetRequest> completePasswordResetValidator) : ControllerBase
+    IValidator<CompletePasswordResetRequest> completePasswordResetValidator,
+    ICurrentActor currentActor) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType<RequestPasswordResetResponse>(StatusCodes.Status202Accepted)]
@@ -35,7 +37,7 @@ public sealed class PasswordResetsController(
             return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
 
-        var result = await handler.HandleAsync(new RequestPasswordResetCommand(request.Email), cancellationToken);
+        var result = await handler.HandleAsync(new RequestPasswordResetCommand(request.Email, ActorContext.FromCurrentActor(currentActor)), cancellationToken);
 
         return result.Status switch
         {
@@ -67,7 +69,8 @@ public sealed class PasswordResetsController(
                 request.Email,
                 request.Otp,
                 request.Password,
-                request.ConfirmPassword),
+                request.ConfirmPassword,
+                ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
 
         return result.Status switch

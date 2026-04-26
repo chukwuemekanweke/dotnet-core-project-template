@@ -22,7 +22,8 @@ public sealed class When_LoggingOut_WithoutBearerToken_Should
             Substitute.For<IValidator<SignInRequest>>(),
             Substitute.For<IValidator<GoogleSignInRequest>>(),
             Substitute.For<IValidator<RefreshSessionRequest>>(),
-            context.Clock)
+            context.Clock,
+            context.CurrentActor)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

@@ -18,16 +18,13 @@ public sealed class InitiatePaymentHandler(
     IRepository<PaymentProviderConfiguration> paymentProviderConfigurationRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
-    ICurrentActor currentActor,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
     public async Task<InitiatePaymentResult> HandleAsync(InitiatePaymentCommand command, CancellationToken cancellationToken)
     {
-        if (!Guid.TryParse(currentActor.ActorId, out var stakeholderId))
-        {
-            throw new InvalidOperationException("Authenticated stakeholder id is required to initiate a payment.");
-        }
+        var stakeholderId = command.ActorContext.StakeholderId
+            ?? throw new InvalidOperationException("Authenticated stakeholder id is required to initiate a payment.");
 
         var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId, cancellationToken)
             ?? throw new InvalidOperationException($"Unable to resolve stakeholder '{stakeholderId}' for payment initiation.");

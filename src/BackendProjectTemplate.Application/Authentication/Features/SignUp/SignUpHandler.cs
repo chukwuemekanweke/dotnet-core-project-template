@@ -15,7 +15,6 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignUp;
 public sealed class SignUpHandler(
     IAuthenticationIdentityService identityService,
     IEventPublisher eventPublisher,
-    ICurrentActor currentActor,
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
@@ -26,20 +25,20 @@ public sealed class SignUpHandler(
     {
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordSignUpStarted,
-            ObservabilityEventProperties.Create(currentActor));
+            ObservabilityEventProperties.Create(request.ActorContext));
 
         if (await identityService.FindByEmailAsync(request.Email) is not null)
         {
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.DuplicateEmail);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.PasswordSignUpFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.DuplicateEmail));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.DuplicateEmail));
             return new SignUpResult(SignUpStatus.DuplicateEmail);
         }
 
         var now = timeProvider.GetUtcNow();
         var user = AppUser.Create(request.Email, request.FirstName, request.LastName, now);
-        var tenantId = currentActor.TenantId
+        var tenantId = request.ActorContext.TenantId
             ?? throw new InvalidOperationException("Tenant id is required to sign up.");
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
@@ -52,14 +51,14 @@ public sealed class SignUpHandler(
                 customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.DuplicateEmail);
                 customTelemetryContext.AddCustomEvent(
                     Observability.EventNames.Authentication.PasswordSignUpFailed,
-                    ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.DuplicateEmail));
+                    ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.DuplicateEmail));
                 return new SignUpResult(SignUpStatus.DuplicateEmail);
             }
 
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.ValidationFailed);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.PasswordSignUpFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.ValidationFailed));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.ValidationFailed));
             return new SignUpResult(SignUpStatus.ValidationFailed, createResult.ToValidationDictionary());
         }
 
@@ -85,14 +84,14 @@ public sealed class SignUpHandler(
         await eventPublisher.PublishAsync(new UserCreated
         {
             StakeholderId = stakeholder.Id,
-            FlowId = currentActor.FlowId,
+            FlowId = request.ActorContext.FlowId,
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordSignUpCompleted,
-            ObservabilityEventProperties.Create(currentActor, stakeholder.Id));
+            ObservabilityEventProperties.Create(request.ActorContext, stakeholder.Id));
 
         return new SignUpResult(SignUpStatus.Accepted);
     }

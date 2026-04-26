@@ -40,7 +40,8 @@ public sealed class When_CompletingPasswordReset_WithValidOtp_Should
             context.CreateRequestPasswordResetHandler(),
             context.CreateCompletePasswordResetHandler(),
             validator,
-            completeValidator);
+            completeValidator,
+            context.CurrentActor);
 
         var result = await sut.Complete(request, CancellationToken.None);
 

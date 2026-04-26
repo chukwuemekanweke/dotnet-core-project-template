@@ -29,7 +29,6 @@ public sealed class WhenSigningUpWithNewEmail_Should
             StakeholderDefaults.TypeKey,
             context.Clock.GetUtcNow());
 
-        context.CurrentActor.TenantId.Returns(tenantId);
         context.IdentityService.FindByEmailAsync(email).Returns((AppUser?)null);
         context.IdentityService.CreateAsync(Arg.Any<AppUser>(), password).Returns(IdentityResult.Success);
         context.StakeholderTypeRepository.FirstOrDefaultAsync(

@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
@@ -17,7 +18,8 @@ public sealed class RegistrationsController(
     SignUpHandler handler,
     GoogleSignUpHandler googleSignUpHandler,
     IValidator<SignUpRequest> validator,
-    IValidator<GoogleSignUpRequest> googleSignUpValidator) : ControllerBase
+    IValidator<GoogleSignUpRequest> googleSignUpValidator,
+    ICurrentActor currentActor) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType<SignUpResponse>(StatusCodes.Status202Accepted)]
@@ -39,7 +41,8 @@ public sealed class RegistrationsController(
             request.ConfirmPassword,
             request.CountryId,
             request.FirstName,
-            request.LastName);
+            request.LastName,
+            ActorContext.FromCurrentActor(currentActor));
 
         var result = await handler.HandleAsync(command, cancellationToken);
 
@@ -77,7 +80,8 @@ public sealed class RegistrationsController(
                 request.IdToken,
                 request.CountryId,
                 request.FirstName,
-                request.LastName),
+                request.LastName,
+                ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
 
         return result.Status switch

@@ -5,22 +5,22 @@ namespace BackendProjectTemplate.Domain.Common.Observability;
 public static class ObservabilityEventProperties
 {
     public static Dictionary<string, string> Create(
-        ICurrentActor currentActor,
+        ActorContext actorContext,
         Guid? stakeholderId = null,
         string? failureReason = null,
         IReadOnlyDictionary<string, string>? additionalProperties = null)
     {
         var properties = new Dictionary<string, string>
         {
-            [Observability.CorrelationIdPropertyName] = string.IsNullOrWhiteSpace(currentActor.CorrelationId)
+            [Observability.CorrelationIdPropertyName] = string.IsNullOrWhiteSpace(actorContext.CorrelationId)
                 ? Guid.CreateVersion7().ToString("N")
-                : currentActor.CorrelationId,
-            [Observability.FlowIdPropertyName] = currentActor.FlowId ?? string.Empty
+                : actorContext.CorrelationId,
+            [Observability.FlowIdPropertyName] = actorContext.FlowId ?? string.Empty
         };
 
-        if (currentActor.TenantId.HasValue)
+        if (actorContext.TenantId.HasValue)
         {
-            properties[Observability.TenantIdPropertyName] = currentActor.TenantId.Value.ToString();
+            properties[Observability.TenantIdPropertyName] = actorContext.TenantId.Value.ToString();
         }
 
         if (stakeholderId.HasValue)
@@ -44,5 +44,15 @@ public static class ObservabilityEventProperties
         }
 
         return properties;
+    }
+
+    public static Dictionary<string, string> Create(
+        ICurrentActor currentActor,
+        Guid? stakeholderId = null,
+        string? failureReason = null,
+        IReadOnlyDictionary<string, string>? additionalProperties = null)
+    {
+        var actorContext = ActorContext.FromCurrentActor(currentActor);
+        return Create(actorContext, stakeholderId, failureReason, additionalProperties);
     }
 }

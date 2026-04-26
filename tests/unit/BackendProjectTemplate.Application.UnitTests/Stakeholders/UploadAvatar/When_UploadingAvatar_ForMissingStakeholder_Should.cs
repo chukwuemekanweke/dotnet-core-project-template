@@ -25,7 +25,6 @@ public sealed class When_UploadingAvatar_ForMissingStakeholder_Should
             .Returns((Stakeholder?)null);
 
         var sut = new UploadAvatarHandler(
-            currentActor,
             stakeholderRepository,
             Substitute.For<IObjectStorageService>(),
             customTelemetryContext,
@@ -33,7 +32,7 @@ public sealed class When_UploadingAvatar_ForMissingStakeholder_Should
             TimeProvider.System);
 
         var result = await sut.HandleAsync(
-            new UploadAvatarCommand(stream, "avatar.png", "image/png", stream.Length),
+            new UploadAvatarCommand(stream, "avatar.png", "image/png", stream.Length, new ActorContext(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.Status.ShouldBe(UploadAvatarStatus.StakeholderNotFound);

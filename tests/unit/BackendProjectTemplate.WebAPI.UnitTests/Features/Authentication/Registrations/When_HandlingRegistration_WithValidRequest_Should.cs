@@ -43,7 +43,8 @@ public sealed class When_HandlingRegistration_WithValidRequest_Should
             context.CreateSignUpHandler(),
             context.CreateGoogleSignUpHandler(),
             validator,
-            googleValidator);
+            googleValidator,
+            context.CurrentActor);
 
         var result = await sut.Handle(request, CancellationToken.None);
 

@@ -51,7 +51,6 @@ internal sealed class AuthenticationControllerTestContext
     public SignUpHandler CreateSignUpHandler() => new(
         IdentityService,
         EventPublisher,
-        CurrentActor,
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
@@ -62,7 +61,6 @@ internal sealed class AuthenticationControllerTestContext
         IdentityService,
         GoogleIdentityTokenService,
         EventPublisher,
-        CurrentActor,
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
@@ -75,7 +73,6 @@ internal sealed class AuthenticationControllerTestContext
         RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -87,7 +84,6 @@ internal sealed class AuthenticationControllerTestContext
         RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -98,21 +94,18 @@ internal sealed class AuthenticationControllerTestContext
         RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
 
     public LogoutSessionHandler CreateLogoutSessionHandler() => new(
         AccessTokenRevocationService,
-        CurrentActor,
         CustomTelemetryContext);
 
     public RequestPasswordResetHandler CreateRequestPasswordResetHandler() => new(
         IdentityService,
         CommandSender,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork);
 
@@ -120,7 +113,6 @@ internal sealed class AuthenticationControllerTestContext
         IdentityService,
         TwoFactorOtpService,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork);
 
@@ -128,7 +120,6 @@ internal sealed class AuthenticationControllerTestContext
         IdentityService,
         EventPublisher,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);

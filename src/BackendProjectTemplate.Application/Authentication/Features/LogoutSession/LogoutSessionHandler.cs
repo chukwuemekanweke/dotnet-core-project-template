@@ -6,7 +6,6 @@ namespace BackendProjectTemplate.Application.Authentication.Features.LogoutSessi
 
 public sealed class LogoutSessionHandler(
     IAccessTokenRevocationService accessTokenRevocationService,
-    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext)
 {
     public async Task<LogoutSessionResult> HandleAsync(LogoutSessionCommand request, CancellationToken cancellationToken)
@@ -22,7 +21,7 @@ public sealed class LogoutSessionHandler(
         {
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.SignOutCompleted,
-                ObservabilityEventProperties.Create(currentActor, request.StakeholderId.Value));
+                ObservabilityEventProperties.Create(request.ActorContext, request.StakeholderId.Value));
         }
 
         return new LogoutSessionResult(LogoutSessionStatus.Success);

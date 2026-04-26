@@ -16,7 +16,6 @@ public sealed class GoogleSignInHandler(
     IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
-    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -25,7 +24,7 @@ public sealed class GoogleSignInHandler(
     {
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.GoogleSignInStarted,
-            ObservabilityEventProperties.Create(currentActor));
+            ObservabilityEventProperties.Create(request.ActorContext));
 
         var googleIdentity = await googleIdentityTokenService.ValidateAsync(request.IdToken, cancellationToken);
         if (googleIdentity is null)
@@ -43,6 +42,7 @@ public sealed class GoogleSignInHandler(
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
                 failureReason: UserSignInFailureReasons.UserNotFound,
+                request.ActorContext,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -60,6 +60,7 @@ public sealed class GoogleSignInHandler(
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
                 failureReason: UserSignInFailureReasons.LockedOut,
+                request.ActorContext,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -75,6 +76,7 @@ public sealed class GoogleSignInHandler(
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
                 failureReason: UserSignInFailureReasons.EmailNotVerified,
+                request.ActorContext,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -89,6 +91,7 @@ public sealed class GoogleSignInHandler(
             stakeholderId: currentStakeholder.Id,
             ipAddress: request.IpAddress,
             userAgent: request.UserAgent,
+            request.ActorContext,
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -99,6 +102,7 @@ public sealed class GoogleSignInHandler(
         Guid stakeholderId,
         string ipAddress,
         string userAgent,
+        ActorContext actorContext,
         CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
@@ -106,13 +110,13 @@ public sealed class GoogleSignInHandler(
         await eventPublisher.PublishAsync(new UserSignInSuccessful(ipAddress, userAgent)
         {
             StakeholderId = stakeholderId,
-            FlowId = currentActor.FlowId,
+            FlowId = actorContext.FlowId,
             OccuredAt = now
         }, cancellationToken);
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.GoogleSignInCompleted,
-            ObservabilityEventProperties.Create(currentActor, stakeholderId));
+            ObservabilityEventProperties.Create(actorContext, stakeholderId));
     }
 
     private async Task PublishFailedAsync(
@@ -121,6 +125,7 @@ public sealed class GoogleSignInHandler(
         string ipAddress,
         string userAgent,
         string failureReason,
+        ActorContext actorContext,
         CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
@@ -128,7 +133,7 @@ public sealed class GoogleSignInHandler(
         await eventPublisher.PublishAsync(new UserSignInFailed(emailAddress, ipAddress, userAgent, failureReason)
         {
             StakeholderId = stakeholderId,
-            FlowId = currentActor.FlowId,
+            FlowId = actorContext.FlowId,
             OccuredAt = now
         }, cancellationToken);
 

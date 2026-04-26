@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using NSubstitute;
@@ -16,7 +17,7 @@ public sealed class WhenLoggingOutWithValidToken_Should
         var expiresAtUtc = context.Clock.GetUtcNow().AddMinutes(5);
 
         var result = await context.CreateLogoutSessionHandler().HandleAsync(
-            new LogoutSessionCommand(tokenId, expiresAtUtc, stakeholderId),
+            new LogoutSessionCommand(tokenId, expiresAtUtc, stakeholderId, new ActorContext(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.Status.ShouldBe(LogoutSessionStatus.Success);

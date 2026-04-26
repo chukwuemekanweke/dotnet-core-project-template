@@ -12,13 +12,12 @@ public sealed class RequestPasswordResetHandler(
     IAuthenticationIdentityService identityService,
     ICommandSender commandSender,
     StakeholderResolver stakeholderResolver,
-    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
 {
     public async Task<RequestPasswordResetResult> HandleAsync(RequestPasswordResetCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = currentActor.TenantId
+        var tenantId = request.ActorContext.TenantId
             ?? throw new InvalidOperationException("Tenant id is required to request a password reset.");
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var user = await identityService.FindByEmailAsync(normalizedEmail);
@@ -27,7 +26,7 @@ public sealed class RequestPasswordResetHandler(
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.UserNotFound);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.PasswordResetRequestFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.UserNotFound));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.UserNotFound));
             return new RequestPasswordResetResult(RequestPasswordResetStatus.UserNotFound);
         }
 
@@ -44,7 +43,7 @@ public sealed class RequestPasswordResetHandler(
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetRequested,
-            ObservabilityEventProperties.Create(currentActor, stakeholder.Id));
+            ObservabilityEventProperties.Create(request.ActorContext, stakeholder.Id));
 
         return new RequestPasswordResetResult(RequestPasswordResetStatus.Success);
     }

@@ -40,7 +40,8 @@ public sealed class When_HandlingGoogleRegistration_WithDuplicateGoogleAccount_S
             context.CreateSignUpHandler(),
             context.CreateGoogleSignUpHandler(),
             validator,
-            googleValidator);
+            googleValidator,
+            context.CurrentActor);
 
         var result = await sut.HandleGoogle(request, CancellationToken.None);
 

@@ -45,7 +45,8 @@ public sealed class When_SigningIn_WithLockedAccount_Should
             validator,
             googleValidator,
             refreshValidator,
-            context.Clock)
+            context.Clock,
+            context.CurrentActor)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

@@ -7,7 +7,6 @@ using BackendProjectTemplate.Domain.Stakeholders.Entities;
 namespace BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 
 public sealed class UploadAvatarHandler(
-    ICurrentActor currentActor,
     IRepository<Stakeholder> stakeholderRepository,
     IObjectStorageService objectStorageService,
     ICustomTelemetryContext customTelemetryContext,
@@ -18,12 +17,13 @@ public sealed class UploadAvatarHandler(
 
     public async Task<UploadAvatarResult> HandleAsync(UploadAvatarCommand command, CancellationToken cancellationToken)
     {
-        if (!Guid.TryParse(currentActor.ActorId, out var stakeholderId))
+        var stakeholderId = command.ActorContext.StakeholderId;
+        if (!stakeholderId.HasValue)
         {
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.NotAuthenticated);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.AvatarUploadFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.NotAuthenticated));
+                ObservabilityEventProperties.Create(command.ActorContext, failureReason: ObservabilityFailureReasons.NotAuthenticated));
             return new UploadAvatarResult(UploadAvatarStatus.NotAuthenticated);
         }
 
@@ -36,20 +36,20 @@ public sealed class UploadAvatarHandler(
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidFile);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.AvatarUploadFailed,
-                ObservabilityEventProperties.Create(currentActor, stakeholderId, ObservabilityFailureReasons.InvalidFile));
+                ObservabilityEventProperties.Create(command.ActorContext, stakeholderId, ObservabilityFailureReasons.InvalidFile));
             return new UploadAvatarResult(
                 UploadAvatarStatus.InvalidFile,
                 Error: "Avatar must be an image file with size up to 2 MB.");
         }
 
-        var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId, cancellationToken);
+        var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId.Value, cancellationToken);
         if (stakeholder is null)
         {
             customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.ToString());
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.StakeholderNotFound);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.AvatarUploadFailed,
-                ObservabilityEventProperties.Create(currentActor, stakeholderId, ObservabilityFailureReasons.StakeholderNotFound));
+                ObservabilityEventProperties.Create(command.ActorContext, stakeholderId, ObservabilityFailureReasons.StakeholderNotFound));
             return new UploadAvatarResult(UploadAvatarStatus.StakeholderNotFound);
         }
 
@@ -69,7 +69,7 @@ public sealed class UploadAvatarHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.AvatarUploadCompleted,
-            ObservabilityEventProperties.Create(currentActor, stakeholderId));
+            ObservabilityEventProperties.Create(command.ActorContext, stakeholderId));
 
         return new UploadAvatarResult(UploadAvatarStatus.Success, avatarUrl);
     }

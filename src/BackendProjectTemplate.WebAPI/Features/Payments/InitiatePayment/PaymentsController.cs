@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +15,8 @@ namespace BackendProjectTemplate.WebAPI.Features.Payments.InitiatePayment;
 [Route(EndpointUrl.Payments.Route)]
 public sealed class PaymentsController(
     InitiatePaymentHandler handler,
-    InitiatePaymentValidator validator) : ControllerBase
+    InitiatePaymentValidator validator,
+    ICurrentActor currentActor) : ControllerBase
 {
     [HttpPost("initiate")]
     [ProducesResponseType<InitiatePaymentResponse>(StatusCodes.Status200OK)]
@@ -37,7 +39,8 @@ public sealed class PaymentsController(
                 request.Amount,
                 request.CurrencyId,
                 paymentIntent,
-                request.PaymentProviderId),
+                request.PaymentProviderId,
+                ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
 
         return Ok(new InitiatePaymentResponse(

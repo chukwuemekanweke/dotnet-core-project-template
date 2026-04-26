@@ -29,8 +29,9 @@ public sealed class When_UpdatingProfile_WithValidRequest_Should
         stakeholderRepository.GetByIdAsync(stakeholderId, Arg.Any<CancellationToken>()).Returns(stakeholder);
 
         var sut = new ProfilesController(
-            new UploadAvatarHandler(currentActor, stakeholderRepository, Substitute.For<IObjectStorageService>(), customTelemetryContext, unitOfWork, TimeProvider.System),
-            new UpdateProfileHandler(currentActor, stakeholderRepository, customTelemetryContext, unitOfWork, TimeProvider.System));
+            new UploadAvatarHandler(stakeholderRepository, Substitute.For<IObjectStorageService>(), customTelemetryContext, unitOfWork, TimeProvider.System),
+            new UpdateProfileHandler(stakeholderRepository, customTelemetryContext, unitOfWork, TimeProvider.System),
+            currentActor);
 
         var result = await sut.UpdateProfile(request, CancellationToken.None);
 

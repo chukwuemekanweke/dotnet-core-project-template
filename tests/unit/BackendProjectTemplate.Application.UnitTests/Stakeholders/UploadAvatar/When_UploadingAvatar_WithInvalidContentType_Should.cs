@@ -20,7 +20,6 @@ public sealed class When_UploadingAvatar_WithInvalidContentType_Should
 
         await using var stream = new MemoryStream([1, 2, 3]);
         var sut = new UploadAvatarHandler(
-            currentActor,
             Substitute.For<IRepository<Stakeholder>>(),
             Substitute.For<IObjectStorageService>(),
             customTelemetryContext,
@@ -28,7 +27,7 @@ public sealed class When_UploadingAvatar_WithInvalidContentType_Should
             TimeProvider.System);
 
         var result = await sut.HandleAsync(
-            new UploadAvatarCommand(stream, "avatar.txt", "text/plain", stream.Length),
+            new UploadAvatarCommand(stream, "avatar.txt", "text/plain", stream.Length, new ActorContext(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.Status.ShouldBe(UploadAvatarStatus.InvalidFile);
