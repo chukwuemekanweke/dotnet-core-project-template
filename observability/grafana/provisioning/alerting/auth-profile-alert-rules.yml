@@ -76,7 +76,7 @@ groups:
           severity: warning
         isPaused: false
 
-      - uid: auth-email-confirmation-completion-rate-low
+      - uid: auth-email-confirm-completion-rate-low
         title: Email confirmation completion rate below 90%
         condition: C
         data:
@@ -286,7 +286,7 @@ groups:
           severity: warning
         isPaused: false
 
-      - uid: auth-session-refresh-post-processing-rate-low
+      - uid: auth-session-refresh-post-proc-rate-low
         title: Session refresh post-processing rate below 99%
         condition: C
         data:
@@ -501,7 +501,7 @@ groups:
           severity: warning
         isPaused: false
 
-      - uid: auth-password-reset-completion-failures-high
+      - uid: auth-pwd-reset-completion-failures-high
         title: Password reset completion failures exceed 5 in 15m
         condition: C
         data:
