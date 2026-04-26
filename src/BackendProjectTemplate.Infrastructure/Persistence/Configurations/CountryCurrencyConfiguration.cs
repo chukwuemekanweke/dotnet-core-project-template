@@ -19,10 +19,10 @@ public sealed class CountryCurrencyConfiguration : IEntityTypeConfiguration<Coun
 
         builder.HasIndex(mapping => new { mapping.CountryId, mapping.CurrencyId })
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
 
         builder.HasIndex(mapping => new { mapping.CountryId, mapping.IsDefault })
-            .HasFilter("[IsDeleted] = 0 AND [IsDefault] = 1")
+            .HasFilter("\"IsDeleted\" = FALSE AND \"IsDefault\" = TRUE")
             .IsUnique();
     }
 }

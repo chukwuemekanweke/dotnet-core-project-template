@@ -17,6 +17,6 @@ public sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
         builder.HasIndex(user => user.NormalizedUserName)
             .HasDatabaseName("UserNameIndex")
             .IsUnique()
-            .HasFilter("[NormalizedUserName] IS NOT NULL AND [IsDeleted] = 0");
+            .HasFilter("\"NormalizedUserName\" IS NOT NULL AND \"IsDeleted\" = FALSE");
     }
 }

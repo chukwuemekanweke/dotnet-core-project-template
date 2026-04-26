@@ -8,7 +8,7 @@ using BackendProjectTemplate.Domain.Payments.Services;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 
-public sealed class CustomWebApplicationFactory(string sqlServerConnectionString, string redisConnectionString) : WebApplicationFactory<Program>
+public sealed class CustomWebApplicationFactory(string postgresConnectionString, string redisConnectionString) : WebApplicationFactory<Program>
 {
     public FakeGoogleIdentityTokenService GoogleIdentityTokenService { get; } = new();
 
@@ -20,8 +20,8 @@ public sealed class CustomWebApplicationFactory(string sqlServerConnectionString
         {
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServerWrite"] = sqlServerConnectionString,
-                ["ConnectionStrings:SqlServerRead"] = sqlServerConnectionString,
+                ["ConnectionStrings:PostgresWrite"] = postgresConnectionString,
+                ["ConnectionStrings:PostgresRead"] = postgresConnectionString,
                 ["ConnectionStrings:Redis"] = redisConnectionString,
                 ["Database:InitializeOnStartup"] = "true",
                 ["Jwt:Issuer"] = "integration-tests",

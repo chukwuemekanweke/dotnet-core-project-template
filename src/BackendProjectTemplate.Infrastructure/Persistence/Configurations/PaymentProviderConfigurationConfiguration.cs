@@ -35,6 +35,6 @@ public sealed class PaymentProviderConfigurationConfiguration : IEntityTypeConfi
                 configuration.PaymentIntent
             })
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

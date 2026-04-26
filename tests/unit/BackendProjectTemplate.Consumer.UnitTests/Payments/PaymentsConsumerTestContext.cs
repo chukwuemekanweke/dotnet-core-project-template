@@ -23,7 +23,7 @@ internal sealed class PaymentsConsumerTestContext
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 14, 0, 0, TimeSpan.Zero));
 
     public SuccessfulPaymentConfirmedHandler CreateSuccessfulPaymentConfirmedHandler() =>
-        new(CustomTelemetryContext, CurrentActorAccessor, MessageContext, CommandSender);
+        new(CustomTelemetryContext, CurrentActorAccessor, MessageContext, CommandSender, UnitOfWork);
 
     public CreditWalletHandler CreateCreditWalletHandler() =>
         new(

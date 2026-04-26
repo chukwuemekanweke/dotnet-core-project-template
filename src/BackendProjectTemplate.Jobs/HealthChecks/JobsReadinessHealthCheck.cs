@@ -1,6 +1,6 @@
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Npgsql;
 using StackExchange.Redis;
 
 namespace BackendProjectTemplate.Jobs.HealthChecks;
@@ -25,18 +25,18 @@ public sealed class JobsReadinessHealthCheck(
 
         try
         {
-            var sqlConnectionString = GetRequiredConnectionString("SqlServerWrite");
+            var sqlConnectionString = GetRequiredConnectionString("PostgresWrite");
             var redisConnectionString = GetRequiredConnectionString("Redis");
-            await using var sqlConnection = new SqlConnection(sqlConnectionString);
+            await using var sqlConnection = new NpgsqlConnection(sqlConnectionString);
             await sqlConnection.OpenAsync(cancellationToken);
 
-            await using var sqlCommand = new SqlCommand("SELECT 1", sqlConnection);
+            await using var sqlCommand = new NpgsqlCommand("SELECT 1", sqlConnection);
             await sqlCommand.ExecuteScalarAsync(cancellationToken);
 
             await using var redis = await ConnectionMultiplexer.ConnectAsync(redisConnectionString);
             await redis.GetDatabase().PingAsync();
 
-            return HealthCheckResult.Healthy("Jobs host can connect to SQL Server and Redis.");
+            return HealthCheckResult.Healthy("Jobs host can connect to PostgreSQL and Redis.");
         }
         catch (Exception exception)
         {

@@ -29,6 +29,6 @@ public sealed class EmailNotificationTemplateConfiguration : IEntityTypeConfigur
 
         builder.HasIndex(template => template.NotificationType)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

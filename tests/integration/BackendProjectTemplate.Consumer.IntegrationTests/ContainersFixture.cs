@@ -1,5 +1,4 @@
-using Microsoft.Data.SqlClient;
-using Testcontainers.MsSql;
+using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
 using Testcontainers.Redis;
 using Xunit.Sdk;
@@ -11,10 +10,10 @@ public sealed class ContainersCollection : ICollectionFixture<ContainersFixture>
 
 public sealed class ContainersFixture : IAsyncLifetime
 {
-    public MsSqlContainer SqlServer { get; private set; } = default!;
+    public PostgreSqlContainer Postgres { get; private set; } = default!;
     public RabbitMqContainer RabbitMq { get; private set; } = default!;
     public RedisContainer Redis { get; private set; } = default!;
-    public string SqlConnectionString { get; private set; } = string.Empty;
+    public string PostgresConnectionString { get; private set; } = string.Empty;
     public string RedisConnectionString { get; private set; } = string.Empty;
     public string RabbitMqHostName { get; private set; } = string.Empty;
     public int RabbitMqPort { get; private set; }
@@ -26,8 +25,12 @@ public sealed class ContainersFixture : IAsyncLifetime
     {
         try
         {
-            SqlServer = new MsSqlBuilder()
-                .WithPassword("Your_strong_Password123!")
+            var databaseName = $"backend_template_consumer_tests_{Guid.CreateVersion7():N}";
+
+            Postgres = new PostgreSqlBuilder()
+                .WithDatabase(databaseName)
+                .WithUsername("postgres")
+                .WithPassword("postgres")
                 .Build();
 
             RabbitMq = new RabbitMqBuilder()
@@ -37,15 +40,9 @@ public sealed class ContainersFixture : IAsyncLifetime
 
             Redis = new RedisBuilder().Build();
 
-            await Task.WhenAll(SqlServer.StartAsync(), RabbitMq.StartAsync(), Redis.StartAsync());
+            await Task.WhenAll(Postgres.StartAsync(), RabbitMq.StartAsync(), Redis.StartAsync());
 
-            SqlConnectionString = new SqlConnectionStringBuilder(SqlServer.GetConnectionString())
-            {
-                InitialCatalog = $"backend_template_consumer_tests_{Guid.CreateVersion7():N}",
-                TrustServerCertificate = true
-            }.ConnectionString;
-
-            await EnsureDatabaseExistsAsync(SqlConnectionString);
+            PostgresConnectionString = Postgres.GetConnectionString();
             RedisConnectionString = Redis.GetConnectionString();
             RabbitMqHostName = RabbitMq.Hostname;
             RabbitMqPort = RabbitMq.GetMappedPublicPort(5672);
@@ -58,7 +55,7 @@ public sealed class ContainersFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        var tasks = new List<Task>(2);
+        var tasks = new List<Task>(3);
 
         if (Redis is not null)
         {
@@ -70,28 +67,14 @@ public sealed class ContainersFixture : IAsyncLifetime
             tasks.Add(RabbitMq.DisposeAsync().AsTask());
         }
 
-        if (SqlServer is not null)
+        if (Postgres is not null)
         {
-            tasks.Add(SqlServer.DisposeAsync().AsTask());
+            tasks.Add(Postgres.DisposeAsync().AsTask());
         }
 
         if (tasks.Count > 0)
         {
             await Task.WhenAll(tasks);
         }
-    }
-
-    private static async Task EnsureDatabaseExistsAsync(string connectionString)
-    {
-        var builder = new SqlConnectionStringBuilder(connectionString);
-        var databaseName = builder.InitialCatalog;
-        builder.InitialCatalog = "master";
-
-        await using var connection = new SqlConnection(builder.ConnectionString);
-        await connection.OpenAsync();
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = $"IF DB_ID('{databaseName}') IS NULL CREATE DATABASE [{databaseName}]";
-        await command.ExecuteNonQueryAsync();
     }
 }

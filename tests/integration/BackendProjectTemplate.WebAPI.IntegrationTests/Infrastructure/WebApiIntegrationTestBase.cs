@@ -9,7 +9,7 @@ public abstract class WebApiIntegrationTestBase
 
     protected WebApiIntegrationTestBase(ContainersFixture fixture)
     {
-        _factory = new CustomWebApplicationFactory(fixture.SqlConnectionString, fixture.RedisConnectionString);
+        _factory = new CustomWebApplicationFactory(fixture.PostgresConnectionString, fixture.RedisConnectionString);
     }
 
     protected HttpClient Client { get; private set; } = default!;

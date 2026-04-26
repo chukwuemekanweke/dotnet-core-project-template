@@ -5,11 +5,13 @@ using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Notifications;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using NSubstitute;
 using AppDbContext = BackendProjectTemplate.Infrastructure.Persistence.AppDbContext;
 
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
@@ -64,6 +66,10 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
 
     protected virtual void RegisterTestServices(IServiceCollection services)
     {
+        services.RemoveAll<IMessageContext>();
+        var messageContext = Substitute.For<IMessageContext>();
+        messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
+        services.AddSingleton(messageContext);
     }
 
     protected static async Task WaitForConditionAsync(Func<Task<bool>> condition)
@@ -86,8 +92,8 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServerWrite"] = _fixture.SqlConnectionString,
-                ["ConnectionStrings:SqlServerRead"] = _fixture.SqlConnectionString,
+                ["ConnectionStrings:PostgresWrite"] = _fixture.PostgresConnectionString,
+                ["ConnectionStrings:PostgresRead"] = _fixture.PostgresConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
                 ["Messaging:RabbitMq:HostName"] = _fixture.RabbitMqHostName,
@@ -110,7 +116,7 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddDataProtection();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<WorkerReadinessState>();
-        builder.Services.AddSqlServerPersistence(configuration);
+        builder.Services.AddPostgresPersistence(configuration);
         builder.Services.AddIdentityUserManagement(configuration);
         builder.Services.AddAuthenticationServices();
         builder.Services.AddRedisCaching(configuration);

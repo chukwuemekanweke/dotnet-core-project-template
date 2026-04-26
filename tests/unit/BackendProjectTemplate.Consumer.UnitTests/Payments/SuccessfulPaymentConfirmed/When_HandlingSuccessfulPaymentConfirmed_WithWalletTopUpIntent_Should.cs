@@ -42,5 +42,6 @@ public sealed class When_HandlingSuccessfulPaymentConfirmed_WithWalletTopUpInten
                 command.TenantId == tenantId &&
                 command.FlowId == "flow-123"),
             Arg.Any<CancellationToken>());
+        await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

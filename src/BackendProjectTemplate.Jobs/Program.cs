@@ -14,11 +14,14 @@ using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<HostOptions>(options =>
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
+
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddBackgroundServiceReadinessTracking();
 builder.Services.AddApplication();
-builder.Services.AddSqlServerWritePersistence(builder.Configuration);
-builder.Services.AddSqlServerReadPersistence(builder.Configuration);
+builder.Services.AddPostgresWritePersistence(builder.Configuration);
+builder.Services.AddPostgresReadPersistence(builder.Configuration);
 builder.Services.AddPaymentServices(builder.Configuration);
 builder.Services.AddTransactionalOutbox();
 builder.Services.AddRabbitMqOutboxDispatching(builder.Configuration);

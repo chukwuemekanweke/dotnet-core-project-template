@@ -19,5 +19,6 @@ public sealed class When_HandlingCreditWallet_WithDuplicatePaymentTransaction_Sh
 
         await context.UnitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         await context.WalletRepository.DidNotReceive().AddAsync(Arg.Any<Wallet>(), Arg.Any<CancellationToken>());
+        context.WalletRepository.DidNotReceive().Update(Arg.Any<Wallet>());
     }
 }

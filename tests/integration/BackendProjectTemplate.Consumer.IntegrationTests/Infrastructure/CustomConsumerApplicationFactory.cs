@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 
 public sealed class CustomConsumerApplicationFactory(
-    string sqlServerConnectionString,
+    string postgresConnectionString,
     string redisConnectionString,
     string rabbitMqHostName,
     int rabbitMqPort,
@@ -24,8 +24,8 @@ public sealed class CustomConsumerApplicationFactory(
         {
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServerWrite"] = sqlServerConnectionString,
-                ["ConnectionStrings:SqlServerRead"] = sqlServerConnectionString,
+                ["ConnectionStrings:PostgresWrite"] = postgresConnectionString,
+                ["ConnectionStrings:PostgresRead"] = postgresConnectionString,
                 ["ConnectionStrings:Redis"] = redisConnectionString,
                 ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
                 ["Messaging:RabbitMq:HostName"] = rabbitMqHostName,

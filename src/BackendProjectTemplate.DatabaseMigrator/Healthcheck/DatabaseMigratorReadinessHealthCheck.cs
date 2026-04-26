@@ -1,6 +1,6 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Npgsql;
 
 namespace BackendProjectTemplate.DatabaseMigrator.Healthcheck;
 
@@ -21,11 +21,11 @@ public sealed class DatabaseMigratorReadinessHealthCheck(
 
         try
         {
-            var sqlConnectionString = GetRequiredConnectionString("SqlServerWrite");
-            await using var sqlConnection = new SqlConnection(sqlConnectionString);
+            var sqlConnectionString = GetRequiredConnectionString("PostgresWrite");
+            await using var sqlConnection = new NpgsqlConnection(sqlConnectionString);
             await sqlConnection.OpenAsync(cancellationToken);
 
-            await using var sqlCommand = new SqlCommand("SELECT 1", sqlConnection);
+            await using var sqlCommand = new NpgsqlCommand("SELECT 1", sqlConnection);
             await sqlCommand.ExecuteScalarAsync(cancellationToken);
 
             return state.Status switch
@@ -39,7 +39,7 @@ public sealed class DatabaseMigratorReadinessHealthCheck(
         catch (Exception exception)
         {
             return HealthCheckResult.Unhealthy(
-                "Database migrator cannot connect to SQL Server.",
+                "Database migrator cannot connect to PostgreSQL.",
                 exception);
         }
     }

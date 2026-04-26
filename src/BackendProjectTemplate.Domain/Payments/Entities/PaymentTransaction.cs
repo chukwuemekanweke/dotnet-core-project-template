@@ -53,7 +53,7 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
     public DateTimeOffset? LastStatusCheckAtUtc { get; private set; }
     public PaymentMethodType PaymentMethodType { get; private set; }
     public Dictionary<string, string> ProviderPayloadMetadata { get; private set; } = [];
-    public byte[] RowVersion { get; private set; } = [];
+    public uint RowVersion { get; private set; }
 
     public static PaymentTransaction Create(
         string merchantReference,

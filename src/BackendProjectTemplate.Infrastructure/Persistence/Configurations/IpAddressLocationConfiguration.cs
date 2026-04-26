@@ -21,6 +21,6 @@ public sealed class IpAddressLocationConfiguration : IEntityTypeConfiguration<Ip
             ipAddressLocation.IsCurrentLocation
         })
         .IsUnique()
-        .HasFilter("[IsCurrentLocation] = 1 AND [IsDeleted] = 0");
+        .HasFilter("\"IsCurrentLocation\" = TRUE AND \"IsDeleted\" = FALSE");
     }
 }

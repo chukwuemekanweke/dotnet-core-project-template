@@ -45,7 +45,7 @@ public sealed class PaymentWebhookInbox : Entity, IAggregateRoot
     public string? ProcessingError { get; private set; }
     public DateTimeOffset ReceivedAtUtc { get; private set; }
     public DateTimeOffset? ProcessedAtUtc { get; private set; }
-    public byte[] RowVersion { get; private set; } = [];
+    public uint RowVersion { get; private set; }
 
     public static PaymentWebhookInbox Create(
         Guid paymentProviderId,

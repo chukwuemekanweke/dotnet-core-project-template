@@ -22,7 +22,14 @@ public sealed class OutboxMessageProcessor(
 
         do
         {
-            await ProcessPendingMessagesAsync(stoppingToken);
+            try
+            {
+                await ProcessPendingMessagesAsync(stoppingToken);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Outbox message processing iteration failed.");
+            }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }

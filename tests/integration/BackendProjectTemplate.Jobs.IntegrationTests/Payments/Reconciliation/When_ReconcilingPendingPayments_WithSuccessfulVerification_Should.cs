@@ -56,7 +56,7 @@ public sealed class When_ReconcilingPendingPayments_WithSuccessfulVerification_S
             outboxMessage.ShouldNotBeNull();
             _outboxMessageId = outboxMessage.Id;
 
-            var @event = JsonSerializer.Deserialize<SuccessfulPaymentConfirmed>(outboxMessage.Payload);
+            var @event = JsonSerializer.Deserialize<SuccessfulPaymentConfirmed>(outboxMessage.Payload, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             @event.ShouldNotBeNull();
             @event.PaymentTransactionId.ShouldBe(_paymentTransactionId);
         }

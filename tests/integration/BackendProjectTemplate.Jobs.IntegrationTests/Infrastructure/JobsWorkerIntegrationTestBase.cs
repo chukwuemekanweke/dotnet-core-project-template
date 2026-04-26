@@ -2,6 +2,7 @@ using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using BackendProjectTemplate.Jobs.OutboxProcessing;
+using BackendProjectTemplate.Jobs.Payments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +29,7 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddLogging();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddBackgroundServiceReadinessTracking();
-        builder.Services.AddSqlServerPersistence(configuration);
+        builder.Services.AddPostgresPersistence(configuration);
         builder.Services.AddRabbitMqOutboxDispatching(configuration);
         registerWorkers(builder.Services, configuration);
 
@@ -112,11 +113,13 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SqlServerWrite"] = _fixture.SqlConnectionString,
-                ["ConnectionStrings:SqlServerRead"] = _fixture.SqlConnectionString,
+                ["ConnectionStrings:PostgresWrite"] = _fixture.PostgresConnectionString,
+                ["ConnectionStrings:PostgresRead"] = _fixture.PostgresConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 [$"{OutboxProcessingOptions.SectionName}:BatchSize"] = "50",
                 [$"{OutboxProcessingOptions.SectionName}:PollIntervalSeconds"] = "1",
+                [$"{PaymentReconciliationOptions.SectionName}:StaleThresholdMinutes"] = "0",
+                [$"{PaymentReconciliationOptions.SectionName}:PollIntervalSeconds"] = "1",
                 ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
                 ["Messaging:RabbitMq:HostName"] = _fixture.RabbitMqHostName,
                 ["Messaging:RabbitMq:Port"] = _fixture.RabbitMqPort.ToString(),

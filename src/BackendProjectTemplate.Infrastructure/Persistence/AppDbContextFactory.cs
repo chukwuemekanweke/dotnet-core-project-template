@@ -8,11 +8,11 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
     public AppDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__SqlServerWrite")
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__PostgresWrite")
             ?? throw new InvalidOperationException(
-                "Environment variable 'ConnectionStrings__SqlServerWrite' is required for design-time AppDbContext creation.");
+                "Environment variable 'ConnectionStrings__PostgresWrite' is required for design-time AppDbContext creation.");
 
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseNpgsql(connectionString);
 
         return new AppDbContext(optionsBuilder.Options);
     }

@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 using BackendProjectTemplate.Consumer.Payments;
 using BackendProjectTemplate.Contracts.Commands.Payments;
+using BackendProjectTemplate.Domain.Payments.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -9,7 +10,7 @@ using Shouldly;
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Payments.CreditWallet;
 
 [Collection(nameof(ContainersCollection))]
-public sealed class When_HandlingCreditWallet_WithNewWallet_Should(ContainersFixture fixture)
+public sealed class When_HandlingCreditWallet_WithExistingWallet_Should(ContainersFixture fixture)
     : ConsumerWorkerIntegrationTestBase(fixture)
 {
     private Guid _paymentTransactionId;
@@ -19,13 +20,18 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should(ContainersFix
     private Guid _walletId;
     private Guid _walletTransactionId;
 
-    protected override Task InitializeWorkerTestAsync()
+    protected override async Task InitializeWorkerTestAsync()
     {
         _paymentTransactionId = Guid.CreateVersion7();
         _tenantId = Guid.CreateVersion7();
         _stakeholderId = Guid.CreateVersion7();
         _currencyId = Guid.CreateVersion7();
-        return Task.CompletedTask;
+
+        using var scope = CreateDbContextScope();
+        var wallet = Wallet.Create(_stakeholderId, _tenantId, _currencyId, DateTimeOffset.UtcNow);
+        scope.DbContext.Wallets.Add(wallet);
+        await scope.DbContext.SaveChangesAsync();
+        _walletId = wallet.Id;
     }
 
     protected override async Task DisposeWorkerTestAsync()
@@ -47,7 +53,7 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should(ContainersFix
     }
 
     [Fact]
-    public async Task CreateWalletAndWalletTransaction()
+    public async Task CreditExistingWallet()
     {
         await WhenPublishingCreditWalletCommand();
         await ThenTheWalletIsCredited();

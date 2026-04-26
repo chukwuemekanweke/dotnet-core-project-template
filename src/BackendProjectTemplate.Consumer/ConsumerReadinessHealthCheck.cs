@@ -1,5 +1,5 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Npgsql;
 using RabbitMQ.Client;
 using StackExchange.Redis;
 
@@ -20,8 +20,8 @@ public sealed class ConsumerReadinessHealthCheck(
 
         try
         {
-            var sqlWriteConnectionString = GetRequiredConnectionString("SqlServerWrite");
-            var sqlReadConnectionString = GetRequiredConnectionString("SqlServerRead");
+            var sqlWriteConnectionString = GetRequiredConnectionString("PostgresWrite");
+            var sqlReadConnectionString = GetRequiredConnectionString("PostgresRead");
             var redisConnectionString = GetRequiredConnectionString("Redis");
             var rabbitMqHostName = GetRequiredConfigurationValue("Messaging:RabbitMq:HostName");
             var rabbitMqUserName = GetRequiredConfigurationValue("Messaging:RabbitMq:UserName");
@@ -29,16 +29,16 @@ public sealed class ConsumerReadinessHealthCheck(
             var rabbitMqVirtualHost = GetRequiredConfigurationValue("Messaging:RabbitMq:VirtualHost");
             var rabbitMqPort = GetRequiredPort("Messaging:RabbitMq:Port");
 
-            await using var sqlWriteConnection = new SqlConnection(sqlWriteConnectionString);
+            await using var sqlWriteConnection = new NpgsqlConnection(sqlWriteConnectionString);
             await sqlWriteConnection.OpenAsync(cancellationToken);
 
-            await using var sqlWriteCommand = new SqlCommand("SELECT 1", sqlWriteConnection);
+            await using var sqlWriteCommand = new NpgsqlCommand("SELECT 1", sqlWriteConnection);
             await sqlWriteCommand.ExecuteScalarAsync(cancellationToken);
 
-            await using var sqlReadConnection = new SqlConnection(sqlReadConnectionString);
+            await using var sqlReadConnection = new NpgsqlConnection(sqlReadConnectionString);
             await sqlReadConnection.OpenAsync(cancellationToken);
 
-            await using var sqlReadCommand = new SqlCommand("SELECT 1", sqlReadConnection);
+            await using var sqlReadCommand = new NpgsqlCommand("SELECT 1", sqlReadConnection);
             await sqlReadCommand.ExecuteScalarAsync(cancellationToken);
 
             await using var redis = await ConnectionMultiplexer.ConnectAsync(redisConnectionString);
@@ -55,7 +55,7 @@ public sealed class ConsumerReadinessHealthCheck(
 
             await using var rabbitMqConnection = await connectionFactory.CreateConnectionAsync(cancellationToken);
 
-            return HealthCheckResult.Healthy("Consumer worker can connect to write SQL Server, read SQL Server, Redis, and RabbitMQ.");
+            return HealthCheckResult.Healthy("Consumer worker can connect to write PostgreSQL, read PostgreSQL, Redis, and RabbitMQ.");
         }
         catch (Exception exception)
         {

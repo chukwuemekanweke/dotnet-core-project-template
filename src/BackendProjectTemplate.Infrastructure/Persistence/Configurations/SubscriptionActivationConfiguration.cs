@@ -21,6 +21,6 @@ public sealed class SubscriptionActivationConfiguration : IEntityTypeConfigurati
 
         builder.HasIndex(activation => activation.PaymentTransactionId)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

@@ -3,6 +3,7 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 
@@ -12,7 +13,8 @@ public sealed class SuccessfulPaymentConfirmedHandler(
     Domain.Common.Observability.ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
-    ICommandSender commandSender) : BaseMessageHandler<SuccessfulPaymentConfirmed>(customTelemetryContext, currentActorAccessor, messageContext)
+    ICommandSender commandSender,
+    IUnitOfWork unitOfWork) : BaseMessageHandler<SuccessfulPaymentConfirmed>(customTelemetryContext, currentActorAccessor, messageContext)
 {
     protected override async Task HandleAsyncInternal(SuccessfulPaymentConfirmed message, CancellationToken cancellationToken)
     {
@@ -52,5 +54,7 @@ public sealed class SuccessfulPaymentConfirmedHandler(
                 throw new CannotProcessMessageNonTransientException(
                     $"Unsupported payment intent '{message.PaymentIntent}'.");
         }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

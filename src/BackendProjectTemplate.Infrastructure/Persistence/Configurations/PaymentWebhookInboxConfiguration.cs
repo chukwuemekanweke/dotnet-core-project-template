@@ -26,7 +26,7 @@ public sealed class PaymentWebhookInboxConfiguration : IEntityTypeConfiguration<
             .HasMaxLength(200);
 
         builder.Property(inbox => inbox.RawPayload)
-            .HasColumnType("nvarchar(max)")
+            .HasColumnType("jsonb")
             .IsRequired();
 
         builder.Property(inbox => inbox.StatusChangeReason)
@@ -35,19 +35,16 @@ public sealed class PaymentWebhookInboxConfiguration : IEntityTypeConfiguration<
         builder.Property(inbox => inbox.ProcessingError)
             .HasMaxLength(4000);
 
-        builder.Property(inbox => inbox.RowVersion)
-            .IsRowVersion();
-
         builder.HasIndex(inbox => inbox.MerchantReference)
-            .HasFilter("[MerchantReference] IS NOT NULL AND [IsDeleted] = 0");
+            .HasFilter("\"MerchantReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
 
         builder.HasIndex(inbox => inbox.ProviderReference)
-            .HasFilter("[ProviderReference] IS NOT NULL AND [IsDeleted] = 0");
+            .HasFilter("\"ProviderReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
 
         builder.HasIndex(inbox => inbox.WebhookProcessingStatus);
 
         builder.HasIndex(inbox => new { inbox.PaymentProviderId, inbox.WebhookEventId })
             .IsUnique()
-            .HasFilter("[WebhookEventId] IS NOT NULL AND [IsDeleted] = 0");
+            .HasFilter("\"WebhookEventId\" IS NOT NULL AND \"IsDeleted\" = FALSE");
     }
 }

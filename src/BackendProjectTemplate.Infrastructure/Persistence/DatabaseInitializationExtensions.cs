@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence;
 
@@ -75,31 +75,43 @@ public static class DatabaseInitializationExtensions
     {
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException("A SQL Server connection string is required.");
+            throw new InvalidOperationException("A PostgreSQL connection string is required.");
         }
 
-        var targetBuilder = new SqlConnectionStringBuilder(connectionString);
-        if (string.IsNullOrWhiteSpace(targetBuilder.InitialCatalog))
+        var targetBuilder = new NpgsqlConnectionStringBuilder(connectionString);
+        if (string.IsNullOrWhiteSpace(targetBuilder.Database))
         {
             return;
         }
 
-        var databaseName = targetBuilder.InitialCatalog;
-        var escapedDatabaseName = databaseName.Replace("]", "]]", StringComparison.Ordinal);
-        var literalDatabaseName = databaseName.Replace("'", "''", StringComparison.Ordinal);
+        var databaseName = targetBuilder.Database;
+        var escapedDatabaseName = databaseName.Replace("\"", "\"\"", StringComparison.Ordinal);
 
-        var masterBuilder = new SqlConnectionStringBuilder(connectionString)
+        var adminBuilder = new NpgsqlConnectionStringBuilder(connectionString)
         {
-            InitialCatalog = "master"
+            Database = "postgres"
         };
 
-        await using var connection = new SqlConnection(masterBuilder.ConnectionString);
+        await using var connection = new NpgsqlConnection(adminBuilder.ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
         await using var command = connection.CreateCommand();
         command.CommandText =
-            $"IF DB_ID(N'{literalDatabaseName}') IS NULL EXEC(N'CREATE DATABASE [{escapedDatabaseName}]')";
+            $"""
+            SELECT 1
+            FROM pg_database
+            WHERE datname = @databaseName;
+            """;
+        command.Parameters.AddWithValue("databaseName", databaseName);
 
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        var exists = await command.ExecuteScalarAsync(cancellationToken) is not null;
+        if (exists)
+        {
+            return;
+        }
+
+        await using var createDatabaseCommand = connection.CreateCommand();
+        createDatabaseCommand.CommandText = $"""CREATE DATABASE "{escapedDatabaseName}";""";
+        await createDatabaseCommand.ExecuteNonQueryAsync(cancellationToken);
     }
 }

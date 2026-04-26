@@ -21,6 +21,6 @@ public sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
 
         builder.HasIndex(tenant => tenant.BrandKey)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }

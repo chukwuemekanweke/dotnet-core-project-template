@@ -29,6 +29,6 @@ public sealed class PaymentProviderEntityConfiguration : IEntityTypeConfiguratio
 
         builder.HasIndex(provider => provider.ProviderKey)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = FALSE");
     }
 }
