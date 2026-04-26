@@ -40,11 +40,14 @@ public sealed class CreditWalletHandler(
         if (wallet is null)
         {
             wallet = Wallet.Create(message.StakeholderId.Value, message.TenantId, message.CurrencyId, now);
+            wallet.Credit(message.Amount);
             await walletRepository.AddAsync(wallet, cancellationToken);
         }
-
-        wallet.Credit(message.Amount);
-        walletRepository.Update(wallet);
+        else
+        {
+            wallet.Credit(message.Amount);
+            walletRepository.Update(wallet);
+        }
 
         await walletTransactionRepository.AddAsync(
             WalletTransaction.CreateCredit(

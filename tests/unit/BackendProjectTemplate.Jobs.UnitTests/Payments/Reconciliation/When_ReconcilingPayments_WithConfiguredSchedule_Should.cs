@@ -32,9 +32,14 @@ public sealed class When_ReconcilingPayments_WithConfiguredSchedule_Should
             .AddSingleton<IEnumerable<IPaymentProviderService>>([paymentProviderService])
             .AddSingleton(eventPublisher)
             .AddSingleton(unitOfWork)
-            .AddSingleton(clock)
+            .AddSingleton<TimeProvider>(clock)
             .AddApplication()
             .BuildServiceProvider();
+
+        var listAsyncCalled = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        paymentTransactionRepository.When(repo => repo.ListAsync(Arg.Any<ISpecification<PaymentTransaction>>(), Arg.Any<CancellationToken>()))
+            .Do(_ => listAsyncCalled.TrySetResult(null));
 
         paymentTransactionRepository.ListAsync(Arg.Any<ISpecification<PaymentTransaction>>(), Arg.Any<CancellationToken>())
             .Returns([]);
@@ -54,6 +59,7 @@ public sealed class When_ReconcilingPayments_WithConfiguredSchedule_Should
 
         await sut.StartAsync(CancellationToken.None);
         await WaitForConditionAsync(() => state.IsReady);
+        await listAsyncCalled.Task.WaitAsync(TimeSpan.FromSeconds(5));
         await sut.StopAsync(CancellationToken.None);
 
         state.IsReady.ShouldBeTrue();

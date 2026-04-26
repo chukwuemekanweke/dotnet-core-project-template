@@ -48,7 +48,6 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should(Cont
         {
             using var scope = CreateScope();
             var messageContext = scope.ServiceProvider.GetRequiredService<Chidelu.Integration.Messaging.RabbitMQ.Consumer.IMessageContext>();
-            messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
 
             await scope.ServiceProvider.GetRequiredService<ActivateSubscriptionHandler>().HandleAsync(
                 new ActivateSubscriptionCommand(_paymentTransactionId, "merchant-ref", 5000m, _currencyId)

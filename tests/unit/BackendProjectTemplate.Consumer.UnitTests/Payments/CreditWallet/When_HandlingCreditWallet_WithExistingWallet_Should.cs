@@ -1,10 +1,9 @@
-using BackendProjectTemplate.Consumer.UnitTests.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Shouldly;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Payments.CreditWallet;
 
-public sealed class When_HandlingCreditWallet_WithNewWallet_Should
+public sealed class When_HandlingCreditWallet_WithExistingWallet_Should
 {
     [Fact]
     public async Task CreditWallet()
@@ -13,15 +12,15 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should
         context.SetCorrelationId();
         var currencyId = Guid.CreateVersion7();
         var command = context.CreateCreditWalletCommand(2500m, currencyId);
+        var existingWallet = Wallet.Create(command.StakeholderId!.Value, command.TenantId, currencyId, context.Clock.GetUtcNow());
         Wallet? capturedWallet = null;
         WalletTransaction? capturedTransaction = null;
 
         context.WalletTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<WalletTransaction>>(), Arg.Any<CancellationToken>())
             .Returns((WalletTransaction?)null);
         context.WalletRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Wallet>>(), Arg.Any<CancellationToken>())
-            .Returns((Wallet?)null);
-        context.WalletRepository.AddAsync(Arg.Do<Wallet>(wallet => capturedWallet = wallet), Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
+            .Returns(existingWallet);
+        context.WalletRepository.When(repo => repo.Update(Arg.Any<Wallet>())).Do(callInfo => capturedWallet = callInfo.Arg<Wallet>());
         context.WalletTransactionRepository.AddAsync(Arg.Do<WalletTransaction>(transaction => capturedTransaction = transaction), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
@@ -33,6 +32,6 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should
         capturedTransaction.PaymentTransactionId.ShouldBe(command.PaymentTransactionId);
         capturedTransaction.Amount.ShouldBe(2500m);
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        context.WalletRepository.DidNotReceive().Update(Arg.Any<Wallet>());
+        await context.WalletRepository.DidNotReceive().AddAsync(Arg.Any<Wallet>(), Arg.Any<CancellationToken>());
     }
 }

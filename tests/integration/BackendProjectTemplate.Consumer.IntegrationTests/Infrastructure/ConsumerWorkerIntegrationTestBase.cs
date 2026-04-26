@@ -5,11 +5,13 @@ using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Notifications;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using NSubstitute;
 using AppDbContext = BackendProjectTemplate.Infrastructure.Persistence.AppDbContext;
 
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
@@ -64,6 +66,10 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
 
     protected virtual void RegisterTestServices(IServiceCollection services)
     {
+        services.RemoveAll<IMessageContext>();
+        var messageContext = Substitute.For<IMessageContext>();
+        messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
+        services.AddSingleton(messageContext);
     }
 
     protected static async Task WaitForConditionAsync(Func<Task<bool>> condition)

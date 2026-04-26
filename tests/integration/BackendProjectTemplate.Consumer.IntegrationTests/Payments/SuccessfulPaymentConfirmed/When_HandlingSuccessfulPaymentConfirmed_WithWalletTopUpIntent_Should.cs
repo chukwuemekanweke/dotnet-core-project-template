@@ -56,7 +56,6 @@ public sealed class When_HandlingSuccessfulPaymentConfirmed_WithWalletTopUpInten
         {
             using var scope = CreateScope();
             var messageContext = scope.ServiceProvider.GetRequiredService<Chidelu.Integration.Messaging.RabbitMQ.Consumer.IMessageContext>();
-            messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
 
             await scope.ServiceProvider.GetRequiredService<SuccessfulPaymentConfirmedHandler>().HandleAsync(
                 new Contracts.Events.SuccessfulPaymentConfirmed
@@ -94,7 +93,7 @@ public sealed class When_HandlingSuccessfulPaymentConfirmed_WithWalletTopUpInten
                 .OrderByDescending(message => message.EnqueuedAtUtc)
                 .FirstAsync();
 
-            var command = JsonSerializer.Deserialize<CreditWalletCommand>(outboxMessage.Payload);
+            var command = JsonSerializer.Deserialize<CreditWalletCommand>(outboxMessage.Payload, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             command.ShouldNotBeNull();
             command.PaymentTransactionId.ShouldBe(_paymentTransactionId);
             command.StakeholderId.ShouldBe(_stakeholderId);

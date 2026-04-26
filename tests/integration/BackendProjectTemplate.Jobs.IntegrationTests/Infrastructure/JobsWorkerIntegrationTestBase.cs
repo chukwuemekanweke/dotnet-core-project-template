@@ -2,6 +2,7 @@ using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using BackendProjectTemplate.Jobs.OutboxProcessing;
+using BackendProjectTemplate.Jobs.Payments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -117,6 +118,8 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
                 [$"{OutboxProcessingOptions.SectionName}:BatchSize"] = "50",
                 [$"{OutboxProcessingOptions.SectionName}:PollIntervalSeconds"] = "1",
+                [$"{PaymentReconciliationOptions.SectionName}:StaleThresholdMinutes"] = "0",
+                [$"{PaymentReconciliationOptions.SectionName}:PollIntervalSeconds"] = "1",
                 ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
                 ["Messaging:RabbitMq:HostName"] = _fixture.RabbitMqHostName,
                 ["Messaging:RabbitMq:Port"] = _fixture.RabbitMqPort.ToString(),
