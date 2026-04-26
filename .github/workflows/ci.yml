@@ -3,25 +3,7 @@ name: CI/CD (.NET 10)
 on:
   push:
     branches: [main]
-    paths:
-      - '.github/workflows/**'
-      - 'src/**'
-      - 'tests/**'
-      - 'Directory.Packages.props'
-      - 'Directory.Build.props'
-      - 'nuget.config'
-      - '*.slnx'
-      - '**/Dockerfile'
   pull_request:
-    paths:
-      - '.github/workflows/**'
-      - 'src/**'
-      - 'tests/**'
-      - 'Directory.Packages.props'
-      - 'Directory.Build.props'
-      - 'nuget.config'
-      - '*.slnx'
-      - '**/Dockerfile'
 
 env:
   DOTNET_NOLOGO: true
