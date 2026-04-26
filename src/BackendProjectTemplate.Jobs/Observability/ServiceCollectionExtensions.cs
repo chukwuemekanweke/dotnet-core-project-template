@@ -14,7 +14,13 @@ public static class ServiceCollectionExtensions
             .ConfigureResource(resource => resource.AddService("BackendProjectTemplate.Jobs"))
             .WithTracing(tracing =>
             {
-                tracing.AddHttpClientInstrumentation();
+                tracing
+                    .AddSource(Domain.Common.Observability.Observability.ActivitySourceName)
+                    .AddSource("RabbitMQ.Client")
+                    .AddSource("RabbitMQ.Client.Subscriber")
+                    .AddHttpClientInstrumentation()
+                    .AddEntityFrameworkCoreInstrumentation()
+                    .AddRedisInstrumentation();
 
                 var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
                 if (!string.IsNullOrWhiteSpace(otlpEndpoint))

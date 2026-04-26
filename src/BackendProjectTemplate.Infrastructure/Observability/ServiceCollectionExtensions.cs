@@ -32,6 +32,8 @@ public static class ServiceCollectionExtensions
         {
             tracing
                 .AddSource(Domain.Common.Observability.Observability.ActivitySourceName)
+                .AddSource("RabbitMQ.Client")
+                .AddSource("RabbitMQ.Client.Subscriber")
                 .AddAspNetCoreInstrumentation(options =>
                 {
                     options.Filter = ctx =>
@@ -39,6 +41,8 @@ public static class ServiceCollectionExtensions
                         && !ctx.Request.Path.StartsWithSegments("/metrics");
                 })
                 .AddHttpClientInstrumentation()
+                .AddEntityFrameworkCoreInstrumentation()
+                .AddRedisInstrumentation()
                 .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
         });
 
