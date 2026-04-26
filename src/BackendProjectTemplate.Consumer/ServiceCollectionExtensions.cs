@@ -76,7 +76,8 @@ public static class ServiceCollectionExtensions
                 serviceProvider.GetRequiredKeyedService<ISubscriber>(subscriberConfig.Key),
                 serviceProvider.GetRequiredKeyedService<IConsumer>(consumerConfig.Key),
                 serviceProvider.GetRequiredService<ILogger<Worker>>(),
-                serviceProvider.GetRequiredService<WorkerReadinessState>()));
+                serviceProvider.GetRequiredService<WorkerReadinessState>(),
+                serviceProvider.GetRequiredService<TimeProvider>()));
 
         return services;
     }

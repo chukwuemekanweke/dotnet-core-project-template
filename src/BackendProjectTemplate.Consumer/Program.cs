@@ -11,6 +11,9 @@ using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<HostOptions>(options =>
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
+
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<WorkerReadinessState>();
 builder.Services.AddPostgresWritePersistence(builder.Configuration);
