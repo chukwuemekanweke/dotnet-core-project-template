@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
@@ -13,14 +14,6 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 
-ARG GITHUB_USERNAME
-ARG GITHUB_PAT
-ARG MAILTRAP_TOKEN
-
-ENV GITHUB_USERNAME=$GITHUB_USERNAME
-ENV GITHUB_PAT=$GITHUB_PAT
-ENV MAILTRAP_TOKEN=MAILTRAP_TOKEN
-
 
 WORKDIR /src
 COPY ["nuget.config", "."]
@@ -31,7 +24,11 @@ COPY ["src/BackendProjectTemplate.Contracts/BackendProjectTemplate.Contracts.csp
 COPY ["src/BackendProjectTemplate.Domain/BackendProjectTemplate.Domain.csproj", "src/BackendProjectTemplate.Domain/"]
 COPY ["src/BackendProjectTemplate.Infrastructure/BackendProjectTemplate.Infrastructure.csproj", "src/BackendProjectTemplate.Infrastructure/"]
 COPY ["src/BackendProjectTemplate.Application/BackendProjectTemplate.Application.csproj", "src/BackendProjectTemplate.Application/"]
-RUN dotnet restore "./src/BackendProjectTemplate.Consumer/BackendProjectTemplate.Consumer.csproj"
+RUN --mount=type=secret,id=GITHUB_USERNAME \
+    --mount=type=secret,id=GITHUB_PAT \
+    GITHUB_USERNAME=$(cat /run/secrets/GITHUB_USERNAME) \
+    GITHUB_PAT=$(cat /run/secrets/GITHUB_PAT) \
+    dotnet restore "./src/BackendProjectTemplate.Consumer/BackendProjectTemplate.Consumer.csproj"
 COPY . .
 WORKDIR "/src/src/BackendProjectTemplate.Consumer"
 RUN dotnet build "./BackendProjectTemplate.Consumer.csproj" -c $BUILD_CONFIGURATION -o /app/build

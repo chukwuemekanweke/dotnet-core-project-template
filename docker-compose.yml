@@ -3,9 +3,9 @@ services:
     build:
       context: .
       dockerfile: src/BackendProjectTemplate.DatabaseMigrator/Dockerfile
-      args:
-        GITHUB_USERNAME: ${GITHUB_USERNAME}
-        GITHUB_PAT: ${GITHUB_PAT}
+      secrets:
+        - GITHUB_USERNAME
+        - GITHUB_PAT
     environment:
       GITHUB_USERNAME: ${GITHUB_USERNAME}
       GITHUB_PAT: ${GITHUB_PAT}
@@ -28,9 +28,9 @@ services:
     build:
       context: .
       dockerfile: src/BackendProjectTemplate.WebAPI/Dockerfile
-      args:
-        GITHUB_USERNAME: ${GITHUB_USERNAME}
-        GITHUB_PAT: ${GITHUB_PAT}
+      secrets:
+        - GITHUB_USERNAME
+        - GITHUB_PAT
     environment:
       GITHUB_USERNAME: ${GITHUB_USERNAME}
       GITHUB_PAT: ${GITHUB_PAT}
@@ -69,10 +69,9 @@ services:
     build:
       context: .
       dockerfile: src/BackendProjectTemplate.Consumer/Dockerfile
-      args:
-        GITHUB_USERNAME: ${GITHUB_USERNAME}
-        GITHUB_PAT: ${GITHUB_PAT}
-        MAILTRAP_TOKEN: ${MAILTRAP_TOKEN}
+      secrets:
+        - GITHUB_USERNAME
+        - GITHUB_PAT
     environment:
       GITHUB_USERNAME: ${GITHUB_USERNAME}
       GITHUB_PAT: ${GITHUB_PAT}
@@ -115,9 +114,9 @@ services:
     build:
       context: .
       dockerfile: src/BackendProjectTemplate.Jobs/Dockerfile
-      args:
-        GITHUB_USERNAME: ${GITHUB_USERNAME}
-        GITHUB_PAT: ${GITHUB_PAT}
+      secrets:
+        - GITHUB_USERNAME
+        - GITHUB_PAT
     environment:
       GITHUB_USERNAME: ${GITHUB_USERNAME}
       GITHUB_PAT: ${GITHUB_PAT}
@@ -254,3 +253,9 @@ services:
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
+
+secrets:
+  GITHUB_USERNAME:
+    environment: GITHUB_USERNAME
+  GITHUB_PAT:
+    environment: GITHUB_PAT
