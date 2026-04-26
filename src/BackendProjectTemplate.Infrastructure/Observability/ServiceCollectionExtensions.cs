@@ -32,7 +32,12 @@ public static class ServiceCollectionExtensions
         {
             tracing
                 .AddSource(Domain.Common.Observability.Observability.ActivitySourceName)
-                .AddAspNetCoreInstrumentation()
+                .AddAspNetCoreInstrumentation(options =>
+                {
+                    options.Filter = ctx =>
+                        !ctx.Request.Path.StartsWithSegments("/health")
+                        && !ctx.Request.Path.StartsWithSegments("/metrics");
+                })
                 .AddHttpClientInstrumentation()
                 .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
         });
