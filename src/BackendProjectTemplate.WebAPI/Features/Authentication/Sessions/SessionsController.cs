@@ -53,7 +53,7 @@ public sealed class SessionsController(
             request.Password,
             HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
             Request.Headers.UserAgent.ToString(),
-            ActorContext.FromCurrentActor(currentActor));
+            ActorContext.FromAnonymousActor(currentActor));
 
         var result = await handler.HandleAsync(command, cancellationToken);
 
@@ -104,7 +104,7 @@ public sealed class SessionsController(
                 request.IdToken,
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                 Request.Headers.UserAgent.ToString(),
-                ActorContext.FromCurrentActor(currentActor)),
+                ActorContext.FromAnonymousActor(currentActor)),
             cancellationToken);
 
         return result.Status switch
@@ -162,7 +162,7 @@ public sealed class SessionsController(
                 request.RefreshToken,
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                 Request.Headers.UserAgent.ToString(),
-                ActorContext.FromCurrentActor(currentActor)),
+                ActorContext.FromAnonymousActor(currentActor)),
             cancellationToken);
 
         return result.Status switch

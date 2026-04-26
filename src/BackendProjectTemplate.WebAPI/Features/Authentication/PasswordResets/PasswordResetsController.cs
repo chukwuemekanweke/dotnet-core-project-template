@@ -37,7 +37,7 @@ public sealed class PasswordResetsController(
             return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
 
-        var result = await handler.HandleAsync(new RequestPasswordResetCommand(request.Email, ActorContext.FromCurrentActor(currentActor)), cancellationToken);
+        var result = await handler.HandleAsync(new RequestPasswordResetCommand(request.Email, ActorContext.FromAnonymousActor(currentActor)), cancellationToken);
 
         return result.Status switch
         {
@@ -70,7 +70,7 @@ public sealed class PasswordResetsController(
                 request.Otp,
                 request.Password,
                 request.ConfirmPassword,
-                ActorContext.FromCurrentActor(currentActor)),
+                ActorContext.FromAnonymousActor(currentActor)),
             cancellationToken);
 
         return result.Status switch

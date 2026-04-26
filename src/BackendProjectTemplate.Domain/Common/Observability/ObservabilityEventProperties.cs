@@ -52,7 +52,7 @@ public static class ObservabilityEventProperties
         string? failureReason = null,
         IReadOnlyDictionary<string, string>? additionalProperties = null)
     {
-        var actorContext = ActorContext.FromCurrentActor(currentActor);
+        var actorContext = ActorContext.FromAnonymousActor(currentActor);
         return Create(actorContext, stakeholderId, failureReason, additionalProperties);
     }
 }

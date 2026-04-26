@@ -42,7 +42,7 @@ public sealed class RegistrationsController(
             request.CountryId,
             request.FirstName,
             request.LastName,
-            ActorContext.FromCurrentActor(currentActor));
+            ActorContext.FromAnonymousActor(currentActor));
 
         var result = await handler.HandleAsync(command, cancellationToken);
 
@@ -81,7 +81,7 @@ public sealed class RegistrationsController(
                 request.CountryId,
                 request.FirstName,
                 request.LastName,
-                ActorContext.FromCurrentActor(currentActor)),
+                ActorContext.FromAnonymousActor(currentActor)),
             cancellationToken);
 
         return result.Status switch

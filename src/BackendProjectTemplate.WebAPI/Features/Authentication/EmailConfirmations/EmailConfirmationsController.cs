@@ -31,7 +31,7 @@ public sealed class EmailConfirmationsController(
             return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
 
-        var command = new SignUpOtpCommand(request.Email, request.Otp, ActorContext.FromCurrentActor(currentActor));
+        var command = new SignUpOtpCommand(request.Email, request.Otp, ActorContext.FromAnonymousActor(currentActor));
 
         var result = await handler.HandleAsync(command, cancellationToken);
 
