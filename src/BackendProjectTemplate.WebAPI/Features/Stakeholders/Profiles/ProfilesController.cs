@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +15,8 @@ namespace BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 [Route($"{EndpointUrl.Stakeholders.Route}/me/profile")]
 public sealed class ProfilesController(
     UploadAvatarHandler uploadAvatarHandler,
-    UpdateProfileHandler updateProfileHandler) : ControllerBase
+    UpdateProfileHandler updateProfileHandler,
+    ICurrentActor currentActor) : ControllerBase
 {
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -26,7 +28,7 @@ public sealed class ProfilesController(
         CancellationToken cancellationToken)
     {
         var result = await updateProfileHandler.HandleAsync(
-            new UpdateProfileCommand(request.FirstName, request.LastName),
+            new UpdateProfileCommand(request.FirstName, request.LastName, ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
 
         return result.Status switch
@@ -59,7 +61,8 @@ public sealed class ProfilesController(
                 avatarStream,
                 request.Avatar.FileName,
                 request.Avatar.ContentType,
-                request.Avatar.Length),
+                request.Avatar.Length,
+                ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
 
         return result.Status switch

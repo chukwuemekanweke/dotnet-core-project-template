@@ -14,7 +14,6 @@ public sealed class SignInHandler(
     IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
-    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -23,7 +22,7 @@ public sealed class SignInHandler(
     {
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordSignInStarted,
-            ObservabilityEventProperties.Create(currentActor));
+            ObservabilityEventProperties.Create(request.ActorContext));
 
         var user = await identityService.FindByEmailAsync(request.Email);
 
@@ -35,6 +34,7 @@ public sealed class SignInHandler(
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
                 failureReason: UserSignInFailureReasons.UserNotFound,
+                request.ActorContext,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -52,6 +52,7 @@ public sealed class SignInHandler(
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
                 failureReason: UserSignInFailureReasons.LockedOut,
+                request.ActorContext,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -67,6 +68,7 @@ public sealed class SignInHandler(
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
                 failureReason: UserSignInFailureReasons.EmailNotVerified,
+                request.ActorContext,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -82,6 +84,7 @@ public sealed class SignInHandler(
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
                 failureReason: UserSignInFailureReasons.InvalidCredentials,
+                request.ActorContext,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -96,6 +99,7 @@ public sealed class SignInHandler(
             stakeholderId: currentStakeholder.Id,
             ipAddress: request.IpAddress,
             userAgent: request.UserAgent,
+            request.ActorContext,
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -106,6 +110,7 @@ public sealed class SignInHandler(
         Guid stakeholderId,
         string ipAddress,
         string userAgent,
+        ActorContext actorContext,
         CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
@@ -113,13 +118,13 @@ public sealed class SignInHandler(
         await eventPublisher.PublishAsync(new UserSignInSuccessful(ipAddress, userAgent)
         {
             StakeholderId = stakeholderId,
-            FlowId = currentActor.FlowId,
+            FlowId = actorContext.FlowId,
             OccuredAt = now
         }, cancellationToken);
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordSignInCompleted,
-            ObservabilityEventProperties.Create(currentActor, stakeholderId));
+            ObservabilityEventProperties.Create(actorContext, stakeholderId));
     }
 
     private async Task PublishFailedAsync(
@@ -128,6 +133,7 @@ public sealed class SignInHandler(
         string ipAddress,
         string userAgent,
         string failureReason,
+        ActorContext actorContext,
         CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
@@ -135,7 +141,7 @@ public sealed class SignInHandler(
         await eventPublisher.PublishAsync(new UserSignInFailed(emailAddress, ipAddress, userAgent, failureReason)
         {
             StakeholderId = stakeholderId,
-            FlowId = currentActor.FlowId,
+            FlowId = actorContext.FlowId,
             OccuredAt = now
         }, cancellationToken);
 

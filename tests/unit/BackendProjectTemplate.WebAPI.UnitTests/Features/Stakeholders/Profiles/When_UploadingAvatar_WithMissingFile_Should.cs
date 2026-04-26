@@ -21,18 +21,17 @@ public sealed class When_UploadingAvatar_WithMissingFile_Should
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var sut = new ProfilesController(
             new UploadAvatarHandler(
-                currentActor,
                 Substitute.For<IRepository<Stakeholder>>(),
                 Substitute.For<IObjectStorageService>(),
                 customTelemetryContext,
                 Substitute.For<IUnitOfWork>(),
                 TimeProvider.System),
             new UpdateProfileHandler(
-                currentActor,
                 Substitute.For<IRepository<Stakeholder>>(),
                 customTelemetryContext,
                 Substitute.For<IUnitOfWork>(),
-                TimeProvider.System));
+                TimeProvider.System),
+            currentActor);
 
         var result = await sut.UploadAvatar(new UploadAvatarRequest(null!), CancellationToken.None);
 

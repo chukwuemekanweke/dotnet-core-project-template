@@ -31,7 +31,6 @@ internal sealed class AuthenticationFlowTestContext
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public ICommandSender CommandSender { get; } = Substitute.For<ICommandSender>();
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
-    public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
     public IRepository<StakeholderType> StakeholderTypeRepository { get; } = Substitute.For<IRepository<StakeholderType>>();
     public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
     public StakeholderResolver StakeholderResolver => new(StakeholderRepository);
@@ -40,9 +39,6 @@ internal sealed class AuthenticationFlowTestContext
 
     public AuthenticationFlowTestContext()
     {
-        CurrentActor.TenantId.Returns(Guid.Empty);
-        CurrentActor.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
-        CurrentActor.FlowId.Returns(Guid.CreateVersion7().ToString("N"));
         UnitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Transaction));
     }
@@ -50,7 +46,6 @@ internal sealed class AuthenticationFlowTestContext
     public SignUpHandler CreateSignUpHandler() => new(
         IdentityService,
         EventPublisher,
-        CurrentActor,
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
@@ -60,7 +55,6 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         GoogleIdentityTokenService,
         EventPublisher,
-        CurrentActor,
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
@@ -70,7 +64,6 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         EventPublisher,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -80,7 +73,6 @@ internal sealed class AuthenticationFlowTestContext
         RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -91,7 +83,6 @@ internal sealed class AuthenticationFlowTestContext
         RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -101,7 +92,6 @@ internal sealed class AuthenticationFlowTestContext
         RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -109,20 +99,23 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         CommandSender,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork);
     public CompletePasswordResetHandler CreateCompletePasswordResetHandler() => new(
         IdentityService,
         TwoFactorOtpService,
         StakeholderResolver,
-        CurrentActor,
         CustomTelemetryContext,
         UnitOfWork);
     public LogoutSessionHandler CreateLogoutSessionHandler() => new(
         AccessTokenRevocationService,
-        CurrentActor,
         CustomTelemetryContext);
+
+    private static ActorContext TestActorContext() => new(
+        Guid.CreateVersion7(),
+        Guid.CreateVersion7(),
+        Guid.CreateVersion7().ToString("N"),
+        Guid.CreateVersion7().ToString("N"));
 
     public static SignUpCommand CreateSignUpCommand(
         string? email = null,
@@ -139,7 +132,8 @@ internal sealed class AuthenticationFlowTestContext
             resolvedPassword,
             countryId ?? Guid.CreateVersion7(),
             firstName ?? AuthenticationTestData.FirstName(),
-            lastName ?? AuthenticationTestData.LastName());
+            lastName ?? AuthenticationTestData.LastName(),
+            TestActorContext());
     }
 
     public static SignInCommand CreateSignInCommand(
@@ -151,7 +145,8 @@ internal sealed class AuthenticationFlowTestContext
             email ?? AuthenticationTestData.Email(),
             password ?? AuthenticationTestData.StrongPassword(),
             ipAddress ?? AuthenticationTestData.IpAddress(),
-            userAgent ?? AuthenticationTestData.UserAgent());
+            userAgent ?? AuthenticationTestData.UserAgent(),
+            TestActorContext());
 
     public static GoogleSignUpCommand CreateGoogleSignUpCommand(
         string? idToken = null,
@@ -162,7 +157,8 @@ internal sealed class AuthenticationFlowTestContext
             idToken ?? "google-id-token",
             countryId ?? Guid.CreateVersion7(),
             firstName ?? AuthenticationTestData.FirstName(),
-            lastName ?? AuthenticationTestData.LastName());
+            lastName ?? AuthenticationTestData.LastName(),
+            TestActorContext());
 
     public static GoogleSignInCommand CreateGoogleSignInCommand(
         string? idToken = null,
@@ -171,17 +167,19 @@ internal sealed class AuthenticationFlowTestContext
         new(
             idToken ?? "google-id-token",
             ipAddress ?? AuthenticationTestData.IpAddress(),
-            userAgent ?? AuthenticationTestData.UserAgent());
+            userAgent ?? AuthenticationTestData.UserAgent(),
+            TestActorContext());
 
     public static SignUpOtpCommand CreateSignUpOtpCommand(
         string? email = null,
         string? otp = null) =>
         new(
             email ?? AuthenticationTestData.Email(),
-            otp ?? AuthenticationTestData.Otp());
+            otp ?? AuthenticationTestData.Otp(),
+            TestActorContext());
 
     public static RequestPasswordResetCommand CreateRequestPasswordResetCommand(string? email = null) =>
-        new(email ?? AuthenticationTestData.Email());
+        new(email ?? AuthenticationTestData.Email(), TestActorContext());
 
     public static CompletePasswordResetCommand CreateCompletePasswordResetCommand(
         string? email = null,
@@ -195,7 +193,8 @@ internal sealed class AuthenticationFlowTestContext
             email ?? AuthenticationTestData.Email(),
             otp ?? AuthenticationTestData.Otp(),
             resolvedPassword,
-            confirmPassword ?? resolvedPassword);
+            confirmPassword ?? resolvedPassword,
+            TestActorContext());
     }
 
     public static RefreshSessionCommand CreateRefreshSessionCommand(
@@ -205,7 +204,8 @@ internal sealed class AuthenticationFlowTestContext
         new(
             refreshToken ?? "refresh-token",
             ipAddress ?? AuthenticationTestData.IpAddress(),
-            userAgent ?? AuthenticationTestData.UserAgent());
+            userAgent ?? AuthenticationTestData.UserAgent(),
+            TestActorContext());
 
     public AppUser CreateUser(
         string? email = null,

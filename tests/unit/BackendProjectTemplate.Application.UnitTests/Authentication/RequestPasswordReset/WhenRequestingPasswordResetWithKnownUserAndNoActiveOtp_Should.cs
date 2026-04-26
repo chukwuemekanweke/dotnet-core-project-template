@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.RequestPassword
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using NSubstitute;
@@ -26,7 +27,6 @@ public sealed class WhenRequestingPasswordResetWithKnownUserAndNoActiveOtp_Shoul
             AuthenticationTestData.LastName(),
             context.Clock.GetUtcNow());
 
-        context.CurrentActor.TenantId.Returns(tenantId);
         context.IdentityService.FindByEmailAsync(user.Email!).Returns(user);
         context.StakeholderRepository.FirstOrDefaultAsync(
                 Arg.Any<ISpecification<Stakeholder>>(),
@@ -34,7 +34,7 @@ public sealed class WhenRequestingPasswordResetWithKnownUserAndNoActiveOtp_Shoul
             .Returns(stakeholder);
 
         var result = await context.CreateRequestPasswordResetHandler().HandleAsync(
-            AuthenticationFlowTestContext.CreateRequestPasswordResetCommand(user.Email),
+            new RequestPasswordResetCommand(user.Email!, new ActorContext(null, tenantId, Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.Status.ShouldBe(RequestPasswordResetStatus.Success);

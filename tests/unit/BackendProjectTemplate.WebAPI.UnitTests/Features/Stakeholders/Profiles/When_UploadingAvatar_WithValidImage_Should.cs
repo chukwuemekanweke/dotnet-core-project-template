@@ -39,8 +39,9 @@ public sealed class When_UploadingAvatar_WithValidImage_Should
             .Returns("https://example.com/avatar.png");
 
         var sut = new ProfilesController(
-            new UploadAvatarHandler(currentActor, stakeholderRepository, objectStorageService, customTelemetryContext, unitOfWork, TimeProvider.System),
-            new UpdateProfileHandler(currentActor, stakeholderRepository, customTelemetryContext, unitOfWork, TimeProvider.System));
+            new UploadAvatarHandler(stakeholderRepository, objectStorageService, customTelemetryContext, unitOfWork, TimeProvider.System),
+            new UpdateProfileHandler(stakeholderRepository, customTelemetryContext, unitOfWork, TimeProvider.System),
+            currentActor);
 
         var result = await sut.UploadAvatar(new UploadAvatarRequest(avatar), CancellationToken.None);
 

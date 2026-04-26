@@ -23,18 +23,17 @@ public sealed class When_UpdatingProfile_WithMissingNames_Should
 
         var sut = new ProfilesController(
             new UploadAvatarHandler(
-                currentActor,
                 Substitute.For<IRepository<Stakeholder>>(),
                 Substitute.For<IObjectStorageService>(),
                 customTelemetryContext,
                 Substitute.For<IUnitOfWork>(),
                 TimeProvider.System),
             new UpdateProfileHandler(
-                currentActor,
                 Substitute.For<IRepository<Stakeholder>>(),
                 customTelemetryContext,
                 Substitute.For<IUnitOfWork>(),
-                TimeProvider.System));
+                TimeProvider.System),
+            currentActor);
 
         var result = await sut.UpdateProfile(new UpdateProfileRequest(string.Empty, string.Empty), CancellationToken.None);
 

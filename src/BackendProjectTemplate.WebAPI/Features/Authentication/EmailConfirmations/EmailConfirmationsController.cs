@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
@@ -14,7 +15,8 @@ namespace BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmatio
 [Route(EndpointUrl.EmailConfirmations.Route)]
 public sealed class EmailConfirmationsController(
     SignUpOtpHandler handler,
-    IValidator<SignUpOtpRequest> validator) : ControllerBase
+    IValidator<SignUpOtpRequest> validator,
+    ICurrentActor currentActor) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType<SignUpOtpResponse>(StatusCodes.Status200OK)]
@@ -29,7 +31,7 @@ public sealed class EmailConfirmationsController(
             return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
 
-        var command = new SignUpOtpCommand(request.Email, request.Otp);
+        var command = new SignUpOtpCommand(request.Email, request.Otp, ActorContext.FromAnonymousActor(currentActor));
 
         var result = await handler.HandleAsync(command, cancellationToken);
 

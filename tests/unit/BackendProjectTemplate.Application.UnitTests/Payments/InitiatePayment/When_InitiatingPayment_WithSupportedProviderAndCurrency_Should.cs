@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Application.UnitTests.Payments;
 using BackendProjectTemplate.Contracts.Payments;
@@ -26,7 +27,6 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         var paymentProviderService = Substitute.For<IPaymentProviderService>();
         PaymentTransaction? capturedTransaction = null;
 
-        context.CurrentActor.ActorId.Returns(stakeholder.Id.ToString());
         context.StakeholderRepository.GetByIdAsync(stakeholder.Id, Arg.Any<CancellationToken>())
             .Returns(stakeholder);
         context.CurrencyRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Currency>>(), Arg.Any<CancellationToken>())
@@ -50,7 +50,7 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         context.PaymentProviderServices.Add(paymentProviderService);
 
         var result = await context.CreateInitiatePaymentHandler().HandleAsync(
-            new InitiatePaymentCommand(1250m, currency.Id, PaymentIntent.WalletTopUp, provider.Id),
+            new InitiatePaymentCommand(1250m, currency.Id, PaymentIntent.WalletTopUp, provider.Id, new ActorContext(stakeholder.Id, tenantId, Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.PaymentStatus.ShouldBe(PaymentStatus.Initiated);

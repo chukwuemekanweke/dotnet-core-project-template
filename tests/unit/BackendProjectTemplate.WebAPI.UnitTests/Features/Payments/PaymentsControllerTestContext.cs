@@ -34,7 +34,6 @@ internal sealed class PaymentsControllerTestContext
             PaymentProviderConfigurationRepository,
             PaymentTransactionRepository,
             PaymentProviderServices,
-            CurrentActor,
             UnitOfWork,
             Clock);
 

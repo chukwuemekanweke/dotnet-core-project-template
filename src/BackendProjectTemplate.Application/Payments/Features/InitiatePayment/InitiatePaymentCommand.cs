@@ -2,8 +2,11 @@ using BackendProjectTemplate.Contracts.Payments;
 
 namespace BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 
+using BackendProjectTemplate.Domain.Common.Auditing;
+
 public sealed record InitiatePaymentCommand(
     decimal Amount,
     Guid CurrencyId,
     PaymentIntent PaymentIntent,
-    Guid PaymentProviderId);
+    Guid PaymentProviderId,
+    ActorContext ActorContext);

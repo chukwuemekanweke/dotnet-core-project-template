@@ -16,8 +16,10 @@ public sealed class WhenResolvingCurrentActorForAuthenticatedStakeholder_Should
         var stakeholderId = Guid.CreateVersion7();
         var currentActorAccessor = new FakeCurrentActorAccessor();
         var stakeholderRepository = new FakeStakeholderReadModelRepository();
+        var problemDetailsService = Substitute.For<IProblemDetailsService>();
         var httpContext = new DefaultHttpContext();
         httpContext.TraceIdentifier = Guid.CreateVersion7().ToString("N");
+        httpContext.Request.Headers["X-Tenant-Id"] = Guid.CreateVersion7().ToString();
         httpContext.User = new ClaimsPrincipal(
             new ClaimsIdentity(
                 [
@@ -33,7 +35,7 @@ public sealed class WhenResolvingCurrentActorForAuthenticatedStakeholder_Should
             return Task.CompletedTask;
         });
 
-        await sut.InvokeAsync(httpContext, currentActorAccessor, stakeholderRepository);
+        await sut.InvokeAsync(httpContext, currentActorAccessor, stakeholderRepository, problemDetailsService);
 
         currentActorAccessor.ActorId.ShouldBe(stakeholderId.ToString());
         nextWasCalled.ShouldBeTrue();
@@ -70,4 +72,3 @@ public sealed class WhenResolvingCurrentActorForAuthenticatedStakeholder_Should
             Task.FromResult<StakeholderReadModel?>(null);
     }
 }
-

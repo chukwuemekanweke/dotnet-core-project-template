@@ -27,7 +27,8 @@ public sealed class When_RequestingPasswordReset_WithUnknownEmail_Should
             context.CreateRequestPasswordResetHandler(),
             context.CreateCompletePasswordResetHandler(),
             validator,
-            completeValidator);
+            completeValidator,
+            context.CurrentActor);
 
         var result = await sut.Handle(request, CancellationToken.None);
 

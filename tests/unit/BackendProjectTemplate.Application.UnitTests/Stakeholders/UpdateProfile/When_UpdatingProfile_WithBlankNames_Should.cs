@@ -18,14 +18,13 @@ public sealed class When_UpdatingProfile_WithBlankNames_Should
         currentActor.ActorId.Returns(Guid.CreateVersion7().ToString());
 
         var sut = new UpdateProfileHandler(
-            currentActor,
             Substitute.For<IRepository<Stakeholder>>(),
             customTelemetryContext,
             Substitute.For<IUnitOfWork>(),
             TimeProvider.System);
 
         var result = await sut.HandleAsync(
-            new UpdateProfileCommand(" ", " "),
+            new UpdateProfileCommand(" ", " ", new ActorContext(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.Status.ShouldBe(UpdateProfileStatus.ValidationFailed);

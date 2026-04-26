@@ -16,7 +16,6 @@ public sealed class GoogleSignUpHandler(
     IAuthenticationIdentityService identityService,
     IGoogleIdentityTokenService googleIdentityTokenService,
     IEventPublisher eventPublisher,
-    ICurrentActor currentActor,
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
@@ -27,7 +26,7 @@ public sealed class GoogleSignUpHandler(
     {
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.GoogleSignUpStarted,
-            ObservabilityEventProperties.Create(currentActor));
+            ObservabilityEventProperties.Create(request.ActorContext));
 
         var googleIdentity = await googleIdentityTokenService.ValidateAsync(request.IdToken, cancellationToken);
         if (googleIdentity is null)
@@ -35,7 +34,7 @@ public sealed class GoogleSignUpHandler(
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidGoogleToken);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.GoogleSignUpFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.InvalidGoogleToken));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.InvalidGoogleToken));
             return new GoogleSignUpResult(GoogleSignUpStatus.InvalidGoogleToken);
         }
 
@@ -44,7 +43,7 @@ public sealed class GoogleSignUpHandler(
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.DuplicateEmail);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.GoogleSignUpFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.DuplicateEmail));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.DuplicateEmail));
             return new GoogleSignUpResult(GoogleSignUpStatus.DuplicateEmail);
         }
 
@@ -52,7 +51,7 @@ public sealed class GoogleSignUpHandler(
         var user = AppUser.Create(googleIdentity.Email, request.FirstName, request.LastName, now);
         user.MarkEmailVerified(now);
 
-        var tenantId = currentActor.TenantId
+        var tenantId = request.ActorContext.TenantId
             ?? throw new InvalidOperationException("Tenant id is required to sign up.");
 
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
@@ -65,14 +64,14 @@ public sealed class GoogleSignUpHandler(
                 customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.DuplicateEmail);
                 customTelemetryContext.AddCustomEvent(
                     Observability.EventNames.Authentication.GoogleSignUpFailed,
-                    ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.DuplicateEmail));
+                    ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.DuplicateEmail));
                 return new GoogleSignUpResult(GoogleSignUpStatus.DuplicateEmail);
             }
 
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.ValidationFailed);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.GoogleSignUpFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.ValidationFailed));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.ValidationFailed));
             return new GoogleSignUpResult(GoogleSignUpStatus.ValidationFailed, ValidationErrors: createResult.ToValidationDictionary());
         }
 
@@ -88,14 +87,14 @@ public sealed class GoogleSignUpHandler(
                 customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.DuplicateGoogleAccount);
                 customTelemetryContext.AddCustomEvent(
                     Observability.EventNames.Authentication.GoogleSignUpFailed,
-                    ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.DuplicateGoogleAccount));
+                    ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.DuplicateGoogleAccount));
                 return new GoogleSignUpResult(GoogleSignUpStatus.DuplicateGoogleAccount);
             }
 
             customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.ValidationFailed);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.GoogleSignUpFailed,
-                ObservabilityEventProperties.Create(currentActor, failureReason: ObservabilityFailureReasons.ValidationFailed));
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.ValidationFailed));
             return new GoogleSignUpResult(GoogleSignUpStatus.ValidationFailed, ValidationErrors: addLoginResult.ToValidationDictionary());
         }
 
@@ -121,7 +120,7 @@ public sealed class GoogleSignUpHandler(
         await eventPublisher.PublishAsync(new UserCreated
         {
             StakeholderId = stakeholder.Id,
-            FlowId = currentActor.FlowId,
+            FlowId = request.ActorContext.FlowId,
             OccuredAt = now
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -129,7 +128,7 @@ public sealed class GoogleSignUpHandler(
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.GoogleSignUpCompleted,
-            ObservabilityEventProperties.Create(currentActor, stakeholder.Id));
+            ObservabilityEventProperties.Create(request.ActorContext, stakeholder.Id));
 
         return new GoogleSignUpResult(GoogleSignUpStatus.Accepted, googleIdentity.Email);
     }

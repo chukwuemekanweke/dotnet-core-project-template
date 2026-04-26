@@ -3,6 +3,7 @@ using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Formatting;
 using BackendProjectTemplate.WebAPI.Infrastructure;
@@ -27,7 +28,8 @@ public sealed class SessionsController(
     IValidator<SignInRequest> validator,
     IValidator<GoogleSignInRequest> googleSignInValidator,
     IValidator<RefreshSessionRequest> refreshSessionValidator,
-    TimeProvider timeProvider) : ControllerBase
+    TimeProvider timeProvider,
+    ICurrentActor currentActor) : ControllerBase
 {
     [HttpPost]
     [EnableRateLimiting(RateLimitingPolicyNames.SignInPolicy)]
@@ -50,7 +52,8 @@ public sealed class SessionsController(
             request.Email,
             request.Password,
             HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
-            Request.Headers.UserAgent.ToString());
+            Request.Headers.UserAgent.ToString(),
+            ActorContext.FromAnonymousActor(currentActor));
 
         var result = await handler.HandleAsync(command, cancellationToken);
 
@@ -100,7 +103,8 @@ public sealed class SessionsController(
             new GoogleSignInCommand(
                 request.IdToken,
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
-                Request.Headers.UserAgent.ToString()),
+                Request.Headers.UserAgent.ToString(),
+                ActorContext.FromAnonymousActor(currentActor)),
             cancellationToken);
 
         return result.Status switch
@@ -157,7 +161,8 @@ public sealed class SessionsController(
             new RefreshSessionCommand(
                 request.RefreshToken,
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
-                Request.Headers.UserAgent.ToString()),
+                Request.Headers.UserAgent.ToString(),
+                ActorContext.FromAnonymousActor(currentActor)),
             cancellationToken);
 
         return result.Status switch
@@ -233,7 +238,7 @@ public sealed class SessionsController(
         }
 
         var result = await logoutSessionHandler.HandleAsync(
-            new LogoutSessionCommand(tokenId, expiresAtUtc.Value, stakeholderId),
+            new LogoutSessionCommand(tokenId, expiresAtUtc.Value, stakeholderId, ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
 
         return result.Status switch

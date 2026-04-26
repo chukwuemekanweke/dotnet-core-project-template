@@ -38,7 +38,6 @@ public sealed class When_UploadingAvatar_WithValidImageFile_Should
             .Returns("https://example.com/avatar.png");
 
         var sut = new UploadAvatarHandler(
-            currentActor,
             stakeholderRepository,
             objectStorageService,
             customTelemetryContext,
@@ -46,7 +45,7 @@ public sealed class When_UploadingAvatar_WithValidImageFile_Should
             timeProvider);
 
         var result = await sut.HandleAsync(
-            new UploadAvatarCommand(stream, "avatar.png", "image/png", stream.Length),
+            new UploadAvatarCommand(stream, "avatar.png", "image/png", stream.Length, new ActorContext(stakeholderId, Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.Status.ShouldBe(UploadAvatarStatus.Success);

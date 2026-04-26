@@ -30,7 +30,6 @@ public sealed class WhenSigningUpWithValidGoogleIdentity_Should
             StakeholderDefaults.TypeKey,
             context.Clock.GetUtcNow());
 
-        context.CurrentActor.TenantId.Returns(tenantId);
         context.GoogleIdentityTokenService.ValidateAsync("google-id-token", Arg.Any<CancellationToken>())
             .Returns(new GoogleIdentityTokenPayload(subject, email, "Google User"));
         context.IdentityService.FindByEmailAsync(email).Returns((AppUser?)null);

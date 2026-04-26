@@ -22,7 +22,6 @@ internal sealed class PaymentsFlowTestContext
     public IRepository<PaymentProviderConfiguration> PaymentProviderConfigurationRepository { get; } = Substitute.For<IRepository<PaymentProviderConfiguration>>();
     public IRepository<PaymentTransaction> PaymentTransactionRepository { get; } = Substitute.For<IRepository<PaymentTransaction>>();
     public IRepository<PaymentWebhookInbox> PaymentWebhookInboxRepository { get; } = Substitute.For<IRepository<PaymentWebhookInbox>>();
-    public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 12, 0, 0, TimeSpan.Zero));
@@ -40,7 +39,6 @@ internal sealed class PaymentsFlowTestContext
             PaymentProviderConfigurationRepository,
             PaymentTransactionRepository,
             PaymentProviderServices,
-            CurrentActor,
             UnitOfWork,
             Clock);
 

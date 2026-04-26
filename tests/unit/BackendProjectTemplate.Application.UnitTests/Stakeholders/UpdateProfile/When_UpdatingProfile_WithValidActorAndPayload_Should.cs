@@ -32,10 +32,10 @@ public sealed class When_UpdatingProfile_WithValidActorAndPayload_Should
         stakeholderRepository.GetByIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(stakeholder);
 
-        var sut = new UpdateProfileHandler(currentActor, stakeholderRepository, customTelemetryContext, unitOfWork, timeProvider);
+        var sut = new UpdateProfileHandler(stakeholderRepository, customTelemetryContext, unitOfWork, timeProvider);
 
         var result = await sut.HandleAsync(
-            new UpdateProfileCommand("Jane", "Doe"),
+            new UpdateProfileCommand("Jane", "Doe", new ActorContext(stakeholderId, Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.Status.ShouldBe(UpdateProfileStatus.Success);

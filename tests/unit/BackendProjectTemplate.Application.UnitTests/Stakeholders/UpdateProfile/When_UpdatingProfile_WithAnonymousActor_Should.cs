@@ -18,14 +18,13 @@ public sealed class When_UpdatingProfile_WithAnonymousActor_Should
         currentActor.ActorId.Returns(string.Empty);
 
         var sut = new UpdateProfileHandler(
-            currentActor,
             Substitute.For<IRepository<Stakeholder>>(),
             customTelemetryContext,
             Substitute.For<IUnitOfWork>(),
             TimeProvider.System);
 
         var result = await sut.HandleAsync(
-            new UpdateProfileCommand("Jane", "Doe"),
+            new UpdateProfileCommand("Jane", "Doe", new ActorContext(null, Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.Status.ShouldBe(UpdateProfileStatus.NotAuthenticated);

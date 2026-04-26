@@ -14,7 +14,6 @@ public sealed class RefreshSessionHandler(
     IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
-    ICurrentActor currentActor,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -65,6 +64,7 @@ public sealed class RefreshSessionHandler(
             stakeholderId: currentStakeholder.Id,
             ipAddress: request.IpAddress,
             userAgent: request.UserAgent,
+            request.ActorContext,
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -78,6 +78,7 @@ public sealed class RefreshSessionHandler(
         Guid stakeholderId,
         string ipAddress,
         string userAgent,
+        ActorContext actorContext,
         CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
@@ -85,12 +86,12 @@ public sealed class RefreshSessionHandler(
         await eventPublisher.PublishAsync(new UserAccessTokenRefreshed(ipAddress, userAgent)
         {
             StakeholderId = stakeholderId,
-            FlowId = currentActor.FlowId,
+            FlowId = actorContext.FlowId,
             OccuredAt = now
         }, cancellationToken);
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.SessionRefreshCompleted,
-            ObservabilityEventProperties.Create(currentActor, stakeholderId));
+            ObservabilityEventProperties.Create(actorContext, stakeholderId));
     }
 }
