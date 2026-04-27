@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Core;
+using DomainObservability = BackendProjectTemplate.Domain.Common.Observability.Observability;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,6 +13,7 @@ public sealed class RabbitMqOutboxMessageDispatcher(
     [FromKeyedServices(RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey)] IPublisher publisher,
     [FromKeyedServices(RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey)] ISender sender) : IOutboxMessageDispatcher
 {
+    private static readonly ActivitySource ActivitySource = new(DomainObservability.ActivitySourceName);
     private const string ParentOperationIdHeader = "cimr-parent-operation-id";
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
@@ -22,17 +25,30 @@ public sealed class RabbitMqOutboxMessageDispatcher(
         .GetMethods()
         .Single(method => method.Name == nameof(ISender.SendAsync) && method.IsGenericMethodDefinition);
 
-    public Task DispatchAsync(OutboxMessage message, CancellationToken cancellationToken = default)
+    public async Task DispatchAsync(OutboxMessage message, CancellationToken cancellationToken)
     {
         var messageType = ResolveMessageType(message.Type);
         var payload = DeserializePayload(message.Payload, messageType);
 
-        return message.Kind switch
+        using var activity = ActivitySource.StartActivity(
+            "outbox_publish",
+            ActivityKind.Producer,
+            parentId: message.ActivityId);
+
+        activity?.SetTag(DomainObservability.MessageTypePropertyName, message.Type);
+        activity?.SetTag(DomainObservability.MessageIdPropertyName, message.MessageId.ToString());
+
+        switch (message.Kind)
         {
-            OutboxMessageKind.Event => PublishEventAsync(message, messageType, payload, cancellationToken),
-            OutboxMessageKind.Command => SendCommandAsync(message, messageType, payload, cancellationToken),
-            _ => throw new InvalidOperationException($"Unsupported outbox message kind '{message.Kind}'.")
-        };
+            case OutboxMessageKind.Event:
+                await PublishEventAsync(message, messageType, payload, cancellationToken);
+                break;
+            case OutboxMessageKind.Command:
+                await SendCommandAsync(message, messageType, payload, cancellationToken);
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported outbox message kind '{message.Kind}'.");
+        }
     }
 
     private Task PublishEventAsync(OutboxMessage message, Type messageType, object payload, CancellationToken cancellationToken)

@@ -24,7 +24,7 @@ public sealed class WhenDispatchingCommandOutboxMessage_Should
 
         var sut = new RabbitMqOutboxMessageDispatcher(publisher, sender);
 
-        await sut.DispatchAsync(outboxMessage);
+        await sut.DispatchAsync(outboxMessage, CancellationToken.None);
 
         await sender.Received(1).SendAsync(
             Arg.Is<TestCommand>(message => message.MessageId == command.MessageId && message.Name == command.Name),
