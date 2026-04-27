@@ -31,7 +31,7 @@ public static class ServiceCollectionExtensions
         {
             tracing
                 .AddSource(Domain.Common.Observability.Observability.ActivitySourceName)
-                .AddSource("RabbitMQ.Client")
+                .AddSource("RabbitMQ.Client.Publisher")
                 .AddSource("RabbitMQ.Client.Subscriber")
                 .AddAspNetCoreInstrumentation(options =>
                 {
