@@ -21,8 +21,7 @@ public static class ServiceCollectionExtensions
     {
         var serviceName = configuration["OpenTelemetry:ServiceName"]
             ?? throw new InvalidOperationException("Configuration value 'OpenTelemetry:ServiceName' is required.");
-        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"]
-            ?? throw new InvalidOperationException("Configuration value 'OpenTelemetry:OtlpEndpoint' is required.");
+        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
 
         var telemetry = services
             .AddOpenTelemetry()
@@ -42,8 +41,12 @@ public static class ServiceCollectionExtensions
                 })
                 .AddHttpClientInstrumentation()
                 .AddEntityFrameworkCoreInstrumentation()
-                .AddRedisInstrumentation()
-                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+                .AddRedisInstrumentation();
+
+            if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+            {
+                tracing.AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+            }
         });
 
         telemetry.WithMetrics(metrics =>
@@ -63,7 +66,11 @@ public static class ServiceCollectionExtensions
                 options.IncludeScopes = false;
                 options.ParseStateValues = true;
                 options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName));
-                options.AddOtlpExporter(exporterOptions => exporterOptions.Endpoint = new Uri(otlpEndpoint));
+
+                if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+                {
+                    options.AddOtlpExporter(exporterOptions => exporterOptions.Endpoint = new Uri(otlpEndpoint));
+                }
             });
         });
 

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using StackExchange.Redis;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Payments.Services;
 
@@ -40,6 +42,18 @@ public sealed class CustomWebApplicationFactory(string postgresConnectionString,
             services.RemoveAll<IPaymentProviderService>();
             services.AddScoped<IPaymentProviderService, FakeCredoPaymentProviderService>();
             services.AddScoped<IPaymentProviderService, FakeSafeHavenPaymentProviderService>();
+
+            services.RemoveAll<IConnectionMultiplexer>();
+            services.RemoveAll<IDistributedCache>();
+
+            var redisConfiguration = ConfigurationOptions.Parse(redisConnectionString);
+            redisConfiguration.AbortOnConnectFail = false;
+            var lazyMultiplexer = new Lazy<IConnectionMultiplexer>(() => ConnectionMultiplexer.Connect(redisConfiguration));
+            services.AddSingleton<IConnectionMultiplexer>(_ => lazyMultiplexer.Value);
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.ConnectionMultiplexerFactory = () => Task.FromResult(lazyMultiplexer.Value);
+            });
         });
     }
 }
