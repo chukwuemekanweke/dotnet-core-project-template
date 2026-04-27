@@ -28,7 +28,7 @@ public sealed class WhenDispatchingEventOutboxMessage_Should
 
         var sut = new RabbitMqOutboxMessageDispatcher(publisher, sender);
 
-        await sut.DispatchAsync(outboxMessage);
+        await sut.DispatchAsync(outboxMessage, CancellationToken.None);
 
         await publisher.Received(1).PublishAsync(
             Arg.Is<UserCreated>(message => message.MessageId == @event.MessageId && message.StakeholderId == stakeholderId),

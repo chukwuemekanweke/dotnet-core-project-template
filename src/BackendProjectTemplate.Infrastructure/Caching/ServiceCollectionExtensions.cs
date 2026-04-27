@@ -12,8 +12,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IJsonCache, DistributedJsonCache>();
 
         var redisConnectionString = configuration.GetConnectionString("Redis");
+        var redisConfiguration = ConfigurationOptions.Parse(redisConnectionString!);
+        redisConfiguration.AbortOnConnectFail = false;
+
         var lazyMultiplexer = new Lazy<IConnectionMultiplexer>(() =>
-            ConnectionMultiplexer.Connect(redisConnectionString!));
+            ConnectionMultiplexer.Connect(redisConfiguration));
 
         services.AddSingleton<IConnectionMultiplexer>(_ => lazyMultiplexer.Value);
         services.AddStackExchangeRedisCache(options =>
