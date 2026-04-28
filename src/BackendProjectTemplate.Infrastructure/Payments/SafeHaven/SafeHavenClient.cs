@@ -28,20 +28,6 @@ internal sealed class SafeHavenClient(
         .Or<TaskCanceledException>()
         .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromMilliseconds(200 * Math.Pow(2, retryAttempt)));
 
-    public Task<SafeHavenTokenResponse> ExchangeTokenAsync(
-        SafeHavenTokenRequest request,
-        CancellationToken cancellationToken) =>
-        _retryPolicy.ExecuteAsync(async ct =>
-        {
-            using var response = await _httpClient.PostAsJsonAsync("/oauth2/token", request, ct);
-            response.EnsureSuccessStatusCode();
-
-            var token = await response.Content.ReadFromJsonAsync<SafeHavenTokenResponse>(SerializerOptions, ct)
-                ?? throw new InvalidOperationException("SafeHaven token response was empty.");
-
-            return token;
-        }, cancellationToken);
-
     public async Task<SafeHavenResponse<SafeHavenVirtualAccount>> CreateVirtualAccountAsync(
         SafeHavenCreateVirtualAccountRequest request,
         CancellationToken cancellationToken)
@@ -181,13 +167,13 @@ internal sealed class SafeHavenClient(
             {
                 queryParams.Add($"limit={request.Limit}");
             }
-            if (!string.IsNullOrWhiteSpace(request.FromDate))
+            if (request.FromDate.HasValue)
             {
-                queryParams.Add($"fromDate={Uri.EscapeDataString(request.FromDate)}");
+                queryParams.Add($"fromDate={Uri.EscapeDataString(request.FromDate.Value.ToShortDateString())}");
             }
-            if (!string.IsNullOrWhiteSpace(request.ToDate))
+            if (request.ToDate.HasValue)
             {
-                queryParams.Add($"toDate={Uri.EscapeDataString(request.ToDate)}");
+                queryParams.Add($"toDate={Uri.EscapeDataString(request.ToDate.Value.ToShortDateString())}");
             }
             if (!string.IsNullOrWhiteSpace(request.Type))
             {
@@ -240,4 +226,19 @@ internal sealed class SafeHavenClient(
         request.Headers.TryAddWithoutValidation("ClientID", _cachedToken.IbsClientId);
         return request;
     }
+
+    private Task<SafeHavenTokenResponse> ExchangeTokenAsync(
+        SafeHavenTokenRequest request,
+        CancellationToken cancellationToken) =>
+        _retryPolicy.ExecuteAsync(async ct =>
+        {
+            using var response = await _httpClient.PostAsJsonAsync("/oauth2/token", request, ct);
+            response.EnsureSuccessStatusCode();
+
+            var token = await response.Content.ReadFromJsonAsync<SafeHavenTokenResponse>(SerializerOptions, ct)
+                ?? throw new InvalidOperationException("SafeHaven token response was empty.");
+
+            return token;
+        }, cancellationToken);
+
 }

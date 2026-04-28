@@ -3,7 +3,8 @@ using System.Text.Json.Serialization;
 namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
 
 public sealed record SafeHavenSubAccount(
-    [property: JsonPropertyName("_id")] string Id,
+    [property: JsonPropertyName("_id")] 
+    string Id,
     string Client,
     string AccountProduct,
     string AccountNumber,

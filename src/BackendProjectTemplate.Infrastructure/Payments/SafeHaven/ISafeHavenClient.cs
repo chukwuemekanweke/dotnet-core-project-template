@@ -2,10 +2,6 @@ namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
 
 internal interface ISafeHavenClient
 {
-    Task<SafeHavenTokenResponse> ExchangeTokenAsync(
-        SafeHavenTokenRequest request,
-        CancellationToken cancellationToken);
-
     Task<SafeHavenResponse<SafeHavenVirtualAccount>> CreateVirtualAccountAsync(
         SafeHavenCreateVirtualAccountRequest request,
         CancellationToken cancellationToken);
