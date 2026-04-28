@@ -14,31 +14,25 @@ internal sealed class SafeHavenPaymentProviderService(
         PaymentProviderInitiationRequest request,
         CancellationToken cancellationToken)
     {
-        await client.CreateVirtualAccountPaymentAsync(
-            new
-            {
-                request.MerchantReference,
-                request.Amount,
-                request.CurrencyCode,
-                request.StakeholderId,
-                request.TenantId,
-                request.CountryId
-            },
+        var response = await client.CreateVirtualAccountAsync(
+            new SafeHavenCreateVirtualAccountRequest(
+                ExternalReference: request.MerchantReference,
+                Amount: request.Amount),
             cancellationToken);
 
+        var virtualAccount = response.Data;
         var now = timeProvider.GetUtcNow();
-        var providerReference = $"sh_{Guid.CreateVersion7():N}";
 
         return new PaymentProviderInitiationResult(
-            providerReference,
+            virtualAccount.Id,
             PaymentMethodType.BankTransfer,
-            now.AddMinutes(30),
+            now.AddMinutes(15),
             new Dictionary<string, string>
             {
-                ["accountNumber"] = "1234567890",
-                ["bankName"] = "SafeHaven Demo Bank",
-                ["accountName"] = "Backend Project Template",
-                ["providerReference"] = providerReference
+                ["accountNumber"] = virtualAccount.AccountNumber,
+                ["bankName"] = virtualAccount.BankCode,
+                ["accountName"] = virtualAccount.AccountName,
+                ["providerReference"] = virtualAccount.Id
             },
             new Dictionary<string, string>
             {
@@ -46,38 +40,55 @@ internal sealed class SafeHavenPaymentProviderService(
             });
     }
 
-    public Task<PaymentProviderVerificationResult> VerifyPaymentAsync(
+    public async Task<PaymentProviderVerificationResult> VerifyPaymentAsync(
         PaymentProviderVerificationRequest request,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(CreateVerificationResult(request, ProviderKey));
-
-    public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
-        PaymentProviderWebhookValidationRequest request,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.NotApplicable, "signature_not_configured"));
-
-    private static PaymentProviderVerificationResult CreateVerificationResult(
-        PaymentProviderVerificationRequest request,
-        string providerKey)
+        CancellationToken cancellationToken)
     {
-        if (request.MerchantReference.Contains("success", StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(request.ProviderReference))
+        {
+            return new PaymentProviderVerificationResult(
+                PaymentProviderVerificationStatus.Processing,
+                request.ProviderReference,
+                null,
+                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
+                new Dictionary<string, string> { ["provider"] = ProviderKey });
+        }
+
+        var response = await client.GetVirtualAccountAsync(request.ProviderReference, cancellationToken);
+
+        if (response is null)
+        {
+            return new PaymentProviderVerificationResult(
+                PaymentProviderVerificationStatus.Processing,
+                request.ProviderReference,
+                null,
+                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
+                new Dictionary<string, string> { ["provider"] = ProviderKey });
+        }
+
+        var virtualAccount = response.Data;
+
+        if (string.Equals(virtualAccount.Status, "completed", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(virtualAccount.Status, "paid", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(virtualAccount.Status, "active", StringComparison.OrdinalIgnoreCase))
         {
             return new PaymentProviderVerificationResult(
                 PaymentProviderVerificationStatus.Succeeded,
-                request.ProviderReference ?? $"sh_{Guid.CreateVersion7():N}",
+                request.ProviderReference,
                 null,
                 KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess,
-                new Dictionary<string, string> { ["provider"] = providerKey });
+                new Dictionary<string, string> { ["provider"] = ProviderKey });
         }
 
-        if (request.MerchantReference.Contains("fail", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(virtualAccount.Status, "failed", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(virtualAccount.Status, "expired", StringComparison.OrdinalIgnoreCase))
         {
             return new PaymentProviderVerificationResult(
                 PaymentProviderVerificationStatus.Failed,
                 request.ProviderReference,
                 "provider_reported_failure",
                 KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure,
-                new Dictionary<string, string> { ["provider"] = providerKey });
+                new Dictionary<string, string> { ["provider"] = ProviderKey });
         }
 
         return new PaymentProviderVerificationResult(
@@ -85,6 +96,11 @@ internal sealed class SafeHavenPaymentProviderService(
             request.ProviderReference,
             null,
             KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
-            new Dictionary<string, string> { ["provider"] = providerKey });
+            new Dictionary<string, string> { ["provider"] = ProviderKey });
     }
+
+    public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
+        PaymentProviderWebhookValidationRequest request,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.NotApplicable, "signature_not_configured"));
 }

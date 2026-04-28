@@ -19,7 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient(PaymentHttpClientNames.SafeHaven, client =>
         {
             client.BaseAddress = new Uri(safeHavenOptions.BaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(10);
+            client.Timeout = TimeSpan.FromSeconds(30);
         });
         services.AddHttpClient(PaymentHttpClientNames.Credo, client =>
         {
