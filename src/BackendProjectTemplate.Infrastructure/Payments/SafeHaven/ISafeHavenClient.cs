@@ -23,7 +23,6 @@ internal interface ISafeHavenClient
         CancellationToken cancellationToken);
 
     Task<SafeHavenResponse<IReadOnlyList<SafeHavenAccountStatementEntry>>> GetAccountStatementAsync(
-        string accountId,
-        SafeHavenAccountStatementRequest? request,
+        SafeHavenAccountStatementRequest request,
         CancellationToken cancellationToken);
 }

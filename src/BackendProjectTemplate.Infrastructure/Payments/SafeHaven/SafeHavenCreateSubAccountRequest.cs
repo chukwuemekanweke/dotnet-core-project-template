@@ -7,7 +7,4 @@ public sealed record SafeHavenCreateSubAccountRequest(
     string IdentityType,
     string? IdentityNumber,
     string? IdentityId,
-    string? Otp,
-    string? CallbackUrl,
-    bool? AutoSweep,
-    SafeHavenAutoSweepDetails? AutoSweepDetails);
+    string? Otp);

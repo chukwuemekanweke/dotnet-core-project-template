@@ -1,6 +1,7 @@
 namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
 
 public sealed record SafeHavenAccountStatementRequest(
+    string AccountId,
     int Page,
     int Limit,
     DateOnly? FromDate,

@@ -17,6 +17,7 @@ internal sealed class SafeHavenPaymentProviderService(
         var response = await client.CreateVirtualAccountAsync(
             new SafeHavenCreateVirtualAccountRequest(
                 ExternalReference: request.MerchantReference,
+                AccountName: request.MerchantReference,
                 Amount: request.Amount),
             cancellationToken);
 

@@ -8,6 +8,7 @@ public sealed class SafeHavenOptions
     public string ClientId { get; set; } = string.Empty;
     public string ClientAssertion { get; set; } = string.Empty;
     public string CallbackUrl { get; set; } = string.Empty;
+    public string AutoSweepAccountNumber { get; set; } = string.Empty;
     public int ValidFor { get; set; } = 900;
     public string SettlementBankCode { get; set; } = string.Empty;
     public string SettlementAccountNumber { get; set; } = string.Empty;

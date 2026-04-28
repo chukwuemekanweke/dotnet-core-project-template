@@ -51,10 +51,7 @@ internal sealed class SafeHavenClient(
 
         return await _retryPolicy.ExecuteAsync(async ct =>
         {
-            using var httpRequest = CreateAuthenticatedRequest(HttpMethod.Post, "/virtual-accounts");
-            httpRequest.Content = JsonContent.Create(payload);
-
-            using var response = await _httpClient.SendAsync(httpRequest, ct);
+            using var response = await PostAsJsonAsync("/virtual-accounts", payload, ct);
             response.EnsureSuccessStatusCode();
 
             var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenVirtualAccount>>(SerializerOptions, ct)
@@ -92,12 +89,17 @@ internal sealed class SafeHavenClient(
     {
         await EnsureAuthenticatedAsync(cancellationToken);
 
+        var payload = new
+        {
+            request.Type,
+            request.Number,
+            request.DebitAccountNumber,
+            Async = false
+        };
+
         return await _retryPolicy.ExecuteAsync(async ct =>
         {
-            using var httpRequest = CreateAuthenticatedRequest(HttpMethod.Post, "/identity/v2");
-            httpRequest.Content = JsonContent.Create(request);
-
-            using var response = await _httpClient.SendAsync(httpRequest, ct);
+            using var response = await PostAsJsonAsync("/identity/v2", payload, ct);
             response.EnsureSuccessStatusCode();
 
             var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenIdentityVerification>>(SerializerOptions, ct)
@@ -115,10 +117,7 @@ internal sealed class SafeHavenClient(
 
         return await _retryPolicy.ExecuteAsync(async ct =>
         {
-            using var httpRequest = CreateAuthenticatedRequest(HttpMethod.Post, "/identity/v2/validate");
-            httpRequest.Content = JsonContent.Create(request);
-
-            using var response = await _httpClient.SendAsync(httpRequest, ct);
+            using var response = await PostAsJsonAsync("/identity/v2/validate", request, ct);
             response.EnsureSuccessStatusCode();
 
             var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenIdentityVerification>>(SerializerOptions, ct)
@@ -134,12 +133,27 @@ internal sealed class SafeHavenClient(
     {
         await EnsureAuthenticatedAsync(cancellationToken);
 
+        var payload = new
+        {
+            request.PhoneNumber,
+            request.Email,
+            request.ExternalReference,
+            request.IdentityType,
+            request.IdentityNumber,
+            request.IdentityId,
+            request.Otp,
+            CallbackUrl = _options.CallbackUrl,
+            AutoSweep = true,
+            AutoSweepDetails = new
+            {
+                AccountNumber = _options.AutoSweepAccountNumber,
+                Schedule = "Instant"
+            }
+        };
+
         return await _retryPolicy.ExecuteAsync(async ct =>
         {
-            using var httpRequest = CreateAuthenticatedRequest(HttpMethod.Post, "/accounts/v2/subaccount");
-            httpRequest.Content = JsonContent.Create(request);
-
-            using var response = await _httpClient.SendAsync(httpRequest, ct);
+            using var response = await PostAsJsonAsync("/accounts/v2/subaccount", payload, ct);
             response.EnsureSuccessStatusCode();
 
             var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenSubAccount>>(SerializerOptions, ct)
@@ -150,38 +164,34 @@ internal sealed class SafeHavenClient(
     }
 
     public async Task<SafeHavenResponse<IReadOnlyList<SafeHavenAccountStatementEntry>>> GetAccountStatementAsync(
-        string accountId,
-        SafeHavenAccountStatementRequest? request,
+        SafeHavenAccountStatementRequest request,
         CancellationToken cancellationToken)
     {
         await EnsureAuthenticatedAsync(cancellationToken);
 
         var queryParams = new List<string>();
-        if (request is not null)
+        if (request.Page > 0)
         {
-            if (request.Page > 0)
-            {
-                queryParams.Add($"page={request.Page}");
-            }
-            if (request.Limit > 0)
-            {
-                queryParams.Add($"limit={request.Limit}");
-            }
-            if (request.FromDate.HasValue)
-            {
-                queryParams.Add($"fromDate={Uri.EscapeDataString(request.FromDate.Value.ToShortDateString())}");
-            }
-            if (request.ToDate.HasValue)
-            {
-                queryParams.Add($"toDate={Uri.EscapeDataString(request.ToDate.Value.ToShortDateString())}");
-            }
-            if (!string.IsNullOrWhiteSpace(request.Type))
-            {
-                queryParams.Add($"type={Uri.EscapeDataString(request.Type)}");
-            }
+            queryParams.Add($"page={request.Page}");
+        }
+        if (request.Limit > 0)
+        {
+            queryParams.Add($"limit={request.Limit}");
+        }
+        if (request.FromDate.HasValue)
+        {
+            queryParams.Add($"fromDate={Uri.EscapeDataString(request.FromDate.Value.ToShortDateString())}");
+        }
+        if (request.ToDate.HasValue)
+        {
+            queryParams.Add($"toDate={Uri.EscapeDataString(request.ToDate.Value.ToShortDateString())}");
+        }
+        if (!string.IsNullOrWhiteSpace(request.Type))
+        {
+            queryParams.Add($"type={Uri.EscapeDataString(request.Type)}");
         }
 
-        var uri = $"/accounts/{accountId}/statement";
+        var uri = $"/accounts/{request.AccountId}/statement";
         if (queryParams.Count > 0)
         {
             uri += "?" + string.Join("&", queryParams);
@@ -225,6 +235,22 @@ internal sealed class SafeHavenClient(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken!.AccessToken);
         request.Headers.TryAddWithoutValidation("ClientID", _cachedToken.IbsClientId);
         return request;
+    }
+
+    private Task<HttpResponseMessage> PostAsJsonAsync<TRequest>(
+        string requestUri,
+        TRequest request,
+        CancellationToken cancellationToken)
+    {
+        ApplyAuthenticationHeaders();
+        return _httpClient.PostAsJsonAsync(requestUri, request, cancellationToken);
+    }
+
+    private void ApplyAuthenticationHeaders()
+    {
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken!.AccessToken);
+        _httpClient.DefaultRequestHeaders.Remove("ClientID");
+        _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("ClientID", _cachedToken.IbsClientId);
     }
 
     private Task<SafeHavenTokenResponse> ExchangeTokenAsync(
