@@ -14,11 +14,11 @@ internal interface ISafeHavenClient
         string virtualAccountId,
         CancellationToken cancellationToken);
 
-    Task<SafeHavenResponse<SafeHavenVerificationInitiation>> InitiateIdentityVerificationAsync(
+    Task<SafeHavenResponse<SafeHavenIdentityVerification>> InitiateIdentityVerificationAsync(
         SafeHavenInitiateVerificationRequest request,
         CancellationToken cancellationToken);
 
-    Task<SafeHavenResponse<SafeHavenVerificationResult>> ValidateIdentityVerificationAsync(
+    Task<SafeHavenResponse<SafeHavenIdentityVerification>> ValidateIdentityVerificationAsync(
         SafeHavenValidateVerificationRequest request,
         CancellationToken cancellationToken);
 
@@ -26,7 +26,7 @@ internal interface ISafeHavenClient
         SafeHavenCreateSubAccountRequest request,
         CancellationToken cancellationToken);
 
-    Task<SafeHavenPaginatedResponse<SafeHavenAccountStatementEntry>> GetAccountStatementAsync(
+    Task<SafeHavenResponse<IReadOnlyList<SafeHavenAccountStatementEntry>>> GetAccountStatementAsync(
         string accountId,
         SafeHavenAccountStatementRequest? request,
         CancellationToken cancellationToken);

@@ -21,5 +21,4 @@ public sealed record SafeHavenSubAccount(
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     string Nin,
-    [property: JsonPropertyName("__v")] int Version,
     string CbaAccountId);

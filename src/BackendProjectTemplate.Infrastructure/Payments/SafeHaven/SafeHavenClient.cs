@@ -100,7 +100,7 @@ internal sealed class SafeHavenClient(
         }, cancellationToken);
     }
 
-    public async Task<SafeHavenResponse<SafeHavenVerificationInitiation>> InitiateIdentityVerificationAsync(
+    public async Task<SafeHavenResponse<SafeHavenIdentityVerification>> InitiateIdentityVerificationAsync(
         SafeHavenInitiateVerificationRequest request,
         CancellationToken cancellationToken)
     {
@@ -114,14 +114,14 @@ internal sealed class SafeHavenClient(
             using var response = await _httpClient.SendAsync(httpRequest, ct);
             response.EnsureSuccessStatusCode();
 
-            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenVerificationInitiation>>(SerializerOptions, ct)
+            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenIdentityVerification>>(SerializerOptions, ct)
                 ?? throw new InvalidOperationException("SafeHaven identity verification initiation response was empty.");
 
             return wrapper;
         }, cancellationToken);
     }
 
-    public async Task<SafeHavenResponse<SafeHavenVerificationResult>> ValidateIdentityVerificationAsync(
+    public async Task<SafeHavenResponse<SafeHavenIdentityVerification>> ValidateIdentityVerificationAsync(
         SafeHavenValidateVerificationRequest request,
         CancellationToken cancellationToken)
     {
@@ -135,7 +135,7 @@ internal sealed class SafeHavenClient(
             using var response = await _httpClient.SendAsync(httpRequest, ct);
             response.EnsureSuccessStatusCode();
 
-            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenVerificationResult>>(SerializerOptions, ct)
+            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenIdentityVerification>>(SerializerOptions, ct)
                 ?? throw new InvalidOperationException("SafeHaven identity verification validation response was empty.");
 
             return wrapper;
@@ -163,7 +163,7 @@ internal sealed class SafeHavenClient(
         }, cancellationToken);
     }
 
-    public async Task<SafeHavenPaginatedResponse<SafeHavenAccountStatementEntry>> GetAccountStatementAsync(
+    public async Task<SafeHavenResponse<IReadOnlyList<SafeHavenAccountStatementEntry>>> GetAccountStatementAsync(
         string accountId,
         SafeHavenAccountStatementRequest? request,
         CancellationToken cancellationToken)
@@ -174,15 +174,25 @@ internal sealed class SafeHavenClient(
         if (request is not null)
         {
             if (request.Page > 0)
+            {
                 queryParams.Add($"page={request.Page}");
+            }
             if (request.Limit > 0)
+            {
                 queryParams.Add($"limit={request.Limit}");
+            }
             if (!string.IsNullOrWhiteSpace(request.FromDate))
+            {
                 queryParams.Add($"fromDate={Uri.EscapeDataString(request.FromDate)}");
+            }
             if (!string.IsNullOrWhiteSpace(request.ToDate))
+            {
                 queryParams.Add($"toDate={Uri.EscapeDataString(request.ToDate)}");
+            }
             if (!string.IsNullOrWhiteSpace(request.Type))
+            {
                 queryParams.Add($"type={Uri.EscapeDataString(request.Type)}");
+            }
         }
 
         var uri = $"/accounts/{accountId}/statement";
@@ -197,7 +207,7 @@ internal sealed class SafeHavenClient(
             using var response = await _httpClient.SendAsync(httpRequest, ct);
             response.EnsureSuccessStatusCode();
 
-            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenPaginatedResponse<SafeHavenAccountStatementEntry>>(SerializerOptions, ct)
+            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<IReadOnlyList<SafeHavenAccountStatementEntry>>>(SerializerOptions, ct)
                 ?? throw new InvalidOperationException("SafeHaven account statement response was empty.");
 
             return wrapper;
