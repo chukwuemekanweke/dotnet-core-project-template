@@ -34,20 +34,16 @@ internal sealed class SafeHavenClient(
     {
         await EnsureAuthenticatedAsync(cancellationToken);
 
-        var payload = new
-        {
-            accountName = request.AccountName,
-            validFor = _options.ValidFor,
-            settlementAccount = new
-            {
-                bankCode = _options.SettlementBankCode,
-                accountNumber = _options.SettlementAccountNumber
-            },
-            amountControl = "fixed",
-            amount = request.Amount,
-            callbackUrl = _options.CallbackUrl,
-            externalReference = request.ExternalReference
-        };
+        var payload = new SafeHavenCreateVirtualAccountPayload(
+            AccountName: request.AccountName,
+            ValidFor: _options.ValidFor,
+            SettlementAccount: new SafeHavenSettlementAccountPayload(
+                BankCode: _options.SettlementBankCode,
+                AccountNumber: _options.SettlementAccountNumber),
+            AmountControl: "fixed",
+            Amount: request.Amount,
+            CallbackUrl: _options.CallbackUrl,
+            ExternalReference: request.ExternalReference);
 
         return await _retryPolicy.ExecuteAsync(async ct =>
         {
@@ -89,13 +85,11 @@ internal sealed class SafeHavenClient(
     {
         await EnsureAuthenticatedAsync(cancellationToken);
 
-        var payload = new
-        {
-            request.Type,
-            request.Number,
-            request.DebitAccountNumber,
-            Async = false
-        };
+        var payload = new SafeHavenInitiateVerificationPayload(
+            Type: request.Type,
+            Number: request.Number,
+            DebitAccountNumber: request.DebitAccountNumber,
+            Async: false);
 
         return await _retryPolicy.ExecuteAsync(async ct =>
         {
@@ -133,23 +127,19 @@ internal sealed class SafeHavenClient(
     {
         await EnsureAuthenticatedAsync(cancellationToken);
 
-        var payload = new
-        {
-            request.PhoneNumber,
-            request.Email,
-            request.ExternalReference,
-            request.IdentityType,
-            request.IdentityNumber,
-            request.IdentityId,
-            request.Otp,
-            CallbackUrl = _options.CallbackUrl,
-            AutoSweep = true,
-            AutoSweepDetails = new
-            {
-                AccountNumber = _options.AutoSweepAccountNumber,
-                Schedule = "Instant"
-            }
-        };
+        var payload = new SafeHavenCreateSubAccountPayload(
+            PhoneNumber: request.PhoneNumber,
+            Email: request.Email,
+            ExternalReference: request.ExternalReference,
+            IdentityType: request.IdentityType,
+            IdentityNumber: request.IdentityNumber,
+            IdentityId: request.IdentityId,
+            Otp: request.Otp,
+            CallbackUrl: _options.CallbackUrl,
+            AutoSweep: true,
+            AutoSweepDetails: new SafeHavenCreateSubAccountAutoSweepDetailsPayload(
+                AccountNumber: _options.AutoSweepAccountNumber,
+                Schedule: "Instant"));
 
         return await _retryPolicy.ExecuteAsync(async ct =>
         {
