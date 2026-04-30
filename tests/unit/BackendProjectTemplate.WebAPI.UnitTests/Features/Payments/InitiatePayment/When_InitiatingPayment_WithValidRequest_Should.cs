@@ -39,10 +39,10 @@ public sealed class When_InitiatingPayment_WithValidRequest_Should
         providerService.InitiatePaymentAsync(Arg.Any<PaymentProviderInitiationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PaymentProviderInitiationResult(
                 "provider-ref",
+                PaymentProviderKeys.Credo,
                 PaymentMethodType.PaymentLink,
                 context.Clock.GetUtcNow().AddMinutes(30),
-                new Dictionary<string, string> { ["paymentLink"] = "https://pay.local" },
-                new Dictionary<string, string>()));
+                new Dictionary<string, string> { ["paymentLink"] = "https://pay.local" }));
         context.PaymentProviderServices.Add(providerService);
 
         var sut = new PaymentsController(context.CreateInitiatePaymentHandler(), new InitiatePaymentValidator(), context.CurrentActor);

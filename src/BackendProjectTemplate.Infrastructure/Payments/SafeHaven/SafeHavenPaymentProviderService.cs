@@ -26,18 +26,15 @@ internal sealed class SafeHavenPaymentProviderService(
 
         return new PaymentProviderInitiationResult(
             virtualAccount.Id,
+            ProviderKey,
             PaymentMethodType.BankTransfer,
             now.AddMinutes(15),
             new Dictionary<string, string>
             {
-                ["accountNumber"] = virtualAccount.AccountNumber,
-                ["bankName"] = virtualAccount.BankCode,
-                ["accountName"] = virtualAccount.AccountName,
-                ["providerReference"] = virtualAccount.Id
-            },
-            new Dictionary<string, string>
-            {
-                ["provider"] = PaymentProviderKeys.SafeHaven
+                [SafeHavenKnownKeys.PaymentInstruction.AccountNumber] = virtualAccount.AccountNumber,
+                [SafeHavenKnownKeys.PaymentInstruction.BankName] = virtualAccount.BankCode,
+                [SafeHavenKnownKeys.PaymentInstruction.AccountName] = virtualAccount.AccountName,
+                [SafeHavenKnownKeys.PaymentInstruction.ProviderReference] = virtualAccount.Id
             });
     }
 
@@ -56,22 +53,10 @@ internal sealed class SafeHavenPaymentProviderService(
         }
 
         var response = await client.GetVirtualAccountAsync(request.ProviderReference, cancellationToken);
-
-        if (response is null)
-        {
-            return new PaymentProviderVerificationResult(
-                PaymentProviderVerificationStatus.Processing,
-                request.ProviderReference,
-                null,
-                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
-                new Dictionary<string, string> { ["provider"] = ProviderKey });
-        }
-
         var virtualAccount = response.Data;
 
-        if (string.Equals(virtualAccount.Status, "completed", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(virtualAccount.Status, "paid", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(virtualAccount.Status, "active", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(virtualAccount.Status, SafeHavenVirtualAccountStatuses.Completed, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(virtualAccount.Status, SafeHavenVirtualAccountStatuses.Active, StringComparison.OrdinalIgnoreCase))
         {
             return new PaymentProviderVerificationResult(
                 PaymentProviderVerificationStatus.Succeeded,
@@ -81,8 +66,8 @@ internal sealed class SafeHavenPaymentProviderService(
                 new Dictionary<string, string> { ["provider"] = ProviderKey });
         }
 
-        if (string.Equals(virtualAccount.Status, "failed", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(virtualAccount.Status, "expired", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(virtualAccount.Status, SafeHavenVirtualAccountStatuses.Failed, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(virtualAccount.Status, SafeHavenVirtualAccountStatuses.Expired, StringComparison.OrdinalIgnoreCase))
         {
             return new PaymentProviderVerificationResult(
                 PaymentProviderVerificationStatus.Failed,

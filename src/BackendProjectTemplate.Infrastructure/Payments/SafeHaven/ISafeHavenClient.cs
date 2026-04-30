@@ -6,7 +6,7 @@ internal interface ISafeHavenClient
         SafeHavenCreateVirtualAccountRequest request,
         CancellationToken cancellationToken);
 
-    Task<SafeHavenResponse<SafeHavenVirtualAccount>?> GetVirtualAccountAsync(
+    Task<SafeHavenResponse<SafeHavenVirtualAccount>> GetVirtualAccountAsync(
         string virtualAccountId,
         CancellationToken cancellationToken);
 

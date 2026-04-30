@@ -1,5 +1,3 @@
-using BackendProjectTemplate.Contracts.Payments;
-using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
@@ -91,7 +89,7 @@ public sealed class InitiatePaymentHandler(
 
         paymentTransaction.MarkInitiated(
             initiationResult.ProviderReference,
-            initiationResult.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
+            initiationResult.InstructionFields.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
             initiationResult.ExpiresAtUtc,
             KnownPaymentTransactionChangeReasons.PaymentInitiated);
         paymentTransaction.SetPaymentMethodType(initiationResult.PaymentMethodType);

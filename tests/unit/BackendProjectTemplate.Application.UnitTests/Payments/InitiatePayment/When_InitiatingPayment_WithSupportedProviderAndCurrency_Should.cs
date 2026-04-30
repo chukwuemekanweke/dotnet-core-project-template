@@ -43,10 +43,10 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         paymentProviderService.InitiatePaymentAsync(Arg.Any<PaymentProviderInitiationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PaymentProviderInitiationResult(
                 "cr_provider_ref",
+                PaymentProviderKeys.Credo,
                 PaymentMethodType.PaymentLink,
                 context.Clock.GetUtcNow().AddMinutes(30),
-                new Dictionary<string, string> { ["paymentLink"] = "https://pay.local" },
-                new Dictionary<string, string> { ["provider"] = "credo" }));
+                new Dictionary<string, string> { ["paymentLink"] = "https://pay.local" }));
         context.PaymentProviderServices.Add(paymentProviderService);
 
         var result = await context.CreateInitiatePaymentHandler().HandleAsync(
@@ -62,7 +62,7 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         capturedTransaction.PaymentStatus.ShouldBe(PaymentStatus.Initiated);
         capturedTransaction.ProviderReference.ShouldBe("cr_provider_ref");
         capturedTransaction.PaymentMethodType.ShouldBe(PaymentMethodType.PaymentLink);
-        capturedTransaction.ProviderPayloadMetadata["provider"].ShouldBe("credo");
+        capturedTransaction.ProviderPayloadMetadata["paymentLink"].ShouldBe("https://pay.local");
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

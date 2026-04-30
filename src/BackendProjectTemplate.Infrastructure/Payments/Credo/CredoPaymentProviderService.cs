@@ -30,16 +30,13 @@ internal sealed class CredoPaymentProviderService(
 
         return new PaymentProviderInitiationResult(
             providerReference,
+            ProviderKey,
             PaymentMethodType.PaymentLink,
             now.AddMinutes(30),
             new Dictionary<string, string>
             {
                 ["paymentLink"] = $"https://checkout.credo.local/pay/{providerReference}",
                 ["providerReference"] = providerReference
-            },
-            new Dictionary<string, string>
-            {
-                ["provider"] = PaymentProviderKeys.Credo
             });
     }
 

@@ -58,7 +58,7 @@ internal sealed class SafeHavenClient(
         }, cancellationToken);
     }
 
-    public async Task<SafeHavenResponse<SafeHavenVirtualAccount>?> GetVirtualAccountAsync(
+    public async Task<SafeHavenResponse<SafeHavenVirtualAccount>> GetVirtualAccountAsync(
         string virtualAccountId,
         CancellationToken cancellationToken)
     {
@@ -68,15 +68,11 @@ internal sealed class SafeHavenClient(
         {
             using var httpRequest = CreateAuthenticatedRequest(HttpMethod.Get, $"/virtual-accounts/{virtualAccountId}");
             using var response = await _httpClient.SendAsync(httpRequest, ct);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+            response.EnsureSuccessStatusCode();
 
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
-            var wrapper = await JsonSerializer.DeserializeAsync<SafeHavenResponse<SafeHavenVirtualAccount>>(stream, SerializerOptions, ct);
-            return wrapper;
+            return await JsonSerializer.DeserializeAsync<SafeHavenResponse<SafeHavenVirtualAccount>>(stream, SerializerOptions, ct)
+                ?? throw new InvalidOperationException("SafeHaven get virtual account response was empty.");
         }, cancellationToken);
     }
 
