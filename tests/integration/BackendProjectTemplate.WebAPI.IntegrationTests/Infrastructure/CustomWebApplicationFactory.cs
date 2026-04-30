@@ -10,7 +10,11 @@ using BackendProjectTemplate.Domain.Payments.Services;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 
-public sealed class CustomWebApplicationFactory(string postgresConnectionString, string redisConnectionString) : WebApplicationFactory<Program>
+public sealed class CustomWebApplicationFactory(
+    string postgresConnectionString,
+    string redisConnectionString,
+    bool useFakePaymentProviderServices = true,
+    IReadOnlyDictionary<string, string?>? configurationOverrides = null) : WebApplicationFactory<Program>
 {
     public FakeGoogleIdentityTokenService GoogleIdentityTokenService { get; } = new();
 
@@ -20,7 +24,7 @@ public sealed class CustomWebApplicationFactory(string postgresConnectionString,
 
         builder.ConfigureAppConfiguration((_, configBuilder) =>
         {
-            configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+            var configuration = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:PostgresWrite"] = postgresConnectionString,
                 ["ConnectionStrings:PostgresRead"] = postgresConnectionString,
@@ -30,18 +34,51 @@ public sealed class CustomWebApplicationFactory(string postgresConnectionString,
                 ["Jwt:Audience"] = "integration-tests",
                 ["Jwt:SigningKey"] = "super-secret-template-signing-key-change-me",
                 ["Authentication:Google:ClientIds:0"] = "integration-tests-google-client-id",
+                ["Payments:Credo:BaseUrl"] = "https://credo.integration.local",
+                ["Payments:SafeHaven:BaseUrl"] = "https://safehaven.integration.local",
+                ["Payments:SafeHaven:ClientId"] = "integration-tests-client-id",
+                ["Payments:SafeHaven:ClientAssertion"] = "integration-tests-client-assertion",
+                ["Payments:SafeHaven:CallbackUrl"] = "https://backend.integration.local/payments/webhooks/safehaven",
+                ["Payments:SafeHaven:AutoSweepAccountNumber"] = "1234567890",
+                ["Payments:SafeHaven:ValidFor"] = "900",
+                ["Payments:SafeHaven:SettlementBankCode"] = "090286",
+                ["Payments:SafeHaven:SettlementAccountNumber"] = "9876543210",
                 ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.WebAPI.Tests",
                 ["OpenTelemetry:OtlpEndpoint"] = ""
-            });
+            };
+
+            if (configurationOverrides is not null)
+            {
+                foreach (var entry in configurationOverrides)
+                {
+                    configuration[entry.Key] = entry.Value;
+                }
+            }
+
+            configBuilder.AddInMemoryCollection(configuration);
         });
 
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IGoogleIdentityTokenService>();
             services.AddSingleton<IGoogleIdentityTokenService>(GoogleIdentityTokenService);
-            services.RemoveAll<IPaymentProviderService>();
-            services.AddScoped<IPaymentProviderService, FakeCredoPaymentProviderService>();
-            services.AddScoped<IPaymentProviderService, FakeSafeHavenPaymentProviderService>();
+
+            if (useFakePaymentProviderServices)
+            {
+                services.RemoveAll<IPaymentProviderService>();
+                services.AddScoped<IPaymentProviderService, FakeCredoPaymentProviderService>();
+                services.AddScoped<IPaymentProviderService, FakeSafeHavenPaymentProviderService>();
+            }
+            else if (configurationOverrides is not null &&
+                     configurationOverrides.TryGetValue("Payments:SafeHaven:BaseUrl", out var safeHavenBaseUrl) &&
+                     !string.IsNullOrWhiteSpace(safeHavenBaseUrl))
+            {
+                services.AddHttpClient("payments-safehaven", client =>
+                {
+                    client.BaseAddress = new Uri(safeHavenBaseUrl);
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                });
+            }
 
             services.RemoveAll<IConnectionMultiplexer>();
             services.RemoveAll<IDistributedCache>();

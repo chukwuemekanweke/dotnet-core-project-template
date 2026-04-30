@@ -13,10 +13,10 @@ internal sealed class FakeCredoPaymentProviderService : IPaymentProviderService
         CancellationToken cancellationToken) =>
         Task.FromResult(new PaymentProviderInitiationResult(
             $"cr_{Guid.CreateVersion7():N}",
+            PaymentProviderKeys.Credo,
             PaymentMethodType.PaymentLink,
             DateTimeOffset.UtcNow.AddMinutes(30),
-            new Dictionary<string, string> { ["paymentLink"] = "https://payments.integration.local/credo" },
-            new Dictionary<string, string>()));
+            new Dictionary<string, string> { ["paymentLink"] = "https://payments.integration.local/credo" }));
 
     public Task<PaymentProviderVerificationResult> VerifyPaymentAsync(
         PaymentProviderVerificationRequest request,
@@ -43,14 +43,14 @@ internal sealed class FakeSafeHavenPaymentProviderService : IPaymentProviderServ
         CancellationToken cancellationToken) =>
         Task.FromResult(new PaymentProviderInitiationResult(
             $"sh_{Guid.CreateVersion7():N}",
+            PaymentProviderKeys.SafeHaven,
             PaymentMethodType.BankTransfer,
             DateTimeOffset.UtcNow.AddMinutes(30),
             new Dictionary<string, string>
             {
                 ["accountNumber"] = "1234567890",
                 ["bankName"] = "SafeHaven Demo Bank"
-            },
-            new Dictionary<string, string>()));
+            }));
 
     public Task<PaymentProviderVerificationResult> VerifyPaymentAsync(
         PaymentProviderVerificationRequest request,

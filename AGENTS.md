@@ -168,3 +168,8 @@ Matching WebAPI request DTO location:
 - When multiple types have the same name, prefer `using` aliases for the ambiguous types instead of leaving fully qualified names inline throughout the file.
 - Keep top-level types in separate files. Do not place an interface and its implementation in the same `.cs` file.
 - Use `StakeholderId` in observability custom events for actor or subject identification whenever it can be resolved. Only fall back to `UserId`, `Email`, or other identifiers when `StakeholderId` is genuinely unavailable.
+
+## Pull Requests
+
+- When asked to write a PR title and description, always use the repository's PR template from `.github/pull_request_template.md`.
+- Do not invent a free-form description when a template exists.
