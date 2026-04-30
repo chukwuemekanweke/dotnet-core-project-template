@@ -4,6 +4,7 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -12,17 +13,27 @@ using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.Features.Payments.InitiatePayment;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using WireMock.RequestBuilders;
+using WireMock.ResponseBuilders;
+using WireMock.Server;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Payments.InitiatePayment;
 
 [Collection(nameof(ContainersCollection))]
-public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Should(ContainersFixture fixture)
-    : WebApiIntegrationTestBase(fixture), IAsyncLifetime
+public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Should : IAsyncLifetime
 {
     private const string Password = "P@ssw0rd123!";
+    private const string AccountNumberKey = "accountNumber";
+    private const string BankNameKey = "bankName";
+    private const string AccountNameKey = "accountName";
 
+    private readonly WireMockServer _wireMockServer;
+    private readonly CustomWebApplicationFactory _factory;
+
+    private HttpClient _client = default!;
     private string _email = string.Empty;
     private Guid _tenantId;
     private Guid _countryId;
@@ -35,11 +46,36 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
     private Guid _paymentTransactionId;
     private HttpResponseMessage? _response;
 
+    public When_InitiatingPayment_WithSupportedProviderAndCurrency_Should(ContainersFixture fixture)
+    {
+        _wireMockServer = WireMockServer.Start();
+        _factory = new CustomWebApplicationFactory(
+            fixture.PostgresConnectionString,
+            fixture.RedisConnectionString,
+            useFakePaymentProviderServices: false,
+            configurationOverrides: new Dictionary<string, string?>
+            {
+                ["Payments:SafeHaven:BaseUrl"] = _wireMockServer.Urls.Single(),
+                ["Payments:SafeHaven:ClientId"] = "safehaven-client-id",
+                ["Payments:SafeHaven:ClientAssertion"] = "safehaven-client-assertion",
+                ["Payments:SafeHaven:CallbackUrl"] = "https://backend.integration.local/payments/webhooks/safehaven",
+                ["Payments:SafeHaven:AutoSweepAccountNumber"] = "1234567890",
+                ["Payments:SafeHaven:ValidFor"] = "900",
+                ["Payments:SafeHaven:SettlementBankCode"] = "090286",
+                ["Payments:SafeHaven:SettlementAccountNumber"] = "9876543210"
+            });
+    }
+
     public async Task InitializeAsync()
     {
-        await InitializeClientAsync();
+        ConfigureSafeHavenStubs();
+        _client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
         _tenantId = Guid.CreateVersion7();
-        Client.DefaultRequestHeaders.Add("X-Tenant-Id", _tenantId.ToString());
+        _client.DefaultRequestHeaders.Add("X-Tenant-Id", _tenantId.ToString());
         await CreateVerifiedUserAsync();
         await SeedPaymentSetupAsync();
         await AuthenticateAsync();
@@ -49,7 +85,9 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
     {
         _response?.Dispose();
         await DeleteSeedDataAsync();
-        await DisposeClientAsync();
+        _client.Dispose();
+        await _factory.DisposeAsync();
+        _wireMockServer.Dispose();
     }
 
     [Fact]
@@ -60,7 +98,7 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
 
         async Task WhenInitiatingPayment()
         {
-            _response = await Client.PostAsJsonAsync(
+            _response = await _client.PostAsJsonAsync(
                 EndpointUrl.Payments.InitiateV1,
                 new InitiatePaymentRequest(2500m, _currencyId, "WalletTopUp", _paymentProviderId));
         }
@@ -73,7 +111,9 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
             var payload = await _response.Content.ReadFromJsonAsync<InitiatePaymentResponse>();
             payload.ShouldNotBeNull();
             payload.PaymentProviderId.ShouldBe(_paymentProviderId);
-            payload.PaymentInstruction.Count.ShouldBeGreaterThan(0);
+            payload.PaymentInstruction[AccountNumberKey].ShouldBe("1234567890");
+            payload.PaymentInstruction[BankNameKey].ShouldBe("090286");
+            payload.PaymentInstruction[AccountNameKey].ShouldBe("pay_virtual_account");
 
             using var scope = CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
@@ -85,16 +125,19 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
             transaction.PaymentStatus.ShouldBe(Contracts.Payments.PaymentStatus.Initiated);
             transaction.Amount.ShouldBe(2500m);
             transaction.StakeholderId.ShouldBe(_stakeholderId);
+            transaction.PaymentMethodType.ShouldBe(Contracts.Payments.PaymentMethodType.BankTransfer);
+            transaction.ProviderPayloadMetadata[AccountNumberKey].ShouldBe("1234567890");
+            _wireMockServer.LogEntries.Count.ShouldBe(2);
         }
     }
 
     private async Task AuthenticateAsync()
     {
-        var signInResponse = await Client.PostAsJsonAsync(EndpointUrl.Sessions.V1, new SignInRequest(_email, Password));
+        var signInResponse = await _client.PostAsJsonAsync(EndpointUrl.Sessions.V1, new SignInRequest(_email, Password));
         var payload = await signInResponse.Content.ReadFromJsonAsync<SignInResponse>();
 
         signInResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
-        Client.DefaultRequestHeaders.Authorization =
+        _client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload!.AccessToken);
     }
 
@@ -135,8 +178,8 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         var currency = Currency.Create("NGN", "Naira", true, now);
         var countryCurrency = CountryCurrency.Create(_countryId, currency.Id, true, true, now);
-        var provider = PaymentProvider.Create("Credo", "credo", true, now);
-        provider.SetConfiguration(currency.Id, Contracts.Payments.PaymentIntent.WalletTopUp, Contracts.Payments.PaymentMethodType.PaymentLink, true);
+        var provider = PaymentProvider.Create("SafeHaven", PaymentProviderKeys.SafeHaven, true, now);
+        provider.SetConfiguration(currency.Id, Contracts.Payments.PaymentIntent.WalletTopUp, Contracts.Payments.PaymentMethodType.BankTransfer, true);
 
         await dbContext.Currencies.AddAsync(currency);
         await dbContext.CountryCurrencies.AddAsync(countryCurrency);
@@ -213,5 +256,60 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         }
 
         await dbContext.SaveChangesAsync();
+    }
+
+    private IServiceScope CreateScope() => _factory.Services.CreateScope();
+
+    private void ConfigureSafeHavenStubs()
+    {
+        _wireMockServer
+            .Given(Request.Create().WithPath("/oauth2/token").UsingPost())
+            .RespondWith(
+                Response.Create()
+                    .WithStatusCode(HttpStatusCode.OK)
+                    .WithHeader("Content-Type", "application/json")
+                    .WithBodyAsJson(new
+                    {
+                        accessToken = "safehaven-access-token",
+                        expiresIn = 3600,
+                        tokenType = "Bearer",
+                        ibsClientId = "safehaven-ibs-client-id"
+                    }));
+
+        _wireMockServer
+            .Given(Request.Create().WithPath("/virtual-accounts").UsingPost())
+            .RespondWith(
+                Response.Create()
+                    .WithStatusCode(HttpStatusCode.OK)
+                    .WithHeader("Content-Type", "application/json")
+                    .WithBodyAsJson(new
+                    {
+                        statusCode = 200,
+                        message = "created",
+                        data = new
+                        {
+                            _id = "sh_provider_ref_123",
+                            client = "test-client",
+                            bankCode = "090286",
+                            accountNumber = "1234567890",
+                            accountName = "pay_virtual_account",
+                            currencyCode = "NGN",
+                            bvn = "",
+                            validFor = 900,
+                            amountControl = "fixed",
+                            amount = 2500m,
+                            expiryDate = DateTimeOffset.UtcNow.AddMinutes(15),
+                            callbackUrl = "https://backend.integration.local/payments/webhooks/safehaven",
+                            settlementAccount = new
+                            {
+                                bankCode = "090286",
+                                accountNumber = "9876543210"
+                            },
+                            status = "Active",
+                            isDeleted = false,
+                            createdAt = DateTimeOffset.UtcNow,
+                            updatedAt = DateTimeOffset.UtcNow
+                        }
+                    }));
     }
 }
