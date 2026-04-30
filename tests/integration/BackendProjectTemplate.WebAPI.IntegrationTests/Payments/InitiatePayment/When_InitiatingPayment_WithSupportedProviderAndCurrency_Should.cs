@@ -270,10 +270,13 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
                     .WithHeader("Content-Type", "application/json")
                     .WithBodyAsJson(new
                     {
-                        accessToken = "safehaven-access-token",
-                        expiresIn = 3600,
-                        tokenType = "Bearer",
-                        ibsClientId = "safehaven-ibs-client-id"
+                        access_token = "safehaven-access-token",
+                        client_id = "safehaven-client-id",
+                        expires_in = 3600,
+                        ibs_client_id = "safehaven-ibs-client-id",
+                        ibs_user_id = "safehaven-ibs-user-id",
+                        refresh_token = "safehaven-refresh-token",
+                        token_type = "Bearer"
                     }));
 
         _wireMockServer

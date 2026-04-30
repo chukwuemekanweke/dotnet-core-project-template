@@ -1,9 +1,19 @@
+using System.Text.Json.Serialization;
+
 namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
 
 public sealed record SafeHavenTokenResponse(
+    [property: JsonPropertyName("access_token")] 
     string AccessToken,
+    [property: JsonPropertyName("client_id")] 
+    string ClientId,
+    [property: JsonPropertyName("expires_in")] 
     int ExpiresIn,
-    string TokenType,
+    [property: JsonPropertyName("ibs_client_id")] 
+    string IbsClientId,
+    [property: JsonPropertyName("ibs_user_id")] 
+    string IbsUserId,
+    [property: JsonPropertyName("refresh_token")] 
     string? RefreshToken,
-    string? Scope,
-    string? IbsClientId);
+    [property: JsonPropertyName("token_type")] 
+    string TokenType);
