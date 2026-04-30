@@ -1,4 +1,4 @@
-namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
+namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven.Payloads;
 
 public sealed record SafeHavenTokenRequest(
     string GrantType,

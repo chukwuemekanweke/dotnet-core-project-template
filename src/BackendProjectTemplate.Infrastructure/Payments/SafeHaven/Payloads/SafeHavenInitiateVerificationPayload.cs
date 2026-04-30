@@ -1,4 +1,4 @@
-namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
+namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven.Payloads;
 
 internal sealed record SafeHavenInitiateVerificationPayload(
     string Type,
