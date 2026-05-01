@@ -81,8 +81,4 @@ internal sealed class SafeHavenPaymentProviderService(
             KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing);
     }
 
-    public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
-        PaymentProviderWebhookValidationRequest request,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.NotApplicable, "signature_not_configured"));
 }

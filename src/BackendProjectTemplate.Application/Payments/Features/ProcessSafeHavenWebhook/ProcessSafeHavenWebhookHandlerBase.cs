@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using BackendProjectTemplate.Contracts.Payments;
-using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -13,7 +12,6 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
     IRepository<PaymentProvider> paymentProviderRepository,
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
-    IEnumerable<IPaymentProviderService> paymentProviderServices,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -27,15 +25,9 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
                 new ActivePaymentProviderByKeySpecification(PaymentProviderKeys.SafeHaven),
                 cancellationToken)
             ?? throw new InvalidOperationException("SafeHaven payment provider is not active.");
-
-        var paymentProviderService = paymentProviderServices.SingleOrDefault(service =>
-                string.Equals(service.ProviderKey, paymentProvider.ProviderKey, StringComparison.OrdinalIgnoreCase))
-            ?? throw new PaymentProviderResolutionException(
-                $"No payment provider service is registered for '{paymentProvider.ProviderKey}'.");
-
-        var validationResult = await paymentProviderService.ValidateWebhookAsync(
-            new PaymentProviderWebhookValidationRequest(command.RawPayload),
-            cancellationToken);
+        var validationResult = new PaymentProviderWebhookValidationResult(
+            SignatureValidationStatus.NotApplicable,
+            "signature_not_applicable");
         var webhookDetails = CreateWebhookDetails(command.Webhook);
 
         if (!string.IsNullOrWhiteSpace(webhookDetails.WebhookEventId))

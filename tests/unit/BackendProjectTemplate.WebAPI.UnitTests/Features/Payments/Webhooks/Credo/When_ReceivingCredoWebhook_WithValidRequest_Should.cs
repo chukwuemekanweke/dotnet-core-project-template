@@ -5,6 +5,7 @@ using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.WebAPI.Features.Payments.Webhooks.Credo;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;
 
@@ -17,7 +18,6 @@ public sealed class When_ReceivingCredoWebhook_WithValidRequest_Should
     {
         var context = new PaymentsControllerTestContext();
         var provider = context.CreatePaymentProvider("Credo", PaymentProviderKeys.Credo);
-        var providerService = Substitute.For<IPaymentProviderService>();
         var transaction = PaymentTransaction.Create(
             "merchant-ref",
             PaymentIntent.WalletTopUp,
@@ -36,10 +36,8 @@ public sealed class When_ReceivingCredoWebhook_WithValidRequest_Should
             .Returns((PaymentWebhookInbox?)null);
         context.PaymentTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<PaymentTransaction>>(), Arg.Any<CancellationToken>())
             .Returns(transaction);
-        providerService.ProviderKey.Returns(PaymentProviderKeys.Credo);
-        providerService.ValidateWebhookAsync(Arg.Any<PaymentProviderWebhookValidationRequest>(), Arg.Any<CancellationToken>())
+        context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<PaymentProviderWebhookValidationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Valid, null));
-        context.PaymentProviderServices.Add(providerService);
 
         var payload = new
         {
@@ -69,10 +67,20 @@ public sealed class When_ReceivingCredoWebhook_WithValidRequest_Should
             CredoWebhookEvents.TransactionSuccessful,
             JsonSerializer.SerializeToElement(payload));
         var sut = new CredoWebhooksController(context.CreateCredoWebhookHandler());
+        sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        sut.ControllerContext.HttpContext.Request.Headers["X-Credo-Signature"] = "valid-signature";
 
         var result = await sut.Handle(request, CancellationToken.None);
 
         result.ShouldBeOfType<OkResult>();
+        await context.CredoWebhookSignatureValidator.Received(1).ValidateAsync(
+            Arg.Is<PaymentProviderWebhookValidationRequest>(validationRequest =>
+                validationRequest.SignatureHeader == "valid-signature" &&
+                validationRequest.RawPayload.Contains("\"businessCode\":\"700607002190001\"")),
+            Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

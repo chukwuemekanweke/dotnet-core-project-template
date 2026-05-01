@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
-using BackendProjectTemplate.Domain.Payments.Services;
 
 namespace BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 
@@ -8,14 +7,12 @@ public sealed class ProcessSafeHavenAccountDebitWebhookHandler(
     IRepository<PaymentProvider> paymentProviderRepository,
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
-    IEnumerable<IPaymentProviderService> paymentProviderServices,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
     : ProcessSafeHavenWebhookHandlerBase<SafeHavenAccountDebitWebhookData>(
         paymentProviderRepository,
         paymentWebhookInboxRepository,
         paymentTransactionRepository,
-        paymentProviderServices,
         unitOfWork,
         timeProvider)
 {

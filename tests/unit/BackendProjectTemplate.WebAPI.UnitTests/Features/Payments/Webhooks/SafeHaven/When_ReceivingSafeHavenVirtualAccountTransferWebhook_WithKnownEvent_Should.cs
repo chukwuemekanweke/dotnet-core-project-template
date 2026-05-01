@@ -3,7 +3,6 @@ using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebho
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
-using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.WebAPI.Features.Payments.Webhooks.SafeHaven;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;
@@ -17,7 +16,6 @@ public sealed class When_ReceivingSafeHavenVirtualAccountTransferWebhook_WithKno
     {
         var context = new PaymentsControllerTestContext();
         var provider = context.CreatePaymentProvider("SafeHaven", PaymentProviderKeys.SafeHaven);
-        var providerService = Substitute.For<IPaymentProviderService>();
         var transaction = PaymentTransaction.Create(
             "payment-ref",
             PaymentIntent.WalletTopUp,
@@ -36,10 +34,6 @@ public sealed class When_ReceivingSafeHavenVirtualAccountTransferWebhook_WithKno
             .Returns((PaymentWebhookInbox?)null);
         context.PaymentTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<PaymentTransaction>>(), Arg.Any<CancellationToken>())
             .Returns(transaction);
-        providerService.ProviderKey.Returns(PaymentProviderKeys.SafeHaven);
-        providerService.ValidateWebhookAsync(Arg.Any<PaymentProviderWebhookValidationRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Valid, null));
-        context.PaymentProviderServices.Add(providerService);
 
         var payload = new
         {

@@ -22,6 +22,7 @@ internal sealed class PaymentsControllerTestContext
     public IRepository<PaymentWebhookInbox> PaymentWebhookInboxRepository { get; } = Substitute.For<IRepository<PaymentWebhookInbox>>();
     public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+    public ICredoWebhookSignatureValidator CredoWebhookSignatureValidator { get; } = Substitute.For<ICredoWebhookSignatureValidator>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 13, 0, 0, TimeSpan.Zero));
     public List<IPaymentProviderService> PaymentProviderServices { get; } = [];
 
@@ -45,7 +46,7 @@ internal sealed class PaymentsControllerTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
-            PaymentProviderServices,
+            CredoWebhookSignatureValidator,
             UnitOfWork,
             Clock);
 
@@ -54,7 +55,6 @@ internal sealed class PaymentsControllerTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
-            PaymentProviderServices,
             UnitOfWork,
             Clock);
 
@@ -63,7 +63,6 @@ internal sealed class PaymentsControllerTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
-            PaymentProviderServices,
             UnitOfWork,
             Clock);
 
@@ -72,7 +71,6 @@ internal sealed class PaymentsControllerTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
-            PaymentProviderServices,
             UnitOfWork,
             Clock);
 
