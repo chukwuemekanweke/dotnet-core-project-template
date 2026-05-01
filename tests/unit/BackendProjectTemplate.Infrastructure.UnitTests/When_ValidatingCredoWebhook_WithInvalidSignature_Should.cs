@@ -20,13 +20,9 @@ public sealed class When_ValidatingCredoWebhook_WithInvalidSignature_Should
             }));
 
         var result = await sut.ValidateAsync(
-            new PaymentProviderWebhookValidationRequest(
-                """
-                {"event":"transaction.successful","data":{"businessCode":"700607002190001"}}
-                """)
-            {
-                SignatureHeader = "invalid-signature"
-            },
+            new CredoWebhookSignatureValidationRequest(
+                "invalid-signature",
+                "700607002190001"),
             CancellationToken.None);
 
         result.SignatureValidationStatus.ShouldBe(SignatureValidationStatus.Invalid);

@@ -23,7 +23,7 @@ public sealed class When_ReceivingCredoWebhook_WithInvalidSignature_Should
             .Returns(provider);
         context.PaymentWebhookInboxRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<PaymentWebhookInbox>>(), Arg.Any<CancellationToken>())
             .Returns((PaymentWebhookInbox?)null);
-        context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<PaymentProviderWebhookValidationRequest>(), Arg.Any<CancellationToken>())
+        context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<CredoWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Invalid, "invalid_signature"));
 
         var request = new CredoWebhookRequest(

@@ -36,7 +36,7 @@ public sealed class When_ReceivingCredoWebhook_WithValidRequest_Should
             .Returns((PaymentWebhookInbox?)null);
         context.PaymentTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<PaymentTransaction>>(), Arg.Any<CancellationToken>())
             .Returns(transaction);
-        context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<PaymentProviderWebhookValidationRequest>(), Arg.Any<CancellationToken>())
+        context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<CredoWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Valid, null));
 
         var payload = new
@@ -77,9 +77,9 @@ public sealed class When_ReceivingCredoWebhook_WithValidRequest_Should
 
         result.ShouldBeOfType<OkResult>();
         await context.CredoWebhookSignatureValidator.Received(1).ValidateAsync(
-            Arg.Is<PaymentProviderWebhookValidationRequest>(validationRequest =>
+            Arg.Is<CredoWebhookSignatureValidationRequest>(validationRequest =>
                 validationRequest.SignatureHeader == "valid-signature" &&
-                validationRequest.RawPayload.Contains("\"businessCode\":\"700607002190001\"")),
+                validationRequest.BusinessCode == "700607002190001"),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

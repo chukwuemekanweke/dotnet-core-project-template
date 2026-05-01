@@ -20,17 +20,12 @@ public sealed class When_ValidatingCredoWebhook_WithValidSignature_Should
             {
                 SecretKey = "test_secret_key"
             }));
-        var rawPayload =
-            """
-            {"event":"transaction.successful","data":{"businessCode":"700607002190001"}}
-            """;
         var signature = ComputeSignature("test_secret_key", "700607002190001");
 
         var result = await sut.ValidateAsync(
-            new PaymentProviderWebhookValidationRequest(rawPayload)
-            {
-                SignatureHeader = signature
-            },
+            new CredoWebhookSignatureValidationRequest(
+                signature,
+                "700607002190001"),
             CancellationToken.None);
 
         result.SignatureValidationStatus.ShouldBe(SignatureValidationStatus.Valid);

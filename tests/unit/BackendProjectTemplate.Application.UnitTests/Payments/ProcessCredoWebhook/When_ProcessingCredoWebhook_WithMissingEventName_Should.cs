@@ -17,7 +17,7 @@ public sealed class When_ProcessingCredoWebhook_WithMissingEventName_Should
 
         context.PaymentProviderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Domain.Payments.Entities.PaymentProvider>>(), Arg.Any<CancellationToken>())
             .Returns(provider);
-        context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<PaymentProviderWebhookValidationRequest>(), Arg.Any<CancellationToken>())
+        context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<CredoWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Valid, null));
 
         var exception = await Should.ThrowAsync<InvalidOperationException>(() =>

@@ -27,10 +27,9 @@ public sealed class ProcessCredoWebhookHandler(
             ?? throw new InvalidOperationException("Credo payment provider is not active.");
 
         var validationResult = await credoWebhookSignatureValidator.ValidateAsync(
-            new PaymentProviderWebhookValidationRequest(command.RawPayload)
-            {
-                SignatureHeader = command.SignatureHeader
-            },
+            new CredoWebhookSignatureValidationRequest(
+                command.SignatureHeader,
+                command.Webhook.Data.BusinessCode),
             cancellationToken);
         var webhookDetails = CreateWebhookDetails(command.Webhook);
 

@@ -3,6 +3,6 @@ namespace BackendProjectTemplate.Domain.Payments.Services;
 public interface ICredoWebhookSignatureValidator
 {
     Task<PaymentProviderWebhookValidationResult> ValidateAsync(
-        PaymentProviderWebhookValidationRequest request,
+        CredoWebhookSignatureValidationRequest request,
         CancellationToken cancellationToken);
 }
