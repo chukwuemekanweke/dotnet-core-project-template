@@ -44,6 +44,19 @@ services:
       Jwt__SigningKey: super-secret-template-signing-key-change-me
       OpenTelemetry__ServiceName: BackendProjectTemplate.WebAPI
       OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
+      PYROSCOPE_APPLICATION_NAME: backendprojecttemplate.webapi
+      PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
+      PYROSCOPE_PROFILING_ENABLED: "1"
+      PYROSCOPE_PROFILING_WALLTIME_ENABLED: "1"
+      CORECLR_ENABLE_PROFILING: "1"
+      CORECLR_PROFILER: "{BD1A650D-AC5D-4896-B64F-D6FA25D6B26A}"
+      CORECLR_PROFILER_PATH: /dotnet/Pyroscope.Profiler.Native.so
+      LD_PRELOAD: /dotnet/Pyroscope.Linux.ApiWrapper.x64.so
+      LD_LIBRARY_PATH: /dotnet
+      DOTNET_EnableDiagnostics: "1"
+      DOTNET_EnableDiagnostics_IPC: "0"
+      DOTNET_EnableDiagnostics_Debugger: "0"
+      DOTNET_EnableDiagnostics_Profiler: "1"
       Database__InitializeOnStartup: "false"
     depends_on:
       database-migrator:
@@ -55,6 +68,8 @@ services:
       prometheus:
         condition: service_started
       otel-collector:
+        condition: service_started
+      pyroscope:
         condition: service_started
     ports:
       - "8080:8080"
@@ -90,6 +105,19 @@ services:
       Notifications__Email__Mailtrap__ApiToken: ${MAILTRAP_TOKEN}
       OpenTelemetry__ServiceName: BackendProjectTemplate.Consumer
       OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
+      PYROSCOPE_APPLICATION_NAME: backendprojecttemplate.consumer
+      PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
+      PYROSCOPE_PROFILING_ENABLED: "1"
+      PYROSCOPE_PROFILING_WALLTIME_ENABLED: "1"
+      CORECLR_ENABLE_PROFILING: "1"
+      CORECLR_PROFILER: "{BD1A650D-AC5D-4896-B64F-D6FA25D6B26A}"
+      CORECLR_PROFILER_PATH: /dotnet/Pyroscope.Profiler.Native.so
+      LD_PRELOAD: /dotnet/Pyroscope.Linux.ApiWrapper.x64.so
+      LD_LIBRARY_PATH: /dotnet
+      DOTNET_EnableDiagnostics: "1"
+      DOTNET_EnableDiagnostics_IPC: "0"
+      DOTNET_EnableDiagnostics_Debugger: "0"
+      DOTNET_EnableDiagnostics_Profiler: "1"
     depends_on:
       database-migrator:
         condition: service_healthy
@@ -100,6 +128,8 @@ services:
       rabbitmq:
         condition: service_healthy
       otel-collector:
+        condition: service_started
+      pyroscope:
         condition: service_started
     ports:
       - "8082:8080"
@@ -134,6 +164,19 @@ services:
       Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
       OpenTelemetry__ServiceName: BackendProjectTemplate.Jobs
       OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
+      PYROSCOPE_APPLICATION_NAME: backendprojecttemplate.jobs
+      PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
+      PYROSCOPE_PROFILING_ENABLED: "1"
+      PYROSCOPE_PROFILING_WALLTIME_ENABLED: "1"
+      CORECLR_ENABLE_PROFILING: "1"
+      CORECLR_PROFILER: "{BD1A650D-AC5D-4896-B64F-D6FA25D6B26A}"
+      CORECLR_PROFILER_PATH: /dotnet/Pyroscope.Profiler.Native.so
+      LD_PRELOAD: /dotnet/Pyroscope.Linux.ApiWrapper.x64.so
+      LD_LIBRARY_PATH: /dotnet
+      DOTNET_EnableDiagnostics: "1"
+      DOTNET_EnableDiagnostics_IPC: "0"
+      DOTNET_EnableDiagnostics_Debugger: "0"
+      DOTNET_EnableDiagnostics_Profiler: "1"
     depends_on:
       database-migrator:
         condition: service_healthy
@@ -144,6 +187,8 @@ services:
       rabbitmq:
         condition: service_healthy
       otel-collector:
+        condition: service_started
+      pyroscope:
         condition: service_started
     ports:
       - "8083:8080"
@@ -226,6 +271,11 @@ services:
     ports:
       - "3100:3100"
 
+  pyroscope:
+    image: grafana/pyroscope:latest
+    ports:
+      - "4040:4040"
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     command:
@@ -245,9 +295,11 @@ services:
       - prometheus
       - tempo
       - loki
+      - pyroscope
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_PLUGINS_PREINSTALL_SYNC: grafana-pyroscope-app
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
