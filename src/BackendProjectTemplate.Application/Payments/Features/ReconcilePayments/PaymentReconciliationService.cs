@@ -57,7 +57,7 @@ public sealed class PaymentReconciliationService(
             switch (verificationResult.VerificationStatus)
             {
                 case PaymentProviderVerificationStatus.Succeeded when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Succeeded:
-                    transaction.MarkSucceeded(verificationResult.ProviderReference, verificationResult.StatusChangeReason, null, now);
+                    transaction.MarkSucceeded(verificationResult.ProviderReference, verificationResult.StatusChangeReason, now);
                     await eventPublisher.PublishAsync(
                         new SuccessfulPaymentConfirmed
                         {
@@ -79,7 +79,6 @@ public sealed class PaymentReconciliationService(
                         verificationResult.ProviderReference,
                         verificationResult.FailureReason,
                         verificationResult.StatusChangeReason,
-                        null,
                         now);
                     break;
                 case PaymentProviderVerificationStatus.Processing:
