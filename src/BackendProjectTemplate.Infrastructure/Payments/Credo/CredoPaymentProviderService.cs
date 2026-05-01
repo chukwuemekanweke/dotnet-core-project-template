@@ -53,10 +53,9 @@ internal sealed class CredoPaymentProviderService(
             now.AddMinutes(30),
             new Dictionary<string, string>
             {
-                ["paymentLink"] = paymentLink,
-                ["providerReference"] = providerReference,
-                ["merchantReference"] = merchantReference,
-                ["crn"] = response.Crn ?? string.Empty
+                [CredoKnownKeys.PaymentInstruction.PaymentLink] = paymentLink,
+                [CredoKnownKeys.PaymentInstruction.ProviderReference] = providerReference,
+                [CredoKnownKeys.PaymentInstruction.MerchantReference] = merchantReference
             });
     }
 
@@ -65,7 +64,6 @@ internal sealed class CredoPaymentProviderService(
         CancellationToken cancellationToken)
     {
         var response = await client.VerifyTransactionAsync(request.MerchantReference, cancellationToken);
-        var metadata = CreateVerificationMetadata(response);
 
         return response.Status switch
         {
@@ -74,21 +72,18 @@ internal sealed class CredoPaymentProviderService(
                     PaymentProviderVerificationStatus.Succeeded,
                     NormalizeOptional(response.TransRef) ?? request.ProviderReference,
                     null,
-                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess,
-                    metadata),
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess),
             CredoTransactionStatuses.Failed or CredoTransactionStatuses.Declined or CredoTransactionStatuses.FailedAged or CredoTransactionStatuses.Abandoned
                 => new PaymentProviderVerificationResult(
                     PaymentProviderVerificationStatus.Failed,
                     NormalizeOptional(response.TransRef) ?? request.ProviderReference,
                     NormalizeFailureReason(response.Message, response.Status),
-                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure,
-                    metadata),
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure),
             _ => new PaymentProviderVerificationResult(
                 PaymentProviderVerificationStatus.Processing,
                 NormalizeOptional(response.TransRef) ?? request.ProviderReference,
                 null,
-                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
-                metadata)
+                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing)
         };
     }
 
@@ -110,48 +105,6 @@ internal sealed class CredoPaymentProviderService(
         }
 
         return decimal.ToInt64(amount);
-    }
-
-    private static Dictionary<string, string> CreateVerificationMetadata(CredoVerifyTransactionResponse response)
-    {
-        var metadata = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["provider"] = PaymentProviderKeys.Credo,
-            ["status"] = response.Status.ToString(),
-            ["debitedAmount"] = response.DebitedAmount.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            ["transactionAmount"] = response.TransAmount.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            ["settlementAmount"] = response.SettlementAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)
-        };
-
-        if (!string.IsNullOrWhiteSpace(response.CurrencyCode))
-        {
-            metadata["currencyCode"] = response.CurrencyCode.Trim();
-        }
-
-        if (!string.IsNullOrWhiteSpace(response.BusinessRef))
-        {
-            metadata["merchantReference"] = response.BusinessRef.Trim();
-        }
-
-        if (!string.IsNullOrWhiteSpace(response.TransRef))
-        {
-            metadata["providerReference"] = response.TransRef.Trim();
-        }
-
-        if (response.Metadata is not null)
-        {
-            foreach (var item in response.Metadata)
-            {
-                if (string.IsNullOrWhiteSpace(item.InsightTag) || string.IsNullOrWhiteSpace(item.InsightTagValue))
-                {
-                    continue;
-                }
-
-                metadata[$"metadata.{item.InsightTag.Trim()}"] = item.InsightTagValue.Trim();
-            }
-        }
-
-        return metadata;
     }
 
     private static string NormalizeRequired(string? value, string errorMessage) =>

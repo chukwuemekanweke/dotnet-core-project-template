@@ -25,8 +25,7 @@ internal sealed class FakeCredoPaymentProviderService : IPaymentProviderService
             PaymentProviderVerificationStatus.Processing,
             request.ProviderReference,
             null,
-            null,
-            new Dictionary<string, string>()));
+            null));
 
     public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
         PaymentProviderWebhookValidationRequest request,
@@ -59,8 +58,7 @@ internal sealed class FakeSafeHavenPaymentProviderService : IPaymentProviderServ
             PaymentProviderVerificationStatus.Processing,
             request.ProviderReference,
             null,
-            null,
-            new Dictionary<string, string>()));
+            null));
 
     public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
         PaymentProviderWebhookValidationRequest request,

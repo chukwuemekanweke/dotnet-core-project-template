@@ -43,8 +43,7 @@ public sealed class When_ReconcilingPayments_WithProcessingVerification_Should
                 PaymentProviderVerificationStatus.Processing,
                 "provider-ref",
                 null,
-                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
-                new Dictionary<string, string>()));
+                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing));
         context.PaymentProviderServices.Add(paymentProviderService);
 
         await context.CreatePaymentReconciliationService().HandleAsync(

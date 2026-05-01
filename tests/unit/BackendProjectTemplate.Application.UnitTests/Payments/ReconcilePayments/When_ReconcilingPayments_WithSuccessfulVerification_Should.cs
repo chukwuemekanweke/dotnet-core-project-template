@@ -44,8 +44,7 @@ public sealed class When_ReconcilingPayments_WithSuccessfulVerification_Should
                 PaymentProviderVerificationStatus.Succeeded,
                 "provider-ref",
                 null,
-                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess,
-                new Dictionary<string, string> { ["provider"] = "credo" }));
+                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess));
         context.PaymentProviderServices.Add(paymentProviderService);
 
         var result = await context.CreatePaymentReconciliationService().HandleAsync(
@@ -56,7 +55,6 @@ public sealed class When_ReconcilingPayments_WithSuccessfulVerification_Should
 
         result.ProcessedCount.ShouldBe(1);
         transaction.PaymentStatus.ShouldBe(PaymentStatus.Succeeded);
-        transaction.ProviderPayloadMetadata["provider"].ShouldBe("credo");
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<SuccessfulPaymentConfirmed>(message =>
                 message.PaymentTransactionId == transaction.Id &&

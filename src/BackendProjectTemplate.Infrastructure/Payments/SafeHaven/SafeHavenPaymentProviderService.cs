@@ -48,8 +48,7 @@ internal sealed class SafeHavenPaymentProviderService(
                 PaymentProviderVerificationStatus.Processing,
                 request.ProviderReference,
                 null,
-                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
-                new Dictionary<string, string> { ["provider"] = ProviderKey });
+                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing);
         }
 
         var response = await client.GetVirtualAccountAsync(request.ProviderReference, cancellationToken);
@@ -62,8 +61,7 @@ internal sealed class SafeHavenPaymentProviderService(
                 PaymentProviderVerificationStatus.Succeeded,
                 request.ProviderReference,
                 null,
-                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess,
-                new Dictionary<string, string> { ["provider"] = ProviderKey });
+                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess);
         }
 
         if (string.Equals(virtualAccount.Status, SafeHavenVirtualAccountStatuses.Failed, StringComparison.OrdinalIgnoreCase) ||
@@ -73,16 +71,14 @@ internal sealed class SafeHavenPaymentProviderService(
                 PaymentProviderVerificationStatus.Failed,
                 request.ProviderReference,
                 "provider_reported_failure",
-                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure,
-                new Dictionary<string, string> { ["provider"] = ProviderKey });
+                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure);
         }
 
         return new PaymentProviderVerificationResult(
             PaymentProviderVerificationStatus.Processing,
             request.ProviderReference,
             null,
-            KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
-            new Dictionary<string, string> { ["provider"] = ProviderKey });
+            KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing);
     }
 
     public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
