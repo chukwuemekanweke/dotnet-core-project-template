@@ -4,5 +4,4 @@ public sealed record PaymentProviderVerificationResult(
     PaymentProviderVerificationStatus VerificationStatus,
     string? ProviderReference,
     string? FailureReason,
-    string? StatusChangeReason,
-    IReadOnlyDictionary<string, string> Metadata);
+    string? StatusChangeReason);

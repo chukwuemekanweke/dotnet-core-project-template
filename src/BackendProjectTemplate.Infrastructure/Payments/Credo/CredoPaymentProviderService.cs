@@ -1,11 +1,13 @@
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Services;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 
 namespace BackendProjectTemplate.Infrastructure.Payments.Credo;
 
 internal sealed class CredoPaymentProviderService(
     ICredoClient client,
+    IStakeholderReadModelRepository stakeholderReadModelRepository,
     TimeProvider timeProvider) : IPaymentProviderService
 {
     public string ProviderKey => PaymentProviderKeys.Credo;
@@ -14,19 +16,35 @@ internal sealed class CredoPaymentProviderService(
         PaymentProviderInitiationRequest request,
         CancellationToken cancellationToken)
     {
-        await client.CreatePaymentLinkAsync(
-            new
-            {
-                request.MerchantReference,
-                request.Amount,
+        var stakeholder = await stakeholderReadModelRepository.GetByStakeholderIdAsync(request.StakeholderId, cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"Unable to resolve stakeholder '{request.StakeholderId}' for Credo payment initiation.");
+
+        var response = await client.InitializeTransactionAsync(
+            new CredoInitializeTransactionRequest(
+                ConvertAmount(request.Amount),
+                string.IsNullOrWhiteSpace(stakeholder.EmailAddress)
+                    ? throw new InvalidOperationException(
+                        $"Stakeholder '{stakeholder.StakeholderId}' does not have an email for Credo payment initiation.")
+                    : stakeholder.EmailAddress.Trim(),
+                null,
+                stakeholder.FirstName,
+                stakeholder.LastName,
                 request.CurrencyCode,
-                request.StakeholderId,
-                request.TenantId
-            },
+                request.MerchantReference,
+                $"{request.PaymentIntent} payment"),
             cancellationToken);
 
         var now = timeProvider.GetUtcNow();
-        var providerReference = $"cr_{Guid.CreateVersion7():N}";
+        var providerReference = NormalizeRequired(
+            response.CredoReference,
+            "Credo initialize transaction response did not contain a credo reference.");
+        var merchantReference = NormalizeRequired(
+            response.Reference,
+            "Credo initialize transaction response did not contain a merchant reference.");
+        var paymentLink = NormalizeRequired(
+            response.AuthorizationUrl,
+            "Credo initialize transaction response did not contain an authorization URL.");
 
         return new PaymentProviderInitiationResult(
             providerReference,
@@ -35,51 +53,70 @@ internal sealed class CredoPaymentProviderService(
             now.AddMinutes(30),
             new Dictionary<string, string>
             {
-                ["paymentLink"] = $"https://checkout.credo.local/pay/{providerReference}",
-                ["providerReference"] = providerReference
+                [CredoKnownKeys.PaymentInstruction.PaymentLink] = paymentLink,
+                [CredoKnownKeys.PaymentInstruction.ProviderReference] = providerReference,
+                [CredoKnownKeys.PaymentInstruction.MerchantReference] = merchantReference
             });
     }
 
-    public Task<PaymentProviderVerificationResult> VerifyPaymentAsync(
+    public async Task<PaymentProviderVerificationResult> VerifyPaymentAsync(
         PaymentProviderVerificationRequest request,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(CreateVerificationResult(request, ProviderKey));
+        CancellationToken cancellationToken)
+    {
+        var response = await client.VerifyTransactionAsync(request.MerchantReference, cancellationToken);
+
+        return response.Status switch
+        {
+            CredoTransactionStatuses.Successful or CredoTransactionStatuses.SettleQueued or CredoTransactionStatuses.Settled
+                => new PaymentProviderVerificationResult(
+                    PaymentProviderVerificationStatus.Succeeded,
+                    NormalizeOptional(response.TransRef) ?? request.ProviderReference,
+                    null,
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess),
+            CredoTransactionStatuses.Failed or CredoTransactionStatuses.Declined or CredoTransactionStatuses.FailedAged or CredoTransactionStatuses.Abandoned
+                => new PaymentProviderVerificationResult(
+                    PaymentProviderVerificationStatus.Failed,
+                    NormalizeOptional(response.TransRef) ?? request.ProviderReference,
+                    NormalizeFailureReason(response.Message, response.Status),
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure),
+            _ => new PaymentProviderVerificationResult(
+                PaymentProviderVerificationStatus.Processing,
+                NormalizeOptional(response.TransRef) ?? request.ProviderReference,
+                null,
+                KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing)
+        };
+    }
 
     public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
         PaymentProviderWebhookValidationRequest request,
         CancellationToken cancellationToken) =>
         Task.FromResult(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.NotApplicable, "signature_not_configured"));
 
-    private static PaymentProviderVerificationResult CreateVerificationResult(
-        PaymentProviderVerificationRequest request,
-        string providerKey)
+    private static long ConvertAmount(decimal amount)
     {
-        if (request.MerchantReference.Contains("success", StringComparison.OrdinalIgnoreCase))
+        if (amount <= 0)
         {
-            return new PaymentProviderVerificationResult(
-                PaymentProviderVerificationStatus.Succeeded,
-                request.ProviderReference ?? $"cr_{Guid.CreateVersion7():N}",
-                null,
-                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess,
-                new Dictionary<string, string> { ["provider"] = providerKey });
+            throw new InvalidOperationException("Credo amount must be greater than zero.");
         }
 
-        if (request.MerchantReference.Contains("fail", StringComparison.OrdinalIgnoreCase))
+        if (decimal.Truncate(amount) != amount)
         {
-            return new PaymentProviderVerificationResult(
-                PaymentProviderVerificationStatus.Failed,
-                request.ProviderReference,
-                "provider_reported_failure",
-                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure,
-                new Dictionary<string, string> { ["provider"] = providerKey });
+            throw new InvalidOperationException("Credo amount must be provided in the lowest currency unit.");
         }
 
-        return new PaymentProviderVerificationResult(
-            PaymentProviderVerificationStatus.Processing,
-            request.ProviderReference,
-            null,
-            KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing,
-            new Dictionary<string, string> { ["provider"] = providerKey });
+        return decimal.ToInt64(amount);
     }
 
+    private static string NormalizeRequired(string? value, string errorMessage) =>
+        string.IsNullOrWhiteSpace(value)
+            ? throw new InvalidOperationException(errorMessage)
+            : value.Trim();
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string NormalizeFailureReason(string? message, int status) =>
+        string.IsNullOrWhiteSpace(message)
+            ? $"provider_status_{status}"
+            : message.Trim();
 }

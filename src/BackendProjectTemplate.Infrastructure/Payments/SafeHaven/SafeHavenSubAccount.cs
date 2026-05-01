@@ -2,24 +2,58 @@ using System.Text.Json.Serialization;
 
 namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
 
-public sealed record SafeHavenSubAccount(
-    [property: JsonPropertyName("_id")] 
-    string Id,
-    string Client,
-    string AccountProduct,
-    string AccountNumber,
-    string AccountName,
-    string AccountType,
-    string CurrencyCode,
-    string Bvn,
-    string IdentityId,
-    decimal AccountBalance,
-    decimal BookBalance,
-    string CallbackUrl,
-    bool IsSubAccount,
-    SafeHavenSubAccountDetails SubAccountDetails,
-    string ExternalReference,
-    DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt,
-    string Nin,
-    string CbaAccountId);
+public sealed record SafeHavenSubAccount
+{
+    [JsonPropertyName("_id")]
+    public string Id { get; init; } = string.Empty;
+
+    public string Client { get; init; } = string.Empty;
+
+    public string AccountProduct { get; init; } = string.Empty;
+
+    public string AccountNumber { get; init; } = string.Empty;
+
+    public string AccountName { get; init; } = string.Empty;
+
+    public string AccountType { get; init; } = string.Empty;
+
+    public string CurrencyCode { get; init; } = string.Empty;
+
+    public string Bvn { get; init; } = string.Empty;
+
+    public string IdentityId { get; init; } = string.Empty;
+
+    public decimal AccountBalance { get; init; }
+
+    public decimal BookBalance { get; init; }
+
+    public string CallbackUrl { get; init; } = string.Empty;
+
+    public bool IsSubAccount { get; init; }
+
+    public SubAccountDetailsDto SubAccountDetails { get; init; } = new();
+
+    public string ExternalReference { get; init; } = string.Empty;
+
+    public DateTimeOffset CreatedAt { get; init; }
+
+    public DateTimeOffset UpdatedAt { get; init; }
+
+    public string Nin { get; init; } = string.Empty;
+
+    public string CbaAccountId { get; init; } = string.Empty;
+
+    public sealed record SubAccountDetailsDto
+    {
+        [JsonPropertyName("_id")]
+        public string Id { get; init; } = string.Empty;
+
+        public string FirstName { get; init; } = string.Empty;
+
+        public string LastName { get; init; } = string.Empty;
+
+        public string EmailAddress { get; init; } = string.Empty;
+
+        public string Bvn { get; init; } = string.Empty;
+    }
+}

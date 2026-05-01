@@ -23,9 +23,9 @@ public sealed class When_MarkingPaymentAsSucceeded_WithTerminalStatus_Should
             DateTimeOffset.UtcNow);
 
         transaction.MarkInitiated("provider-ref", null, null, "payment_initiated");
-        transaction.MarkFailed("provider-ref", "failed", "provider_failed", null, DateTimeOffset.UtcNow);
+        transaction.MarkFailed("provider-ref", "failed", "provider_failed", DateTimeOffset.UtcNow);
 
         Should.Throw<AggregateStateException>(() =>
-            transaction.MarkSucceeded("provider-ref", "success", null, DateTimeOffset.UtcNow));
+            transaction.MarkSucceeded("provider-ref", "success", DateTimeOffset.UtcNow));
     }
 }

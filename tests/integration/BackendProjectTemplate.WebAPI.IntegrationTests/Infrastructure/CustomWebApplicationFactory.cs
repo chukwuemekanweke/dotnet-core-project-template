@@ -35,6 +35,9 @@ public sealed class CustomWebApplicationFactory(
                 ["Jwt:SigningKey"] = "super-secret-template-signing-key-change-me",
                 ["Authentication:Google:ClientIds:0"] = "integration-tests-google-client-id",
                 ["Payments:Credo:BaseUrl"] = "https://credo.integration.local",
+                ["Payments:Credo:PublicKey"] = "0PUB_test_public_key",
+                ["Payments:Credo:SecretKey"] = "test_secret_key",
+                ["Payments:Credo:CallbackUrl"] = "https://backend.integration.local/payments/webhooks/credo",
                 ["Payments:SafeHaven:BaseUrl"] = "https://safehaven.integration.local",
                 ["Payments:SafeHaven:ClientId"] = "integration-tests-client-id",
                 ["Payments:SafeHaven:ClientAssertion"] = "integration-tests-client-assertion",
@@ -69,15 +72,27 @@ public sealed class CustomWebApplicationFactory(
                 services.AddScoped<IPaymentProviderService, FakeCredoPaymentProviderService>();
                 services.AddScoped<IPaymentProviderService, FakeSafeHavenPaymentProviderService>();
             }
-            else if (configurationOverrides is not null &&
-                     configurationOverrides.TryGetValue("Payments:SafeHaven:BaseUrl", out var safeHavenBaseUrl) &&
-                     !string.IsNullOrWhiteSpace(safeHavenBaseUrl))
+            else if (configurationOverrides is not null)
             {
-                services.AddHttpClient("payments-safehaven", client =>
+                if (configurationOverrides.TryGetValue("Payments:SafeHaven:BaseUrl", out var safeHavenBaseUrl) &&
+                    !string.IsNullOrWhiteSpace(safeHavenBaseUrl))
                 {
-                    client.BaseAddress = new Uri(safeHavenBaseUrl);
-                    client.Timeout = TimeSpan.FromSeconds(30);
-                });
+                    services.AddHttpClient("payments-safehaven", client =>
+                    {
+                        client.BaseAddress = new Uri(safeHavenBaseUrl);
+                        client.Timeout = TimeSpan.FromSeconds(30);
+                    });
+                }
+
+                if (configurationOverrides.TryGetValue("Payments:Credo:BaseUrl", out var credoBaseUrl) &&
+                    !string.IsNullOrWhiteSpace(credoBaseUrl))
+                {
+                    services.AddHttpClient("payments-credo", client =>
+                    {
+                        client.BaseAddress = new Uri(credoBaseUrl);
+                        client.Timeout = TimeSpan.FromSeconds(10);
+                    });
+                }
             }
 
             services.RemoveAll<IConnectionMultiplexer>();

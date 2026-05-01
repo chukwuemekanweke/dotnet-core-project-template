@@ -54,11 +54,10 @@ public sealed class PaymentReconciliationService(
                     transaction.PaymentIntent),
                 cancellationToken);
 
-            var metadata = verificationResult.Metadata.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
             switch (verificationResult.VerificationStatus)
             {
                 case PaymentProviderVerificationStatus.Succeeded when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Succeeded:
-                    transaction.MarkSucceeded(verificationResult.ProviderReference, verificationResult.StatusChangeReason, metadata, now);
+                    transaction.MarkSucceeded(verificationResult.ProviderReference, verificationResult.StatusChangeReason, now);
                     await eventPublisher.PublishAsync(
                         new SuccessfulPaymentConfirmed
                         {
@@ -80,7 +79,6 @@ public sealed class PaymentReconciliationService(
                         verificationResult.ProviderReference,
                         verificationResult.FailureReason,
                         verificationResult.StatusChangeReason,
-                        metadata,
                         now);
                     break;
                 case PaymentProviderVerificationStatus.Processing:

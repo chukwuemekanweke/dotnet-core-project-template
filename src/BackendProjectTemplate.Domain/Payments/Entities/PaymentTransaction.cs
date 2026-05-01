@@ -105,14 +105,12 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
     public void MarkSucceeded(
         string? providerReference,
         string? statusChangeReason,
-        Dictionary<string, string>? providerPayloadMetadata,
         DateTimeOffset completedAtUtc)
     {
         EnsureCanTransitionFrom(PaymentStatus.Initiated);
         ProviderReference = string.IsNullOrWhiteSpace(providerReference) ? ProviderReference : providerReference.Trim();
         PaymentStatus = PaymentStatus.Succeeded;
         StatusChangeReason = statusChangeReason;
-        ProviderPayloadMetadata = providerPayloadMetadata ?? ProviderPayloadMetadata;
         CompletedAtUtc = completedAtUtc;
         FailedAtUtc = null;
         FailureReason = null;
@@ -122,7 +120,6 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
         string? providerReference,
         string? failureReason,
         string? statusChangeReason,
-        Dictionary<string, string>? providerPayloadMetadata,
         DateTimeOffset failedAtUtc)
     {
         EnsureCanTransitionFrom(PaymentStatus.Initiated);
@@ -130,7 +127,6 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
         PaymentStatus = PaymentStatus.Failed;
         FailureReason = failureReason;
         StatusChangeReason = statusChangeReason;
-        ProviderPayloadMetadata = providerPayloadMetadata ?? ProviderPayloadMetadata;
         FailedAtUtc = failedAtUtc;
     }
 
