@@ -24,6 +24,7 @@ internal sealed class PaymentsFlowTestContext
     public IRepository<PaymentWebhookInbox> PaymentWebhookInboxRepository { get; } = Substitute.For<IRepository<PaymentWebhookInbox>>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+    public ICredoWebhookSignatureValidator CredoWebhookSignatureValidator { get; } = Substitute.For<ICredoWebhookSignatureValidator>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 12, 0, 0, TimeSpan.Zero));
     public List<IPaymentProviderService> PaymentProviderServices { get; } = [];
 
@@ -47,7 +48,7 @@ internal sealed class PaymentsFlowTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
-            PaymentProviderServices,
+            CredoWebhookSignatureValidator,
             UnitOfWork,
             Clock);
 
@@ -56,7 +57,6 @@ internal sealed class PaymentsFlowTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
-            PaymentProviderServices,
             UnitOfWork,
             Clock);
 
@@ -65,7 +65,6 @@ internal sealed class PaymentsFlowTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
-            PaymentProviderServices,
             UnitOfWork,
             Clock);
 
@@ -74,7 +73,6 @@ internal sealed class PaymentsFlowTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
-            PaymentProviderServices,
             UnitOfWork,
             Clock);
 

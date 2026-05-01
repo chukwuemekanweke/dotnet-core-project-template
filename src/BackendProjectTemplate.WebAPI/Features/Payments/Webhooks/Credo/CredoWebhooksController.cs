@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
+using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
@@ -18,15 +19,20 @@ public sealed class CredoWebhooksController(ProcessCredoWebhookHandler handler) 
 
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Handle([FromBody] CredoWebhookRequest request, CancellationToken cancellationToken)
     {
-        var command = new ProcessCredoWebhookCommand(
-            CreateWebhook(request),
-            JsonSerializer.Serialize(request, JsonSerializerOptions));
-
-        await handler.HandleAsync(
-            command,
+        var result = await handler.HandleAsync(
+            new ProcessCredoWebhookCommand(
+                CreateWebhook(request),
+                JsonSerializer.Serialize(request, JsonSerializerOptions),
+                Request.Headers["X-Credo-Signature"]),
             cancellationToken);
+
+        if (result.Status == WebhookReceiptStatus.InvalidSignature)
+        {
+            return Unauthorized("Invalid signature");
+        }
 
         return Ok();
     }

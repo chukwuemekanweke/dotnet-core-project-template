@@ -87,11 +87,6 @@ internal sealed class CredoPaymentProviderService(
         };
     }
 
-    public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
-        PaymentProviderWebhookValidationRequest request,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.NotApplicable, "signature_not_configured"));
-
     private static long ConvertAmount(decimal amount)
     {
         if (amount <= 0)

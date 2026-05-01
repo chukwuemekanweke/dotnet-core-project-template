@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -40,36 +42,41 @@ public sealed class When_ReceivingCredoWebhook_WithRecognizedTransaction_Should(
 
         async Task WhenPostingWebhook()
         {
-            _response = await Client.PostAsJsonAsync(
-                EndpointUrl.PaymentWebhooks.Credo.V1,
-                new
+            var payload = new
+            {
+                @event = CredoWebhookEvents.TransactionSuccessful,
+                data = new
                 {
-                    @event = CredoWebhookEvents.TransactionSuccessful,
-                    data = new
+                    businessCode = "700607002190001",
+                    transRef = "trans-ref",
+                    businessRef = "merchant-ref",
+                    debitedAmount = 1000m,
+                    transAmount = 1000m,
+                    transFeeAmount = 15m,
+                    settlementAmount = 985m,
+                    customerId = "customer@example.com",
+                    transactionDate = "May 7, 2023, 1:37:53 AM",
+                    channelId = 1,
+                    currencyCode = "NGN",
+                    status = 0,
+                    paymentMethodType = "MasterCard",
+                    paymentMethod = "Card",
+                    customer = new
                     {
-                        businessCode = "700607002190001",
-                        transRef = "trans-ref",
-                        businessRef = "merchant-ref",
-                        debitedAmount = 1000m,
-                        transAmount = 1000m,
-                        transFeeAmount = 15m,
-                        settlementAmount = 985m,
-                        customerId = "customer@example.com",
-                        transactionDate = "May 7, 2023, 1:37:53 AM",
-                        channelId = 1,
-                        currencyCode = "NGN",
-                        status = 0,
-                        paymentMethodType = "MasterCard",
-                        paymentMethod = "Card",
-                        customer = new
-                        {
-                            customerEmail = "customer@example.com",
-                            firstName = "John",
-                            lastName = "Doe",
-                            phoneNo = "23470122199999"
-                        }
+                        customerEmail = "customer@example.com",
+                        firstName = "John",
+                        lastName = "Doe",
+                        phoneNo = "23470122199999"
                     }
-                });
+                }
+            };
+            using var request = new HttpRequestMessage(HttpMethod.Post, EndpointUrl.PaymentWebhooks.Credo.V1)
+            {
+                Content = JsonContent.Create(payload)
+            };
+            request.Headers.Add("X-Credo-Signature", ComputeSignature("test_secret_key", "700607002190001"));
+
+            _response = await Client.SendAsync(request);
         }
 
         async Task ThenTheWebhookIsPersisted()
@@ -144,5 +151,13 @@ public sealed class When_ReceivingCredoWebhook_WithRecognizedTransaction_Should(
         }
 
         await dbContext.SaveChangesAsync();
+    }
+
+    private static string ComputeSignature(string secretKey, string businessCode)
+    {
+        using var sha512 = SHA512.Create();
+        var hash = sha512.ComputeHash(Encoding.UTF8.GetBytes(secretKey + businessCode));
+
+        return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
     }
 }

@@ -27,10 +27,6 @@ internal sealed class FakeCredoPaymentProviderService : IPaymentProviderService
             null,
             null));
 
-    public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
-        PaymentProviderWebhookValidationRequest request,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Valid, null));
 }
 
 internal sealed class FakeSafeHavenPaymentProviderService : IPaymentProviderService
@@ -60,8 +56,4 @@ internal sealed class FakeSafeHavenPaymentProviderService : IPaymentProviderServ
             null,
             null));
 
-    public Task<PaymentProviderWebhookValidationResult> ValidateWebhookAsync(
-        PaymentProviderWebhookValidationRequest request,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Valid, null));
 }

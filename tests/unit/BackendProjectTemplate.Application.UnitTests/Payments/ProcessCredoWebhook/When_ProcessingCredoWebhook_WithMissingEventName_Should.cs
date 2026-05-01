@@ -14,14 +14,11 @@ public sealed class When_ProcessingCredoWebhook_WithMissingEventName_Should
     {
         var context = new PaymentsFlowTestContext();
         var provider = context.CreatePaymentProvider("Credo", PaymentProviderKeys.Credo);
-        var paymentProviderService = Substitute.For<IPaymentProviderService>();
 
         context.PaymentProviderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Domain.Payments.Entities.PaymentProvider>>(), Arg.Any<CancellationToken>())
             .Returns(provider);
-        paymentProviderService.ProviderKey.Returns(PaymentProviderKeys.Credo);
-        paymentProviderService.ValidateWebhookAsync(Arg.Any<PaymentProviderWebhookValidationRequest>(), Arg.Any<CancellationToken>())
+        context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<CredoWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Valid, null));
-        context.PaymentProviderServices.Add(paymentProviderService);
 
         var exception = await Should.ThrowAsync<InvalidOperationException>(() =>
             context.CreateCredoWebhookHandler().HandleAsync(
@@ -44,7 +41,8 @@ public sealed class When_ProcessingCredoWebhook_WithMissingEventName_Should
                             "MasterCard",
                             "Card",
                             new CredoWebhookCustomer("customer@example.com", "John", "Doe", "23470122199999"))),
-                    "{}"),
+                    "{}",
+                    "valid-signature"),
                 CancellationToken.None));
 
         exception.Message.ShouldContain("required");

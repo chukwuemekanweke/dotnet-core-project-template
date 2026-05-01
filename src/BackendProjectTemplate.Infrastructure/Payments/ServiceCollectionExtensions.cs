@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ISafeHavenClient, SafeHavenClient>();
         services.AddScoped<ICredoClient, CredoClient>();
+        services.AddScoped<ICredoWebhookSignatureValidator, CredoWebhookSignatureValidator>();
         services.AddScoped<IPaymentProviderService, SafeHavenPaymentProviderService>();
         services.AddScoped<IPaymentProviderService, CredoPaymentProviderService>();
 

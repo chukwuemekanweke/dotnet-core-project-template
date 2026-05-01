@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using BackendProjectTemplate.Contracts.Payments;
-using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -13,7 +12,7 @@ public sealed class ProcessCredoWebhookHandler(
     IRepository<PaymentProvider> paymentProviderRepository,
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
-    IEnumerable<IPaymentProviderService> paymentProviderServices,
+    ICredoWebhookSignatureValidator credoWebhookSignatureValidator,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -26,13 +25,11 @@ public sealed class ProcessCredoWebhookHandler(
                 new ActivePaymentProviderByKeySpecification(PaymentProviderKeys.Credo),
                 cancellationToken)
             ?? throw new InvalidOperationException("Credo payment provider is not active.");
-        var paymentProviderService = paymentProviderServices.SingleOrDefault(service =>
-                string.Equals(service.ProviderKey, paymentProvider.ProviderKey, StringComparison.OrdinalIgnoreCase))
-            ?? throw new PaymentProviderResolutionException(
-                $"No payment provider service is registered for '{paymentProvider.ProviderKey}'.");
 
-        var validationResult = await paymentProviderService.ValidateWebhookAsync(
-            new PaymentProviderWebhookValidationRequest(command.RawPayload),
+        var validationResult = await credoWebhookSignatureValidator.ValidateAsync(
+            new CredoWebhookSignatureValidationRequest(
+                command.SignatureHeader,
+                command.Webhook.Data.BusinessCode),
             cancellationToken);
         var webhookDetails = CreateWebhookDetails(command.Webhook);
 

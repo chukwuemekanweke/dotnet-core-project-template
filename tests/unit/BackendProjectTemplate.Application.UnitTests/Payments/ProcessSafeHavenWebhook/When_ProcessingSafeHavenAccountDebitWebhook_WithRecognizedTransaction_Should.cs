@@ -16,7 +16,6 @@ public sealed class When_ProcessingSafeHavenAccountDebitWebhook_WithRecognizedTr
     {
         var context = new PaymentsFlowTestContext();
         var provider = context.CreatePaymentProvider("SafeHaven", PaymentProviderKeys.SafeHaven);
-        var paymentProviderService = Substitute.For<IPaymentProviderService>();
         PaymentWebhookInbox? capturedInbox = null;
         var transaction = PaymentTransaction.Create(
             "payment-ref",
@@ -38,10 +37,6 @@ public sealed class When_ProcessingSafeHavenAccountDebitWebhook_WithRecognizedTr
             .Returns(Task.CompletedTask);
         context.PaymentTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<PaymentTransaction>>(), Arg.Any<CancellationToken>())
             .Returns(transaction);
-        paymentProviderService.ProviderKey.Returns(PaymentProviderKeys.SafeHaven);
-        paymentProviderService.ValidateWebhookAsync(Arg.Any<PaymentProviderWebhookValidationRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Valid, null));
-        context.PaymentProviderServices.Add(paymentProviderService);
 
         var result = await context.CreateSafeHavenAccountDebitWebhookHandler().HandleAsync(
             new ProcessSafeHavenWebhookCommand<SafeHavenAccountDebitWebhookData>(

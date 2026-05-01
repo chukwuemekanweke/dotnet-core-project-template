@@ -1,6 +1,9 @@
 namespace BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 
-public sealed record ProcessCredoWebhookCommand(CredoWebhook Webhook, string RawPayload);
+public sealed record ProcessCredoWebhookCommand(
+    CredoWebhook Webhook,
+    string RawPayload,
+    string? SignatureHeader);
 
 public sealed record CredoWebhook(string Event, CredoWebhookData Data);
 

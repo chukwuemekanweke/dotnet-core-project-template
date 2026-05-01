@@ -16,7 +16,6 @@ public sealed class When_ProcessingCredoWebhook_WithRecognizedTransaction_Should
     {
         var context = new PaymentsFlowTestContext();
         var provider = context.CreatePaymentProvider("Credo", PaymentProviderKeys.Credo);
-        var paymentProviderService = Substitute.For<IPaymentProviderService>();
         PaymentWebhookInbox? capturedInbox = null;
         var transaction = PaymentTransaction.Create(
             "merchant-ref",
@@ -38,10 +37,8 @@ public sealed class When_ProcessingCredoWebhook_WithRecognizedTransaction_Should
             .Returns(Task.CompletedTask);
         context.PaymentTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<PaymentTransaction>>(), Arg.Any<CancellationToken>())
             .Returns(transaction);
-        paymentProviderService.ProviderKey.Returns(PaymentProviderKeys.Credo);
-        paymentProviderService.ValidateWebhookAsync(Arg.Any<PaymentProviderWebhookValidationRequest>(), Arg.Any<CancellationToken>())
+        context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<CredoWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Valid, "validated"));
-        context.PaymentProviderServices.Add(paymentProviderService);
 
         var result = await context.CreateCredoWebhookHandler().HandleAsync(
             new ProcessCredoWebhookCommand(
@@ -63,7 +60,8 @@ public sealed class When_ProcessingCredoWebhook_WithRecognizedTransaction_Should
                         "MasterCard",
                         "Card",
                         new CredoWebhookCustomer("customer@example.com", "John", "Doe", "23470122199999"))),
-                "{\"event\":\"transaction.successful\"}"),
+                "{\"event\":\"transaction.successful\"}",
+                "valid-signature"),
             CancellationToken.None);
 
         result.Status.ShouldBe(WebhookReceiptStatus.Persisted);
