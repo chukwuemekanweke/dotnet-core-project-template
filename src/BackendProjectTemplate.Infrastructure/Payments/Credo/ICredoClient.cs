@@ -2,7 +2,11 @@ namespace BackendProjectTemplate.Infrastructure.Payments.Credo;
 
 internal interface ICredoClient
 {
-    Task<HttpResponseMessage> CreatePaymentLinkAsync(
-        object payload,
+    Task<CredoInitializeTransactionResponse> InitializeTransactionAsync(
+        CredoInitializeTransactionRequest request,
+        CancellationToken cancellationToken);
+
+    Task<CredoVerifyTransactionResponse> VerifyTransactionAsync(
+        string reference,
         CancellationToken cancellationToken);
 }

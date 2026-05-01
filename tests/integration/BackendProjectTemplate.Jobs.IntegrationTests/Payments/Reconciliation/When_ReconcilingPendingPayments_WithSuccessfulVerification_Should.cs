@@ -7,6 +7,9 @@ using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Payments;
 using BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 using BackendProjectTemplate.Jobs.Payments;
+using WireMock.RequestBuilders;
+using WireMock.ResponseBuilders;
+using WireMock.Server;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -17,6 +20,7 @@ namespace BackendProjectTemplate.Jobs.IntegrationTests.Payments.Reconciliation;
 public sealed class When_ReconcilingPendingPayments_WithSuccessfulVerification_Should(ContainersFixture fixture)
     : JobsWorkerIntegrationTestBase(fixture)
 {
+    private readonly WireMockServer _wireMockServer = WireMockServer.Start();
     private Guid _paymentProviderId;
     private Guid _currencyId;
     private Guid _paymentTransactionId;
@@ -64,7 +68,14 @@ public sealed class When_ReconcilingPendingPayments_WithSuccessfulVerification_S
 
     public override async Task InitializeAsync()
     {
+        ConfigureCredoStubs();
         await base.InitializeAsync();
+    }
+
+    public override async Task DisposeAsync()
+    {
+        await base.DisposeAsync();
+        _wireMockServer.Dispose();
     }
 
     protected override async Task InitializeWorkerTestAsync()
@@ -110,6 +121,15 @@ public sealed class When_ReconcilingPendingPayments_WithSuccessfulVerification_S
         services.AddPaymentReconciliation(configuration);
     }
 
+    protected override IReadOnlyDictionary<string, string?> GetAdditionalConfiguration() =>
+        new Dictionary<string, string?>
+        {
+            ["Payments:Credo:BaseUrl"] = _wireMockServer.Urls.Single(),
+            ["Payments:Credo:PublicKey"] = "0PUB_test_public_key",
+            ["Payments:Credo:SecretKey"] = "test_secret_key",
+            ["Payments:Credo:CallbackUrl"] = "https://backend.integration.local/payments/webhooks/credo"
+        };
+
     private async Task SeedPendingPaymentAsync()
     {
         await using var scope = CreateDbContextScope();
@@ -138,5 +158,38 @@ public sealed class When_ReconcilingPendingPayments_WithSuccessfulVerification_S
         _paymentProviderId = provider.Id;
         _currencyId = currency.Id;
         _paymentTransactionId = transaction.Id;
+    }
+
+    private void ConfigureCredoStubs()
+    {
+        _wireMockServer
+            .Given(Request.Create().WithPath("/transaction/merchant-success/verify").UsingGet())
+            .RespondWith(
+                Response.Create()
+                    .WithStatusCode(System.Net.HttpStatusCode.OK)
+                    .WithHeader("Content-Type", "application/json")
+                    .WithBodyAsJson(new
+                    {
+                        status = 200,
+                        message = "Successfully processed",
+                        data = new
+                        {
+                            businessCode = "700607001390003",
+                            transRef = "provider-ref",
+                            businessRef = "merchant-success",
+                            debitedAmount = 1500m,
+                            transAmount = 1500m,
+                            transFeeAmount = 0m,
+                            settlementAmount = 1500m,
+                            customerId = "ada@example.com",
+                            transactionDate = "2026-05-01 00:00:00",
+                            channelId = 0,
+                            currencyCode = "NGN",
+                            status = 0,
+                            metadata = Array.Empty<object>()
+                        },
+                        execTime = 0,
+                        error = Array.Empty<string>()
+                    }));
     }
 }

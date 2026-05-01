@@ -230,7 +230,7 @@ internal sealed class SafeHavenClient(
         CancellationToken cancellationToken)
     {
         ApplyAuthenticationHeaders();
-        return _httpClient.PostAsJsonAsync(requestUri, request, cancellationToken);
+        return System.Net.Http.Json.HttpClientJsonExtensions.PostAsJsonAsync(_httpClient, requestUri, request, cancellationToken);
     }
 
     private void ApplyAuthenticationHeaders()
@@ -245,7 +245,7 @@ internal sealed class SafeHavenClient(
         CancellationToken cancellationToken) =>
         _retryPolicy.ExecuteAsync(async ct =>
         {
-            using var response = await _httpClient.PostAsJsonAsync("/oauth2/token", request, ct);
+            using var response = await System.Net.Http.Json.HttpClientJsonExtensions.PostAsJsonAsync(_httpClient, "/oauth2/token", request, ct);
             response.EnsureSuccessStatusCode();
 
             var token = await response.Content.ReadFromJsonAsync<SafeHavenTokenResponse>(SerializerOptions, ct)
