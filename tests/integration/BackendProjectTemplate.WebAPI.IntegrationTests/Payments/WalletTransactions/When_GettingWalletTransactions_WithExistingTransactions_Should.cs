@@ -166,6 +166,10 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
         await dbContext.WalletTransactions.AddAsync(secondTransaction);
         await dbContext.SaveChangesAsync();
 
+        dbContext.Entry(firstTransaction).Property(item => item.CreatedAtUtc).CurrentValue = now;
+        dbContext.Entry(secondTransaction).Property(item => item.CreatedAtUtc).CurrentValue = now.AddMinutes(1);
+        await dbContext.SaveChangesAsync();
+
         _firstWalletTransactionId = firstTransaction.Id;
         _secondWalletTransactionId = secondTransaction.Id;
     }

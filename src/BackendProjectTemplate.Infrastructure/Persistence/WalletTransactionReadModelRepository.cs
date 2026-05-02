@@ -89,5 +89,5 @@ public sealed class WalletTransactionReadModelRepository(AppReadDbContext dbCont
                 paymentProvider.ProviderName,
                 walletTransaction.CreatedAtUtc))
             .FirstOrDefaultAsync(cancellationToken);
-    }                                                                    1
+    }                                                                   
 }
