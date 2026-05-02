@@ -56,7 +56,10 @@ public sealed class CreditWalletHandler(
                 message.MerchantReference,
                 message.Amount,
                 message.CurrencyId,
-                now),
+                now,
+                WalletTransactionCategory.WalletFunding,
+                "Wallet funding",
+                "Wallet funded via bank transfer."),
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

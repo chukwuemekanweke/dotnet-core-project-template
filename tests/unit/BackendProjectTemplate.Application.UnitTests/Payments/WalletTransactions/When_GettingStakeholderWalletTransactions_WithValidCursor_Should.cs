@@ -1,4 +1,4 @@
-using System.Text;
+using BackendProjectTemplate.Application.Common.Pagination;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -43,9 +43,7 @@ public sealed class When_GettingStakeholderWalletTransactions_WithValidCursor_Sh
                 ],
                 true));
 
-        var cursor = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes(
-                $$"""{"CreatedAtUnixMilliseconds":{{cursorCreatedAtUtc.ToUnixTimeMilliseconds()}},"TransactionId":"{{cursorTransactionId}}"}"""));
+        var cursor = CursorPagination.Encode(cursorCreatedAtUtc, cursorTransactionId);
 
         var result = await context.CreateGetStakeholderWalletTransactionsHandler().HandleAsync(
             new GetStakeholderWalletTransactionsCommand(

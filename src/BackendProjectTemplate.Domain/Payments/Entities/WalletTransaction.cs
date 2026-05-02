@@ -65,9 +65,9 @@ public sealed class WalletTransaction : Entity, IAggregateRoot
         decimal amount,
         Guid currencyId,
         DateTimeOffset utcNow,
-        WalletTransactionCategory transactionCategory = WalletTransactionCategory.WalletFunding,
-        string transactionTitle = "Wallet funding",
-        string? description = "Wallet funded via bank transfer.") =>
+        WalletTransactionCategory transactionCategory,
+        string transactionTitle,
+        string? description) =>
         new(
             walletId,
             paymentTransactionId,

@@ -19,6 +19,6 @@ public sealed class When_GettingStakeholderWalletTransactions_WithInvalidCursor_
                     new ActorContext(Guid.CreateVersion7(), Guid.CreateVersion7(), "correlation-id", "flow-id")),
                 CancellationToken.None));
 
-        exception.Message.ShouldBe("Invalid wallet transactions cursor.");
+        exception.Message.ShouldBe("Invalid cursor.");
     }
 }

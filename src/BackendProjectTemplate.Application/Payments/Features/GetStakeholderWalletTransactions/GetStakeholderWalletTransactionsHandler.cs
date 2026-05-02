@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Common.Pagination;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
 
 namespace BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
@@ -11,7 +12,7 @@ public sealed class GetStakeholderWalletTransactionsHandler(IWalletTransactionRe
         var stakeholderId = command.ActorContext.StakeholderId
             ?? throw new InvalidOperationException("Authenticated stakeholder id is required to retrieve wallet transactions.");
 
-        var (cursorCreatedAtUtc, cursorTransactionId) = WalletTransactionsCursor.Decode(command.Cursor);
+        var (cursorCreatedAtUtc, cursorTransactionId) = CursorPagination.Decode(command.Cursor);
 
         var page = await walletTransactionReadModelRepository.GetByStakeholderAsync(
             new StakeholderWalletTransactionsCursorRequest(
@@ -32,7 +33,7 @@ public sealed class GetStakeholderWalletTransactionsHandler(IWalletTransactionRe
             .ToArray();
 
         var nextCursor = page.HasMore
-            ? WalletTransactionsCursor.Encode(
+            ? CursorPagination.Encode(
                 page.Transactions[^1].Timestamp,
                 page.Transactions[^1].WalletTransactionId)
             : null;

@@ -13,7 +13,16 @@ public sealed class When_HandlingCreditWallet_WithDuplicatePaymentTransaction_Sh
         var command = context.CreateCreditWalletCommand(2500m, Guid.CreateVersion7());
 
         context.WalletTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<WalletTransaction>>(), Arg.Any<CancellationToken>())
-            .Returns(WalletTransaction.CreateCredit(Guid.CreateVersion7(), command.PaymentTransactionId, command.MerchantReference, command.Amount, command.CurrencyId, context.Clock.GetUtcNow()));
+            .Returns(WalletTransaction.CreateCredit(
+                Guid.CreateVersion7(),
+                command.PaymentTransactionId,
+                command.MerchantReference,
+                command.Amount,
+                command.CurrencyId,
+                context.Clock.GetUtcNow(),
+                WalletTransactionCategory.WalletFunding,
+                "Wallet funding",
+                "Wallet funded via bank transfer."));
 
         await context.CreateCreditWalletHandler().HandleAsync(command, CancellationToken.None);
 
