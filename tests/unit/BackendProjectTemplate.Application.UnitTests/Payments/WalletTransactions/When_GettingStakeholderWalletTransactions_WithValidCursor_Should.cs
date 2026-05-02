@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Common.Pagination;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
 using Shouldly;
@@ -26,7 +27,7 @@ public sealed class When_GettingStakeholderWalletTransactions_WithValidCursor_Sh
                 [
                     new StakeholderWalletTransactionReadModel(
                         Guid.CreateVersion7(),
-                        "Wallet funding",
+                        WalletTransactionTitles.WalletFunding,
                         2500m,
                         "NGN",
                         WalletTransactionType.Credit,
@@ -34,7 +35,7 @@ public sealed class When_GettingStakeholderWalletTransactions_WithValidCursor_Sh
                         context.Clock.GetUtcNow().AddMinutes(-1)),
                     new StakeholderWalletTransactionReadModel(
                         Guid.CreateVersion7(),
-                        "Bank transfer credit",
+                        WalletTransactionTitles.BankTransferCredit,
                         1200m,
                         "NGN",
                         WalletTransactionType.Credit,
@@ -58,7 +59,7 @@ public sealed class When_GettingStakeholderWalletTransactions_WithValidCursor_Sh
         capturedRequest.CursorTransactionId.ShouldBe(cursorTransactionId);
         capturedRequest.Limit.ShouldBe(2);
         result.Transactions.Count.ShouldBe(2);
-        result.Transactions[0].TransactionTitle.ShouldBe("Wallet funding");
+        result.Transactions[0].TransactionTitle.ShouldBe(WalletTransactionTitles.WalletFunding);
         result.Transactions[0].TransactionType.ShouldBe(nameof(WalletTransactionType.Credit));
         result.Transactions[0].TransactionCategory.ShouldBe(nameof(WalletTransactionCategory.WalletFunding));
         result.NextCursor.ShouldNotBeNull();

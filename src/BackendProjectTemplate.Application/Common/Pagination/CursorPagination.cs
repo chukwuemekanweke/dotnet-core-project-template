@@ -20,7 +20,7 @@ public static class CursorPagination
                 throw new InvalidOperationException("Invalid cursor.");
             }
 
-            return (DateTimeOffset.FromUnixTimeMilliseconds(payload.CreatedAtUnixMilliseconds), payload.EntityId);
+            return (payload.CreatedAtUtc.ToUniversalTime(), payload.EntityId);
         }
         catch (Exception exception) when (exception is FormatException or JsonException or InvalidOperationException)
         {
@@ -30,7 +30,7 @@ public static class CursorPagination
 
     public static string Encode(DateTimeOffset createdAtUtc, Guid entityId)
     {
-        var payload = new CursorPaginationPayload(createdAtUtc.ToUnixTimeMilliseconds(), entityId);
+        var payload = new CursorPaginationPayload(createdAtUtc.ToUniversalTime(), entityId);
         var json = JsonSerializer.SerializeToUtf8Bytes(payload);
         return Convert.ToBase64String(json);
     }

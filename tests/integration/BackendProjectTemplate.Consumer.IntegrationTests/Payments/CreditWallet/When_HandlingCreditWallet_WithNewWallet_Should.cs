@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 using BackendProjectTemplate.Consumer.Payments;
 using BackendProjectTemplate.Contracts.Commands.Payments;
+using BackendProjectTemplate.Domain.Payments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -88,7 +89,7 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should(ContainersFix
             walletTransaction.MerchantReference.ShouldBe("merchant-ref");
             walletTransaction.TransactionType.ShouldBe(BackendProjectTemplate.Domain.Payments.Entities.WalletTransactionType.Credit);
             walletTransaction.TransactionCategory.ShouldBe(BackendProjectTemplate.Domain.Payments.Entities.WalletTransactionCategory.WalletFunding);
-            walletTransaction.TransactionTitle.ShouldBe("Wallet funding");
+            walletTransaction.TransactionTitle.ShouldBe(WalletTransactionTitles.WalletFunding);
         }
     }
 }

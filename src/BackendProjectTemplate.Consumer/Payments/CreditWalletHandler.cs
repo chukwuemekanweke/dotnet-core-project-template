@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Specifications;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
@@ -49,6 +50,8 @@ public sealed class CreditWalletHandler(
             walletRepository.Update(wallet);
         }
 
+        var walletFundingNarrative = WalletTransactionNarratives.WalletFunding;
+
         await walletTransactionRepository.AddAsync(
             WalletTransaction.CreateCredit(
                 wallet.Id,
@@ -58,8 +61,8 @@ public sealed class CreditWalletHandler(
                 message.CurrencyId,
                 now,
                 WalletTransactionCategory.WalletFunding,
-                "Wallet funding",
-                "Wallet funded via bank transfer."),
+                walletFundingNarrative.Title,
+                walletFundingNarrative.CreateDescription()),
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

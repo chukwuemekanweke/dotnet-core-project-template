@@ -5,6 +5,7 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
@@ -74,7 +75,7 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
         payload.Transactions[0].CurrencyCode.ShouldBe("NGN");
         payload.Transactions[0].TransactionType.ShouldBe(nameof(WalletTransactionType.Credit));
         payload.Transactions[0].TransactionCategory.ShouldBe(nameof(WalletTransactionCategory.BankTransferCredit));
-        payload.Transactions[0].TransactionTitle.ShouldBe("Bank transfer credit");
+        payload.Transactions[0].TransactionTitle.ShouldBe(WalletTransactionTitles.BankTransferCredit);
         payload.NextCursor.ShouldNotBeNull();
 
         async Task WhenGettingWalletTransactions()
@@ -148,8 +149,8 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
             currency.Id,
             now,
             WalletTransactionCategory.WalletFunding,
-            "Wallet funding",
-            "Wallet funded via bank transfer.");
+            WalletTransactionNarratives.WalletFunding.Title,
+            WalletTransactionNarratives.WalletFunding.CreateDescription());
         var secondTransaction = WalletTransaction.CreateCredit(
             wallet.Id,
             Guid.CreateVersion7(),
@@ -158,8 +159,8 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
             currency.Id,
             now.AddMinutes(1),
             WalletTransactionCategory.BankTransferCredit,
-            "Bank transfer credit",
-            "Bank transfer received.");
+            WalletTransactionNarratives.BankTransferCredit.Title,
+            WalletTransactionNarratives.BankTransferCredit.CreateDescription());
 
         await dbContext.WalletTransactions.AddAsync(firstTransaction);
         await dbContext.WalletTransactions.AddAsync(secondTransaction);

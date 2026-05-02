@@ -1,3 +1,3 @@
 namespace BackendProjectTemplate.Application.Common.Pagination;
 
-public sealed record CursorPaginationPayload(long CreatedAtUnixMilliseconds, Guid EntityId);
+public sealed record CursorPaginationPayload(DateTimeOffset CreatedAtUtc, Guid EntityId);

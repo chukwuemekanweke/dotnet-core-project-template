@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
 using BackendProjectTemplate.WebAPI.Features.Payments.WalletTransactions;
@@ -25,7 +26,7 @@ public sealed class When_GettingWalletTransactions_WithValidRequest_Should
                 [
                     new StakeholderWalletTransactionReadModel(
                         Guid.CreateVersion7(),
-                        "Wallet funding",
+                        WalletTransactionTitles.WalletFunding,
                         2500m,
                         "NGN",
                         WalletTransactionType.Credit,
@@ -44,7 +45,7 @@ public sealed class When_GettingWalletTransactions_WithValidRequest_Should
         var ok = result.Result.ShouldBeOfType<OkObjectResult>();
         var payload = ok.Value.ShouldBeOfType<GetStakeholderWalletTransactionsResult>();
         payload.Transactions.Count.ShouldBe(1);
-        payload.Transactions[0].TransactionTitle.ShouldBe("Wallet funding");
+        payload.Transactions[0].TransactionTitle.ShouldBe(WalletTransactionTitles.WalletFunding);
         payload.NextCursor.ShouldBeNull();
     }
 }

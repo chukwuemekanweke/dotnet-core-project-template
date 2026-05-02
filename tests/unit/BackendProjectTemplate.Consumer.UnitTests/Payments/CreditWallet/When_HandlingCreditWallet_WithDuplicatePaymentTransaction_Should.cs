@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Consumer.UnitTests.Payments;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Payments.CreditWallet;
@@ -21,8 +22,8 @@ public sealed class When_HandlingCreditWallet_WithDuplicatePaymentTransaction_Sh
                 command.CurrencyId,
                 context.Clock.GetUtcNow(),
                 WalletTransactionCategory.WalletFunding,
-                "Wallet funding",
-                "Wallet funded via bank transfer."));
+                WalletTransactionNarratives.WalletFunding.Title,
+                WalletTransactionNarratives.WalletFunding.CreateDescription()));
 
         await context.CreateCreditWalletHandler().HandleAsync(command, CancellationToken.None);
 

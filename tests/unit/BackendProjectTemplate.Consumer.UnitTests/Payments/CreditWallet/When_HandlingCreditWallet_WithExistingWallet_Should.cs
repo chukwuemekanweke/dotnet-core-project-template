@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Shouldly;
 
@@ -33,7 +34,7 @@ public sealed class When_HandlingCreditWallet_WithExistingWallet_Should
         capturedTransaction.Amount.ShouldBe(2500m);
         capturedTransaction.TransactionType.ShouldBe(WalletTransactionType.Credit);
         capturedTransaction.TransactionCategory.ShouldBe(WalletTransactionCategory.WalletFunding);
-        capturedTransaction.TransactionTitle.ShouldBe("Wallet funding");
+        capturedTransaction.TransactionTitle.ShouldBe(WalletTransactionTitles.WalletFunding);
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await context.WalletRepository.DidNotReceive().AddAsync(Arg.Any<Wallet>(), Arg.Any<CancellationToken>());
     }
