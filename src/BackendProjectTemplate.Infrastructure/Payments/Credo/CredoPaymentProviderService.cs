@@ -65,7 +65,7 @@ internal sealed class CredoPaymentProviderService(
 
         return response.Status switch
         {
-            CredoTransactionStatuses.Successful or CredoTransactionStatuses.SettleQueued or CredoTransactionStatuses.Settled
+            CredoTransactionStatuses.Successful or CredoTransactionStatuses.Settle or CredoTransactionStatuses.Settled
                 => new PaymentProviderVerificationResult(
                     PaymentProviderVerificationStatus.Succeeded,
                     NormalizeOptional(response.TransRef) ?? request.ProviderReference,
@@ -77,12 +77,30 @@ internal sealed class CredoPaymentProviderService(
                     NormalizeOptional(response.TransRef) ?? request.ProviderReference,
                     NormalizeFailureReason(response.Message, response.Status),
                     KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure),
-            CredoTransactionStatuses.FailedAged or CredoTransactionStatuses.Abandoned
+            CredoTransactionStatuses.CancelledByCustomer
                 => new PaymentProviderVerificationResult(
-                    PaymentProviderVerificationStatus.Processing,
+                    PaymentProviderVerificationStatus.Failed,
                     NormalizeOptional(response.TransRef) ?? request.ProviderReference,
-                    null,
-                    KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing),
+                    NormalizeFailureReason(response.Message, response.Status),
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedCustomerCancellation),
+            CredoTransactionStatuses.CancelledByMerchant
+                => new PaymentProviderVerificationResult(
+                    PaymentProviderVerificationStatus.Failed,
+                    NormalizeOptional(response.TransRef) ?? request.ProviderReference,
+                    NormalizeFailureReason(response.Message, response.Status),
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedMerchantCancellation),
+            CredoTransactionStatuses.Refunded
+                => new PaymentProviderVerificationResult(
+                    PaymentProviderVerificationStatus.Failed,
+                    NormalizeOptional(response.TransRef) ?? request.ProviderReference,
+                    NormalizeFailureReason(response.Message, response.Status),
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedRefund),
+            CredoTransactionStatuses.Refund
+                => new PaymentProviderVerificationResult(
+                    PaymentProviderVerificationStatus.Failed,
+                    NormalizeOptional(response.TransRef) ?? request.ProviderReference,
+                    NormalizeFailureReason(response.Message, response.Status),
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedRefundQueued),
             _ => new PaymentProviderVerificationResult(
                 PaymentProviderVerificationStatus.Processing,
                 NormalizeOptional(response.TransRef) ?? request.ProviderReference,
