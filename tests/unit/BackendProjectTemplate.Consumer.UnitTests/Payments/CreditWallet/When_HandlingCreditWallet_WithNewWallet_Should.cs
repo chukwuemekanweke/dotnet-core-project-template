@@ -32,6 +32,9 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should
         capturedTransaction.ShouldNotBeNull();
         capturedTransaction.PaymentTransactionId.ShouldBe(command.PaymentTransactionId);
         capturedTransaction.Amount.ShouldBe(2500m);
+        capturedTransaction.TransactionType.ShouldBe(WalletTransactionType.Credit);
+        capturedTransaction.TransactionCategory.ShouldBe(WalletTransactionCategory.WalletFunding);
+        capturedTransaction.TransactionTitle.ShouldBe("Wallet funding");
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         context.WalletRepository.DidNotReceive().Update(Arg.Any<Wallet>());
     }

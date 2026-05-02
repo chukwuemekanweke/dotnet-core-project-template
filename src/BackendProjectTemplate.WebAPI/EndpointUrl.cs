@@ -65,6 +65,7 @@ public static class EndpointUrl
         public const string Route = $"api/{Versions.V1Route}/payments";
         public static readonly string V1 = ToV1(Route);
         public static readonly string InitiateV1 = $"{V1}/initiate";
+        public static readonly string WalletTransactionsV1 = $"{V1}/wallet-transactions";
     }
 
     public static class PaymentProviders

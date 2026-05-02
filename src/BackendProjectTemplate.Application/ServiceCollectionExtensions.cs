@@ -10,6 +10,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
+using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
@@ -41,6 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ActivatePaymentProviderHandler>();
         services.AddScoped<GetCountriesHandler>();
         services.AddScoped<InitiatePaymentHandler>();
+        services.AddScoped<GetStakeholderWalletTransactionsHandler>();
         services.AddScoped<ProcessSafeHavenAccountCreditWebhookHandler>();
         services.AddScoped<ProcessSafeHavenAccountDebitWebhookHandler>();
         services.AddScoped<ProcessSafeHavenVirtualAccountTransferWebhookHandler>();

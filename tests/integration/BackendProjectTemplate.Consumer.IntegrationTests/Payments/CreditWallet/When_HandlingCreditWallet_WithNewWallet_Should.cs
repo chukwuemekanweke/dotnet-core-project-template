@@ -86,6 +86,9 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should(ContainersFix
             wallet.StakeholderId.ShouldBe(_stakeholderId);
             walletTransaction.Amount.ShouldBe(2500m);
             walletTransaction.MerchantReference.ShouldBe("merchant-ref");
+            walletTransaction.TransactionType.ShouldBe(BackendProjectTemplate.Domain.Payments.Entities.WalletTransactionType.Credit);
+            walletTransaction.TransactionCategory.ShouldBe(BackendProjectTemplate.Domain.Payments.Entities.WalletTransactionCategory.WalletFunding);
+            walletTransaction.TransactionTitle.ShouldBe("Wallet funding");
         }
     }
 }

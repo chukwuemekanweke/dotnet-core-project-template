@@ -16,12 +16,22 @@ public sealed class WalletTransactionConfiguration : IEntityTypeConfiguration<Wa
             .HasMaxLength(100)
             .IsRequired();
 
+        builder.Property(transaction => transaction.TransactionTitle)
+            .HasMaxLength(200)
+            .IsRequired();
+
+        builder.Property(transaction => transaction.Description)
+            .HasMaxLength(1000);
+
         builder.Property(transaction => transaction.Amount)
             .HasPrecision(18, 2)
             .IsRequired();
 
         builder.HasIndex(transaction => transaction.PaymentTransactionId)
             .IsUnique()
+            .HasFilter("\"IsDeleted\" = FALSE");
+
+        builder.HasIndex(transaction => new { transaction.CreatedAtUtc, transaction.Id })
             .HasFilter("\"IsDeleted\" = FALSE");
     }
 }
