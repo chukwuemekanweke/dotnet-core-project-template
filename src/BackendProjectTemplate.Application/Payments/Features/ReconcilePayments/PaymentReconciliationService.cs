@@ -18,13 +18,18 @@ public sealed class PaymentReconciliationService(
     TimeProvider timeProvider)
 {
     public async Task<ReconcilePaymentsResult> HandleAsync(
+        DateTimeOffset oldestEligibleCreatedAtUtc,
         DateTimeOffset staleThresholdUtc,
         DateTimeOffset nextCheckThresholdUtc,
         int batchSize,
         CancellationToken cancellationToken)
     {
         var transactions = await paymentTransactionRepository.ListAsync(
-            new PendingPaymentReconciliationSpecification(staleThresholdUtc, nextCheckThresholdUtc, batchSize),
+            new PendingPaymentReconciliationSpecification(
+                oldestEligibleCreatedAtUtc,
+                staleThresholdUtc,
+                nextCheckThresholdUtc,
+                batchSize),
             cancellationToken);
         if (transactions.Count == 0)
         {
@@ -79,6 +84,12 @@ public sealed class PaymentReconciliationService(
                         verificationResult.FailureReason,
                         verificationResult.StatusChangeReason,
                         now);
+                    break;
+                case PaymentProviderVerificationStatus.Expired when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Expired:
+                    transaction.MarkExpired(
+                        verificationResult.ProviderReference,
+                        verificationResult.FailureReason,
+                        verificationResult.StatusChangeReason);
                     break;
                 case PaymentProviderVerificationStatus.Processing:
                     break;

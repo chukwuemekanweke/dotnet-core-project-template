@@ -8,4 +8,5 @@ public sealed class PaymentReconciliationOptions
     public TimeSpan PollInterval { get; set; } = TimeSpan.FromSeconds(30);
     public TimeSpan StaleThreshold { get; set; } = TimeSpan.FromMinutes(5);
     public TimeSpan RecheckDelay { get; set; } = TimeSpan.FromMinutes(2);
+    public TimeSpan MaxInitiatedAge { get; set; } = TimeSpan.FromHours(48);
 }

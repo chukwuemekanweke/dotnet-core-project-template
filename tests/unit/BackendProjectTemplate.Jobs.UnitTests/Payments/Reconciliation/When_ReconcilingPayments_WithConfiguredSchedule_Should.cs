@@ -50,6 +50,7 @@ public sealed class When_ReconcilingPayments_WithConfiguredSchedule_Should
             {
                 BatchSize = 10,
                 PollInterval = TimeSpan.FromSeconds(1),
+                MaxInitiatedAge = TimeSpan.FromHours(48),
                 StaleThreshold = TimeSpan.FromMinutes(5),
                 RecheckDelay = TimeSpan.FromMinutes(2)
             }),

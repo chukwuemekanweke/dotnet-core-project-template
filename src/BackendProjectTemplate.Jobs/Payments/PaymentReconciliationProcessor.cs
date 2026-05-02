@@ -26,6 +26,7 @@ public sealed class PaymentReconciliationProcessor(
                 var now = timeProvider.GetUtcNow();
 
                 await service.HandleAsync(
+                    now - options.Value.MaxInitiatedAge,
                     now - options.Value.StaleThreshold,
                     now - options.Value.RecheckDelay,
                     options.Value.BatchSize,

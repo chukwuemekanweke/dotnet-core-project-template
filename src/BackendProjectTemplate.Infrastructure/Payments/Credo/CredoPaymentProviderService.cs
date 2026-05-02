@@ -7,8 +7,7 @@ namespace BackendProjectTemplate.Infrastructure.Payments.Credo;
 
 internal sealed class CredoPaymentProviderService(
     ICredoClient client,
-    IStakeholderReadModelRepository stakeholderReadModelRepository,
-    TimeProvider timeProvider) : IPaymentProviderService
+    IStakeholderReadModelRepository stakeholderReadModelRepository) : IPaymentProviderService
 {
     public string ProviderKey => PaymentProviderKeys.Credo;
 
@@ -35,7 +34,6 @@ internal sealed class CredoPaymentProviderService(
                 $"{request.PaymentIntent} payment"),
             cancellationToken);
 
-        var now = timeProvider.GetUtcNow();
         var providerReference = NormalizeRequired(
             response.CredoReference,
             "Credo initialize transaction response did not contain a credo reference.");
@@ -50,7 +48,7 @@ internal sealed class CredoPaymentProviderService(
             providerReference,
             ProviderKey,
             PaymentMethodType.PaymentLink,
-            now.AddMinutes(30),
+            null,
             new Dictionary<string, string>
             {
                 [CredoKnownKeys.PaymentInstruction.PaymentLink] = paymentLink,
@@ -73,12 +71,18 @@ internal sealed class CredoPaymentProviderService(
                     NormalizeOptional(response.TransRef) ?? request.ProviderReference,
                     null,
                     KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess),
-            CredoTransactionStatuses.Failed or CredoTransactionStatuses.Declined or CredoTransactionStatuses.FailedAged or CredoTransactionStatuses.Abandoned
+            CredoTransactionStatuses.Failed or CredoTransactionStatuses.Declined
                 => new PaymentProviderVerificationResult(
                     PaymentProviderVerificationStatus.Failed,
                     NormalizeOptional(response.TransRef) ?? request.ProviderReference,
                     NormalizeFailureReason(response.Message, response.Status),
                     KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure),
+            CredoTransactionStatuses.FailedAged or CredoTransactionStatuses.Abandoned
+                => new PaymentProviderVerificationResult(
+                    PaymentProviderVerificationStatus.Processing,
+                    NormalizeOptional(response.TransRef) ?? request.ProviderReference,
+                    null,
+                    KnownPaymentTransactionChangeReasons.ReconciliationStillProcessing),
             _ => new PaymentProviderVerificationResult(
                 PaymentProviderVerificationStatus.Processing,
                 NormalizeOptional(response.TransRef) ?? request.ProviderReference,
