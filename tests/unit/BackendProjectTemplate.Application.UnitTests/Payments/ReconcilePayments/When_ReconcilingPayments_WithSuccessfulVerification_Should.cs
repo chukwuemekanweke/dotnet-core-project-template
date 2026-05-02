@@ -48,6 +48,7 @@ public sealed class When_ReconcilingPayments_WithSuccessfulVerification_Should
         context.PaymentProviderServices.Add(paymentProviderService);
 
         var result = await context.CreatePaymentReconciliationService().HandleAsync(
+            context.Clock.GetUtcNow().AddHours(-48),
             context.Clock.GetUtcNow().AddMinutes(-10),
             context.Clock.GetUtcNow().AddMinutes(-2),
             50,

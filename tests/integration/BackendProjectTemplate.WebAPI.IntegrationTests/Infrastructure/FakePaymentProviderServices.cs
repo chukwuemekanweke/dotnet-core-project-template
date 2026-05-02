@@ -15,7 +15,7 @@ internal sealed class FakeCredoPaymentProviderService : IPaymentProviderService
             $"cr_{Guid.CreateVersion7():N}",
             PaymentProviderKeys.Credo,
             PaymentMethodType.PaymentLink,
-            DateTimeOffset.UtcNow.AddMinutes(30),
+            null,
             new Dictionary<string, string> { ["paymentLink"] = "https://payments.integration.local/credo" }));
 
     public Task<PaymentProviderVerificationResult> VerifyPaymentAsync(

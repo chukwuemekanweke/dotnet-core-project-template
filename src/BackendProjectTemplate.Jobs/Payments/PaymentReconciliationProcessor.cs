@@ -26,8 +26,9 @@ public sealed class PaymentReconciliationProcessor(
                 var now = timeProvider.GetUtcNow();
 
                 await service.HandleAsync(
-                    now.AddMinutes(-options.Value.StaleThresholdMinutes),
-                    now.AddMinutes(-options.Value.RecheckDelayMinutes),
+                    now - options.Value.MaxInitiatedAge,
+                    now - options.Value.StaleThreshold,
+                    now - options.Value.RecheckDelay,
                     options.Value.BatchSize,
                     stoppingToken);
             }
@@ -36,7 +37,7 @@ public sealed class PaymentReconciliationProcessor(
                 logger.LogError(ex, "Payment reconciliation iteration failed.");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds), stoppingToken);
+            await Task.Delay(options.Value.PollInterval, stoppingToken);
         }
     }
 }

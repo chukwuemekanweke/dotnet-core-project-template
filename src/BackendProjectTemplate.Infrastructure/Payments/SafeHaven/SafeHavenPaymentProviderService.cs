@@ -64,14 +64,22 @@ internal sealed class SafeHavenPaymentProviderService(
                 KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess);
         }
 
-        if (string.Equals(virtualAccount.Status, SafeHavenVirtualAccountStatuses.Failed, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(virtualAccount.Status, SafeHavenVirtualAccountStatuses.Expired, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(virtualAccount.Status, SafeHavenVirtualAccountStatuses.Failed, StringComparison.OrdinalIgnoreCase))
         {
             return new PaymentProviderVerificationResult(
                 PaymentProviderVerificationStatus.Failed,
                 request.ProviderReference,
                 "provider_reported_failure",
                 KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure);
+        }
+
+        if (string.Equals(virtualAccount.Status, SafeHavenVirtualAccountStatuses.Expired, StringComparison.OrdinalIgnoreCase))
+        {
+            return new PaymentProviderVerificationResult(
+                PaymentProviderVerificationStatus.Expired,
+                request.ProviderReference,
+                "provider_reported_expired",
+                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedExpired);
         }
 
         return new PaymentProviderVerificationResult(

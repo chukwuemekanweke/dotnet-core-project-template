@@ -130,6 +130,20 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
         FailedAtUtc = failedAtUtc;
     }
 
+    public void MarkExpired(
+        string? providerReference,
+        string? failureReason,
+        string? statusChangeReason)
+    {
+        EnsureCanTransitionFrom(PaymentStatus.Initiated);
+        ProviderReference = string.IsNullOrWhiteSpace(providerReference) ? ProviderReference : providerReference.Trim();
+        PaymentStatus = PaymentStatus.Expired;
+        FailureReason = failureReason;
+        StatusChangeReason = statusChangeReason;
+        CompletedAtUtc = null;
+        FailedAtUtc = null;
+    }
+
     public void RecordStatusCheck(DateTimeOffset utcNow) => LastStatusCheckAtUtc = utcNow;
 
     private void EnsureCanTransitionFrom(params PaymentStatus[] allowedStatuses)
