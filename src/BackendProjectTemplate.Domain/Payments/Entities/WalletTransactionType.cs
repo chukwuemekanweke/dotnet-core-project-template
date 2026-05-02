@@ -2,5 +2,6 @@ namespace BackendProjectTemplate.Domain.Payments.Entities;
 
 public enum WalletTransactionType
 {
-    Credit = 1
+    Credit = 1,
+    Debit = 2
 }

@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
+using BackendProjectTemplate.Domain.Payments.ReadModels;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));
         services.AddScoped<IStakeholderReadModelRepository, StakeholderReadModelRepository>();
+        services.AddScoped<IWalletTransactionReadModelRepository, WalletTransactionReadModelRepository>();
 
         return services;
     }
