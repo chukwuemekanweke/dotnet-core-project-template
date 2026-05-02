@@ -2,9 +2,9 @@ using BackendProjectTemplate.WebAPI.Features.Payments.WalletTransactions;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;
 
-namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Payments.WalletTransactions;
+namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Payments.WalletTransactions.TopUpDetails;
 
-public sealed class When_GettingWalletTransactions_WithInvalidRequest_Should
+public sealed class When_GettingWalletTopUpTransactionDetail_WithInvalidRequest_Should
 {
     [Fact]
     public async Task ReturnBadRequest()
@@ -17,7 +17,7 @@ public sealed class When_GettingWalletTransactions_WithInvalidRequest_Should
             new GetStakeholderWalletTopUpTransactionDetailValidator(),
             context.CurrentActor);
 
-        var result = await sut.Handle(new GetStakeholderWalletTransactionsRequest(0, null), CancellationToken.None);
+        var result = await sut.GetTopUpDetail(new GetStakeholderWalletTopUpTransactionDetailRequest(Guid.Empty), CancellationToken.None);
 
         result.Result.ShouldBeOfType<BadRequestObjectResult>();
     }

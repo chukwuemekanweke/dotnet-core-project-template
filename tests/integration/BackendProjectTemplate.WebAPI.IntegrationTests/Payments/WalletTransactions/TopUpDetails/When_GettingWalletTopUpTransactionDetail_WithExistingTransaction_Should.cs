@@ -1,5 +1,8 @@
+using System.Net;
+using System.Net.Http.Json;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
-using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
+using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
+using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -13,13 +16,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using System.Net;
-using System.Net.Http.Json;
 
-namespace BackendProjectTemplate.WebAPI.IntegrationTests.Payments.WalletTransactions;
+namespace BackendProjectTemplate.WebAPI.IntegrationTests.Payments.WalletTransactions.TopUpDetails;
 
 [Collection(nameof(ContainersCollection))]
-public sealed class When_GettingWalletTransactions_WithExistingTransactions_Should(ContainersFixture fixture) : IAsyncLifetime
+public sealed class When_GettingWalletTopUpTransactionDetail_WithExistingTransaction_Should(ContainersFixture fixture) : IAsyncLifetime
 {
     private const string Password = "P@ssw0rd123!";
 
@@ -35,8 +36,9 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
     private Guid _stakeholderTypeId;
     private Guid _currencyId;
     private Guid _walletId;
-    private Guid _firstWalletTransactionId;
-    private Guid _secondWalletTransactionId;
+    private Guid _paymentProviderId;
+    private Guid _paymentTransactionId;
+    private Guid _walletTransactionId;
     private HttpResponseMessage? _response;
 
     public async Task InitializeAsync()
@@ -49,7 +51,7 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
         _tenantId = Guid.CreateVersion7();
         _client.DefaultRequestHeaders.Add("X-Tenant-Id", _tenantId.ToString());
         await CreateVerifiedUserAsync();
-        await SeedWalletTransactionsAsync();
+        await SeedWalletTopUpTransactionAsync();
         await AuthenticateAsync();
     }
 
@@ -62,25 +64,27 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
     }
 
     [Fact]
-    public async Task ReturnStakeholderWalletTransactions()
+    public async Task ReturnWalletTopUpTransactionDetail()
     {
-        await WhenGettingWalletTransactions();
+        await WhenGettingWalletTopUpTransactionDetail();
 
         _response.ShouldNotBeNull();
         _response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        var payload = await _response.Content.ReadFromJsonAsync<GetStakeholderWalletTransactionsResult>();
+        var payload = await _response.Content.ReadFromJsonAsync<GetStakeholderWalletTopUpTransactionDetailResponse>();
         payload.ShouldNotBeNull();
-        payload.Transactions.Count.ShouldBe(1);
-        payload.Transactions[0].CurrencyCode.ShouldBe("NGN");
-        payload.Transactions[0].TransactionType.ShouldBe(nameof(WalletTransactionType.Credit));
-        payload.Transactions[0].TransactionCategory.ShouldBe(nameof(WalletTransactionCategory.BankTransferCredit));
-        payload.Transactions[0].TransactionTitle.ShouldBe(WalletTransactionTitles.BankTransferCredit);
-        payload.NextCursor.ShouldNotBeNull();
+        payload.WalletTransactionId.ShouldBe(_walletTransactionId);
+        payload.TransactionTitle.ShouldBe(WalletTransactionTitles.WalletFunding);
+        payload.Description.ShouldBe(WalletTransactionNarratives.WalletFunding.CreateDescription());
+        payload.Amount.ShouldBe(2500m);
+        payload.CurrencyCode.ShouldBe("NGN");
+        payload.MerchantReference.ShouldBe("merchant-ref-1");
+        payload.PaymentMethodType.ShouldBe(nameof(PaymentMethodType.BankTransfer));
+        payload.PaymentProviderName.ShouldBe("SafeHaven");
 
-        async Task WhenGettingWalletTransactions()
+        async Task WhenGettingWalletTopUpTransactionDetail()
         {
-            _response = await _client.GetAsync($"{EndpointUrl.Payments.WalletTransactionsV1}?limit=1");
+            _response = await _client.GetAsync(EndpointUrl.Payments.WalletTopUpTransactionDetailsV1(_walletTransactionId));
         }
     }
 
@@ -124,7 +128,7 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
         _stakeholderId = stakeholder.Id;
     }
 
-    private async Task SeedWalletTransactionsAsync()
+    private async Task SeedWalletTopUpTransactionAsync()
     {
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
@@ -132,18 +136,25 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
 
         var currency = Currency.Create("NGN", "Naira", true, now);
         var wallet = Wallet.Create(_stakeholderId, _tenantId, currency.Id, now);
-        wallet.Credit(3700m);
-
-        await dbContext.Currencies.AddAsync(currency);
-        await dbContext.Wallets.AddAsync(wallet);
-        await dbContext.SaveChangesAsync();
-
-        _currencyId = currency.Id;
-        _walletId = wallet.Id;
-
-        var firstTransaction = WalletTransaction.CreateCredit(
-            wallet.Id,
+        wallet.Credit(2500m);
+        var paymentProvider = PaymentProvider.Create("SafeHaven", PaymentProviderKeys.SafeHaven, true, now);
+        var paymentTransaction = PaymentTransaction.Create(
+            "merchant-ref-1",
+            PaymentIntent.WalletTopUp,
+            paymentProvider.Id,
+            2500m,
+            currency.Id,
+            _countryId,
             Guid.CreateVersion7(),
+            _stakeholderId,
+            _tenantId,
+            now);
+        paymentTransaction.SetPaymentMethodType(PaymentMethodType.BankTransfer);
+        paymentTransaction.MarkInitiated("provider-ref-1", null, now.AddMinutes(15), "Payment initiated.");
+
+        var walletTransaction = WalletTransaction.CreateCredit(
+            wallet.Id,
+            paymentTransaction.Id,
             "merchant-ref-1",
             2500m,
             currency.Id,
@@ -151,27 +162,19 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
             WalletTransactionCategory.WalletFunding,
             WalletTransactionNarratives.WalletFunding.Title,
             WalletTransactionNarratives.WalletFunding.CreateDescription());
-        var secondTransaction = WalletTransaction.CreateCredit(
-            wallet.Id,
-            Guid.CreateVersion7(),
-            "merchant-ref-2",
-            1200m,
-            currency.Id,
-            now.AddMinutes(1),
-            WalletTransactionCategory.BankTransferCredit,
-            WalletTransactionNarratives.BankTransferCredit.Title,
-            WalletTransactionNarratives.BankTransferCredit.CreateDescription());
 
-        await dbContext.WalletTransactions.AddAsync(firstTransaction);
-        await dbContext.WalletTransactions.AddAsync(secondTransaction);
+        await dbContext.Currencies.AddAsync(currency);
+        await dbContext.Wallets.AddAsync(wallet);
+        await dbContext.PaymentProviders.AddAsync(paymentProvider);
+        await dbContext.PaymentTransactions.AddAsync(paymentTransaction);
+        await dbContext.WalletTransactions.AddAsync(walletTransaction);
         await dbContext.SaveChangesAsync();
 
-        dbContext.Entry(firstTransaction).Property(item => item.CreatedAtUtc).CurrentValue = now;
-        dbContext.Entry(secondTransaction).Property(item => item.CreatedAtUtc).CurrentValue = now.AddMinutes(1);
-        await dbContext.SaveChangesAsync();
-
-        _firstWalletTransactionId = firstTransaction.Id;
-        _secondWalletTransactionId = secondTransaction.Id;
+        _currencyId = currency.Id;
+        _walletId = wallet.Id;
+        _paymentProviderId = paymentProvider.Id;
+        _paymentTransactionId = paymentTransaction.Id;
+        _walletTransactionId = walletTransaction.Id;
     }
 
     private async Task DeleteSeedDataAsync()
@@ -180,16 +183,22 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
         var userRepository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
 
-        var secondTransaction = await dbContext.WalletTransactions.FirstOrDefaultAsync(item => item.Id == _secondWalletTransactionId);
-        if (secondTransaction is not null)
+        var walletTransaction = await dbContext.WalletTransactions.FirstOrDefaultAsync(item => item.Id == _walletTransactionId);
+        if (walletTransaction is not null)
         {
-            dbContext.WalletTransactions.Remove(secondTransaction);
+            dbContext.WalletTransactions.Remove(walletTransaction);
         }
 
-        var firstTransaction = await dbContext.WalletTransactions.FirstOrDefaultAsync(item => item.Id == _firstWalletTransactionId);
-        if (firstTransaction is not null)
+        var paymentTransaction = await dbContext.PaymentTransactions.FirstOrDefaultAsync(item => item.Id == _paymentTransactionId);
+        if (paymentTransaction is not null)
         {
-            dbContext.WalletTransactions.Remove(firstTransaction);
+            dbContext.PaymentTransactions.Remove(paymentTransaction);
+        }
+
+        var paymentProvider = await dbContext.PaymentProviders.FirstOrDefaultAsync(item => item.Id == _paymentProviderId);
+        if (paymentProvider is not null)
+        {
+            dbContext.PaymentProviders.Remove(paymentProvider);
         }
 
         var wallet = await dbContext.Wallets.FirstOrDefaultAsync(item => item.Id == _walletId);

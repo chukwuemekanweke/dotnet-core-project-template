@@ -66,6 +66,8 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
         public static readonly string InitiateV1 = $"{V1}/initiate";
         public static readonly string WalletTransactionsV1 = $"{V1}/wallet-transactions";
+        public static string WalletTopUpTransactionDetailsV1(Guid walletTransactionId) =>
+            $"{WalletTransactionsV1}/top-ups/{walletTransactionId}";
     }
 
     public static class PaymentProviders

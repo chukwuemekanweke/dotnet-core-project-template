@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Domain.Payments.ReadModels;
+using BackendProjectTemplate.Contracts.Payments;
 using Microsoft.EntityFrameworkCore;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence;
@@ -11,8 +12,10 @@ public sealed class WalletTransactionReadModelRepository(AppReadDbContext dbCont
     {
         var query =
             from walletTransaction in dbContext.WalletTransactions.AsNoTracking()
-            join wallet in dbContext.Wallets.AsNoTracking() on walletTransaction.WalletId equals wallet.Id
-            join currency in dbContext.Currencies.AsNoTracking() on walletTransaction.CurrencyId equals currency.Id
+            join wallet in dbContext.Wallets.AsNoTracking() 
+                on walletTransaction.WalletId equals wallet.Id
+            join currency in dbContext.Currencies.AsNoTracking() 
+                on walletTransaction.CurrencyId equals currency.Id
             where wallet.StakeholderId == request.StakeholderId
             select new
             {
@@ -57,4 +60,34 @@ public sealed class WalletTransactionReadModelRepository(AppReadDbContext dbCont
 
         return new StakeholderWalletTransactionsCursorPage(items, hasMore);
     }
+
+    public async Task<StakeholderWalletTopUpTransactionDetailReadModel?> GetWalletTopUpDetailByStakeholderAsync(
+        StakeholderWalletTopUpTransactionDetailRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await (
+            from walletTransaction in dbContext.WalletTransactions.AsNoTracking()
+            join wallet in dbContext.Wallets.AsNoTracking() 
+                on walletTransaction.WalletId equals wallet.Id
+            join currency in dbContext.Currencies.AsNoTracking() 
+                on walletTransaction.CurrencyId equals currency.Id
+            join paymentTransaction in dbContext.PaymentTransactions.AsNoTracking() 
+                on walletTransaction.PaymentTransactionId equals paymentTransaction.Id
+            join paymentProvider in dbContext.PaymentProviders.AsNoTracking() 
+                on paymentTransaction.PaymentProviderId equals paymentProvider.Id
+            where wallet.StakeholderId == request.StakeholderId
+                && walletTransaction.Id == request.WalletTransactionId
+                && paymentTransaction.PaymentIntent == PaymentIntent.WalletTopUp
+            select new StakeholderWalletTopUpTransactionDetailReadModel(
+                walletTransaction.Id,
+                walletTransaction.TransactionTitle,
+                walletTransaction.Description,
+                walletTransaction.MerchantReference,
+                walletTransaction.Amount,
+                currency.CurrencyCode,
+                paymentTransaction.PaymentMethodType,
+                paymentProvider.ProviderName,
+                walletTransaction.CreatedAtUtc))
+            .FirstOrDefaultAsync(cancellationToken);
+    }                                                                   
 }

@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -15,6 +16,8 @@ namespace BackendProjectTemplate.WebAPI.Features.Payments.WalletTransactions;
 public sealed class WalletTransactionsController(
     GetStakeholderWalletTransactionsHandler handler,
     GetStakeholderWalletTransactionsValidator validator,
+    GetStakeholderWalletTopUpTransactionDetailHandler topUpDetailHandler,
+    GetStakeholderWalletTopUpTransactionDetailValidator topUpDetailValidator,
     ICurrentActor currentActor) : ControllerBase
 {
     [HttpGet("wallet-transactions")]
@@ -39,5 +42,33 @@ public sealed class WalletTransactionsController(
             cancellationToken);
 
         return Ok(result);
+    }
+
+    [HttpGet("wallet-transactions/top-ups/{walletTransactionId:guid}")]
+    [ProducesResponseType<GetStakeholderWalletTopUpTransactionDetailResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GetStakeholderWalletTopUpTransactionDetailResponse>> GetTopUpDetail(
+        [FromRoute] GetStakeholderWalletTopUpTransactionDetailRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await topUpDetailValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
+        }
+
+        var result = await topUpDetailHandler.HandleAsync(
+            new GetStakeholderWalletTopUpTransactionDetailCommand(
+                request.WalletTransactionId,
+                ActorContext.FromCurrentActor(currentActor)),
+            cancellationToken);
+
+        return result.Status switch
+        {
+            GetStakeholderWalletTopUpTransactionDetailStatus.NotFound => NotFound(result.Error ?? "Wallet top-up transaction not found."),
+            _ => Ok(result.Transaction)
+        };
     }
 }

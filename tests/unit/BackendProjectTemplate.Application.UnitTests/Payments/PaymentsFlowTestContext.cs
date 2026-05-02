@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
+using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
@@ -47,6 +48,9 @@ internal sealed class PaymentsFlowTestContext
             Clock);
 
     public GetStakeholderWalletTransactionsHandler CreateGetStakeholderWalletTransactionsHandler() =>
+        new(WalletTransactionReadModelRepository);
+
+    public GetStakeholderWalletTopUpTransactionDetailHandler CreateGetStakeholderWalletTopUpTransactionDetailHandler() =>
         new(WalletTransactionReadModelRepository);
 
     public ProcessCredoWebhookHandler CreateCredoWebhookHandler() =>
