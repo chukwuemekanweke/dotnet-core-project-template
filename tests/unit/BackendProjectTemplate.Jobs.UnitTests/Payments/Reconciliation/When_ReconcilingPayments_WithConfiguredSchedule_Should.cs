@@ -49,9 +49,9 @@ public sealed class When_ReconcilingPayments_WithConfiguredSchedule_Should
             Options.Create(new PaymentReconciliationOptions
             {
                 BatchSize = 10,
-                PollIntervalSeconds = 1,
-                StaleThresholdMinutes = 5,
-                RecheckDelayMinutes = 2
+                PollInterval = TimeSpan.FromSeconds(1),
+                StaleThreshold = TimeSpan.FromMinutes(5),
+                RecheckDelay = TimeSpan.FromMinutes(2)
             }),
             state,
             clock,

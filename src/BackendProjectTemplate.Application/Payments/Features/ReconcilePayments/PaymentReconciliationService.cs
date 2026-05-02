@@ -2,7 +2,6 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.Domain.Payments.Specifications;
