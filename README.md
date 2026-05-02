@@ -113,8 +113,23 @@ Useful endpoints:
 - Grafana: `http://localhost:3000`
 - Prometheus: `http://localhost:9090`
 - Tempo: `http://localhost:3200`
+- Pyroscope: `http://localhost:4040`
 
 The `consumer` and `jobs` containers expose internal `/health/readiness` and `/health/liveness` endpoints for orchestration. In `docker compose`, both services wait for the database migrator to complete successfully before starting.
+
+## Profiling
+
+The local observability stack includes Grafana Pyroscope for continuous profiling.
+
+- Grafana provisions a `Pyroscope` data source automatically.
+- The `webapi`, `consumer`, and `jobs` containers are built with the native .NET Pyroscope profiler and push profiles directly to `http://pyroscope:4040`.
+- The current profiling setup is container-only. Grafana's .NET profiler currently supports Linux on `amd64`, so `dotnet run` on Windows/macOS is not profiled by this configuration.
+
+After `docker compose up --build`, open Grafana at `http://localhost:3000` and use Profiles Drilldown or Explore with the `Pyroscope` data source to inspect:
+
+- `backendprojecttemplate.webapi`
+- `backendprojecttemplate.consumer`
+- `backendprojecttemplate.jobs`
 
 Default SQL Server credentials in the template:
 

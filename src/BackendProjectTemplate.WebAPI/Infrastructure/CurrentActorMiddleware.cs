@@ -59,6 +59,8 @@ public sealed class CurrentActorMiddleware(RequestDelegate next)
     {
         return path.StartsWithSegments("/health")
             || path.StartsWithSegments("/metrics")
+            || path.StartsWithSegments("/openapi")
+            || path.StartsWithSegments("/scalar")
             || path == "/"
             || path.StartsWithSegments("/api/v1/payments/webhooks");
     }
