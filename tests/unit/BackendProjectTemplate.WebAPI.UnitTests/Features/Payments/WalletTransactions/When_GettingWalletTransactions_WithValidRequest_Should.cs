@@ -38,6 +38,8 @@ public sealed class When_GettingWalletTransactions_WithValidRequest_Should
         var sut = new WalletTransactionsController(
             context.CreateGetStakeholderWalletTransactionsHandler(),
             new GetStakeholderWalletTransactionsValidator(),
+            context.CreateGetStakeholderWalletTopUpTransactionDetailHandler(),
+            new GetStakeholderWalletTopUpTransactionDetailValidator(),
             context.CurrentActor);
 
         var result = await sut.Handle(new GetStakeholderWalletTransactionsRequest(20, null), CancellationToken.None);

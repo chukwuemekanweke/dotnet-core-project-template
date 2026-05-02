@@ -16,6 +16,8 @@ public sealed class When_GettingWalletTransactions_WithoutAuthenticatedStakehold
         var sut = new WalletTransactionsController(
             context.CreateGetStakeholderWalletTransactionsHandler(),
             new GetStakeholderWalletTransactionsValidator(),
+            context.CreateGetStakeholderWalletTopUpTransactionDetailHandler(),
+            new GetStakeholderWalletTopUpTransactionDetailValidator(),
             context.CurrentActor);
 
         var exception = await Should.ThrowAsync<InvalidOperationException>(() =>

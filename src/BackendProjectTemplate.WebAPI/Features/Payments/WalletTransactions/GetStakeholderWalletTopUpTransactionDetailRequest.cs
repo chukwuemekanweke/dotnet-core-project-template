@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.WebAPI.Features.Payments.WalletTransactions;
+
+public sealed record GetStakeholderWalletTopUpTransactionDetailRequest(Guid WalletTransactionId);
