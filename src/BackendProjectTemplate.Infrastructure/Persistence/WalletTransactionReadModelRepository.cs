@@ -12,8 +12,10 @@ public sealed class WalletTransactionReadModelRepository(AppReadDbContext dbCont
     {
         var query =
             from walletTransaction in dbContext.WalletTransactions.AsNoTracking()
-            join wallet in dbContext.Wallets.AsNoTracking() on walletTransaction.WalletId equals wallet.Id
-            join currency in dbContext.Currencies.AsNoTracking() on walletTransaction.CurrencyId equals currency.Id
+            join wallet in dbContext.Wallets.AsNoTracking() 
+                on walletTransaction.WalletId equals wallet.Id
+            join currency in dbContext.Currencies.AsNoTracking() 
+                on walletTransaction.CurrencyId equals currency.Id
             where wallet.StakeholderId == request.StakeholderId
             select new
             {
@@ -65,10 +67,14 @@ public sealed class WalletTransactionReadModelRepository(AppReadDbContext dbCont
     {
         return await (
             from walletTransaction in dbContext.WalletTransactions.AsNoTracking()
-            join wallet in dbContext.Wallets.AsNoTracking() on walletTransaction.WalletId equals wallet.Id
-            join currency in dbContext.Currencies.AsNoTracking() on walletTransaction.CurrencyId equals currency.Id
-            join paymentTransaction in dbContext.PaymentTransactions.AsNoTracking() on walletTransaction.PaymentTransactionId equals paymentTransaction.Id
-            join paymentProvider in dbContext.PaymentProviders.AsNoTracking() on paymentTransaction.PaymentProviderId equals paymentProvider.Id
+            join wallet in dbContext.Wallets.AsNoTracking() 
+                on walletTransaction.WalletId equals wallet.Id
+            join currency in dbContext.Currencies.AsNoTracking() 
+                on walletTransaction.CurrencyId equals currency.Id
+            join paymentTransaction in dbContext.PaymentTransactions.AsNoTracking() 
+                on walletTransaction.PaymentTransactionId equals paymentTransaction.Id
+            join paymentProvider in dbContext.PaymentProviders.AsNoTracking() 
+                on paymentTransaction.PaymentProviderId equals paymentProvider.Id
             where wallet.StakeholderId == request.StakeholderId
                 && walletTransaction.Id == request.WalletTransactionId
                 && paymentTransaction.PaymentIntent == PaymentIntent.WalletTopUp
@@ -83,5 +89,5 @@ public sealed class WalletTransactionReadModelRepository(AppReadDbContext dbCont
                 paymentProvider.ProviderName,
                 walletTransaction.CreatedAtUtc))
             .FirstOrDefaultAsync(cancellationToken);
-    }
+    }                                                                    1
 }
