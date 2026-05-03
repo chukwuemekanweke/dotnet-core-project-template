@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Services;
@@ -11,8 +12,8 @@ internal sealed class EmailNotificationsControllerTestContext
 {
     public IReadRepository<Provider> ProviderRepository { get; } = Substitute.For<IReadRepository<Provider>>();
     public IRepository<EmailDeliveryWebhookInbox> EmailDeliveryWebhookInboxRepository { get; } = Substitute.For<IRepository<EmailDeliveryWebhookInbox>>();
-    public IRepository<EmailNotificationLog> EmailNotificationLogRepository { get; } = Substitute.For<IRepository<EmailNotificationLog>>();
     public IMailtrapWebhookSignatureValidator MailtrapWebhookSignatureValidator { get; } = Substitute.For<IMailtrapWebhookSignatureValidator>();
+    public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 5, 3, 12, 0, 0, TimeSpan.Zero));
 
@@ -20,8 +21,8 @@ internal sealed class EmailNotificationsControllerTestContext
         new(
             ProviderRepository,
             EmailDeliveryWebhookInboxRepository,
-            EmailNotificationLogRepository,
             MailtrapWebhookSignatureValidator,
+            EventPublisher,
             UnitOfWork,
             Clock);
 

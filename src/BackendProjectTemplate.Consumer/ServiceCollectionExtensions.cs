@@ -11,6 +11,7 @@ using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.Us
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 using UserEmailConfirmedEvent = BackendProjectTemplate.Contracts.Events.UserEmailConfirmed;
 using SuccessfulPaymentConfirmedEvent = BackendProjectTemplate.Contracts.Events.SuccessfulPaymentConfirmed;
+using EmailDeliveryWebhookReceivedEvent = BackendProjectTemplate.Contracts.Events.EmailDeliveryWebhookReceived;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
 using UserSignInSuccessfulEvent = BackendProjectTemplate.Contracts.Events.UserSignInSuccessful;
 
@@ -66,6 +67,7 @@ public static class ServiceCollectionExtensions
                 .AddHandler<UserSignInSuccessfulEvent, UserSignInSuccessfulHandler>()
                 .AddHandler<UserAccessTokenRefreshedEvent, UserAccessTokenRefreshedHandler>()
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>()
+                .AddHandler<EmailDeliveryWebhookReceivedEvent, EmailDeliveryWebhookReceivedHandler>()
                 .AddHandler<SuccessfulPaymentConfirmedEvent, SuccessfulPaymentConfirmedHandler>())
             .AddConsumer(consumerConfig, builder => builder
                 .AddHandler<ResetPassword, ResetPasswordHandler>()

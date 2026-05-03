@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
@@ -32,7 +33,7 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
             ?? throw new InvalidOperationException("SafeHaven payment provider is not active.");
         var validationResult = new PaymentProviderWebhookValidationResult(
             SignatureValidationStatus.NotApplicable,
-            "signature_not_applicable");
+            KnownWebhookStatusChangeReasons.Payments.SignatureNotApplicable);
         var webhookDetails = CreateWebhookDetails(command.Webhook);
 
         if (!string.IsNullOrWhiteSpace(webhookDetails.WebhookEventId))
@@ -71,7 +72,7 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
 
         if (validationResult.SignatureValidationStatus == SignatureValidationStatus.Invalid)
         {
-            inbox.MarkIgnored("invalid_signature", now);
+            inbox.MarkIgnored(KnownWebhookStatusChangeReasons.Shared.InvalidSignature, now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Payments.WebhookPersistenceFailed,
@@ -85,7 +86,7 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
         var paymentTransaction = await ResolvePaymentTransactionAsync(webhookDetails, cancellationToken);
         if (paymentTransaction is null || !webhookDetails.IsSupportedEvent)
         {
-            inbox.MarkIgnored("transaction_not_found_or_unmapped_status", now);
+            inbox.MarkIgnored(KnownWebhookStatusChangeReasons.Payments.TransactionNotFoundOrUnmappedStatus, now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Payments.WebhookPersistenceFailed,

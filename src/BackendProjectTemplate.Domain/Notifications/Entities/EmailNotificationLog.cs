@@ -85,6 +85,11 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
 
     public void MarkDelivered(DateTimeOffset deliveredAtUtc, DateTimeOffset utcNow)
     {
+        if (DeliveredAtUtc.HasValue)
+        {
+            return;
+        }
+
         DeliveredAtUtc = deliveredAtUtc;
         Touch(utcNow);
     }

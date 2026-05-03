@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Domain.Notifications.Services;
+using BackendProjectTemplate.Domain.Common;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,11 +8,6 @@ namespace BackendProjectTemplate.Infrastructure.Notifications;
 
 internal sealed class MailtrapWebhookSignatureValidator(IOptions<EmailNotificationsOptions> options) : IMailtrapWebhookSignatureValidator
 {
-    private const string InvalidSignatureReason = "invalid_signature";
-    private const string MissingSignatureReason = "missing_signature";
-    private const string MissingSigningSecretReason = "missing_signing_secret";
-    private const string MissingPayloadReason = "missing_payload";
-
     public Task<MailtrapWebhookSignatureValidationResult> ValidateAsync(
         MailtrapWebhookSignatureValidationRequest request,
         CancellationToken cancellationToken)
@@ -19,18 +15,18 @@ internal sealed class MailtrapWebhookSignatureValidator(IOptions<EmailNotificati
         var signingSecret = NormalizeOptional(options.Value.Mailtrap.WebhookSigningSecret);
         if (string.IsNullOrWhiteSpace(signingSecret))
         {
-            return Task.FromResult(new MailtrapWebhookSignatureValidationResult(false, MissingSigningSecretReason));
+            return Task.FromResult(new MailtrapWebhookSignatureValidationResult(false, KnownWebhookStatusChangeReasons.Notifications.MissingSigningSecret));
         }
 
         var signatureHeader = NormalizeOptional(request.SignatureHeader);
         if (string.IsNullOrWhiteSpace(signatureHeader))
         {
-            return Task.FromResult(new MailtrapWebhookSignatureValidationResult(false, MissingSignatureReason));
+            return Task.FromResult(new MailtrapWebhookSignatureValidationResult(false, KnownWebhookStatusChangeReasons.Shared.MissingSignature));
         }
 
         if (string.IsNullOrWhiteSpace(request.RawPayload))
         {
-            return Task.FromResult(new MailtrapWebhookSignatureValidationResult(false, MissingPayloadReason));
+            return Task.FromResult(new MailtrapWebhookSignatureValidationResult(false, KnownWebhookStatusChangeReasons.Notifications.MissingPayload));
         }
 
         var expectedSignature = ComputeSignature(signingSecret, request.RawPayload);
@@ -38,7 +34,7 @@ internal sealed class MailtrapWebhookSignatureValidator(IOptions<EmailNotificati
 
         return Task.FromResult(new MailtrapWebhookSignatureValidationResult(
             isValid,
-            isValid ? "signature_verified" : InvalidSignatureReason));
+            isValid ? KnownWebhookStatusChangeReasons.Shared.SignatureVerified : KnownWebhookStatusChangeReasons.Shared.InvalidSignature));
     }
 
     private static string? NormalizeOptional(string? value) =>
