@@ -26,27 +26,32 @@ internal sealed class MailtrapEmailTransportProvider(
 
     public string ProviderKey => EmailProviderKeys.Mailtrap;
 
-    public async Task SendAsync(EmailDeliveryMessage message, CancellationToken cancellationToken = default)
+    public async Task<EmailTransportSendResult> SendAsync(EmailDeliveryMessage message, CancellationToken cancellationToken = default)
     {
         var mailtrapOptions = options.Value.Mailtrap;
         mailtrapOptions.Validate();
-        logger.LogWarning(
-            "Mailtrap API token diagnostic. Api Token={ApiToken} Use Bulk Api={UseBulkApi} Inbox Id={InboxId}",
-            mailtrapOptions.ApiToken,
-            mailtrapOptions.UseBulkApi,
-            mailtrapOptions.InboxId);
 
         using var factory = new MailtrapClientFactory(new MailtrapClientOptions(mailtrapOptions.ApiToken));
         var client = factory.CreateClient();
         var request = CreateRequest(message);
         var emailClient = ResolveEmailClient(client, mailtrapOptions);
+        string? providerMessageId = null;
 
         await RetryPipeline.ExecuteAsync(
             async token =>
             {
-                await emailClient.Send(request, token);
+                var response = await emailClient.Send(request, token);
+                providerMessageId = response.MessageIds.FirstOrDefault();
             },
             cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(providerMessageId))
+        {
+            logger.LogError("Mailtrap did not return a provider message ID for email sent to {Recipient}.", message.To);
+            throw new InvalidOperationException("Mailtrap did not return a provider message ID.");
+        }
+
+        return new EmailTransportSendResult(providerMessageId);
     }
 
     internal static SendEmailRequest CreateRequest(EmailDeliveryMessage message)

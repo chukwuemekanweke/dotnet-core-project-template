@@ -8,6 +8,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
+using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
@@ -37,6 +38,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SignUpOtpHandler>();
         services.AddScoped<SignInHandler>();
         services.AddScoped<RequestPasswordResetHandler>();
+        services.AddScoped<ProcessMailtrapDeliveryWebhookHandler>();
         services.AddScoped<UploadAvatarHandler>();
         services.AddScoped<UpdateProfileHandler>();
         services.AddScoped<ActivateProviderHandler>();

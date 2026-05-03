@@ -62,8 +62,9 @@ public sealed class CurrentActorMiddleware(RequestDelegate next)
             || path.StartsWithSegments("/openapi")
             || path.StartsWithSegments("/scalar")
             || path == "/"
-            || path.StartsWithSegments("/api/v1/payments/webhooks");
-    }
+            || path.StartsWithSegments("/api/v1/payments/webhooks")
+            || path.StartsWithSegments("/api/v1/email-notifications/webhooks");
+}
 
     private static async Task<string> ResolveActorIdAsync(
         HttpContext context,

@@ -32,6 +32,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<SubscriptionActivation> SubscriptionActivations => Set<SubscriptionActivation>();
     public DbSet<EmailNotificationTemplate> EmailNotificationTemplates => Set<EmailNotificationTemplate>();
     public DbSet<EmailNotificationLog> EmailNotificationLogs => Set<EmailNotificationLog>();
+    public DbSet<EmailDeliveryWebhookInbox> EmailDeliveryWebhookInboxes => Set<EmailDeliveryWebhookInbox>();
     public DbSet<TenantEmailBaseTemplate> TenantEmailBaseTemplates => Set<TenantEmailBaseTemplate>();
     public DbSet<Stakeholder> Stakeholders => Set<Stakeholder>();
     public DbSet<StakeholderType> StakeholderTypes => Set<StakeholderType>();

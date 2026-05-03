@@ -46,7 +46,8 @@ public sealed class WhenSendingEmailNotificationWithExistingUnsentLog_Should
             [],
             ((EmailNotificationContent)command.NotificationContent).To,
             null,
-            null);
+            null,
+            now);
         var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.CreateVersion7():N}");
         var tenantTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "NotificationTypes");
         Directory.CreateDirectory(tenantTemplateDirectory);
@@ -75,6 +76,8 @@ public sealed class WhenSendingEmailNotificationWithExistingUnsentLog_Should
         tenantRepository.FirstOrDefaultAsync(Arg.Any<TenantByIdSpecification>(), Arg.Any<CancellationToken>())
             .Returns(Tenant.Create(tenantId, "Default", "default", now));
         transportProvider.ProviderKey.Returns("mailtrap");
+        transportProvider.SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>())
+            .Returns(new EmailTransportSendResult("mailtrap-message-id"));
         hostEnvironment.ContentRootPath.Returns(templateRoot);
         timeProvider.GetUtcNow().Returns(now);
 
@@ -93,7 +96,10 @@ public sealed class WhenSendingEmailNotificationWithExistingUnsentLog_Should
 
         await logRepository.DidNotReceive().AddAsync(Arg.Any<EmailNotificationLog>(), Arg.Any<CancellationToken>());
         await transportProvider.Received(1).SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>());
-        logRepository.Received(1).Update(Arg.Is<EmailNotificationLog>(log => log.IsSent && log.FailureReason == null));
+        logRepository.Received(1).Update(Arg.Is<EmailNotificationLog>(log =>
+            log.SentAtUtc == now &&
+            log.ProviderMessageId == "mailtrap-message-id" &&
+            log.FailureReason == null));
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

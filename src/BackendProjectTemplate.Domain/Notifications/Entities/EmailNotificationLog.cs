@@ -19,7 +19,8 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         Dictionary<string, string> notificationContent,
         string to,
         string? cc,
-        string? bcc)
+        string? bcc,
+        DateTimeOffset enqueuedAtUtc)
     {
         MessageId = messageId;
         TenantId = tenantId;
@@ -29,7 +30,7 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         To = to.Trim();
         Cc = string.IsNullOrWhiteSpace(cc) ? null : cc.Trim();
         Bcc = string.IsNullOrWhiteSpace(bcc) ? null : bcc.Trim();
-        IsSent = false;
+        EnqueuedAtUtc = enqueuedAtUtc;
     }
 
     public Guid MessageId { get; private set; }
@@ -40,7 +41,10 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
     public string To { get; private set; } = string.Empty;
     public string? Cc { get; private set; }
     public string? Bcc { get; private set; }
-    public bool IsSent { get; private set; }
+    public string? ProviderMessageId { get; private set; }
+    public DateTimeOffset EnqueuedAtUtc { get; private set; }
+    public DateTimeOffset? SentAtUtc { get; private set; }
+    public DateTimeOffset? DeliveredAtUtc { get; private set; }
     public string? FailureReason { get; private set; }
 
     public static EmailNotificationLog Create(
@@ -51,20 +55,37 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         Dictionary<string, string> notificationContent,
         string to,
         string? cc,
-        string? bcc) =>
-        new(messageId, tenantId, countryId, notificationType, notificationContent, to, cc, bcc);
-
-    public void MarkSent(DateTimeOffset utcNow)
+        string? bcc,
+        DateTimeOffset enqueuedAtUtc)
+        =>
+        new(
+            messageId,
+            tenantId,
+            countryId,
+            notificationType,
+            notificationContent,
+            to,
+            cc,
+            bcc,
+            enqueuedAtUtc);
+    public void MarkSent(string providerMessageId, DateTimeOffset utcNow)
     {
-        IsSent = true;
+        ProviderMessageId = NormalizeProviderMessageId(providerMessageId);
+        SentAtUtc = utcNow;
         FailureReason = null;
         Touch(utcNow);
     }
 
     public void MarkFailed(string reason, DateTimeOffset utcNow)
     {
-        IsSent = false;
+        SentAtUtc = null;
         FailureReason = NormalizeFailureReason(reason);
+        Touch(utcNow);
+    }
+
+    public void MarkDelivered(DateTimeOffset deliveredAtUtc, DateTimeOffset utcNow)
+    {
+        DeliveredAtUtc = deliveredAtUtc;
         Touch(utcNow);
     }
 
@@ -77,5 +98,12 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         return normalized.Length <= MaxFailureReasonLength
             ? normalized
             : normalized[..MaxFailureReasonLength];
+    }
+
+    private static string NormalizeProviderMessageId(string providerMessageId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(providerMessageId);
+
+        return providerMessageId.Trim();
     }
 }

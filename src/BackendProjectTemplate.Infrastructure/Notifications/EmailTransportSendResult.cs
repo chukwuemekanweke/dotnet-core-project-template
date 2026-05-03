@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.Infrastructure.Notifications;
+
+internal sealed record EmailTransportSendResult(string ProviderMessageId);

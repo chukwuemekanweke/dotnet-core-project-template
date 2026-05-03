@@ -4,5 +4,5 @@ internal interface IEmailTransportProvider
 {
     string ProviderKey { get; }
 
-    Task SendAsync(EmailDeliveryMessage message, CancellationToken cancellationToken = default);
+    Task<EmailTransportSendResult> SendAsync(EmailDeliveryMessage message, CancellationToken cancellationToken = default);
 }

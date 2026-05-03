@@ -20,6 +20,7 @@ public sealed class When_ResolvingCurrentActor_WithoutTenantId_OnExcludedPath_Sh
     [InlineData("/")]
     [InlineData("/api/v1/payments/webhooks/credo")]
     [InlineData("/api/v1/payments/webhooks/safehaven")]
+    [InlineData("/api/v1/email-notifications/webhooks/mailtrap")]
     public async Task AllowRequest(string path)
     {
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();

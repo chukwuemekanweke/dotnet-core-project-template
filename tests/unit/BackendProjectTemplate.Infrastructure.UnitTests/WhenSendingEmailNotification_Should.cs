@@ -34,7 +34,9 @@ public sealed class WhenSendingEmailNotification_Should
         string loggedTo = string.Empty;
         string? loggedCc = null;
         string? loggedBcc = null;
-        bool loggedIsSent = true;
+        DateTimeOffset loggedEnqueuedAtUtc = DateTimeOffset.MinValue;
+        DateTimeOffset? loggedSentAtUtc = DateTimeOffset.MaxValue;
+        string? loggedProviderMessageId = "placeholder";
         string? loggedFailureReason = "placeholder";
         Guid loggedTenantId = Guid.Empty;
         Guid loggedCountryId = Guid.Empty;
@@ -53,7 +55,9 @@ public sealed class WhenSendingEmailNotification_Should
                 loggedTo = log.To;
                 loggedCc = log.Cc;
                 loggedBcc = log.Bcc;
-                loggedIsSent = log.IsSent;
+                loggedEnqueuedAtUtc = log.EnqueuedAtUtc;
+                loggedSentAtUtc = log.SentAtUtc;
+                loggedProviderMessageId = log.ProviderMessageId;
                 loggedFailureReason = log.FailureReason;
             });
 
@@ -101,6 +105,8 @@ public sealed class WhenSendingEmailNotification_Should
         tenantRepository.FirstOrDefaultAsync(Arg.Any<TenantByIdSpecification>(), Arg.Any<CancellationToken>())
             .Returns(Tenant.Create(tenantId, "Moveaex", "moveaex", now));
         transportProvider.ProviderKey.Returns("mailtrap");
+        transportProvider.SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>())
+            .Returns(new EmailTransportSendResult("mailtrap-message-id"));
         hostEnvironment.ContentRootPath.Returns(templateRoot);
 
         var sut = new EmailNotificationDispatcher(
@@ -124,14 +130,19 @@ public sealed class WhenSendingEmailNotification_Should
         loggedTo.ShouldBe(((EmailNotificationContent)command.NotificationContent).To);
         loggedCc.ShouldBe("cc-one@test.local,cc-two@test.local");
         loggedBcc.ShouldBe("bcc-one@test.local");
-        loggedIsSent.ShouldBeFalse();
+        loggedEnqueuedAtUtc.ShouldBe(now);
+        loggedSentAtUtc.ShouldBeNull();
+        loggedProviderMessageId.ShouldBeNull();
         loggedFailureReason.ShouldBeNull();
         loggedNotificationContent["IpAddress"].ShouldBe("127.0.0.1");
         loggedNotificationContent["OtpCode"].ShouldBe("***");
         loggedNotificationContent["Password"].ShouldBe("***");
         loggedNotificationContent.Values.ShouldNotContain("123456");
         loggedNotificationContent.Values.ShouldNotContain("P@ssword!123");
-        logRepository.Received(1).Update(Arg.Is<EmailNotificationLog>(log => log.IsSent && log.FailureReason == null));
+        logRepository.Received(1).Update(Arg.Is<EmailNotificationLog>(log =>
+            log.SentAtUtc == now &&
+            log.ProviderMessageId == "mailtrap-message-id" &&
+            log.FailureReason == null));
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

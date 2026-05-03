@@ -34,8 +34,9 @@ public sealed class WhenSendingEmailNotificationWithExistingSentLog_Should
             [],
             ((EmailNotificationContent)command.NotificationContent).To,
             null,
-            null);
-        existingLog.MarkSent(now);
+            null,
+            now);
+        existingLog.MarkSent("mailtrap-message-id", now);
 
         logRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationLogByMessageIdSpecification>(),
