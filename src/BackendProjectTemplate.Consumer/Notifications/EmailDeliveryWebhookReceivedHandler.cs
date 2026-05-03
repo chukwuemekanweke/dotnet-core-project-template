@@ -1,4 +1,6 @@
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
@@ -33,15 +35,6 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
                 "EmailDeliveryWebhookReceived must contain a valid event id.");
         }
 
-        var emailNotificationLog = await emailNotificationLogRepository.FirstOrDefaultAsync(
-            new EmailNotificationLogByProviderMessageIdSpecification(message.ProviderMessageId),
-            cancellationToken);
-        if (emailNotificationLog is null)
-        {
-            throw new CannotProcessMessageNonTransientException(
-                $"Unable to process EmailDeliveryWebhookReceived because no notification log was found for provider message '{message.ProviderMessageId}'.");
-        }
-
         var inbox = await emailDeliveryWebhookInboxRepository.FirstOrDefaultAsync(
             new EmailDeliveryWebhookInboxByEventIdSpecification(message.ProviderId, message.EventId),
             cancellationToken);
@@ -51,10 +44,24 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
                 $"Unable to process EmailDeliveryWebhookReceived because no webhook inbox was found for event '{message.EventId}'.");
         }
 
+        if (inbox.WebhookProcessingStatus == WebhookProcessingStatus.Processed)
+        {
+            return;
+        }
+
+        var emailNotificationLog = await emailNotificationLogRepository.FirstOrDefaultAsync(
+            new EmailNotificationLogByProviderMessageIdSpecification(message.ProviderMessageId),
+            cancellationToken);
+        if (emailNotificationLog is null)
+        {
+            throw new CannotProcessMessageNonTransientException(
+                $"Unable to process EmailDeliveryWebhookReceived because no notification log was found for provider message '{message.ProviderMessageId}'.");
+        }
+
         var now = timeProvider.GetUtcNow();
         emailNotificationLog.MarkDelivered(inbox.OccurredAtUtc, now);
         emailNotificationLogRepository.Update(emailNotificationLog);
-        inbox.MarkProcessed("notification_log_delivered", now);
+        inbox.MarkProcessed(KnownWebhookStatusChangeReasons.Notifications.NotificationLogDelivered, now);
         emailDeliveryWebhookInboxRepository.Update(inbox);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }

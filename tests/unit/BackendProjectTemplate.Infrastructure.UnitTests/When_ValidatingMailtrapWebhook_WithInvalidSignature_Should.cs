@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Notifications.Services;
 using BackendProjectTemplate.Infrastructure.Notifications;
 using Microsoft.Extensions.Options;
@@ -24,6 +25,6 @@ public sealed class When_ValidatingMailtrapWebhook_WithInvalidSignature_Should
             CancellationToken.None);
 
         result.IsValid.ShouldBeFalse();
-        result.StatusChangeReason.ShouldBe("invalid_signature");
+        result.StatusChangeReason.ShouldBe(KnownWebhookStatusChangeReasons.Shared.InvalidSignature);
     }
 }

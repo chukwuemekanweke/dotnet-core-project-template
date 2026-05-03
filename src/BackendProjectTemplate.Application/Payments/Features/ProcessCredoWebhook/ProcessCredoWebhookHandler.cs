@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -80,7 +81,7 @@ public sealed class ProcessCredoWebhookHandler(
 
         if (validationResult.SignatureValidationStatus == SignatureValidationStatus.Invalid)
         {
-            inbox.MarkIgnored("invalid_signature", now);
+            inbox.MarkIgnored(KnownWebhookStatusChangeReasons.Shared.InvalidSignature, now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Payments.WebhookPersistenceFailed,
@@ -97,7 +98,7 @@ public sealed class ProcessCredoWebhookHandler(
         var paymentTransaction = await ResolvePaymentTransactionAsync(webhookDetails, cancellationToken);
         if (paymentTransaction is null || !webhookDetails.IsSupportedEvent)
         {
-            inbox.MarkIgnored("transaction_not_found_or_unmapped_status", now);
+            inbox.MarkIgnored(KnownWebhookStatusChangeReasons.Payments.TransactionNotFoundOrUnmappedStatus, now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Payments.WebhookPersistenceFailed,

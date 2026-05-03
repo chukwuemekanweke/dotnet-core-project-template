@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.Infrastructure.Payments.Credo;
@@ -26,6 +27,6 @@ public sealed class When_ValidatingCredoWebhook_WithInvalidSignature_Should
             CancellationToken.None);
 
         result.SignatureValidationStatus.ShouldBe(SignatureValidationStatus.Invalid);
-        result.StatusChangeReason.ShouldBe("invalid_signature");
+        result.StatusChangeReason.ShouldBe(KnownWebhookStatusChangeReasons.Shared.InvalidSignature);
     }
 }

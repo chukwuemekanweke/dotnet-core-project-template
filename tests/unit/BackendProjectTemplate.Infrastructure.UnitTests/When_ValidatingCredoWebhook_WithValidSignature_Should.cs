@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.Infrastructure.Payments.Credo;
@@ -29,7 +30,7 @@ public sealed class When_ValidatingCredoWebhook_WithValidSignature_Should
             CancellationToken.None);
 
         result.SignatureValidationStatus.ShouldBe(SignatureValidationStatus.Valid);
-        result.StatusChangeReason.ShouldBe("signature_verified");
+        result.StatusChangeReason.ShouldBe(KnownWebhookStatusChangeReasons.Shared.SignatureVerified);
     }
 
     private static string ComputeSignature(string secretKey, string businessCode)

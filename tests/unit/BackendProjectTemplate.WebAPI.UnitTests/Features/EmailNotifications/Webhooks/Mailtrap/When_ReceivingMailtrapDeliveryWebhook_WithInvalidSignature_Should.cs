@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Notifications.Services;
 using BackendProjectTemplate.WebAPI.Features.EmailNotifications.Webhooks.Mailtrap;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +16,7 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithInvalidSignature_S
         var context = new EmailNotificationsControllerTestContext();
 
         context.MailtrapWebhookSignatureValidator.ValidateAsync(Arg.Any<MailtrapWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new MailtrapWebhookSignatureValidationResult(false, "invalid_signature"));
+            .Returns(new MailtrapWebhookSignatureValidationResult(false, KnownWebhookStatusChangeReasons.Shared.InvalidSignature));
 
         const string payload = "{\"events\":[{\"event\":\"delivery\",\"message_id\":\"mailtrap-message-id\",\"sending_stream\":\"transactional\",\"email\":\"ada@example.com\",\"sending_domain_name\":\"mail.example.com\",\"timestamp\":1746273900,\"event_id\":\"evt_123\"}]}";
         var sut = new MailtrapWebhooksController(context.CreateHandler());

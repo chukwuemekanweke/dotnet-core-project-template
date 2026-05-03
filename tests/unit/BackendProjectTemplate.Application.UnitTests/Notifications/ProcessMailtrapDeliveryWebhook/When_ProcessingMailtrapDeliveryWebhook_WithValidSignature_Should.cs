@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Services;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
@@ -20,7 +21,7 @@ public sealed class When_ProcessingMailtrapDeliveryWebhook_WithValidSignature_Sh
         context.ProviderRepository.FirstOrDefaultAsync(Arg.Any<ProviderByTypeAndKeySpecification>(), Arg.Any<CancellationToken>())
             .Returns(provider);
         context.MailtrapWebhookSignatureValidator.ValidateAsync(Arg.Any<MailtrapWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new MailtrapWebhookSignatureValidationResult(true, "signature_verified"));
+            .Returns(new MailtrapWebhookSignatureValidationResult(true, KnownWebhookStatusChangeReasons.Shared.SignatureVerified));
         context.EmailDeliveryWebhookInboxRepository.ListAsync(Arg.Any<EmailDeliveryWebhookInboxesByEventIdsSpecification>(), Arg.Any<CancellationToken>())
             .Returns([]);
         context.EmailDeliveryWebhookInboxRepository.AddAsync(Arg.Do<EmailDeliveryWebhookInbox>(inbox => capturedInbox = inbox), Arg.Any<CancellationToken>())

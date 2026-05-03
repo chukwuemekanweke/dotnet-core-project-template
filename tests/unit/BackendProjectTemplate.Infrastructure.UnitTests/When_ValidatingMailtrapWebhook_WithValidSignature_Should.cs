@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Notifications.Services;
 using BackendProjectTemplate.Infrastructure.Notifications;
 using Microsoft.Extensions.Options;
@@ -28,7 +29,7 @@ public sealed class When_ValidatingMailtrapWebhook_WithValidSignature_Should
             CancellationToken.None);
 
         result.IsValid.ShouldBeTrue();
-        result.StatusChangeReason.ShouldBe("signature_verified");
+        result.StatusChangeReason.ShouldBe(KnownWebhookStatusChangeReasons.Shared.SignatureVerified);
     }
 
     private static string ComputeSignature(string signingSecret, string rawPayload)

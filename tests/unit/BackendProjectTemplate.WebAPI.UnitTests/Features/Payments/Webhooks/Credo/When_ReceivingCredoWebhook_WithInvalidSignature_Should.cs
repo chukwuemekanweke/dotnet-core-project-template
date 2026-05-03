@@ -1,6 +1,7 @@
 using System.Text.Json;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
@@ -24,7 +25,7 @@ public sealed class When_ReceivingCredoWebhook_WithInvalidSignature_Should
         context.PaymentWebhookInboxRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<PaymentWebhookInbox>>(), Arg.Any<CancellationToken>())
             .Returns((PaymentWebhookInbox?)null);
         context.CredoWebhookSignatureValidator.ValidateAsync(Arg.Any<CredoWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Invalid, "invalid_signature"));
+            .Returns(new PaymentProviderWebhookValidationResult(SignatureValidationStatus.Invalid, KnownWebhookStatusChangeReasons.Shared.InvalidSignature));
 
         var request = new CredoWebhookRequest(
             CredoWebhookEvents.TransactionSuccessful,
