@@ -2,6 +2,7 @@ using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 using BackendProjectTemplate.Consumer.Payments;
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Payments;
+using BackendProjectTemplate.Domain.Payments.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -20,13 +21,18 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should(ContainersFix
     private Guid _walletId;
     private Guid _walletTransactionId;
 
-    protected override Task InitializeWorkerTestAsync()
+    protected override async Task InitializeWorkerTestAsync()
     {
         _paymentTransactionId = Guid.CreateVersion7();
         _tenantId = Guid.CreateVersion7();
         _stakeholderId = Guid.CreateVersion7();
-        _currencyId = Guid.CreateVersion7();
-        return Task.CompletedTask;
+
+        using var scope = CreateDbContextScope();
+        var currency = Currency.Create("NGN", "Naira", true, TimeProvider.System.GetUtcNow());
+        scope.DbContext.Currencies.Add(currency);
+        await scope.DbContext.SaveChangesAsync();
+
+        _currencyId = currency.Id;
     }
 
     protected override async Task DisposeWorkerTestAsync()
@@ -42,6 +48,12 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should(ContainersFix
         if (wallet is not null)
         {
             scope.DbContext.Wallets.Remove(wallet);
+        }
+
+        var currency = await scope.DbContext.Currencies.FirstOrDefaultAsync(item => item.Id == _currencyId);
+        if (currency is not null)
+        {
+            scope.DbContext.Currencies.Remove(currency);
         }
 
         await scope.DbContext.SaveChangesAsync();

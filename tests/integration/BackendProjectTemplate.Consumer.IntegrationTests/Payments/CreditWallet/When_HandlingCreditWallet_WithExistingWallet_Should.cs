@@ -25,12 +25,16 @@ public sealed class When_HandlingCreditWallet_WithExistingWallet_Should(Containe
         _paymentTransactionId = Guid.CreateVersion7();
         _tenantId = Guid.CreateVersion7();
         _stakeholderId = Guid.CreateVersion7();
-        _currencyId = Guid.CreateVersion7();
 
         using var scope = CreateDbContextScope();
-        var wallet = Wallet.Create(_stakeholderId, _tenantId, _currencyId, DateTimeOffset.UtcNow);
+        var now = TimeProvider.System.GetUtcNow();
+        var currency = Currency.Create("NGN", "Naira", true, now);
+        var wallet = Wallet.Create(_stakeholderId, _tenantId, currency.Id, now);
+        scope.DbContext.Currencies.Add(currency);
         scope.DbContext.Wallets.Add(wallet);
         await scope.DbContext.SaveChangesAsync();
+
+        _currencyId = currency.Id;
         _walletId = wallet.Id;
     }
 
@@ -47,6 +51,12 @@ public sealed class When_HandlingCreditWallet_WithExistingWallet_Should(Containe
         if (wallet is not null)
         {
             scope.DbContext.Wallets.Remove(wallet);
+        }
+
+        var currency = await scope.DbContext.Currencies.FirstOrDefaultAsync(item => item.Id == _currencyId);
+        if (currency is not null)
+        {
+            scope.DbContext.Currencies.Remove(currency);
         }
 
         await scope.DbContext.SaveChangesAsync();
