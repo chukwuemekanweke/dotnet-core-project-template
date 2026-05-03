@@ -76,6 +76,8 @@ public sealed class WhenSendingEmailNotificationWithoutTenantBaseTemplate_Should
                 Arg.Any<CancellationToken>())
             .Returns((Tenant?)null);
         transportProvider.ProviderKey.Returns("mailtrap");
+        transportProvider.SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>())
+            .Returns(new EmailTransportSendResult("mailtrap-message-id"));
         hostEnvironment.ContentRootPath.Returns(templateRoot);
 
         var sut = new EmailNotificationDispatcher(

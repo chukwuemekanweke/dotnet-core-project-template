@@ -167,6 +167,7 @@ Matching WebAPI request DTO location:
 - Always simplify type and namespace usage inside files. Do not use fully qualified type names when a `using` directive makes the code clearer.
 - When multiple types have the same name, prefer `using` aliases for the ambiguous types instead of leaving fully qualified names inline throughout the file.
 - Keep top-level types in separate files. Do not place an interface and its implementation in the same `.cs` file.
+- Enum values should always start from `1` unless an existing enum in the repository already forces a different persisted contract.
 - Use `StakeholderId` in observability custom events for actor or subject identification whenever it can be resolved. Only fall back to `UserId`, `Email`, or other identifiers when `StakeholderId` is genuinely unavailable.
 
 ## Pull Requests

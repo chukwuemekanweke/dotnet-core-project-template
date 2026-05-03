@@ -42,7 +42,7 @@ internal sealed class EmailNotificationDispatcher(
         var emailNotificationLog = await emailNotificationLogRepository.FirstOrDefaultAsync(
             new EmailNotificationLogByMessageIdSpecification(command.MessageId),
             cancellationToken);
-        if (emailNotificationLog?.IsSent is true)
+        if (emailNotificationLog?.SentAtUtc is not null)
         {
             logger?.LogWarning(
                 "Skipping email notification for message {MessageId} because it has already been sent.",
@@ -61,7 +61,8 @@ internal sealed class EmailNotificationDispatcher(
                 NotificationContentObfuscator.Obfuscate(content.Content),
                 content.To,
                 JoinRecipients(content.Cc),
-                JoinRecipients(content.Bcc));
+                JoinRecipients(content.Bcc),
+                timeProvider.GetUtcNow());
 
             await emailNotificationLogRepository.AddAsync(emailNotificationLog, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -133,9 +134,9 @@ internal sealed class EmailNotificationDispatcher(
                 renderedHtmlBody,
                 content.Cc,
                 content.Bcc);
-            await transportProvider.SendAsync(deliveryMessage, cancellationToken);
+            var sendResult = await transportProvider.SendAsync(deliveryMessage, cancellationToken);
 
-            emailNotificationLog.MarkSent(timeProvider.GetUtcNow());
+            emailNotificationLog.MarkSent(sendResult.ProviderMessageId, timeProvider.GetUtcNow());
             emailNotificationLogRepository.Update(emailNotificationLog);
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }

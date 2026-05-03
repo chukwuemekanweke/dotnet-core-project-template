@@ -77,6 +77,8 @@ public sealed class WhenSendingEmailNotificationWithHtmlBodyTemplate_Should
                 "moveaex",
                 now));
         transportProvider.ProviderKey.Returns("mailtrap");
+        transportProvider.SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>())
+            .Returns(new EmailTransportSendResult("mailtrap-message-id"));
         hostEnvironment.ContentRootPath.Returns(templateRoot);
 
         var sut = new EmailNotificationDispatcher(

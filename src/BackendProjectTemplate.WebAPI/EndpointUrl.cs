@@ -91,6 +91,15 @@ public static class EndpointUrl
         }
     }
 
+    public static class EmailNotificationWebhooks
+    {
+        public static class Mailtrap
+        {
+            public const string Route = $"api/{Versions.V1Route}/email-notifications/webhooks/mailtrap";
+            public static readonly string V1 = ToV1(Route);
+        }
+    }
+
     private static string ToV1(string routeTemplate) =>
         routeTemplate.Replace(Versions.V1Route, Versions.V1, StringComparison.Ordinal);
 }

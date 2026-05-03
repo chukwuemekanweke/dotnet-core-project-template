@@ -1,0 +1,48 @@
+using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
+using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Domain.Notifications.Services;
+using BackendProjectTemplate.Domain.Notifications.Specifications;
+using BackendProjectTemplate.WebAPI.Features.EmailNotifications.Webhooks.Mailtrap;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Shouldly;
+using System.Text;
+
+namespace BackendProjectTemplate.WebAPI.UnitTests.Features.EmailNotifications.Webhooks.Mailtrap;
+
+public sealed class When_ReceivingMailtrapDeliveryWebhook_WithValidRequest_Should
+{
+    [Fact]
+    public async Task ReturnOk()
+    {
+        var context = new EmailNotificationsControllerTestContext();
+        var provider = context.CreateMailtrapProvider();
+
+        context.ProviderRepository.FirstOrDefaultAsync(Arg.Any<ProviderByTypeAndKeySpecification>(), Arg.Any<CancellationToken>())
+            .Returns(provider);
+        context.MailtrapWebhookSignatureValidator.ValidateAsync(Arg.Any<MailtrapWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new MailtrapWebhookSignatureValidationResult(true, "signature_verified"));
+        context.EmailDeliveryWebhookInboxRepository.ListAsync(Arg.Any<EmailDeliveryWebhookInboxesByEventIdsSpecification>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+        context.EmailNotificationLogRepository.ListAsync(Arg.Any<EmailNotificationLogsByProviderMessageIdsSpecification>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        const string payload = "{\"events\":[{\"event\":\"delivery\",\"message_id\":\"mailtrap-message-id\",\"sending_stream\":\"transactional\",\"email\":\"ada@example.com\",\"sending_domain_name\":\"mail.example.com\",\"timestamp\":1746273900,\"event_id\":\"evt_123\"}]}";
+        var sut = new MailtrapWebhooksController(context.CreateHandler());
+        sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        sut.ControllerContext.HttpContext.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(payload));
+        sut.ControllerContext.HttpContext.Request.Headers["Mailtrap-Signature"] = "valid-signature";
+
+        var result = await sut.Handle(CancellationToken.None);
+
+        result.ShouldBeOfType<OkResult>();
+        await context.MailtrapWebhookSignatureValidator.Received(1).ValidateAsync(
+            Arg.Is<MailtrapWebhookSignatureValidationRequest>(request =>
+                request.SignatureHeader == "valid-signature" &&
+                request.RawPayload == payload),
+            Arg.Any<CancellationToken>());
+    }
+}

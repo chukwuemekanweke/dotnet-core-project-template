@@ -44,8 +44,15 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
         builder.Property(log => log.Bcc)
             .HasMaxLength(4000);
 
-        builder.Property(log => log.IsSent)
+        builder.Property(log => log.ProviderMessageId)
+            .HasMaxLength(200);
+
+        builder.Property(log => log.EnqueuedAtUtc)
             .IsRequired();
+
+        builder.Property(log => log.SentAtUtc);
+
+        builder.Property(log => log.DeliveredAtUtc);
 
         builder.Property(log => log.FailureReason)
             .HasMaxLength(4000);
@@ -53,6 +60,10 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
         builder.HasIndex(log => log.MessageId)
             .IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE");
+
+        builder.HasIndex(log => log.ProviderMessageId)
+            .IsUnique()
+            .HasFilter("\"ProviderMessageId\" IS NOT NULL AND \"IsDeleted\" = FALSE");
     }
 
     private static ValueConverter<Dictionary<string, string>, string> GetNotificationContentConverter() =>

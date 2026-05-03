@@ -27,6 +27,7 @@ public sealed class EmailNotificationsOptions
         public string ApiToken { get; init; } = string.Empty;
         public bool UseBulkApi { get; init; }
         public long? InboxId { get; init; }
+        public string WebhookSigningSecret { get; init; } = string.Empty;
 
         public void Validate()
         {
