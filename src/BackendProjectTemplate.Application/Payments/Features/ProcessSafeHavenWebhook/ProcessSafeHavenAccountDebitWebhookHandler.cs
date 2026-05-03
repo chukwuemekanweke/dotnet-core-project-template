@@ -7,12 +7,14 @@ public sealed class ProcessSafeHavenAccountDebitWebhookHandler(
     IRepository<PaymentProvider> paymentProviderRepository,
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
+    Domain.Common.Observability.ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
     : ProcessSafeHavenWebhookHandlerBase<SafeHavenAccountDebitWebhookData>(
         paymentProviderRepository,
         paymentWebhookInboxRepository,
         paymentTransactionRepository,
+        customTelemetryContext,
         unitOfWork,
         timeProvider)
 {

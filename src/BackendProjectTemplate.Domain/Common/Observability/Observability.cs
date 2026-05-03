@@ -13,6 +13,17 @@ public static class Observability
     public const string CorrelationIdPropertyName = "correlation_id";
     public const string FlowIdPropertyName = "flow.id";
     public const string FailureReasonPropertyName = "failure_reason";
+    public const string ProviderPropertyName = "provider";
+    public const string PaymentReferencePropertyName = "payment_reference";
+    public const string MerchantReferencePropertyName = "merchant_reference";
+    public const string ProviderReferencePropertyName = "provider_reference";
+    public const string PaymentMethodPropertyName = "payment_method";
+    public const string PaymentIntentPropertyName = "payment_intent";
+    public const string CurrencyIdPropertyName = "currency_id";
+    public const string CurrencyCodePropertyName = "currency_code";
+    public const string WalletIdPropertyName = "wallet_id";
+    public const string TerminalStatePropertyName = "terminal_state";
+    public const string ExceptionTypePropertyName = "exception_type";
 
     public static class EventNames
     {
@@ -51,6 +62,21 @@ public static class Observability
         public static class Notifications
         {
             public const string EmailSent = "EmailNotificationSent";
+        }
+
+        public static class Payments
+        {
+            public const string Initiated = "payment.initiated";
+            public const string WebhookReceived = "payment.webhook.received";
+            public const string WebhookPersisted = "payment.webhook.persisted";
+            public const string WebhookPersistenceFailed = "payment.webhook.persistence_failed";
+            public const string ReconciliationConfirmed = "payment.reconciliation.confirmed";
+            public const string ReconciliationFailed = "payment.reconciliation.failed";
+            public const string SubscriptionActivated = "payment.subscription.activated";
+            public const string WalletCreated = "payment.wallet.created";
+            public const string WalletCredited = "payment.wallet.credited";
+            public const string CreditWallet = "payment.credit_wallet";
+            public const string ActivateSubscription = "payment.activate_subscription";
         }
     }
 }

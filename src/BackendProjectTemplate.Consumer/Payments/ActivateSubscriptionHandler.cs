@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Specifications;
@@ -16,6 +17,8 @@ public sealed class ActivateSubscriptionHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider) : BaseMessageHandler<ActivateSubscriptionCommand>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(ActivateSubscriptionCommand message, CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
@@ -43,5 +46,15 @@ public sealed class ActivateSubscriptionHandler(
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        CustomTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.SubscriptionActivated,
+            ObservabilityEventProperties.Create(
+                CurrentActorAccessor,
+                message.StakeholderId,
+                additionalProperties: new Dictionary<string, string>
+                {
+                    [Observability.PaymentReferencePropertyName] = message.MerchantReference,
+                    [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString()
+                }));
     }
 }

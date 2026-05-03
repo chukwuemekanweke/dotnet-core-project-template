@@ -14,11 +14,14 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should
         context.SetCorrelationId();
         var currencyId = Guid.CreateVersion7();
         var command = context.CreateCreditWalletCommand(2500m, currencyId);
+        var currency = context.CreateCurrency(currencyId, "NGN");
         Wallet? capturedWallet = null;
         WalletTransaction? capturedTransaction = null;
 
         context.WalletTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<WalletTransaction>>(), Arg.Any<CancellationToken>())
             .Returns((WalletTransaction?)null);
+        context.CurrencyRepository.GetByIdAsync(currencyId, Arg.Any<CancellationToken>())
+            .Returns(currency);
         context.WalletRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Wallet>>(), Arg.Any<CancellationToken>())
             .Returns((Wallet?)null);
         context.WalletRepository.AddAsync(Arg.Do<Wallet>(wallet => capturedWallet = wallet), Arg.Any<CancellationToken>())

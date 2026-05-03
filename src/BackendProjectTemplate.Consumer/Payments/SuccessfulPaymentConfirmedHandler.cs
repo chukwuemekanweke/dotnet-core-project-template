@@ -3,6 +3,7 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
@@ -16,6 +17,8 @@ public sealed class SuccessfulPaymentConfirmedHandler(
     ICommandSender commandSender,
     IUnitOfWork unitOfWork) : BaseMessageHandler<SuccessfulPaymentConfirmed>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(SuccessfulPaymentConfirmed message, CancellationToken cancellationToken)
     {
         switch (message.PaymentIntent)
@@ -33,6 +36,16 @@ public sealed class SuccessfulPaymentConfirmedHandler(
                         FlowId = message.FlowId
                     },
                     cancellationToken);
+                CustomTelemetryContext.AddCustomEvent(
+                    Observability.EventNames.Payments.CreditWallet,
+                    ObservabilityEventProperties.Create(
+                        CurrentActorAccessor,
+                        message.StakeholderId,
+                        additionalProperties: new Dictionary<string, string>
+                        {
+                            [Observability.PaymentReferencePropertyName] = message.MerchantReference,
+                            [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString()
+                        }));
                 break;
 
             case PaymentIntent.Subscription:
@@ -48,6 +61,16 @@ public sealed class SuccessfulPaymentConfirmedHandler(
                         FlowId = message.FlowId
                     },
                     cancellationToken);
+                CustomTelemetryContext.AddCustomEvent(
+                    Observability.EventNames.Payments.ActivateSubscription,
+                    ObservabilityEventProperties.Create(
+                        CurrentActorAccessor,
+                        message.StakeholderId,
+                        additionalProperties: new Dictionary<string, string>
+                        {
+                            [Observability.PaymentReferencePropertyName] = message.MerchantReference,
+                            [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString()
+                        }));
                 break;
 
             default:

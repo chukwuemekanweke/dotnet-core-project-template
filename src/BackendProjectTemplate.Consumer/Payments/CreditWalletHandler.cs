@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -10,14 +11,17 @@ using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 namespace BackendProjectTemplate.Consumer.Payments;
 
 public sealed class CreditWalletHandler(
-    Domain.Common.Observability.ICustomTelemetryContext customTelemetryContext,
+    ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
+    IRepository<Currency> currencyRepository,
     IRepository<Wallet> walletRepository,
     IRepository<WalletTransaction> walletTransactionRepository,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(CreditWalletCommand message, CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
@@ -33,6 +37,8 @@ public sealed class CreditWalletHandler(
             return;
         }
 
+        var currency = await currencyRepository.GetByIdAsync(message.CurrencyId, cancellationToken)
+            ?? throw new InvalidOperationException($"Currency '{message.CurrencyId}' was not found.");
         var wallet = await walletRepository.FirstOrDefaultAsync(
             new WalletByStakeholderAndCurrencySpecification(message.StakeholderId.Value, message.CurrencyId),
             cancellationToken);
@@ -43,6 +49,17 @@ public sealed class CreditWalletHandler(
             wallet = Wallet.Create(message.StakeholderId.Value, message.TenantId, message.CurrencyId, now);
             wallet.Credit(message.Amount);
             await walletRepository.AddAsync(wallet, cancellationToken);
+            CustomTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.WalletCreated,
+                ObservabilityEventProperties.Create(
+                    CurrentActorAccessor,
+                    message.StakeholderId,
+                    additionalProperties: new Dictionary<string, string>
+                    {
+                        [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString(),
+                        [Observability.CurrencyCodePropertyName] = currency.CurrencyCode,
+                        [Observability.WalletIdPropertyName] = wallet.Id.ToString()
+                    }));
         }
         else
         {
@@ -66,5 +83,17 @@ public sealed class CreditWalletHandler(
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        CustomTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.WalletCredited,
+            ObservabilityEventProperties.Create(
+                CurrentActorAccessor,
+                message.StakeholderId,
+                additionalProperties: new Dictionary<string, string>
+                {
+                    [Observability.PaymentReferencePropertyName] = message.MerchantReference,
+                    [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString(),
+                    [Observability.CurrencyCodePropertyName] = currency.CurrencyCode,
+                    [Observability.WalletIdPropertyName] = wallet.Id.ToString()
+                }));
     }
 }

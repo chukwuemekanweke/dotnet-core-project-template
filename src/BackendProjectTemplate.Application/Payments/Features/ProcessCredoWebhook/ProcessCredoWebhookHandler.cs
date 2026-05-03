@@ -1,4 +1,6 @@
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
+using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
@@ -13,9 +15,12 @@ public sealed class ProcessCredoWebhookHandler(
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
     ICredoWebhookSignatureValidator credoWebhookSignatureValidator,
+    ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
+    private static readonly ActorContext AnonymousActorContext = new(null, null, string.Empty, string.Empty);
+
     public async Task<ProcessPaymentWebhookResult> HandleAsync(
         ProcessCredoWebhookCommand command,
         CancellationToken cancellationToken)
@@ -40,6 +45,15 @@ public sealed class ProcessCredoWebhookHandler(
                 cancellationToken);
             if (existingWebhook is not null)
             {
+                customTelemetryContext.AddCustomEvent(
+                    Observability.EventNames.Payments.WebhookPersistenceFailed,
+                    ObservabilityEventProperties.Create(
+                        AnonymousActorContext,
+                        failureReason: ObservabilityFailureReasons.DuplicateProcessing,
+                        additionalProperties: CreateWebhookProperties(
+                            paymentProvider.ProviderKey,
+                            webhookDetails.MerchantReference,
+                            webhookDetails.ProviderReference)));
                 return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Duplicate);
             }
         }
@@ -55,11 +69,28 @@ public sealed class ProcessCredoWebhookHandler(
             validationResult.StatusChangeReason,
             now);
         await paymentWebhookInboxRepository.AddAsync(inbox, cancellationToken);
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.WebhookReceived,
+            ObservabilityEventProperties.Create(
+                AnonymousActorContext,
+                additionalProperties: CreateWebhookProperties(
+                    paymentProvider.ProviderKey,
+                    webhookDetails.MerchantReference,
+                    webhookDetails.ProviderReference)));
 
         if (validationResult.SignatureValidationStatus == SignatureValidationStatus.Invalid)
         {
             inbox.MarkIgnored("invalid_signature", now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.WebhookPersistenceFailed,
+                ObservabilityEventProperties.Create(
+                    AnonymousActorContext,
+                    failureReason: ObservabilityFailureReasons.InvalidSignature,
+                    additionalProperties: CreateWebhookProperties(
+                        paymentProvider.ProviderKey,
+                        webhookDetails.MerchantReference,
+                        webhookDetails.ProviderReference)));
             return new ProcessPaymentWebhookResult(WebhookReceiptStatus.InvalidSignature);
         }
 
@@ -68,10 +99,28 @@ public sealed class ProcessCredoWebhookHandler(
         {
             inbox.MarkIgnored("transaction_not_found_or_unmapped_status", now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.WebhookPersistenceFailed,
+                ObservabilityEventProperties.Create(
+                    AnonymousActorContext,
+                    failureReason: ObservabilityFailureReasons.TransactionNotFoundOrUnmappedStatus,
+                    additionalProperties: CreateWebhookProperties(
+                        paymentProvider.ProviderKey,
+                        webhookDetails.MerchantReference,
+                        webhookDetails.ProviderReference)));
             return new ProcessPaymentWebhookResult(WebhookReceiptStatus.UnidentifiedTransaction);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.WebhookPersisted,
+            ObservabilityEventProperties.Create(
+                AnonymousActorContext,
+                paymentTransaction.StakeholderId,
+                additionalProperties: CreateWebhookProperties(
+                    paymentProvider.ProviderKey,
+                    paymentTransaction.MerchantReference,
+                    webhookDetails.ProviderReference ?? paymentTransaction.ProviderReference)));
 
         return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Persisted);
     }
@@ -125,6 +174,29 @@ public sealed class ProcessCredoWebhookHandler(
         string.IsNullOrWhiteSpace(value)
             ? throw new InvalidOperationException("Credo webhook event name is required.")
             : value.Trim();
+
+    private static Dictionary<string, string> CreateWebhookProperties(
+        string provider,
+        string? merchantReference,
+        string? providerReference)
+    {
+        var properties = new Dictionary<string, string>
+        {
+            [Observability.ProviderPropertyName] = provider
+        };
+
+        if (!string.IsNullOrWhiteSpace(merchantReference))
+        {
+            properties[Observability.MerchantReferencePropertyName] = merchantReference;
+        }
+
+        if (!string.IsNullOrWhiteSpace(providerReference))
+        {
+            properties[Observability.ProviderReferencePropertyName] = providerReference;
+        }
+
+        return properties;
+    }
 
     private sealed record CredoWebhookDetails(
         string? MerchantReference,

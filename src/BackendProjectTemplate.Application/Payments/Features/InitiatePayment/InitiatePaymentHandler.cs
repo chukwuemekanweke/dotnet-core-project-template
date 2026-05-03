@@ -1,5 +1,7 @@
 using BackendProjectTemplate.Domain.Common.Exceptions;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
@@ -16,6 +18,7 @@ public sealed class InitiatePaymentHandler(
     IRepository<PaymentProviderConfiguration> paymentProviderConfigurationRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
+    ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -59,7 +62,6 @@ public sealed class InitiatePaymentHandler(
                 $"No payment provider service is registered for '{paymentProvider.ProviderKey}'.");
 
         var now = timeProvider.GetUtcNow();
-
         var merchantReference = $"pay_{Guid.CreateVersion7():N}";
 
         var paymentTransaction = PaymentTransaction.Create(
@@ -95,6 +97,21 @@ public sealed class InitiatePaymentHandler(
         paymentTransaction.SetPaymentMethodType(initiationResult.PaymentMethodType);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.Initiated,
+            ObservabilityEventProperties.Create(
+                command.ActorContext,
+                stakeholder.Id,
+                additionalProperties: new Dictionary<string, string>
+                {
+                    [Observability.ProviderPropertyName] = paymentProvider.ProviderKey,
+                    [Observability.PaymentMethodPropertyName] = paymentTransaction.PaymentMethodType.ToString(),
+                    [Observability.PaymentIntentPropertyName] = paymentTransaction.PaymentIntent.ToString(),
+                    [Observability.MerchantReferencePropertyName] = paymentTransaction.MerchantReference,
+                    [Observability.ProviderReferencePropertyName] = paymentTransaction.ProviderReference ?? string.Empty,
+                    [Observability.CurrencyCodePropertyName] = currency.CurrencyCode
+                }));
 
         return new InitiatePaymentResult(
             paymentTransaction.MerchantReference,

@@ -16,6 +16,7 @@ internal sealed class PaymentsConsumerTestContext
     public ICurrentActorAccessor CurrentActorAccessor { get; } = Substitute.For<ICurrentActorAccessor>();
     public IMessageContext MessageContext { get; } = Substitute.For<IMessageContext>();
     public ICommandSender CommandSender { get; } = Substitute.For<ICommandSender>();
+    public IRepository<Currency> CurrencyRepository { get; } = Substitute.For<IRepository<Currency>>();
     public IRepository<Wallet> WalletRepository { get; } = Substitute.For<IRepository<Wallet>>();
     public IRepository<WalletTransaction> WalletTransactionRepository { get; } = Substitute.For<IRepository<WalletTransaction>>();
     public IRepository<SubscriptionActivation> SubscriptionActivationRepository { get; } = Substitute.For<IRepository<SubscriptionActivation>>();
@@ -30,6 +31,7 @@ internal sealed class PaymentsConsumerTestContext
             CustomTelemetryContext,
             CurrentActorAccessor,
             MessageContext,
+            CurrencyRepository,
             WalletRepository,
             WalletTransactionRepository,
             UnitOfWork,
@@ -69,6 +71,15 @@ internal sealed class PaymentsConsumerTestContext
     }
 
     public void SetCorrelationId() => MessageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
+
+    public Currency CreateCurrency(Guid id, string currencyCode)
+    {
+        var currency = Currency.Create(currencyCode, currencyCode, true, Clock.GetUtcNow());
+        typeof(Domain.Common.Entities.Entity)
+            .GetProperty(nameof(Domain.Common.Entities.Entity.Id))!
+            .SetValue(currency, id);
+        return currency;
+    }
 
     internal sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {

@@ -1,6 +1,8 @@
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Exceptions;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
@@ -14,9 +16,12 @@ public sealed class PaymentReconciliationService(
     IRepository<PaymentProvider> paymentProviderRepository,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
     IEventPublisher eventPublisher,
+    ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
+    private static readonly ActorContext AnonymousActorContext = new(null, null, string.Empty, string.Empty);
+
     public async Task<ReconcilePaymentsResult> HandleAsync(
         DateTimeOffset oldestEligibleCreatedAtUtc,
         DateTimeOffset staleThresholdUtc,
@@ -49,6 +54,7 @@ public sealed class PaymentReconciliationService(
                     string.Equals(service.ProviderKey, paymentProvider.ProviderKey, StringComparison.OrdinalIgnoreCase))
                 ?? throw new PaymentProviderResolutionException(
                     $"No payment provider service is registered for '{paymentProvider.ProviderKey}'.");
+
             var verificationResult = await paymentProviderService.VerifyPaymentAsync(
                 new PaymentProviderVerificationRequest(
                     transaction.MerchantReference,
@@ -77,6 +83,16 @@ public sealed class PaymentReconciliationService(
                             OccuredAt = now
                         },
                         cancellationToken);
+
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.ReconciliationConfirmed,
+                        ObservabilityEventProperties.Create(
+                            AnonymousActorContext,
+                            transaction.StakeholderId,
+                            additionalProperties: CreateReconciliationProperties(
+                                paymentProvider.ProviderKey,
+                                transaction.MerchantReference,
+                                Contracts.Payments.PaymentStatus.Succeeded.ToString())));
                     break;
                 case PaymentProviderVerificationStatus.Failed when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Failed:
                     transaction.MarkFailed(
@@ -84,12 +100,32 @@ public sealed class PaymentReconciliationService(
                         verificationResult.FailureReason,
                         verificationResult.StatusChangeReason,
                         now);
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.ReconciliationFailed,
+                        ObservabilityEventProperties.Create(
+                            AnonymousActorContext,
+                            transaction.StakeholderId,
+                            verificationResult.FailureReason,
+                            CreateReconciliationProperties(
+                                paymentProvider.ProviderKey,
+                                transaction.MerchantReference,
+                                Contracts.Payments.PaymentStatus.Failed.ToString())));
                     break;
                 case PaymentProviderVerificationStatus.Expired when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Expired:
                     transaction.MarkExpired(
                         verificationResult.ProviderReference,
                         verificationResult.FailureReason,
                         verificationResult.StatusChangeReason);
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.ReconciliationFailed,
+                        ObservabilityEventProperties.Create(
+                            AnonymousActorContext,
+                            transaction.StakeholderId,
+                            verificationResult.FailureReason,
+                            CreateReconciliationProperties(
+                                paymentProvider.ProviderKey,
+                                transaction.MerchantReference,
+                                Contracts.Payments.PaymentStatus.Expired.ToString())));
                     break;
                 case PaymentProviderVerificationStatus.Processing:
                     break;
@@ -101,4 +137,15 @@ public sealed class PaymentReconciliationService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new ReconcilePaymentsResult(transactions.Count);
     }
+
+    private static Dictionary<string, string> CreateReconciliationProperties(
+        string provider,
+        string paymentReference,
+        string terminalState) =>
+        new()
+        {
+            [Observability.ProviderPropertyName] = provider,
+            [Observability.PaymentReferencePropertyName] = paymentReference,
+            [Observability.TerminalStatePropertyName] = terminalState
+        };
 }

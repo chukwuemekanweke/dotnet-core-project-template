@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application;
 using BackendProjectTemplate.Jobs.Authentication;
 using BackendProjectTemplate.Infrastructure.Messaging;
+using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Payments;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Jobs.HealthChecks;
@@ -20,6 +21,7 @@ builder.Services.Configure<HostOptions>(options =>
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddBackgroundServiceReadinessTracking();
 builder.Services.AddApplication();
+builder.Services.AddCustomTelemetryContext();
 builder.Services.AddPostgresWritePersistence(builder.Configuration);
 builder.Services.AddPostgresReadPersistence(builder.Configuration);
 builder.Services.AddPaymentServices(builder.Configuration);

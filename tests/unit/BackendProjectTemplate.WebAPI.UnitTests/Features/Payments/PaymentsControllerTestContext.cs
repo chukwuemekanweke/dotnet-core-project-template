@@ -5,6 +5,7 @@ using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
@@ -24,6 +25,7 @@ internal sealed class PaymentsControllerTestContext
     public IRepository<PaymentTransaction> PaymentTransactionRepository { get; } = Substitute.For<IRepository<PaymentTransaction>>();
     public IRepository<PaymentWebhookInbox> PaymentWebhookInboxRepository { get; } = Substitute.For<IRepository<PaymentWebhookInbox>>();
     public IWalletTransactionReadModelRepository WalletTransactionReadModelRepository { get; } = Substitute.For<IWalletTransactionReadModelRepository>();
+    public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
     public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public ICredoWebhookSignatureValidator CredoWebhookSignatureValidator { get; } = Substitute.For<ICredoWebhookSignatureValidator>();
@@ -39,6 +41,7 @@ internal sealed class PaymentsControllerTestContext
             PaymentProviderConfigurationRepository,
             PaymentTransactionRepository,
             PaymentProviderServices,
+            CustomTelemetryContext,
             UnitOfWork,
             Clock);
 
@@ -57,6 +60,7 @@ internal sealed class PaymentsControllerTestContext
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
             CredoWebhookSignatureValidator,
+            CustomTelemetryContext,
             UnitOfWork,
             Clock);
 
@@ -65,6 +69,7 @@ internal sealed class PaymentsControllerTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
+            CustomTelemetryContext,
             UnitOfWork,
             Clock);
 
@@ -73,6 +78,7 @@ internal sealed class PaymentsControllerTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
+            CustomTelemetryContext,
             UnitOfWork,
             Clock);
 
@@ -81,6 +87,7 @@ internal sealed class PaymentsControllerTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
+            CustomTelemetryContext,
             UnitOfWork,
             Clock);
 
