@@ -1,4 +1,4 @@
-namespace BackendProjectTemplate.Infrastructure.Notifications;
+namespace BackendProjectTemplate.Domain.Notifications;
 
 public static class EmailProviderKeys
 {

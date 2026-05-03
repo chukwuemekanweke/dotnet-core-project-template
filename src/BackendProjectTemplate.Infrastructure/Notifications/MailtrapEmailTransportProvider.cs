@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Notifications;
 using Mailtrap;
 using Mailtrap.Configuration;
 using Mailtrap.Emails;

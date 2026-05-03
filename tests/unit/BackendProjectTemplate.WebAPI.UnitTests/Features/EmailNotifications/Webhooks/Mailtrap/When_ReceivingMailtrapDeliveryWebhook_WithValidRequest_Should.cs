@@ -18,14 +18,14 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithValidRequest_Shoul
         var context = new EmailNotificationsControllerTestContext();
         var provider = context.CreateMailtrapProvider();
 
-        context.ProviderRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
+        context.ProviderRepository.FirstOrDefaultAsync(Arg.Any<ProviderByTypeAndKeySpecification>(), Arg.Any<CancellationToken>())
             .Returns(provider);
         context.MailtrapWebhookSignatureValidator.ValidateAsync(Arg.Any<MailtrapWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new MailtrapWebhookSignatureValidationResult(true, "signature_verified"));
-        context.EmailDeliveryWebhookInboxRepository.FirstOrDefaultAsync(Arg.Any<EmailDeliveryWebhookInboxByEventIdSpecification>(), Arg.Any<CancellationToken>())
-            .Returns((EmailDeliveryWebhookInbox?)null);
-        context.EmailNotificationLogRepository.FirstOrDefaultAsync(Arg.Any<EmailNotificationLogByProviderMessageIdSpecification>(), Arg.Any<CancellationToken>())
-            .Returns((EmailNotificationLog?)null);
+        context.EmailDeliveryWebhookInboxRepository.ListAsync(Arg.Any<EmailDeliveryWebhookInboxesByEventIdsSpecification>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+        context.EmailNotificationLogRepository.ListAsync(Arg.Any<EmailNotificationLogsByProviderMessageIdsSpecification>(), Arg.Any<CancellationToken>())
+            .Returns([]);
 
         const string payload = "{\"events\":[{\"event\":\"delivery\",\"message_id\":\"mailtrap-message-id\",\"sending_stream\":\"transactional\",\"email\":\"ada@example.com\",\"sending_domain_name\":\"mail.example.com\",\"timestamp\":1746273900,\"event_id\":\"evt_123\"}]}";
         var sut = new MailtrapWebhooksController(context.CreateHandler());

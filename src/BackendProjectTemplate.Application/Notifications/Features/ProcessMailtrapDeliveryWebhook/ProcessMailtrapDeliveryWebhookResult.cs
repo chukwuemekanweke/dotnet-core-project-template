@@ -4,7 +4,7 @@ public sealed record ProcessMailtrapDeliveryWebhookResult(MailtrapDeliveryWebhoo
 
 public enum MailtrapDeliveryWebhookReceiptStatus
 {
-    Persisted = 0,
-    Duplicate = 1,
-    InvalidSignature = 2
+    Persisted = 1,
+    Duplicate = 2,
+    InvalidSignature = 3
 }

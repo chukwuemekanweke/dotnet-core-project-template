@@ -27,16 +27,16 @@ public sealed class When_ProcessingMailtrapDeliveryWebhook_WithValidSignature_Sh
         log.MarkSent("mailtrap-message-id", context.Clock.GetUtcNow());
         EmailDeliveryWebhookInbox? capturedInbox = null;
 
-        context.ProviderRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
+        context.ProviderRepository.FirstOrDefaultAsync(Arg.Any<ProviderByTypeAndKeySpecification>(), Arg.Any<CancellationToken>())
             .Returns(provider);
         context.MailtrapWebhookSignatureValidator.ValidateAsync(Arg.Any<MailtrapWebhookSignatureValidationRequest>(), Arg.Any<CancellationToken>())
             .Returns(new MailtrapWebhookSignatureValidationResult(true, "signature_verified"));
-        context.EmailDeliveryWebhookInboxRepository.FirstOrDefaultAsync(Arg.Any<EmailDeliveryWebhookInboxByEventIdSpecification>(), Arg.Any<CancellationToken>())
-            .Returns((EmailDeliveryWebhookInbox?)null);
+        context.EmailDeliveryWebhookInboxRepository.ListAsync(Arg.Any<EmailDeliveryWebhookInboxesByEventIdsSpecification>(), Arg.Any<CancellationToken>())
+            .Returns([]);
         context.EmailDeliveryWebhookInboxRepository.AddAsync(Arg.Do<EmailDeliveryWebhookInbox>(inbox => capturedInbox = inbox), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
-        context.EmailNotificationLogRepository.FirstOrDefaultAsync(Arg.Any<EmailNotificationLogByProviderMessageIdSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(log);
+        context.EmailNotificationLogRepository.ListAsync(Arg.Any<EmailNotificationLogsByProviderMessageIdsSpecification>(), Arg.Any<CancellationToken>())
+            .Returns([log]);
 
         var result = await context.CreateHandler().HandleAsync(
             new ProcessMailtrapDeliveryWebhookCommand(
