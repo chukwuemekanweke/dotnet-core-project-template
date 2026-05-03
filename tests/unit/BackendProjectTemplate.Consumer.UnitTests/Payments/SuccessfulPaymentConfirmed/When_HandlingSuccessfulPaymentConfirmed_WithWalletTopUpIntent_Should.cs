@@ -45,15 +45,8 @@ public sealed class When_HandlingSuccessfulPaymentConfirmed_WithWalletTopUpInten
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.SubscriberStarted,
+            Observability.EventNames.Payments.CreditWallet,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.SubscriberProcessing &&
-                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Started &&
                 properties[Observability.PaymentReferencePropertyName] == "merchant-ref"));
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.SubscriberSucceeded,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.SubscriberProcessing &&
-                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success));
     }
 }

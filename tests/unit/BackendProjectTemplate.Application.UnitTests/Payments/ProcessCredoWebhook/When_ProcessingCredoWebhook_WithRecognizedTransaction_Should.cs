@@ -74,14 +74,11 @@ public sealed class When_ProcessingCredoWebhook_WithRecognizedTransaction_Should
         context.CustomTelemetryContext.Received().AddCustomEvent(
             Observability.EventNames.Payments.WebhookReceived,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.WebhookReceipt &&
                 properties[Observability.ProviderPropertyName] == PaymentProviderKeys.Credo &&
                 properties[Observability.PaymentReferencePropertyName] == "merchant-ref"));
         context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.WebhookProcessed,
+            Observability.EventNames.Payments.WebhookPersisted,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.WebhookProcessing &&
-                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success &&
                 properties[Observability.StakeholderIdPropertyName] == transaction.StakeholderId.ToString()));
     }
 }

@@ -65,20 +65,10 @@ public sealed class When_ReconcilingPayments_WithSuccessfulVerification_Should
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.ReconciliationChecked,
+            Observability.EventNames.Payments.ReconciliationConfirmed,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.PaymentReconciliation &&
                 properties[Observability.ProviderPropertyName] == PaymentProviderKeys.Credo &&
-                properties[Observability.PaymentReferencePropertyName] == transaction.MerchantReference));
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.StatusConfirmed,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.PaymentStatusConfirmation &&
+                properties[Observability.PaymentReferencePropertyName] == transaction.MerchantReference &&
                 properties[Observability.TerminalStatePropertyName] == PaymentStatus.Succeeded.ToString()));
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.EventPublished,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.PaymentEventPublish &&
-                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success));
     }
 }

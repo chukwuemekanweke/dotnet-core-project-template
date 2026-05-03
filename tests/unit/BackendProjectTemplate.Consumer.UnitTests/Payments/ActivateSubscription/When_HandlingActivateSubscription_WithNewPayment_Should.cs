@@ -27,10 +27,8 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should
         capturedActivation.Amount.ShouldBe(command.Amount);
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.ValueGranted,
+            Observability.EventNames.Payments.SubscriptionActivated,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.ValueGrant &&
-                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success &&
                 properties[Observability.PaymentReferencePropertyName] == command.MerchantReference));
     }
 }

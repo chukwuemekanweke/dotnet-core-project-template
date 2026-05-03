@@ -68,15 +68,7 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         context.CustomTelemetryContext.Received().AddCustomEvent(
             Observability.EventNames.Payments.Initiated,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.FlowNamePropertyName] == Observability.FlowNames.Payments &&
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.PaymentInitiation &&
-                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success &&
                 properties[Observability.ProviderPropertyName] == PaymentProviderKeys.Credo &&
                 properties[Observability.PaymentReferencePropertyName] == capturedTransaction.MerchantReference));
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.InfoReturned,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.PaymentInfoReturn &&
-                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success));
     }
 }

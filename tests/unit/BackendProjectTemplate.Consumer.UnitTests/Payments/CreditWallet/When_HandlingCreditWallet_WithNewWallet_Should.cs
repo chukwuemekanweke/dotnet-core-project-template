@@ -40,10 +40,12 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         context.WalletRepository.DidNotReceive().Update(Arg.Any<Wallet>());
         context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.ValueGranted,
+            Observability.EventNames.Payments.WalletCreated,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.StepNamePropertyName] == Observability.StepNames.ValueGrant &&
-                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success &&
+                properties[Observability.CurrencyIdPropertyName] == command.CurrencyId.ToString()));
+        context.CustomTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Payments.WalletCredited,
+            Arg.Is<Dictionary<string, string>>(properties =>
                 properties[Observability.PaymentReferencePropertyName] == command.MerchantReference));
     }
 }

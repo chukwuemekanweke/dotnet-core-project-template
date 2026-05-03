@@ -108,32 +108,17 @@ public sealed class InitiatePaymentHandler(
 
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Payments.Initiated,
-                ObservabilityEventProperties.CreatePayment(
+                ObservabilityEventProperties.Create(
                     command.ActorContext,
-                    Observability.StepNames.PaymentInitiation,
-                    Observability.Outcomes.Success,
                     stakeholder.Id,
-                    provider: paymentProvider.ProviderKey,
-                    paymentReference: paymentTransaction.MerchantReference,
-                    paymentMethodType: paymentTransaction.PaymentMethodType,
-                    paymentIntent: paymentTransaction.PaymentIntent,
-                    amount: paymentTransaction.Amount,
-                    currencyId: paymentTransaction.CurrencyId,
-                    source: Observability.Sources.Api));
-            customTelemetryContext.AddCustomEvent(
-                Observability.EventNames.Payments.InfoReturned,
-                ObservabilityEventProperties.CreatePayment(
-                    command.ActorContext,
-                    Observability.StepNames.PaymentInfoReturn,
-                    Observability.Outcomes.Success,
-                    stakeholder.Id,
-                    provider: paymentProvider.ProviderKey,
-                    paymentReference: paymentTransaction.MerchantReference,
-                    paymentMethodType: paymentTransaction.PaymentMethodType,
-                    paymentIntent: paymentTransaction.PaymentIntent,
-                    amount: paymentTransaction.Amount,
-                    currencyId: paymentTransaction.CurrencyId,
-                    source: Observability.Sources.Api));
+                    additionalProperties: new Dictionary<string, string>
+                    {
+                        [Observability.ProviderPropertyName] = paymentProvider.ProviderKey,
+                        [Observability.PaymentReferencePropertyName] = paymentTransaction.MerchantReference,
+                        [Observability.PaymentMethodPropertyName] = paymentTransaction.PaymentMethodType.ToString(),
+                        [Observability.PaymentIntentPropertyName] = paymentTransaction.PaymentIntent.ToString(),
+                        [Observability.CurrencyIdPropertyName] = paymentTransaction.CurrencyId.ToString()
+                    }));
 
             return new InitiatePaymentResult(
                 paymentTransaction.MerchantReference,
@@ -148,20 +133,20 @@ public sealed class InitiatePaymentHandler(
         {
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Payments.InitiationFailed,
-                ObservabilityEventProperties.CreatePayment(
+                ObservabilityEventProperties.Create(
                     command.ActorContext,
-                    Observability.StepNames.PaymentInitiation,
-                    Observability.Outcomes.Failure,
                     command.ActorContext.StakeholderId,
                     ex.GetType().Name,
-                    paymentProvider?.ProviderKey,
-                    merchantReference,
-                    paymentMethodType,
-                    command.PaymentIntent,
-                    command.Amount,
-                    command.CurrencyId,
-                    Observability.Sources.Api,
-                    exceptionType: ex.GetType().Name));
+                    new Dictionary<string, string>
+                    {
+                        [Observability.PaymentIntentPropertyName] = command.PaymentIntent.ToString(),
+                        [Observability.CurrencyIdPropertyName] = command.CurrencyId.ToString(),
+                        [Observability.ExceptionTypePropertyName] = ex.GetType().Name,
+                        [Observability.PaymentReferencePropertyName] = merchantReference ?? string.Empty,
+                        [Observability.ProviderPropertyName] = paymentProvider?.ProviderKey ?? string.Empty,
+                        [Observability.PaymentMethodPropertyName] = paymentMethodType?.ToString() ?? string.Empty
+                    }.Where(entry => !string.IsNullOrWhiteSpace(entry.Value))
+                        .ToDictionary(entry => entry.Key, entry => entry.Value)));
             throw;
         }
     }

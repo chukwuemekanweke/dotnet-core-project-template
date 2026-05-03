@@ -21,19 +21,6 @@ public sealed class SuccessfulPaymentConfirmedHandler(
 
     protected override async Task HandleAsyncInternal(SuccessfulPaymentConfirmed message, CancellationToken cancellationToken)
     {
-        CustomTelemetryContext.AddCustomEvent(
-            Observability.EventNames.Payments.SubscriberStarted,
-            ObservabilityEventProperties.CreatePayment(
-                CurrentActorAccessor,
-                Observability.StepNames.SubscriberProcessing,
-                Observability.Outcomes.Started,
-                message.StakeholderId,
-                paymentReference: message.MerchantReference,
-                paymentIntent: message.PaymentIntent,
-                amount: message.Amount,
-                currencyId: message.CurrencyId,
-                source: Observability.Sources.Subscriber));
-
         switch (message.PaymentIntent)
         {
             case PaymentIntent.WalletTopUp:
@@ -49,6 +36,16 @@ public sealed class SuccessfulPaymentConfirmedHandler(
                         FlowId = message.FlowId
                     },
                     cancellationToken);
+                CustomTelemetryContext.AddCustomEvent(
+                    Observability.EventNames.Payments.CreditWallet,
+                    ObservabilityEventProperties.Create(
+                        CurrentActorAccessor,
+                        message.StakeholderId,
+                        additionalProperties: new Dictionary<string, string>
+                        {
+                            [Observability.PaymentReferencePropertyName] = message.MerchantReference,
+                            [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString()
+                        }));
                 break;
 
             case PaymentIntent.Subscription:
@@ -64,38 +61,23 @@ public sealed class SuccessfulPaymentConfirmedHandler(
                         FlowId = message.FlowId
                     },
                     cancellationToken);
+                CustomTelemetryContext.AddCustomEvent(
+                    Observability.EventNames.Payments.ActivateSubscription,
+                    ObservabilityEventProperties.Create(
+                        CurrentActorAccessor,
+                        message.StakeholderId,
+                        additionalProperties: new Dictionary<string, string>
+                        {
+                            [Observability.PaymentReferencePropertyName] = message.MerchantReference,
+                            [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString()
+                        }));
                 break;
 
             default:
-                CustomTelemetryContext.AddCustomEvent(
-                    Observability.EventNames.Payments.SubscriberFailed,
-                    ObservabilityEventProperties.CreatePayment(
-                        CurrentActorAccessor,
-                        Observability.StepNames.SubscriberProcessing,
-                        Observability.Outcomes.Failure,
-                        message.StakeholderId,
-                        ObservabilityFailureReasons.UnsupportedPaymentIntent,
-                        paymentReference: message.MerchantReference,
-                        paymentIntent: message.PaymentIntent,
-                        amount: message.Amount,
-                        currencyId: message.CurrencyId,
-                        source: Observability.Sources.Subscriber));
                 throw new CannotProcessMessageNonTransientException(
                     $"Unsupported payment intent '{message.PaymentIntent}'.");
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        CustomTelemetryContext.AddCustomEvent(
-            Observability.EventNames.Payments.SubscriberSucceeded,
-            ObservabilityEventProperties.CreatePayment(
-                CurrentActorAccessor,
-                Observability.StepNames.SubscriberProcessing,
-                Observability.Outcomes.Success,
-                message.StakeholderId,
-                paymentReference: message.MerchantReference,
-                paymentIntent: message.PaymentIntent,
-                amount: message.Amount,
-                currencyId: message.CurrencyId,
-                source: Observability.Sources.Subscriber));
     }
 }

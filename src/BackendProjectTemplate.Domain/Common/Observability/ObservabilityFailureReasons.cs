@@ -13,7 +13,6 @@ public static class ObservabilityFailureReasons
     public const string NotAuthenticated = "not_authenticated";
     public const string StakeholderNotFound = "stakeholder_not_found";
     public const string TransactionNotFoundOrUnmappedStatus = "transaction_not_found_or_unmapped_status";
-    public const string UnsupportedPaymentIntent = "unsupported_payment_intent";
     public const string UserNotFound = "user_not_found";
     public const string ValidationFailed = "validation_failed";
 }

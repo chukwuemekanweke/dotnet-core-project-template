@@ -25,17 +25,6 @@ public sealed class CreditWalletHandler(
     {
         if (!message.StakeholderId.HasValue)
         {
-            CustomTelemetryContext.AddCustomEvent(
-                Observability.EventNames.Payments.ValueGrantFailed,
-                ObservabilityEventProperties.CreatePayment(
-                    CurrentActorAccessor,
-                    Observability.StepNames.ValueGrant,
-                    Observability.Outcomes.Failure,
-                    failureReason: ObservabilityFailureReasons.StakeholderNotFound,
-                    paymentReference: message.MerchantReference,
-                    amount: message.Amount,
-                    currencyId: message.CurrencyId,
-                    source: Observability.Sources.Subscriber));
             throw new CannotProcessMessageNonTransientException("CreditWalletCommand must contain a valid stakeholder id.");
         }
 
@@ -44,19 +33,6 @@ public sealed class CreditWalletHandler(
             cancellationToken);
         if (existingWalletTransaction is not null)
         {
-            CustomTelemetryContext.AddCustomEvent(
-                Observability.EventNames.Payments.ValueGrantFailed,
-                ObservabilityEventProperties.CreatePayment(
-                    CurrentActorAccessor,
-                    Observability.StepNames.ValueGrant,
-                    Observability.Outcomes.Duplicate,
-                    message.StakeholderId,
-                    ObservabilityFailureReasons.DuplicateProcessing,
-                    paymentReference: message.MerchantReference,
-                    amount: message.Amount,
-                    currencyId: message.CurrencyId,
-                    source: Observability.Sources.Subscriber,
-                    isDuplicate: true));
             return;
         }
 
@@ -70,6 +46,15 @@ public sealed class CreditWalletHandler(
             wallet = Wallet.Create(message.StakeholderId.Value, message.TenantId, message.CurrencyId, now);
             wallet.Credit(message.Amount);
             await walletRepository.AddAsync(wallet, cancellationToken);
+            CustomTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.WalletCreated,
+                ObservabilityEventProperties.Create(
+                    CurrentActorAccessor,
+                    message.StakeholderId,
+                    additionalProperties: new Dictionary<string, string>
+                    {
+                        [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString()
+                    }));
         }
         else
         {
@@ -94,15 +79,14 @@ public sealed class CreditWalletHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
         CustomTelemetryContext.AddCustomEvent(
-            Observability.EventNames.Payments.ValueGranted,
-            ObservabilityEventProperties.CreatePayment(
+            Observability.EventNames.Payments.WalletCredited,
+            ObservabilityEventProperties.Create(
                 CurrentActorAccessor,
-                Observability.StepNames.ValueGrant,
-                Observability.Outcomes.Success,
                 message.StakeholderId,
-                paymentReference: message.MerchantReference,
-                amount: message.Amount,
-                currencyId: message.CurrencyId,
-                source: Observability.Sources.Subscriber));
+                additionalProperties: new Dictionary<string, string>
+                {
+                    [Observability.PaymentReferencePropertyName] = message.MerchantReference,
+                    [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString()
+                }));
     }
 }
