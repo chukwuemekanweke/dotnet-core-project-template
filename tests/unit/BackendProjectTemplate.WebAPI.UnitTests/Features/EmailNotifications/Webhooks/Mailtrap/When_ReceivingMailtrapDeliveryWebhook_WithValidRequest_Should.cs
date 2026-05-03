@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
-using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Notifications.Services;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
 using BackendProjectTemplate.WebAPI.Features.EmailNotifications.Webhooks.Mailtrap;
@@ -17,6 +18,7 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithValidRequest_Shoul
     {
         var context = new EmailNotificationsControllerTestContext();
         var provider = context.CreateMailtrapProvider();
+        BackendProjectTemplate.Domain.Notifications.Entities.EmailDeliveryWebhookInbox? capturedInbox = null;
 
         context.ProviderRepository.FirstOrDefaultAsync(Arg.Any<ProviderByTypeAndKeySpecification>(), Arg.Any<CancellationToken>())
             .Returns(provider);
@@ -24,8 +26,10 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithValidRequest_Shoul
             .Returns(new MailtrapWebhookSignatureValidationResult(true, "signature_verified"));
         context.EmailDeliveryWebhookInboxRepository.ListAsync(Arg.Any<EmailDeliveryWebhookInboxesByEventIdsSpecification>(), Arg.Any<CancellationToken>())
             .Returns([]);
-        context.EmailNotificationLogRepository.ListAsync(Arg.Any<EmailNotificationLogsByProviderMessageIdsSpecification>(), Arg.Any<CancellationToken>())
-            .Returns([]);
+        context.EmailDeliveryWebhookInboxRepository.AddAsync(
+                Arg.Do<BackendProjectTemplate.Domain.Notifications.Entities.EmailDeliveryWebhookInbox>(inbox => capturedInbox = inbox),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
 
         const string payload = "{\"events\":[{\"event\":\"delivery\",\"message_id\":\"mailtrap-message-id\",\"sending_stream\":\"transactional\",\"email\":\"ada@example.com\",\"sending_domain_name\":\"mail.example.com\",\"timestamp\":1746273900,\"event_id\":\"evt_123\"}]}";
         var sut = new MailtrapWebhooksController(context.CreateHandler());
@@ -39,10 +43,18 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithValidRequest_Shoul
         var result = await sut.Handle(CancellationToken.None);
 
         result.ShouldBeOfType<OkResult>();
+        capturedInbox.ShouldNotBeNull();
+        capturedInbox.WebhookProcessingStatus.ShouldBe(WebhookProcessingStatus.Received);
         await context.MailtrapWebhookSignatureValidator.Received(1).ValidateAsync(
             Arg.Is<MailtrapWebhookSignatureValidationRequest>(request =>
                 request.SignatureHeader == "valid-signature" &&
                 request.RawPayload == payload),
+            Arg.Any<CancellationToken>());
+        await context.EventPublisher.Received(1).PublishAsync(
+            Arg.Is<EmailDeliveryWebhookReceived>(message =>
+                message.ProviderId == provider.Id &&
+                message.EventId == "evt_123" &&
+                message.ProviderMessageId == "mailtrap-message-id"),
             Arg.Any<CancellationToken>());
     }
 }

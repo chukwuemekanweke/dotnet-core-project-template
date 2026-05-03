@@ -1,3 +1,5 @@
+using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Notifications.Entities;
@@ -26,6 +28,7 @@ public sealed class EmailDeliveryWebhookInbox : Entity, IAggregateRoot
         SendingStream = sendingStream;
         SendingDomainName = sendingDomainName;
         RawPayload = rawPayload;
+        WebhookProcessingStatus = WebhookProcessingStatus.Received;
         OccurredAtUtc = occurredAtUtc;
         ReceivedAtUtc = receivedAtUtc;
     }
@@ -37,8 +40,12 @@ public sealed class EmailDeliveryWebhookInbox : Entity, IAggregateRoot
     public string SendingStream { get; private set; } = string.Empty;
     public string SendingDomainName { get; private set; } = string.Empty;
     public string RawPayload { get; private set; } = string.Empty;
+    public WebhookProcessingStatus WebhookProcessingStatus { get; private set; }
+    public string? StatusChangeReason { get; private set; }
+    public string? ProcessingError { get; private set; }
     public DateTimeOffset OccurredAtUtc { get; private set; }
     public DateTimeOffset ReceivedAtUtc { get; private set; }
+    public DateTimeOffset? ProcessedAtUtc { get; private set; }
 
     public static EmailDeliveryWebhookInbox Create(
         Guid providerId,
@@ -61,10 +68,42 @@ public sealed class EmailDeliveryWebhookInbox : Entity, IAggregateRoot
             occurredAtUtc,
             receivedAtUtc);
 
+    public void MarkProcessed(string? statusChangeReason, DateTimeOffset utcNow)
+    {
+        EnsureCanTransitionFrom(WebhookProcessingStatus.Received);
+        WebhookProcessingStatus = WebhookProcessingStatus.Processed;
+        StatusChangeReason = NormalizeOptional(statusChangeReason);
+        ProcessingError = null;
+        ProcessedAtUtc = utcNow;
+    }
+
+    public void MarkFailed(string error, DateTimeOffset utcNow)
+    {
+        EnsureCanTransitionFrom(WebhookProcessingStatus.Received);
+        WebhookProcessingStatus = WebhookProcessingStatus.Failed;
+        StatusChangeReason = null;
+        ProcessingError = NormalizeRequired(error);
+        ProcessedAtUtc = utcNow;
+    }
+
     private static string NormalizeRequired(string value)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(value);
 
         return value.Trim();
+    }
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private void EnsureCanTransitionFrom(params WebhookProcessingStatus[] allowedStatuses)
+    {
+        if (allowedStatuses.Contains(WebhookProcessingStatus))
+        {
+            return;
+        }
+
+        throw new AggregateStateException(
+            $"Email delivery webhook '{WebhookEventId}' cannot transition from '{WebhookProcessingStatus}'.");
     }
 }

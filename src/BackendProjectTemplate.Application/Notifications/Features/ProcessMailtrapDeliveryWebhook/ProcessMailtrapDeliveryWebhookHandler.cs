@@ -1,4 +1,6 @@
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Notifications;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Services;
@@ -10,8 +12,8 @@ namespace BackendProjectTemplate.Application.Notifications.Features.ProcessMailt
 public sealed class ProcessMailtrapDeliveryWebhookHandler(
     IReadRepository<Provider> providerRepository,
     IRepository<EmailDeliveryWebhookInbox> emailDeliveryWebhookInboxRepository,
-    IRepository<EmailNotificationLog> emailNotificationLogRepository,
     IMailtrapWebhookSignatureValidator mailtrapWebhookSignatureValidator,
+    IEventPublisher eventPublisher,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -38,22 +40,12 @@ public sealed class ProcessMailtrapDeliveryWebhookHandler(
             .Select(item => item.EventId)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
-        var providerMessageIds = command.Events
-            .Select(item => item.MessageId)
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
         var existingWebhooks = await emailDeliveryWebhookInboxRepository.ListAsync(
             new EmailDeliveryWebhookInboxesByEventIdsSpecification(provider.Id, webhookEventIds),
             cancellationToken);
         var existingWebhookEventIds = existingWebhooks
             .Select(item => item.WebhookEventId)
             .ToHashSet(StringComparer.Ordinal);
-        var emailNotificationLogs = await emailNotificationLogRepository.ListAsync(
-            new EmailNotificationLogsByProviderMessageIdsSpecification(providerMessageIds),
-            cancellationToken);
-        var emailNotificationLogsByProviderMessageId = emailNotificationLogs
-            .Where(item => item.ProviderMessageId is not null)
-            .ToDictionary(item => item.ProviderMessageId!, StringComparer.Ordinal);
 
         foreach (var webhookEvent in command.Events)
         {
@@ -75,12 +67,15 @@ public sealed class ProcessMailtrapDeliveryWebhookHandler(
                 occurredAtUtc,
                 now);
             await emailDeliveryWebhookInboxRepository.AddAsync(inbox, cancellationToken);
-
-            if (emailNotificationLogsByProviderMessageId.TryGetValue(webhookEvent.MessageId, out var emailNotificationLog))
-            {
-                emailNotificationLog.MarkDelivered(occurredAtUtc, now);
-                emailNotificationLogRepository.Update(emailNotificationLog);
-            }
+            await eventPublisher.PublishAsync(
+                new EmailDeliveryWebhookReceived
+                {
+                    ProviderId = provider.Id,
+                    EventId = webhookEvent.EventId,
+                    ProviderMessageId = webhookEvent.MessageId,
+                    OccuredAt = occurredAtUtc
+                },
+                cancellationToken);
 
             hasPersistedWebhook = true;
         }

@@ -3,6 +3,10 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
+using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
@@ -25,6 +29,7 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
     private Guid _providerId;
     private Guid _emailNotificationLogId;
     private Guid _webhookInboxId;
+    private Guid _outboxMessageId;
     private HttpResponseMessage? _response;
 
     public async Task InitializeAsync()
@@ -86,11 +91,19 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
                 .OrderByDescending(item => item.CreatedAtUtc)
                 .FirstAsync(item => item.ProviderId == _providerId);
             var log = await dbContext.EmailNotificationLogs.FirstAsync(item => item.Id == _emailNotificationLogId);
+            var outboxMessage = await dbContext.OutboxMessages
+                .OrderByDescending(item => item.EnqueuedAtUtc)
+                .FirstAsync(item =>
+                    item.Kind == OutboxMessageKind.Event &&
+                    item.Type == typeof(EmailDeliveryWebhookReceived).FullName!);
 
             _webhookInboxId = inbox.Id;
+            _outboxMessageId = outboxMessage.Id;
             inbox.ProviderMessageId.ShouldBe("mailtrap-message-id");
             inbox.WebhookEventId.ShouldBe("evt_123");
-            log.DeliveredAtUtc.ShouldBe(DateTimeOffset.Parse("2026-05-03T12:05:00+00:00"));
+            inbox.WebhookProcessingStatus.ShouldBe(WebhookProcessingStatus.Received);
+            log.DeliveredAtUtc.ShouldBeNull();
+            outboxMessage.SentAtUtc.ShouldBeNull();
         }
     }
 
@@ -131,6 +144,15 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
             if (inbox is not null)
             {
                 dbContext.EmailDeliveryWebhookInboxes.Remove(inbox);
+            }
+        }
+
+        if (_outboxMessageId != Guid.Empty)
+        {
+            var outboxMessage = await dbContext.OutboxMessages.FirstOrDefaultAsync(item => item.Id == _outboxMessageId);
+            if (outboxMessage is not null)
+            {
+                dbContext.OutboxMessages.Remove(outboxMessage);
             }
         }
 

@@ -39,11 +39,19 @@ public sealed class EmailDeliveryWebhookInboxConfiguration : IEntityTypeConfigur
             .HasColumnType("jsonb")
             .IsRequired();
 
+        builder.Property(inbox => inbox.StatusChangeReason)
+            .HasMaxLength(500);
+
+        builder.Property(inbox => inbox.ProcessingError)
+            .HasMaxLength(4000);
+
         builder.Property(inbox => inbox.OccurredAtUtc)
             .IsRequired();
 
         builder.Property(inbox => inbox.ReceivedAtUtc)
             .IsRequired();
+
+        builder.HasIndex(inbox => inbox.WebhookProcessingStatus);
 
         builder.HasIndex(inbox => new { inbox.ProviderId, inbox.WebhookEventId })
             .IsUnique()
