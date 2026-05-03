@@ -3,6 +3,7 @@ using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Application.UnitTests.Payments;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
 using Shouldly;
@@ -64,5 +65,18 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         capturedTransaction.PaymentMethodType.ShouldBe(PaymentMethodType.PaymentLink);
         capturedTransaction.ProviderPayloadMetadata["paymentLink"].ShouldBe("https://pay.local");
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        context.CustomTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Payments.Initiated,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.FlowNamePropertyName] == Observability.FlowNames.Payments &&
+                properties[Observability.StepNamePropertyName] == Observability.StepNames.PaymentInitiation &&
+                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success &&
+                properties[Observability.ProviderPropertyName] == PaymentProviderKeys.Credo &&
+                properties[Observability.PaymentReferencePropertyName] == capturedTransaction.MerchantReference));
+        context.CustomTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Payments.InfoReturned,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.StepNamePropertyName] == Observability.StepNames.PaymentInfoReturn &&
+                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success));
     }
 }

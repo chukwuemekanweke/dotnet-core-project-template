@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
@@ -14,6 +15,7 @@ public sealed class PaymentReconciliationService(
     IRepository<PaymentProvider> paymentProviderRepository,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
     IEventPublisher eventPublisher,
+    ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -49,6 +51,38 @@ public sealed class PaymentReconciliationService(
                     string.Equals(service.ProviderKey, paymentProvider.ProviderKey, StringComparison.OrdinalIgnoreCase))
                 ?? throw new PaymentProviderResolutionException(
                     $"No payment provider service is registered for '{paymentProvider.ProviderKey}'.");
+
+            if (!transaction.LastStatusCheckAtUtc.HasValue)
+            {
+                customTelemetryContext.AddCustomEvent(
+                    Observability.EventNames.Payments.TimeoutNoWebhook,
+                    ObservabilityEventProperties.CreatePayment(
+                        Observability.StepNames.PaymentReconciliation,
+                        Observability.Outcomes.Timeout,
+                        transaction.StakeholderId,
+                        provider: paymentProvider.ProviderKey,
+                        paymentReference: transaction.MerchantReference,
+                        paymentMethodType: transaction.PaymentMethodType,
+                        paymentIntent: transaction.PaymentIntent,
+                        amount: transaction.Amount,
+                        currencyId: transaction.CurrencyId,
+                        source: Observability.Sources.Cron));
+            }
+
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.ReconciliationChecked,
+                ObservabilityEventProperties.CreatePayment(
+                    Observability.StepNames.PaymentReconciliation,
+                    Observability.Outcomes.Success,
+                    transaction.StakeholderId,
+                    provider: paymentProvider.ProviderKey,
+                    paymentReference: transaction.MerchantReference,
+                    paymentMethodType: transaction.PaymentMethodType,
+                    paymentIntent: transaction.PaymentIntent,
+                    amount: transaction.Amount,
+                    currencyId: transaction.CurrencyId,
+                    source: Observability.Sources.Cron));
+
             var verificationResult = await paymentProviderService.VerifyPaymentAsync(
                 new PaymentProviderVerificationRequest(
                     transaction.MerchantReference,
@@ -62,21 +96,86 @@ public sealed class PaymentReconciliationService(
             {
                 case PaymentProviderVerificationStatus.Succeeded when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Succeeded:
                     transaction.MarkSucceeded(verificationResult.ProviderReference, verificationResult.StatusChangeReason, now);
-                    await eventPublisher.PublishAsync(
-                        new SuccessfulPaymentConfirmed
-                        {
-                            PaymentTransactionId = transaction.Id,
-                            MerchantReference = transaction.MerchantReference,
-                            PaymentIntent = transaction.PaymentIntent,
-                            PaymentProviderId = transaction.PaymentProviderId,
-                            Amount = transaction.Amount,
-                            CurrencyId = transaction.CurrencyId,
-                            StakeholderId = transaction.StakeholderId,
-                            TenantId = transaction.TenantId,
-                            FlowId = string.Empty,
-                            OccuredAt = now
-                        },
-                        cancellationToken);
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.StatusConfirmed,
+                        ObservabilityEventProperties.CreatePayment(
+                            Observability.StepNames.PaymentStatusConfirmation,
+                            Observability.Outcomes.Success,
+                            transaction.StakeholderId,
+                            provider: paymentProvider.ProviderKey,
+                            paymentReference: transaction.MerchantReference,
+                            paymentMethodType: transaction.PaymentMethodType,
+                            paymentIntent: transaction.PaymentIntent,
+                            amount: transaction.Amount,
+                            currencyId: transaction.CurrencyId,
+                            source: Observability.Sources.Cron,
+                            terminalState: Contracts.Payments.PaymentStatus.Succeeded.ToString()));
+
+                    try
+                    {
+                        await eventPublisher.PublishAsync(
+                            new SuccessfulPaymentConfirmed
+                            {
+                                PaymentTransactionId = transaction.Id,
+                                MerchantReference = transaction.MerchantReference,
+                                PaymentIntent = transaction.PaymentIntent,
+                                PaymentProviderId = transaction.PaymentProviderId,
+                                Amount = transaction.Amount,
+                                CurrencyId = transaction.CurrencyId,
+                                StakeholderId = transaction.StakeholderId,
+                                TenantId = transaction.TenantId,
+                                FlowId = string.Empty,
+                                OccuredAt = now
+                            },
+                            cancellationToken);
+                        customTelemetryContext.AddCustomEvent(
+                            Observability.EventNames.Payments.EventPublished,
+                            ObservabilityEventProperties.CreatePayment(
+                                Observability.StepNames.PaymentEventPublish,
+                                Observability.Outcomes.Success,
+                                transaction.StakeholderId,
+                                provider: paymentProvider.ProviderKey,
+                                paymentReference: transaction.MerchantReference,
+                                paymentMethodType: transaction.PaymentMethodType,
+                                paymentIntent: transaction.PaymentIntent,
+                                amount: transaction.Amount,
+                                currencyId: transaction.CurrencyId,
+                                source: Observability.Sources.Cron));
+                    }
+                    catch (Exception ex)
+                    {
+                        customTelemetryContext.AddCustomEvent(
+                            Observability.EventNames.Payments.EventPublishFailed,
+                            ObservabilityEventProperties.CreatePayment(
+                                Observability.StepNames.PaymentEventPublish,
+                                Observability.Outcomes.Failure,
+                                transaction.StakeholderId,
+                                ex.GetType().Name,
+                                paymentProvider.ProviderKey,
+                                transaction.MerchantReference,
+                                transaction.PaymentMethodType,
+                                transaction.PaymentIntent,
+                                transaction.Amount,
+                                transaction.CurrencyId,
+                                Observability.Sources.Cron,
+                                exceptionType: ex.GetType().Name));
+                        throw;
+                    }
+
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.ReconciliationConfirmed,
+                        ObservabilityEventProperties.CreatePayment(
+                            Observability.StepNames.PaymentReconciliation,
+                            Observability.Outcomes.Success,
+                            transaction.StakeholderId,
+                            provider: paymentProvider.ProviderKey,
+                            paymentReference: transaction.MerchantReference,
+                            paymentMethodType: transaction.PaymentMethodType,
+                            paymentIntent: transaction.PaymentIntent,
+                            amount: transaction.Amount,
+                            currencyId: transaction.CurrencyId,
+                            source: Observability.Sources.Cron,
+                            terminalState: Contracts.Payments.PaymentStatus.Succeeded.ToString()));
                     break;
                 case PaymentProviderVerificationStatus.Failed when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Failed:
                     transaction.MarkFailed(
@@ -84,14 +183,87 @@ public sealed class PaymentReconciliationService(
                         verificationResult.FailureReason,
                         verificationResult.StatusChangeReason,
                         now);
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.StatusFailed,
+                        ObservabilityEventProperties.CreatePayment(
+                            Observability.StepNames.PaymentStatusConfirmation,
+                            Observability.Outcomes.Failure,
+                            transaction.StakeholderId,
+                            verificationResult.FailureReason,
+                            paymentProvider.ProviderKey,
+                            transaction.MerchantReference,
+                            transaction.PaymentMethodType,
+                            transaction.PaymentIntent,
+                            transaction.Amount,
+                            transaction.CurrencyId,
+                            Observability.Sources.Cron,
+                            Contracts.Payments.PaymentStatus.Failed.ToString()));
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.ReconciliationFailed,
+                        ObservabilityEventProperties.CreatePayment(
+                            Observability.StepNames.PaymentReconciliation,
+                            Observability.Outcomes.Failure,
+                            transaction.StakeholderId,
+                            verificationResult.FailureReason,
+                            paymentProvider.ProviderKey,
+                            transaction.MerchantReference,
+                            transaction.PaymentMethodType,
+                            transaction.PaymentIntent,
+                            transaction.Amount,
+                            transaction.CurrencyId,
+                            Observability.Sources.Cron,
+                            Contracts.Payments.PaymentStatus.Failed.ToString()));
                     break;
                 case PaymentProviderVerificationStatus.Expired when transaction.PaymentStatus != Contracts.Payments.PaymentStatus.Expired:
                     transaction.MarkExpired(
                         verificationResult.ProviderReference,
                         verificationResult.FailureReason,
                         verificationResult.StatusChangeReason);
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.StatusFailed,
+                        ObservabilityEventProperties.CreatePayment(
+                            Observability.StepNames.PaymentStatusConfirmation,
+                            Observability.Outcomes.Failure,
+                            transaction.StakeholderId,
+                            verificationResult.FailureReason,
+                            paymentProvider.ProviderKey,
+                            transaction.MerchantReference,
+                            transaction.PaymentMethodType,
+                            transaction.PaymentIntent,
+                            transaction.Amount,
+                            transaction.CurrencyId,
+                            Observability.Sources.Cron,
+                            Contracts.Payments.PaymentStatus.Expired.ToString()));
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.ReconciliationFailed,
+                        ObservabilityEventProperties.CreatePayment(
+                            Observability.StepNames.PaymentReconciliation,
+                            Observability.Outcomes.Failure,
+                            transaction.StakeholderId,
+                            verificationResult.FailureReason,
+                            paymentProvider.ProviderKey,
+                            transaction.MerchantReference,
+                            transaction.PaymentMethodType,
+                            transaction.PaymentIntent,
+                            transaction.Amount,
+                            transaction.CurrencyId,
+                            Observability.Sources.Cron,
+                            Contracts.Payments.PaymentStatus.Expired.ToString()));
                     break;
                 case PaymentProviderVerificationStatus.Processing:
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.ReconciliationStillPending,
+                        ObservabilityEventProperties.CreatePayment(
+                            Observability.StepNames.PaymentReconciliation,
+                            Observability.Outcomes.Retry,
+                            transaction.StakeholderId,
+                            provider: paymentProvider.ProviderKey,
+                            paymentReference: transaction.MerchantReference,
+                            paymentMethodType: transaction.PaymentMethodType,
+                            paymentIntent: transaction.PaymentIntent,
+                            amount: transaction.Amount,
+                            currencyId: transaction.CurrencyId,
+                            source: Observability.Sources.Cron));
                     break;
             }
 

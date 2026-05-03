@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Infrastructure.Messaging;
+using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using BackendProjectTemplate.Jobs.OutboxProcessing;
@@ -29,6 +30,7 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddLogging();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddBackgroundServiceReadinessTracking();
+        builder.Services.AddCustomTelemetryContext();
         builder.Services.AddPostgresPersistence(configuration);
         builder.Services.AddRabbitMqOutboxDispatching(configuration);
         registerWorkers(builder.Services, configuration);

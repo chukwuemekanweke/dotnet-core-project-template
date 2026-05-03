@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Consumer.UnitTests.Payments;
+using BackendProjectTemplate.Domain.Common.Observability;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Payments.SuccessfulPaymentConfirmed;
 
@@ -43,5 +44,16 @@ public sealed class When_HandlingSuccessfulPaymentConfirmed_WithWalletTopUpInten
                 command.FlowId == "flow-123"),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        context.CustomTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Payments.SubscriberStarted,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.StepNamePropertyName] == Observability.StepNames.SubscriberProcessing &&
+                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Started &&
+                properties[Observability.PaymentReferencePropertyName] == "merchant-ref"));
+        context.CustomTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Payments.SubscriberSucceeded,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.StepNamePropertyName] == Observability.StepNames.SubscriberProcessing &&
+                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success));
     }
 }

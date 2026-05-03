@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Consumer.UnitTests.Payments;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Shouldly;
@@ -38,5 +39,11 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should
         capturedTransaction.TransactionTitle.ShouldBe(WalletTransactionTitles.WalletFunding);
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         context.WalletRepository.DidNotReceive().Update(Arg.Any<Wallet>());
+        context.CustomTelemetryContext.Received().AddCustomEvent(
+            Observability.EventNames.Payments.ValueGranted,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.StepNamePropertyName] == Observability.StepNames.ValueGrant &&
+                properties[Observability.OutcomePropertyName] == Observability.Outcomes.Success &&
+                properties[Observability.PaymentReferencePropertyName] == command.MerchantReference));
     }
 }

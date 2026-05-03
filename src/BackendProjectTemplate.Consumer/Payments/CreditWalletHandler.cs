@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -18,10 +19,23 @@ public sealed class CreditWalletHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(CreditWalletCommand message, CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
         {
+            CustomTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.ValueGrantFailed,
+                ObservabilityEventProperties.CreatePayment(
+                    CurrentActorAccessor,
+                    Observability.StepNames.ValueGrant,
+                    Observability.Outcomes.Failure,
+                    failureReason: ObservabilityFailureReasons.StakeholderNotFound,
+                    paymentReference: message.MerchantReference,
+                    amount: message.Amount,
+                    currencyId: message.CurrencyId,
+                    source: Observability.Sources.Subscriber));
             throw new CannotProcessMessageNonTransientException("CreditWalletCommand must contain a valid stakeholder id.");
         }
 
@@ -30,6 +44,19 @@ public sealed class CreditWalletHandler(
             cancellationToken);
         if (existingWalletTransaction is not null)
         {
+            CustomTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.ValueGrantFailed,
+                ObservabilityEventProperties.CreatePayment(
+                    CurrentActorAccessor,
+                    Observability.StepNames.ValueGrant,
+                    Observability.Outcomes.Duplicate,
+                    message.StakeholderId,
+                    ObservabilityFailureReasons.DuplicateProcessing,
+                    paymentReference: message.MerchantReference,
+                    amount: message.Amount,
+                    currencyId: message.CurrencyId,
+                    source: Observability.Sources.Subscriber,
+                    isDuplicate: true));
             return;
         }
 
@@ -66,5 +93,16 @@ public sealed class CreditWalletHandler(
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        CustomTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.ValueGranted,
+            ObservabilityEventProperties.CreatePayment(
+                CurrentActorAccessor,
+                Observability.StepNames.ValueGrant,
+                Observability.Outcomes.Success,
+                message.StakeholderId,
+                paymentReference: message.MerchantReference,
+                amount: message.Amount,
+                currencyId: message.CurrencyId,
+                source: Observability.Sources.Subscriber));
     }
 }

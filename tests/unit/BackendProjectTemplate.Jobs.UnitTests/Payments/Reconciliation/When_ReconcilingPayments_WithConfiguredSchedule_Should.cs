@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -21,6 +22,7 @@ public sealed class When_ReconcilingPayments_WithConfiguredSchedule_Should
         var currencyRepository = Substitute.For<IRepository<Currency>>();
         var paymentProviderRepository = Substitute.For<IRepository<PaymentProvider>>();
         var eventPublisher = Substitute.For<IEventPublisher>();
+        var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var paymentProviderService = Substitute.For<IPaymentProviderService>();
         var state = new BackgroundServiceReadinessState([new BackgroundServiceDescriptor(PaymentReconciliationProcessor.ServiceName)]);
@@ -31,6 +33,7 @@ public sealed class When_ReconcilingPayments_WithConfiguredSchedule_Should
             .AddSingleton(paymentProviderRepository)
             .AddSingleton<IEnumerable<IPaymentProviderService>>([paymentProviderService])
             .AddSingleton(eventPublisher)
+            .AddSingleton(customTelemetryContext)
             .AddSingleton(unitOfWork)
             .AddSingleton<TimeProvider>(clock)
             .AddApplication()

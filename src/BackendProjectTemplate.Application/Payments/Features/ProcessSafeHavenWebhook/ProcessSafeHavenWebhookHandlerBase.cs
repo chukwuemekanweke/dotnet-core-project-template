@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -12,6 +13,7 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
     IRepository<PaymentProvider> paymentProviderRepository,
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
+    ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
@@ -37,6 +39,15 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
                 cancellationToken);
             if (existingWebhook is not null)
             {
+                customTelemetryContext.AddCustomEvent(
+                    Observability.EventNames.Payments.WebhookDuplicate,
+                    ObservabilityEventProperties.CreatePayment(
+                        Observability.StepNames.WebhookReceipt,
+                        Observability.Outcomes.Duplicate,
+                        provider: paymentProvider.ProviderKey,
+                        paymentReference: webhookDetails.MerchantReference,
+                        source: Observability.Sources.Webhook,
+                        isDuplicate: true));
                 return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Duplicate);
             }
         }
@@ -52,11 +63,28 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
             validationResult.StatusChangeReason,
             now);
         await paymentWebhookInboxRepository.AddAsync(inbox, cancellationToken);
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.WebhookReceived,
+            ObservabilityEventProperties.CreatePayment(
+                Observability.StepNames.WebhookReceipt,
+                Observability.Outcomes.Success,
+                provider: paymentProvider.ProviderKey,
+                paymentReference: webhookDetails.MerchantReference,
+                source: Observability.Sources.Webhook));
 
         if (validationResult.SignatureValidationStatus == SignatureValidationStatus.Invalid)
         {
             inbox.MarkIgnored("invalid_signature", now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.WebhookInvalidSignature,
+                ObservabilityEventProperties.CreatePayment(
+                    Observability.StepNames.WebhookProcessing,
+                    Observability.Outcomes.Failure,
+                    failureReason: ObservabilityFailureReasons.InvalidSignature,
+                    provider: paymentProvider.ProviderKey,
+                    paymentReference: webhookDetails.MerchantReference,
+                    source: Observability.Sources.Webhook));
             return new ProcessPaymentWebhookResult(WebhookReceiptStatus.InvalidSignature);
         }
 
@@ -65,10 +93,31 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
         {
             inbox.MarkIgnored("transaction_not_found_or_unmapped_status", now);
             await unitOfWork.SaveChangesAsync(cancellationToken);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.WebhookProcessingFailed,
+                ObservabilityEventProperties.CreatePayment(
+                    Observability.StepNames.WebhookProcessing,
+                    Observability.Outcomes.Ignored,
+                    failureReason: ObservabilityFailureReasons.TransactionNotFoundOrUnmappedStatus,
+                    provider: paymentProvider.ProviderKey,
+                    paymentReference: webhookDetails.MerchantReference,
+                    source: Observability.Sources.Webhook));
             return new ProcessPaymentWebhookResult(WebhookReceiptStatus.UnidentifiedTransaction);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.WebhookProcessed,
+            ObservabilityEventProperties.CreatePayment(
+                Observability.StepNames.WebhookProcessing,
+                Observability.Outcomes.Success,
+                paymentTransaction.StakeholderId,
+                provider: paymentProvider.ProviderKey,
+                paymentReference: paymentTransaction.MerchantReference,
+                paymentIntent: paymentTransaction.PaymentIntent,
+                amount: paymentTransaction.Amount,
+                currencyId: paymentTransaction.CurrencyId,
+                source: Observability.Sources.Webhook));
 
         return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Persisted);
     }

@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Specifications;
@@ -16,10 +17,23 @@ public sealed class ActivateSubscriptionHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider) : BaseMessageHandler<ActivateSubscriptionCommand>(customTelemetryContext, currentActorAccessor, messageContext)
 {
+    public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
+
     protected override async Task HandleAsyncInternal(ActivateSubscriptionCommand message, CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
         {
+            CustomTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.ValueGrantFailed,
+                ObservabilityEventProperties.CreatePayment(
+                    CurrentActorAccessor,
+                    Observability.StepNames.ValueGrant,
+                    Observability.Outcomes.Failure,
+                    failureReason: ObservabilityFailureReasons.StakeholderNotFound,
+                    paymentReference: message.MerchantReference,
+                    amount: message.Amount,
+                    currencyId: message.CurrencyId,
+                    source: Observability.Sources.Subscriber));
             throw new CannotProcessMessageNonTransientException("ActivateSubscriptionCommand must contain a valid stakeholder id.");
         }
 
@@ -28,6 +42,19 @@ public sealed class ActivateSubscriptionHandler(
             cancellationToken);
         if (existingActivation is not null)
         {
+            CustomTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Payments.ValueGrantFailed,
+                ObservabilityEventProperties.CreatePayment(
+                    CurrentActorAccessor,
+                    Observability.StepNames.ValueGrant,
+                    Observability.Outcomes.Duplicate,
+                    message.StakeholderId,
+                    ObservabilityFailureReasons.DuplicateProcessing,
+                    paymentReference: message.MerchantReference,
+                    amount: message.Amount,
+                    currencyId: message.CurrencyId,
+                    source: Observability.Sources.Subscriber,
+                    isDuplicate: true));
             return;
         }
 
@@ -43,5 +70,16 @@ public sealed class ActivateSubscriptionHandler(
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        CustomTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.ValueGranted,
+            ObservabilityEventProperties.CreatePayment(
+                CurrentActorAccessor,
+                Observability.StepNames.ValueGrant,
+                Observability.Outcomes.Success,
+                message.StakeholderId,
+                paymentReference: message.MerchantReference,
+                amount: message.Amount,
+                currencyId: message.CurrencyId,
+                source: Observability.Sources.Subscriber));
     }
 }
