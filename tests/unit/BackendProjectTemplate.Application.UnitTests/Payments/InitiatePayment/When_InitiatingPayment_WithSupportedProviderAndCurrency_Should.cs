@@ -69,6 +69,10 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
             Observability.EventNames.Payments.Initiated,
             Arg.Is<Dictionary<string, string>>(properties =>
                 properties[Observability.ProviderPropertyName] == PaymentProviderKeys.Credo &&
-                properties[Observability.PaymentReferencePropertyName] == capturedTransaction.MerchantReference));
+                properties[Observability.PaymentMethodPropertyName] == PaymentMethodType.PaymentLink.ToString() &&
+                properties[Observability.PaymentIntentPropertyName] == PaymentIntent.WalletTopUp.ToString() &&
+                properties[Observability.MerchantReferencePropertyName] == capturedTransaction.MerchantReference &&
+                properties[Observability.ProviderReferencePropertyName] == "cr_provider_ref" &&
+                properties[Observability.CurrencyCodePropertyName] == "NGN"));
     }
 }

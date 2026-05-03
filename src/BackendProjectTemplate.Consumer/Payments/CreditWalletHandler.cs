@@ -53,7 +53,8 @@ public sealed class CreditWalletHandler(
                     message.StakeholderId,
                     additionalProperties: new Dictionary<string, string>
                     {
-                        [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString()
+                        [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString(),
+                        [Observability.WalletIdPropertyName] = wallet.Id.ToString()
                     }));
         }
         else
@@ -86,7 +87,8 @@ public sealed class CreditWalletHandler(
                 additionalProperties: new Dictionary<string, string>
                 {
                     [Observability.PaymentReferencePropertyName] = message.MerchantReference,
-                    [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString()
+                    [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString(),
+                    [Observability.WalletIdPropertyName] = wallet.Id.ToString()
                 }));
     }
 }

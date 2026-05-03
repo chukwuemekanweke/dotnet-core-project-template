@@ -50,7 +50,10 @@ public sealed class ProcessCredoWebhookHandler(
                     ObservabilityEventProperties.Create(
                         AnonymousActorContext,
                         failureReason: ObservabilityFailureReasons.DuplicateProcessing,
-                        additionalProperties: CreateWebhookProperties(paymentProvider.ProviderKey, webhookDetails.MerchantReference)));
+                        additionalProperties: CreateWebhookProperties(
+                            paymentProvider.ProviderKey,
+                            webhookDetails.MerchantReference,
+                            webhookDetails.ProviderReference)));
                 return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Duplicate);
             }
         }
@@ -70,7 +73,10 @@ public sealed class ProcessCredoWebhookHandler(
             Observability.EventNames.Payments.WebhookReceived,
             ObservabilityEventProperties.Create(
                 AnonymousActorContext,
-                additionalProperties: CreateWebhookProperties(paymentProvider.ProviderKey, webhookDetails.MerchantReference)));
+                additionalProperties: CreateWebhookProperties(
+                    paymentProvider.ProviderKey,
+                    webhookDetails.MerchantReference,
+                    webhookDetails.ProviderReference)));
 
         if (validationResult.SignatureValidationStatus == SignatureValidationStatus.Invalid)
         {
@@ -81,7 +87,10 @@ public sealed class ProcessCredoWebhookHandler(
                 ObservabilityEventProperties.Create(
                     AnonymousActorContext,
                     failureReason: ObservabilityFailureReasons.InvalidSignature,
-                    additionalProperties: CreateWebhookProperties(paymentProvider.ProviderKey, webhookDetails.MerchantReference)));
+                    additionalProperties: CreateWebhookProperties(
+                        paymentProvider.ProviderKey,
+                        webhookDetails.MerchantReference,
+                        webhookDetails.ProviderReference)));
             return new ProcessPaymentWebhookResult(WebhookReceiptStatus.InvalidSignature);
         }
 
@@ -95,7 +104,10 @@ public sealed class ProcessCredoWebhookHandler(
                 ObservabilityEventProperties.Create(
                     AnonymousActorContext,
                     failureReason: ObservabilityFailureReasons.TransactionNotFoundOrUnmappedStatus,
-                    additionalProperties: CreateWebhookProperties(paymentProvider.ProviderKey, webhookDetails.MerchantReference)));
+                    additionalProperties: CreateWebhookProperties(
+                        paymentProvider.ProviderKey,
+                        webhookDetails.MerchantReference,
+                        webhookDetails.ProviderReference)));
             return new ProcessPaymentWebhookResult(WebhookReceiptStatus.UnidentifiedTransaction);
         }
 
@@ -105,7 +117,10 @@ public sealed class ProcessCredoWebhookHandler(
             ObservabilityEventProperties.Create(
                 AnonymousActorContext,
                 paymentTransaction.StakeholderId,
-                additionalProperties: CreateWebhookProperties(paymentProvider.ProviderKey, paymentTransaction.MerchantReference)));
+                additionalProperties: CreateWebhookProperties(
+                    paymentProvider.ProviderKey,
+                    paymentTransaction.MerchantReference,
+                    webhookDetails.ProviderReference ?? paymentTransaction.ProviderReference)));
 
         return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Persisted);
     }
@@ -160,17 +175,28 @@ public sealed class ProcessCredoWebhookHandler(
             ? throw new InvalidOperationException("Credo webhook event name is required.")
             : value.Trim();
 
-    private static Dictionary<string, string> CreateWebhookProperties(string provider, string? paymentReference) =>
-        string.IsNullOrWhiteSpace(paymentReference)
-            ? new Dictionary<string, string>
-            {
-                [Observability.ProviderPropertyName] = provider
-            }
-            : new Dictionary<string, string>
-            {
-                [Observability.ProviderPropertyName] = provider,
-                [Observability.PaymentReferencePropertyName] = paymentReference
-            };
+    private static Dictionary<string, string> CreateWebhookProperties(
+        string provider,
+        string? merchantReference,
+        string? providerReference)
+    {
+        var properties = new Dictionary<string, string>
+        {
+            [Observability.ProviderPropertyName] = provider
+        };
+
+        if (!string.IsNullOrWhiteSpace(merchantReference))
+        {
+            properties[Observability.MerchantReferencePropertyName] = merchantReference;
+        }
+
+        if (!string.IsNullOrWhiteSpace(providerReference))
+        {
+            properties[Observability.ProviderReferencePropertyName] = providerReference;
+        }
+
+        return properties;
+    }
 
     private sealed record CredoWebhookDetails(
         string? MerchantReference,

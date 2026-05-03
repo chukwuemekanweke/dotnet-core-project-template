@@ -42,10 +42,12 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should
         context.CustomTelemetryContext.Received().AddCustomEvent(
             Observability.EventNames.Payments.WalletCreated,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.CurrencyIdPropertyName] == command.CurrencyId.ToString()));
+                properties[Observability.CurrencyIdPropertyName] == command.CurrencyId.ToString() &&
+                properties[Observability.WalletIdPropertyName] == capturedWallet.Id.ToString()));
         context.CustomTelemetryContext.Received().AddCustomEvent(
             Observability.EventNames.Payments.WalletCredited,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.PaymentReferencePropertyName] == command.MerchantReference));
+                properties[Observability.PaymentReferencePropertyName] == command.MerchantReference &&
+                properties[Observability.WalletIdPropertyName] == capturedWallet.Id.ToString()));
     }
 }
