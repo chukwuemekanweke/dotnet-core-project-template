@@ -11,9 +11,10 @@ using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 namespace BackendProjectTemplate.Consumer.Payments;
 
 public sealed class CreditWalletHandler(
-    Domain.Common.Observability.ICustomTelemetryContext customTelemetryContext,
+    ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
+    IRepository<Currency> currencyRepository,
     IRepository<Wallet> walletRepository,
     IRepository<WalletTransaction> walletTransactionRepository,
     IUnitOfWork unitOfWork,
@@ -36,6 +37,8 @@ public sealed class CreditWalletHandler(
             return;
         }
 
+        var currency = await currencyRepository.GetByIdAsync(message.CurrencyId, cancellationToken)
+            ?? throw new InvalidOperationException($"Currency '{message.CurrencyId}' was not found.");
         var wallet = await walletRepository.FirstOrDefaultAsync(
             new WalletByStakeholderAndCurrencySpecification(message.StakeholderId.Value, message.CurrencyId),
             cancellationToken);
@@ -54,6 +57,7 @@ public sealed class CreditWalletHandler(
                     additionalProperties: new Dictionary<string, string>
                     {
                         [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString(),
+                        [Observability.CurrencyCodePropertyName] = currency.CurrencyCode,
                         [Observability.WalletIdPropertyName] = wallet.Id.ToString()
                     }));
         }
@@ -88,6 +92,7 @@ public sealed class CreditWalletHandler(
                 {
                     [Observability.PaymentReferencePropertyName] = message.MerchantReference,
                     [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString(),
+                    [Observability.CurrencyCodePropertyName] = currency.CurrencyCode,
                     [Observability.WalletIdPropertyName] = wallet.Id.ToString()
                 }));
     }

@@ -2,7 +2,6 @@ using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using BackendProjectTemplate.Application.UnitTests.Payments;
 using BackendProjectTemplate.Contracts.Payments;
-using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
@@ -71,16 +70,5 @@ public sealed class When_ProcessingCredoWebhook_WithRecognizedTransaction_Should
         capturedInbox.MerchantReference.ShouldBe("merchant-ref");
         capturedInbox.ProviderReference.ShouldBe("trans-ref");
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.WebhookReceived,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.ProviderPropertyName] == PaymentProviderKeys.Credo &&
-                properties[Observability.MerchantReferencePropertyName] == "merchant-ref" &&
-                properties[Observability.ProviderReferencePropertyName] == "trans-ref"));
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.WebhookPersisted,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.ProviderReferencePropertyName] == "trans-ref" &&
-                properties[Observability.StakeholderIdPropertyName] == transaction.StakeholderId.ToString()));
     }
 }

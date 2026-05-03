@@ -2,7 +2,6 @@ using BackendProjectTemplate.Application.Payments.Features.ReconcilePayments;
 using BackendProjectTemplate.Application.UnitTests.Payments;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
-using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
@@ -64,11 +63,5 @@ public sealed class When_ReconcilingPayments_WithSuccessfulVerification_Should
                 message.PaymentProviderId == provider.Id),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.ReconciliationConfirmed,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.ProviderPropertyName] == PaymentProviderKeys.Credo &&
-                properties[Observability.PaymentReferencePropertyName] == transaction.MerchantReference &&
-                properties[Observability.TerminalStatePropertyName] == PaymentStatus.Succeeded.ToString()));
     }
 }

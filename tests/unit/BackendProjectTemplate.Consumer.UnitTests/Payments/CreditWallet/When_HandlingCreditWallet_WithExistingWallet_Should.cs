@@ -13,12 +13,15 @@ public sealed class When_HandlingCreditWallet_WithExistingWallet_Should
         context.SetCorrelationId();
         var currencyId = Guid.CreateVersion7();
         var command = context.CreateCreditWalletCommand(2500m, currencyId);
+        var currency = context.CreateCurrency(currencyId, "NGN");
         var existingWallet = Wallet.Create(command.StakeholderId!.Value, command.TenantId, currencyId, context.Clock.GetUtcNow());
         Wallet? capturedWallet = null;
         WalletTransaction? capturedTransaction = null;
 
         context.WalletTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<WalletTransaction>>(), Arg.Any<CancellationToken>())
             .Returns((WalletTransaction?)null);
+        context.CurrencyRepository.GetByIdAsync(currencyId, Arg.Any<CancellationToken>())
+            .Returns(currency);
         context.WalletRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Wallet>>(), Arg.Any<CancellationToken>())
             .Returns(existingWallet);
         context.WalletRepository.When(repo => repo.Update(Arg.Any<Wallet>())).Do(callInfo => capturedWallet = callInfo.Arg<Wallet>());

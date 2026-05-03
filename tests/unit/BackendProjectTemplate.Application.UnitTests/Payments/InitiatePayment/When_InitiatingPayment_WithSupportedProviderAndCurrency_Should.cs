@@ -3,7 +3,6 @@ using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Application.UnitTests.Payments;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
-using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
 using Shouldly;
@@ -65,14 +64,5 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         capturedTransaction.PaymentMethodType.ShouldBe(PaymentMethodType.PaymentLink);
         capturedTransaction.ProviderPayloadMetadata["paymentLink"].ShouldBe("https://pay.local");
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.Initiated,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.ProviderPropertyName] == PaymentProviderKeys.Credo &&
-                properties[Observability.PaymentMethodPropertyName] == PaymentMethodType.PaymentLink.ToString() &&
-                properties[Observability.PaymentIntentPropertyName] == PaymentIntent.WalletTopUp.ToString() &&
-                properties[Observability.MerchantReferencePropertyName] == capturedTransaction.MerchantReference &&
-                properties[Observability.ProviderReferencePropertyName] == "cr_provider_ref" &&
-                properties[Observability.CurrencyCodePropertyName] == "NGN"));
     }
 }

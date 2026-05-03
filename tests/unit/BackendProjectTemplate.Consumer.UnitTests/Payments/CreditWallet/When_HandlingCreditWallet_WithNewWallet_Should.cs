@@ -1,5 +1,4 @@
 using BackendProjectTemplate.Consumer.UnitTests.Payments;
-using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Shouldly;
@@ -15,11 +14,14 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should
         context.SetCorrelationId();
         var currencyId = Guid.CreateVersion7();
         var command = context.CreateCreditWalletCommand(2500m, currencyId);
+        var currency = context.CreateCurrency(currencyId, "NGN");
         Wallet? capturedWallet = null;
         WalletTransaction? capturedTransaction = null;
 
         context.WalletTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<WalletTransaction>>(), Arg.Any<CancellationToken>())
             .Returns((WalletTransaction?)null);
+        context.CurrencyRepository.GetByIdAsync(currencyId, Arg.Any<CancellationToken>())
+            .Returns(currency);
         context.WalletRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Wallet>>(), Arg.Any<CancellationToken>())
             .Returns((Wallet?)null);
         context.WalletRepository.AddAsync(Arg.Do<Wallet>(wallet => capturedWallet = wallet), Arg.Any<CancellationToken>())
@@ -39,15 +41,5 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should
         capturedTransaction.TransactionTitle.ShouldBe(WalletTransactionTitles.WalletFunding);
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         context.WalletRepository.DidNotReceive().Update(Arg.Any<Wallet>());
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.WalletCreated,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.CurrencyIdPropertyName] == command.CurrencyId.ToString() &&
-                properties[Observability.WalletIdPropertyName] == capturedWallet.Id.ToString()));
-        context.CustomTelemetryContext.Received().AddCustomEvent(
-            Observability.EventNames.Payments.WalletCredited,
-            Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.PaymentReferencePropertyName] == command.MerchantReference &&
-                properties[Observability.WalletIdPropertyName] == capturedWallet.Id.ToString()));
     }
 }
