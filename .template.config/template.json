@@ -11,6 +11,7 @@
   "identity": "BackendProjectTemplate.Template",
   "name": "Backend Project Template",
   "shortName": "backend-template",
+  "sourceName": "BackendProjectTemplate",
   "preferNameDirectory": true,
   "primaryOutputs": [
     {
@@ -64,6 +65,7 @@
   "sources": [
     {
       "exclude": [
+        ".template.config/**/*",
         ".vs/**/*",
         ".dotnet/**/*",
         "scripts/**/*",
