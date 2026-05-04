@@ -32,10 +32,10 @@ public sealed class SendNotificationHandler(
                                 message.StakeholderId,
                                 additionalProperties: new Dictionary<string, string>
                                 {
-                                    [Observability.MessageIdPropertyName] = message.MessageId.ToString(),
-                                    [Observability.ProviderKeyPropertyName] = sendResult.ProviderKey,
-                                    [Observability.ProviderMessageIdPropertyName] = sendResult.ProviderMessageId,
-                                    [Observability.NotificationTypePropertyName] = message.NotificationType.ToString()
+                                    [Observability.PropertyNames.Common.MessageId] = message.MessageId.ToString(),
+                                    [Observability.PropertyNames.Notifications.ProviderKey] = sendResult.ProviderKey,
+                                    [Observability.PropertyNames.Notifications.ProviderMessageId] = sendResult.ProviderMessageId,
+                                    [Observability.PropertyNames.Notifications.NotificationType] = message.NotificationType.ToString()
                                 }));
                     }
                     break;

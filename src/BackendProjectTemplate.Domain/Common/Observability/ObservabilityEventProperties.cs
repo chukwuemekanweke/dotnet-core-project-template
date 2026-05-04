@@ -12,25 +12,25 @@ public static class ObservabilityEventProperties
     {
         var properties = new Dictionary<string, string>
         {
-            [Observability.CorrelationIdPropertyName] = string.IsNullOrWhiteSpace(actorContext.CorrelationId)
+            [Observability.PropertyNames.Common.CorrelationId] = string.IsNullOrWhiteSpace(actorContext.CorrelationId)
                 ? Guid.CreateVersion7().ToString("N")
                 : actorContext.CorrelationId,
-            [Observability.FlowIdPropertyName] = actorContext.FlowId ?? string.Empty
+            [Observability.PropertyNames.Common.FlowId] = actorContext.FlowId ?? string.Empty
         };
 
         if (actorContext.TenantId.HasValue)
         {
-            properties[Observability.TenantIdPropertyName] = actorContext.TenantId.Value.ToString();
+            properties[Observability.PropertyNames.Common.TenantId] = actorContext.TenantId.Value.ToString();
         }
 
         if (stakeholderId.HasValue)
         {
-            properties[Observability.StakeholderIdPropertyName] = stakeholderId.Value.ToString();
+            properties[Observability.PropertyNames.Common.StakeholderId] = stakeholderId.Value.ToString();
         }
 
         if (!string.IsNullOrWhiteSpace(failureReason))
         {
-            properties[Observability.FailureReasonPropertyName] = failureReason;
+            properties[Observability.PropertyNames.Common.FailureReason] = failureReason;
         }
 
         if (additionalProperties is null)

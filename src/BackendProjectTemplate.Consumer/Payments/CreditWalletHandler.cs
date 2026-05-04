@@ -56,9 +56,9 @@ public sealed class CreditWalletHandler(
                     message.StakeholderId,
                     additionalProperties: new Dictionary<string, string>
                     {
-                        [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString(),
-                        [Observability.CurrencyCodePropertyName] = currency.CurrencyCode,
-                        [Observability.WalletIdPropertyName] = wallet.Id.ToString()
+                        [Observability.PropertyNames.Payments.CurrencyId] = message.CurrencyId.ToString(),
+                        [Observability.PropertyNames.Payments.CurrencyCode] = currency.CurrencyCode,
+                        [Observability.PropertyNames.Payments.WalletId] = wallet.Id.ToString()
                     }));
         }
         else
@@ -90,10 +90,10 @@ public sealed class CreditWalletHandler(
                 message.StakeholderId,
                 additionalProperties: new Dictionary<string, string>
                 {
-                    [Observability.PaymentReferencePropertyName] = message.MerchantReference,
-                    [Observability.CurrencyIdPropertyName] = message.CurrencyId.ToString(),
-                    [Observability.CurrencyCodePropertyName] = currency.CurrencyCode,
-                    [Observability.WalletIdPropertyName] = wallet.Id.ToString()
+                    [Observability.PropertyNames.Payments.PaymentReference] = message.MerchantReference,
+                    [Observability.PropertyNames.Payments.CurrencyId] = message.CurrencyId.ToString(),
+                    [Observability.PropertyNames.Payments.CurrencyCode] = currency.CurrencyCode,
+                    [Observability.PropertyNames.Payments.WalletId] = wallet.Id.ToString()
                 }));
     }
 }

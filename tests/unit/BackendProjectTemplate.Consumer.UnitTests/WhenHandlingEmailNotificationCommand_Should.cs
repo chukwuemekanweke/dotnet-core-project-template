@@ -42,10 +42,10 @@ public sealed class WhenHandlingEmailNotificationCommand_Should
         customTelemetryContext.Received(1).AddCustomEvent(
             Observability.EventNames.Notifications.EmailSent,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.MessageIdPropertyName] == command.MessageId.ToString() &&
-                properties[Observability.ProviderKeyPropertyName] == "mailtrap" &&
-                properties[Observability.ProviderMessageIdPropertyName] == "mailtrap-message-id" &&
-                properties[Observability.NotificationTypePropertyName] == NotificationType.SignInSuccessful.ToString()));
+                properties[Observability.PropertyNames.Common.MessageId] == command.MessageId.ToString() &&
+                properties[Observability.PropertyNames.Notifications.ProviderKey] == "mailtrap" &&
+                properties[Observability.PropertyNames.Notifications.ProviderMessageId] == "mailtrap-message-id" &&
+                properties[Observability.PropertyNames.Notifications.NotificationType] == NotificationType.SignInSuccessful.ToString()));
     }
 }
 

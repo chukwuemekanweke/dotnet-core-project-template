@@ -31,6 +31,6 @@ public sealed class When_UpdatingProfile_WithAnonymousActor_Should
         customTelemetryContext.Received().AddCustomEvent(
             Observability.EventNames.Authentication.ProfileUpdateFailed,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.FailureReasonPropertyName] == ObservabilityFailureReasons.NotAuthenticated));
+                properties[Observability.PropertyNames.Common.FailureReason] == ObservabilityFailureReasons.NotAuthenticated));
     }
 }

@@ -147,9 +147,9 @@ public sealed class SignInHandler(
 
         if (stakeholderId.HasValue)
         {
-            customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.Value.ToString());
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.Value.ToString());
         }
 
-        customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, failureReason);
+        customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, failureReason);
     }
 }

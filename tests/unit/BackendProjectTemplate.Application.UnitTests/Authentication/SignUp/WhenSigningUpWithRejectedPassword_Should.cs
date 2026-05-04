@@ -43,7 +43,7 @@ public sealed class WhenSigningUpWithRejectedPassword_Should
         context.CustomTelemetryContext.Received().AddCustomEvent(
             Observability.EventNames.Authentication.PasswordSignUpFailed,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.FailureReasonPropertyName] == ObservabilityFailureReasons.ValidationFailed));
+                properties[Observability.PropertyNames.Common.FailureReason] == ObservabilityFailureReasons.ValidationFailed));
     }
 }
 

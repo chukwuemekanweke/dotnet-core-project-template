@@ -23,7 +23,7 @@ public sealed class RequestPasswordResetHandler(
         var user = await identityService.FindByEmailAsync(normalizedEmail);
         if (user is null)
         {
-            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.UserNotFound);
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.UserNotFound);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.PasswordResetRequestFailed,
                 ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.UserNotFound));

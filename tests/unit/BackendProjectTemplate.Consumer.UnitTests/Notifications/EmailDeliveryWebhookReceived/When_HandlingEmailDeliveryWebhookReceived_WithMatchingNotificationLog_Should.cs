@@ -70,9 +70,9 @@ public sealed class When_HandlingEmailDeliveryWebhookReceived_WithMatchingNotifi
         context.CustomTelemetryContext.Received(1).AddCustomEvent(
             Observability.EventNames.Notifications.EmailDelivered,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.MessageIdPropertyName] == log.MessageId.ToString() &&
-                properties[Observability.ProviderKeyPropertyName] == "mailtrap" &&
-                properties[Observability.ProviderMessageIdPropertyName] == "mailtrap-message-id" &&
-                properties[Observability.NotificationTypePropertyName] == NotificationType.SignInSuccessful.ToString()));
+                properties[Observability.PropertyNames.Common.MessageId] == log.MessageId.ToString() &&
+                properties[Observability.PropertyNames.Notifications.ProviderKey] == "mailtrap" &&
+                properties[Observability.PropertyNames.Notifications.ProviderMessageId] == "mailtrap-message-id" &&
+                properties[Observability.PropertyNames.Notifications.NotificationType] == NotificationType.SignInSuccessful.ToString()));
     }
 }

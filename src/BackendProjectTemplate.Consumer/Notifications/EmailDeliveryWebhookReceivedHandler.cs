@@ -92,10 +92,10 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
                 currentActor,
                 additionalProperties: new Dictionary<string, string>
                 {
-                    [Observability.MessageIdPropertyName] = emailNotificationLog.MessageId.ToString(),
-                    [Observability.ProviderKeyPropertyName] = provider.ProviderKey,
-                    [Observability.ProviderMessageIdPropertyName] = emailNotificationLog.ProviderMessageId ?? message.ProviderMessageId,
-                    [Observability.NotificationTypePropertyName] = emailNotificationLog.NotificationType.ToString()
+                    [Observability.PropertyNames.Common.MessageId] = emailNotificationLog.MessageId.ToString(),
+                    [Observability.PropertyNames.Notifications.ProviderKey] = provider.ProviderKey,
+                    [Observability.PropertyNames.Notifications.ProviderMessageId] = emailNotificationLog.ProviderMessageId ?? message.ProviderMessageId,
+                    [Observability.PropertyNames.Notifications.NotificationType] = emailNotificationLog.NotificationType.ToString()
                 }));
     }
 }

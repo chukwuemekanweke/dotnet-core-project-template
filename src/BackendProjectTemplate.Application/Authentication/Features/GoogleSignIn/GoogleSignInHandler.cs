@@ -29,7 +29,7 @@ public sealed class GoogleSignInHandler(
         var googleIdentity = await googleIdentityTokenService.ValidateAsync(request.IdToken, cancellationToken);
         if (googleIdentity is null)
         {
-            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidGoogleToken);
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.InvalidGoogleToken);
             return new GoogleSignInResult(GoogleSignInStatus.InvalidGoogleToken, null);
         }
 
@@ -139,9 +139,9 @@ public sealed class GoogleSignInHandler(
 
         if (stakeholderId.HasValue)
         {
-            customTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholderId.Value.ToString());
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.Value.ToString());
         }
 
-        customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, failureReason);
+        customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, failureReason);
     }
 }

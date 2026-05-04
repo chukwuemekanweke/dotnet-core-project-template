@@ -125,12 +125,12 @@ public abstract class ProcessSafeHavenWebhookHandlerBase<TData>(
         string.IsNullOrWhiteSpace(paymentReference)
             ? new Dictionary<string, string>
             {
-                [Observability.ProviderPropertyName] = provider
+                [Observability.PropertyNames.Payments.Provider] = provider
             }
             : new Dictionary<string, string>
             {
-                [Observability.ProviderPropertyName] = provider,
-                [Observability.PaymentReferencePropertyName] = paymentReference
+                [Observability.PropertyNames.Payments.Provider] = provider,
+                [Observability.PropertyNames.Payments.PaymentReference] = paymentReference
             };
 
     private async Task<PaymentTransaction?> ResolvePaymentTransactionAsync(

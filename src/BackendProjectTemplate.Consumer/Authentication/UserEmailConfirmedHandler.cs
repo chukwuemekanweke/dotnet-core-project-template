@@ -19,7 +19,7 @@ public sealed class UserEmailConfirmedHandler(
 
         if (message.StakeholderId.HasValue)
         {
-            CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, message.StakeholderId.Value.ToString());
+            CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, message.StakeholderId.Value.ToString());
         }
 
         return Task.CompletedTask;
