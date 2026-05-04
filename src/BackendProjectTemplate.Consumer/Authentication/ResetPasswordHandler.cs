@@ -71,7 +71,7 @@ public sealed class ResetPasswordHandler(
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
+        CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetOtpSent,
             ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholder.StakeholderId));

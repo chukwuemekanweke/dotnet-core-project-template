@@ -183,17 +183,17 @@ public sealed class ProcessCredoWebhookHandler(
     {
         var properties = new Dictionary<string, string>
         {
-            [Observability.ProviderPropertyName] = provider
+            [Observability.PropertyNames.Payments.Provider] = provider
         };
 
         if (!string.IsNullOrWhiteSpace(merchantReference))
         {
-            properties[Observability.MerchantReferencePropertyName] = merchantReference;
+            properties[Observability.PropertyNames.Payments.MerchantReference] = merchantReference;
         }
 
         if (!string.IsNullOrWhiteSpace(providerReference))
         {
-            properties[Observability.ProviderReferencePropertyName] = providerReference;
+            properties[Observability.PropertyNames.Payments.ProviderReference] = providerReference;
         }
 
         return properties;

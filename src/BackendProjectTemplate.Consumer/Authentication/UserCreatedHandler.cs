@@ -55,8 +55,8 @@ public sealed class UserCreatedHandler(
                 "Skipping sign-up OTP delivery for email {EmailAddress} because the email is already confirmed.",
                 stakeholder.EmailAddress);
 
-            CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
-            CustomTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.AlreadyConfirmed);
+            CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
+            CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.AlreadyConfirmed);
 
             return;
         }
@@ -86,7 +86,7 @@ public sealed class UserCreatedHandler(
             },
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
+        CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSent,
             ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholder.StakeholderId));

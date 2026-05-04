@@ -33,7 +33,7 @@ public sealed class WhenCompletingPasswordResetWithInvalidOtp_Should
         context.CustomTelemetryContext.Received().AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetCompletionFailed,
             Arg.Is<Dictionary<string, string>>(properties =>
-                properties[Observability.FailureReasonPropertyName] == ObservabilityFailureReasons.InvalidOtp));
+                properties[Observability.PropertyNames.Common.FailureReason] == ObservabilityFailureReasons.InvalidOtp));
     }
 }
 

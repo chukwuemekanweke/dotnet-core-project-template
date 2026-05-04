@@ -34,7 +34,7 @@ public sealed class WhenHandlingEmailNotificationCommandWithInvalidConfiguration
 
         emailNotificationService
             .SendAsync(command, Arg.Any<CancellationToken>())
-            .Returns(_ => throw new NotificationConfigurationException("No email provider is configured."));
+            .Returns(_ => Task.FromException<EmailNotificationSendResult?>(new NotificationConfigurationException("No email provider is configured.")));
 
         var exception = await Should.ThrowAsync<CannotProcessMessageNonTransientException>(() =>
             new SendNotificationHandler(customTelemetryContext, currentActorAccessor, messageContext, emailNotificationService)

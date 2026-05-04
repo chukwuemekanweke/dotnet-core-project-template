@@ -120,7 +120,7 @@ public sealed class WhenSendingEmailNotification_Should
             unitOfWork,
             timeProvider);
 
-        await sut.SendAsync(command, CancellationToken.None);
+        var result = await sut.SendAsync(command, CancellationToken.None);
 
         await logRepository.Received(1).AddAsync(Arg.Any<EmailNotificationLog>(), Arg.Any<CancellationToken>());
         loggedMessageId.ShouldBe(command.MessageId);
@@ -143,6 +143,9 @@ public sealed class WhenSendingEmailNotification_Should
             log.SentAtUtc == now &&
             log.ProviderMessageId == "mailtrap-message-id" &&
             log.FailureReason == null));
+        result.ShouldNotBeNull();
+        result.ProviderKey.ShouldBe("mailtrap");
+        result.ProviderMessageId.ShouldBe("mailtrap-message-id");
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

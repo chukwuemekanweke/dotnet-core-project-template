@@ -29,7 +29,7 @@ internal sealed class EmailNotificationDispatcher(
     private static readonly Regex PlaceholderPattern = new(@"\{\{:(?<key>[A-Za-z0-9_]+):\}\}", RegexOptions.CultureInvariant);
     private static readonly Regex PlaceholderFragmentPattern = new(@"\{\{:|:\}\}", RegexOptions.CultureInvariant);
 
-    public async Task SendAsync(SendNotificationCommand command, CancellationToken cancellationToken = default)
+    public async Task<EmailNotificationSendResult?> SendAsync(SendNotificationCommand command, CancellationToken cancellationToken = default)
     {
         var notificationsOptions = options.Value;
 
@@ -48,7 +48,7 @@ internal sealed class EmailNotificationDispatcher(
                 "Skipping email notification for message {MessageId} because it has already been sent.",
                 command.MessageId);
 
-            return;
+            return null;
         }
 
         if (emailNotificationLog is null)
@@ -139,6 +139,7 @@ internal sealed class EmailNotificationDispatcher(
             emailNotificationLog.MarkSent(sendResult.ProviderMessageId, timeProvider.GetUtcNow());
             emailNotificationLogRepository.Update(emailNotificationLog);
             await unitOfWork.SaveChangesAsync(cancellationToken);
+            return new EmailNotificationSendResult(provider.ProviderKey, sendResult.ProviderMessageId);
         }
         catch (Exception ex)
         {

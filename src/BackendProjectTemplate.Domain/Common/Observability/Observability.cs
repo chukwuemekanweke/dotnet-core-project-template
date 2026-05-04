@@ -5,25 +5,42 @@ public static class Observability
     public const string ActivitySourceName = "BackendProjectTemplate";
     public const string FlowIdHeaderName = "X-Flow-Id";
 
-    public const string MessageTypePropertyName = "message_type";
-    public const string MessageIdPropertyName = "message_id";
-    public const string UserIdPropertyName = "user_id";
-    public const string StakeholderIdPropertyName = "stakeholder_id";
-    public const string TenantIdPropertyName = "tenant_id";
-    public const string CorrelationIdPropertyName = "correlation_id";
-    public const string FlowIdPropertyName = "flow.id";
-    public const string FailureReasonPropertyName = "failure_reason";
-    public const string ProviderPropertyName = "provider";
-    public const string PaymentReferencePropertyName = "payment_reference";
-    public const string MerchantReferencePropertyName = "merchant_reference";
-    public const string ProviderReferencePropertyName = "provider_reference";
-    public const string PaymentMethodPropertyName = "payment_method";
-    public const string PaymentIntentPropertyName = "payment_intent";
-    public const string CurrencyIdPropertyName = "currency_id";
-    public const string CurrencyCodePropertyName = "currency_code";
-    public const string WalletIdPropertyName = "wallet_id";
-    public const string TerminalStatePropertyName = "terminal_state";
-    public const string ExceptionTypePropertyName = "exception_type";
+    public static class PropertyNames
+    {
+        public static class Common
+        {
+            public const string MessageType = "message_type";
+            public const string MessageId = "message_id";
+            public const string UserId = "user_id";
+            public const string StakeholderId = "stakeholder_id";
+            public const string TenantId = "tenant_id";
+            public const string CorrelationId = "correlation_id";
+            public const string FlowId = "flow.id";
+            public const string FailureReason = "failure_reason";
+            public const string ExceptionType = "exception_type";
+        }
+
+        public static class Notifications
+        {
+            public const string ProviderKey = "provider_key";
+            public const string ProviderMessageId = "provider_message_id";
+            public const string NotificationType = "notification_type";
+        }
+
+        public static class Payments
+        {
+            public const string Provider = "provider";
+            public const string PaymentReference = "payment_reference";
+            public const string MerchantReference = "merchant_reference";
+            public const string ProviderReference = "provider_reference";
+            public const string PaymentMethod = "payment_method";
+            public const string PaymentIntent = "payment_intent";
+            public const string CurrencyId = "currency_id";
+            public const string CurrencyCode = "currency_code";
+            public const string WalletId = "wallet_id";
+            public const string TerminalState = "terminal_state";
+        }
+    }
 
     public static class EventNames
     {
@@ -62,6 +79,7 @@ public static class Observability
         public static class Notifications
         {
             public const string EmailSent = "EmailNotificationSent";
+            public const string EmailDelivered = "EmailNotificationDelivered";
         }
 
         public static class Payments

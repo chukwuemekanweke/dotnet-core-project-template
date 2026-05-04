@@ -105,12 +105,12 @@ public sealed class InitiatePaymentHandler(
                 stakeholder.Id,
                 additionalProperties: new Dictionary<string, string>
                 {
-                    [Observability.ProviderPropertyName] = paymentProvider.ProviderKey,
-                    [Observability.PaymentMethodPropertyName] = paymentTransaction.PaymentMethodType.ToString(),
-                    [Observability.PaymentIntentPropertyName] = paymentTransaction.PaymentIntent.ToString(),
-                    [Observability.MerchantReferencePropertyName] = paymentTransaction.MerchantReference,
-                    [Observability.ProviderReferencePropertyName] = paymentTransaction.ProviderReference ?? string.Empty,
-                    [Observability.CurrencyCodePropertyName] = currency.CurrencyCode
+                    [Observability.PropertyNames.Payments.Provider] = paymentProvider.ProviderKey,
+                    [Observability.PropertyNames.Payments.PaymentMethod] = paymentTransaction.PaymentMethodType.ToString(),
+                    [Observability.PropertyNames.Payments.PaymentIntent] = paymentTransaction.PaymentIntent.ToString(),
+                    [Observability.PropertyNames.Payments.MerchantReference] = paymentTransaction.MerchantReference,
+                    [Observability.PropertyNames.Payments.ProviderReference] = paymentTransaction.ProviderReference ?? string.Empty,
+                    [Observability.PropertyNames.Payments.CurrencyCode] = currency.CurrencyCode
                 }));
 
         return new InitiatePaymentResult(

@@ -4,5 +4,5 @@ namespace BackendProjectTemplate.Domain.Common.Notifications;
 
 public interface IEmailNotificationService
 {
-    Task SendAsync(SendNotificationCommand command, CancellationToken cancellationToken = default);
+    Task<EmailNotificationSendResult?> SendAsync(SendNotificationCommand command, CancellationToken cancellationToken = default);
 }

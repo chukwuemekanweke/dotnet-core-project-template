@@ -144,8 +144,8 @@ public sealed class PaymentReconciliationService(
         string terminalState) =>
         new()
         {
-            [Observability.ProviderPropertyName] = provider,
-            [Observability.PaymentReferencePropertyName] = paymentReference,
-            [Observability.TerminalStatePropertyName] = terminalState
+            [Observability.PropertyNames.Payments.Provider] = provider,
+            [Observability.PropertyNames.Payments.PaymentReference] = paymentReference,
+            [Observability.PropertyNames.Payments.TerminalState] = terminalState
         };
 }

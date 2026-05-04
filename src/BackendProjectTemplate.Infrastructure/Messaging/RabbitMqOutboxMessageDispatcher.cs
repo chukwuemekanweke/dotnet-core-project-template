@@ -35,8 +35,8 @@ public sealed class RabbitMqOutboxMessageDispatcher(
             ActivityKind.Producer,
             parentId: message.ActivityId);
 
-        activity?.SetTag(DomainObservability.MessageTypePropertyName, message.Type);
-        activity?.SetTag(DomainObservability.MessageIdPropertyName, message.MessageId.ToString());
+        activity?.SetTag(DomainObservability.PropertyNames.Common.MessageType, message.Type);
+        activity?.SetTag(DomainObservability.PropertyNames.Common.MessageId, message.MessageId.ToString());
 
         switch (message.Kind)
         {

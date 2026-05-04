@@ -25,7 +25,7 @@ public sealed class SignUpOtpHandler(
         var user = await identityService.FindByEmailAsync(request.Email);
         if (user is null)
         {
-            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidOtp);
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.InvalidOtp);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.EmailConfirmationFailed,
                 ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.InvalidOtp));
@@ -34,7 +34,7 @@ public sealed class SignUpOtpHandler(
 
         if (user.EmailConfirmed)
         {
-            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.AlreadyConfirmed);
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.AlreadyConfirmed);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.EmailConfirmationFailed,
                 ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.AlreadyConfirmed));
@@ -43,7 +43,7 @@ public sealed class SignUpOtpHandler(
 
         if (!await identityService.VerifySignUpOtpAsync(user, request.Otp))
         {
-            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidOtp);
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.InvalidOtp);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.EmailConfirmationFailed,
                 ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.InvalidOtp));

@@ -22,7 +22,7 @@ public abstract class BaseMessageHandler<TMessage>(
     {
         using var activity = ActivitySource.StartActivity($"{typeof(TMessage).Name}_process", ActivityKind.Consumer);
 
-        CustomTelemetryContext.SetProperty(Observability.MessageTypePropertyName, typeof(TMessage).Name);
+        CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.MessageType, typeof(TMessage).Name);
 
         if (message is BaseEvent baseEvent)
         {
@@ -43,12 +43,12 @@ public abstract class BaseMessageHandler<TMessage>(
                 baseEvent.FlowId ?? string.Empty);
 
             CustomTelemetryContext
-                .SetProperty(Observability.MessageIdPropertyName, baseEvent.MessageId.ToString())
+                .SetProperty(Observability.PropertyNames.Common.MessageId, baseEvent.MessageId.ToString())
                 .SetProperty("OccurredAt", baseEvent.OccuredAt.ToString("O"))
-                .SetProperty(Observability.StakeholderIdPropertyName, baseEvent.StakeholderId?.ToString() ?? string.Empty)
-                .SetProperty(Observability.TenantIdPropertyName, baseEvent.TenantId.ToString())
-                .SetProperty(Observability.CorrelationIdPropertyName, messageContext.CorrelationId)
-                .SetProperty(Observability.FlowIdPropertyName, baseEvent.FlowId ?? string.Empty);
+                .SetProperty(Observability.PropertyNames.Common.StakeholderId, baseEvent.StakeholderId?.ToString() ?? string.Empty)
+                .SetProperty(Observability.PropertyNames.Common.TenantId, baseEvent.TenantId.ToString())
+                .SetProperty(Observability.PropertyNames.Common.CorrelationId, messageContext.CorrelationId)
+                .SetProperty(Observability.PropertyNames.Common.FlowId, baseEvent.FlowId ?? string.Empty);
         }
         else if (message is BaseCommand baseCommand)
         {
@@ -69,12 +69,12 @@ public abstract class BaseMessageHandler<TMessage>(
                 baseCommand.FlowId ?? string.Empty);
 
             CustomTelemetryContext
-                .SetProperty(Observability.MessageIdPropertyName, baseCommand.MessageId.ToString())
+                .SetProperty(Observability.PropertyNames.Common.MessageId, baseCommand.MessageId.ToString())
                 .SetProperty("RequestedAt", baseCommand.RequestedAt.ToString("O"))
-                .SetProperty(Observability.StakeholderIdPropertyName, baseCommand.StakeholderId?.ToString() ?? string.Empty)
-                .SetProperty(Observability.TenantIdPropertyName, baseCommand.TenantId.ToString())
-                .SetProperty(Observability.CorrelationIdPropertyName, messageContext.CorrelationId)
-                .SetProperty(Observability.FlowIdPropertyName, baseCommand.FlowId ?? string.Empty);
+                .SetProperty(Observability.PropertyNames.Common.StakeholderId, baseCommand.StakeholderId?.ToString() ?? string.Empty)
+                .SetProperty(Observability.PropertyNames.Common.TenantId, baseCommand.TenantId.ToString())
+                .SetProperty(Observability.PropertyNames.Common.CorrelationId, messageContext.CorrelationId)
+                .SetProperty(Observability.PropertyNames.Common.FlowId, baseCommand.FlowId ?? string.Empty);
         }
         else
         {

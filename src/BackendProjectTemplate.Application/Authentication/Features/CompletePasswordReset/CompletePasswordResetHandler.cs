@@ -21,7 +21,7 @@ public sealed class CompletePasswordResetHandler(
         var user = await identityService.FindByEmailAsync(normalizedEmail);
         if (user is null)
         {
-            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.UserNotFound);
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.UserNotFound);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.PasswordResetCompletionFailed,
                 ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.UserNotFound));
@@ -35,7 +35,7 @@ public sealed class CompletePasswordResetHandler(
             cancellationToken);
         if (!otpIsValid)
         {
-            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.InvalidOtp);
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.InvalidOtp);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.PasswordResetCompletionFailed,
                 ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.InvalidOtp));
@@ -45,7 +45,7 @@ public sealed class CompletePasswordResetHandler(
         var resetResult = await identityService.ResetPasswordAsync(user, request.Password);
         if (!resetResult.Succeeded)
         {
-            customTelemetryContext.SetProperty(Observability.FailureReasonPropertyName, ObservabilityFailureReasons.ValidationFailed);
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.ValidationFailed);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.PasswordResetCompletionFailed,
                 ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.ValidationFailed));

@@ -8,6 +8,7 @@ using BackendProjectTemplate.Infrastructure.Notifications;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Shouldly;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 
@@ -54,12 +55,13 @@ public sealed class WhenSendingEmailNotificationWithExistingSentLog_Should
             unitOfWork,
             timeProvider);
 
-        await sut.SendAsync(command, CancellationToken.None);
+        var result = await sut.SendAsync(command, CancellationToken.None);
 
         await logRepository.DidNotReceive().AddAsync(Arg.Any<EmailNotificationLog>(), Arg.Any<CancellationToken>());
         logRepository.DidNotReceive().Update(Arg.Any<EmailNotificationLog>());
         await transportProvider.DidNotReceive().SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        result.ShouldBeNull();
     }
 
     private static SendNotificationCommand CreateCommand() =>

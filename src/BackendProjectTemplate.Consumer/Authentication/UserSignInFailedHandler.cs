@@ -53,7 +53,7 @@ public sealed class UserSignInFailedHandler(
         }
         if (stakeholder is not null)
         {
-            CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
+            CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         }
 
         if (message.FailureReason == UserSignInFailureReasons.InvalidCredentials &&

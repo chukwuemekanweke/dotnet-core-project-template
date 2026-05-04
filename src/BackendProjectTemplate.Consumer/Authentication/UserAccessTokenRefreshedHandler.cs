@@ -54,7 +54,7 @@ public sealed class UserAccessTokenRefreshedHandler(
         await loginActivityRepository.AddAsync(loginActivity, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        CustomTelemetryContext.SetProperty(Observability.StakeholderIdPropertyName, stakeholder.StakeholderId.ToString());
+        CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.SessionRefreshPostProcessingCompleted,
             ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholder.StakeholderId));

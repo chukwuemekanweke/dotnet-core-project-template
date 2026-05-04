@@ -22,7 +22,22 @@ public sealed class SendNotificationHandler(
             switch (message.NotificationMedium)
             {
                 case NotificationMedium.Email:
-                    await emailNotificationService.SendAsync(message, cancellationToken);
+                    var sendResult = await emailNotificationService.SendAsync(message, cancellationToken);
+                    if (sendResult is not null)
+                    {
+                        CustomTelemetryContext.AddCustomEvent(
+                            Observability.EventNames.Notifications.EmailSent,
+                            ObservabilityEventProperties.Create(
+                                CurrentActorAccessor,
+                                message.StakeholderId,
+                                additionalProperties: new Dictionary<string, string>
+                                {
+                                    [Observability.PropertyNames.Common.MessageId] = message.MessageId.ToString(),
+                                    [Observability.PropertyNames.Notifications.ProviderKey] = sendResult.ProviderKey,
+                                    [Observability.PropertyNames.Notifications.ProviderMessageId] = sendResult.ProviderMessageId,
+                                    [Observability.PropertyNames.Notifications.NotificationType] = message.NotificationType.ToString()
+                                }));
+                    }
                     break;
 
                 default:
@@ -34,10 +49,6 @@ public sealed class SendNotificationHandler(
         {
             throw new CannotProcessMessageNonTransientException(exception.Message);
         }
-
-        CustomTelemetryContext.AddCustomEvent(
-            Observability.EventNames.Notifications.EmailSent,
-            ObservabilityEventProperties.Create(CurrentActorAccessor, message.StakeholderId));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(SendNotificationCommand message)
