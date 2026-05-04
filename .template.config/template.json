@@ -18,6 +18,21 @@
       "path": "BackendProjectTemplate.slnx"
     }
   ],
+  "forms": {
+    "lowerCase": {
+      "identifier": "lowerCase"
+    },
+    "dotsToDashes": {
+      "identifier": "replace",
+      "pattern": "\\.",
+      "replacement": "-"
+    },
+    "dotsToNothing": {
+      "identifier": "replace",
+      "pattern": "\\.",
+      "replacement": ""
+    }
+  },
   "symbols": {
     "organizationAbbreviation": {
       "type": "parameter",
@@ -58,6 +73,60 @@
           }
         ],
         "separator": ".",
+        "removeEmptyValues": true
+      }
+    },
+    "projectRootNameLowerCase": {
+      "type": "derived",
+      "valueSource": "projectRootName",
+      "valueTransform": "lowerCase"
+    },
+    "projectRootNameKebabCase": {
+      "type": "derived",
+      "valueSource": "projectRootNameLowerCase",
+      "valueTransform": "dotsToDashes"
+    },
+    "projectRootNameCompactLowerCase": {
+      "type": "derived",
+      "valueSource": "projectRootNameLowerCase",
+      "valueTransform": "dotsToNothing",
+      "replaces": "backendprojecttemplate"
+    },
+    "webApiMetricsJobName": {
+      "type": "generated",
+      "generator": "join",
+      "replaces": "backend-template-webapi",
+      "parameters": {
+        "symbols": [
+          {
+            "type": "ref",
+            "value": "projectRootNameKebabCase"
+          },
+          {
+            "type": "const",
+            "value": "webapi"
+          }
+        ],
+        "separator": "-",
+        "removeEmptyValues": true
+      }
+    },
+    "consumerMetricsJobName": {
+      "type": "generated",
+      "generator": "join",
+      "replaces": "backend-template-consumer",
+      "parameters": {
+        "symbols": [
+          {
+            "type": "ref",
+            "value": "projectRootNameKebabCase"
+          },
+          {
+            "type": "const",
+            "value": "consumer"
+          }
+        ],
+        "separator": "-",
         "removeEmptyValues": true
       }
     }
