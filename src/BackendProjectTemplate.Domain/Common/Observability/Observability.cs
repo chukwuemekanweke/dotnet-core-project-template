@@ -14,6 +14,9 @@ public static class Observability
     public const string FlowIdPropertyName = "flow.id";
     public const string FailureReasonPropertyName = "failure_reason";
     public const string ProviderPropertyName = "provider";
+    public const string ProviderKeyPropertyName = "provider_key";
+    public const string ProviderMessageIdPropertyName = "provider_message_id";
+    public const string NotificationTypePropertyName = "notification_type";
     public const string PaymentReferencePropertyName = "payment_reference";
     public const string MerchantReferencePropertyName = "merchant_reference";
     public const string ProviderReferencePropertyName = "provider_reference";
@@ -62,6 +65,7 @@ public static class Observability
         public static class Notifications
         {
             public const string EmailSent = "EmailNotificationSent";
+            public const string EmailDelivered = "EmailNotificationDelivered";
         }
 
         public static class Payments

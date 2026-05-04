@@ -1,6 +1,9 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
+using BackendProjectTemplate.Domain.Providers.Entities;
+using NSubstitute;
 using Shouldly;
 using EmailDeliveryWebhookReceivedEvent = BackendProjectTemplate.Contracts.Events.EmailDeliveryWebhookReceived;
 
@@ -24,6 +27,7 @@ public sealed class When_HandlingEmailDeliveryWebhookReceived_WithMatchingNotifi
             null,
             context.Clock.GetUtcNow());
         var deliveredAtUtc = DateTimeOffset.Parse("2026-05-03T13:05:00+00:00");
+        var provider = Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, context.Clock.GetUtcNow());
         var inbox = EmailDeliveryWebhookInbox.Create(
             providerId,
             "evt_123",
@@ -44,6 +48,10 @@ public sealed class When_HandlingEmailDeliveryWebhookReceived_WithMatchingNotifi
                 Arg.Any<EmailNotificationLogByProviderMessageIdSpecification>(),
                 Arg.Any<CancellationToken>())
             .Returns(log);
+        context.ProviderRepository.FirstOrDefaultAsync(
+                Arg.Any<ProviderByIdSpecification>(),
+                Arg.Any<CancellationToken>())
+            .Returns(provider);
 
         await context.CreateEmailDeliveryWebhookReceivedHandler().HandleAsync(
             new EmailDeliveryWebhookReceivedEvent
@@ -59,5 +67,12 @@ public sealed class When_HandlingEmailDeliveryWebhookReceived_WithMatchingNotifi
         context.EmailNotificationLogRepository.Received(1).Update(log);
         context.EmailDeliveryWebhookInboxRepository.Received(1).Update(inbox);
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        context.CustomTelemetryContext.Received(1).AddCustomEvent(
+            Observability.EventNames.Notifications.EmailDelivered,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.MessageIdPropertyName] == log.MessageId.ToString() &&
+                properties[Observability.ProviderKeyPropertyName] == "mailtrap" &&
+                properties[Observability.ProviderMessageIdPropertyName] == "mailtrap-message-id" &&
+                properties[Observability.NotificationTypePropertyName] == NotificationType.SignInSuccessful.ToString()));
     }
 }
