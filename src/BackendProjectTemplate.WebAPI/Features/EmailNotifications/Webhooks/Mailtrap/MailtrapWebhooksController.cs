@@ -2,6 +2,7 @@ using Asp.Versioning;
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 
@@ -11,7 +12,9 @@ namespace BackendProjectTemplate.WebAPI.Features.EmailNotifications.Webhooks.Mai
 [ApiVersion("1.0")]
 [AllowAnonymous]
 [Route(EndpointUrl.EmailNotificationWebhooks.Mailtrap.Route)]
-public sealed class MailtrapWebhooksController(ProcessMailtrapDeliveryWebhookHandler handler) : ControllerBase
+public sealed class MailtrapWebhooksController(
+    ProcessMailtrapDeliveryWebhookHandler handler,
+    ILogger<MailtrapWebhooksController> logger) : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
@@ -53,6 +56,9 @@ public sealed class MailtrapWebhooksController(ProcessMailtrapDeliveryWebhookHan
 
         if (result.Status == MailtrapDeliveryWebhookReceiptStatus.InvalidSignature)
         {
+            logger.LogWarning(
+                "Mailtrap webhook signature validation failed. Reason: {Reason}",
+                result.StatusChangeReason ?? "unknown");
             return Unauthorized("Invalid signature");
         }
 

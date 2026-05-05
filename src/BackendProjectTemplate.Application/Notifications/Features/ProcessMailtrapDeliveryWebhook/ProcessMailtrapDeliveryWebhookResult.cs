@@ -1,6 +1,8 @@
 namespace BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 
-public sealed record ProcessMailtrapDeliveryWebhookResult(MailtrapDeliveryWebhookReceiptStatus Status);
+public sealed record ProcessMailtrapDeliveryWebhookResult(
+    MailtrapDeliveryWebhookReceiptStatus Status,
+    string? StatusChangeReason = null);
 
 public enum MailtrapDeliveryWebhookReceiptStatus
 {

@@ -26,7 +26,9 @@ public sealed class ProcessMailtrapDeliveryWebhookHandler(
             cancellationToken);
         if (!validationResult.IsValid)
         {
-            return new ProcessMailtrapDeliveryWebhookResult(MailtrapDeliveryWebhookReceiptStatus.InvalidSignature);
+            return new ProcessMailtrapDeliveryWebhookResult(
+                MailtrapDeliveryWebhookReceiptStatus.InvalidSignature,
+                validationResult.StatusChangeReason);
         }
 
         var provider = await providerRepository.FirstOrDefaultAsync(
