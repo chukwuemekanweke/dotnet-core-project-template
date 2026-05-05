@@ -25,7 +25,7 @@ public sealed class UpdateProfileHandler(
 
         if (string.IsNullOrWhiteSpace(command.FirstName) || string.IsNullOrWhiteSpace(command.LastName))
         {
-            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.ToString());
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.Value.ToString());
             customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.ValidationFailed);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.ProfileUpdateFailed,
@@ -38,7 +38,7 @@ public sealed class UpdateProfileHandler(
         var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId.Value, cancellationToken);
         if (stakeholder is null)
         {
-            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.ToString());
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.Value.ToString());
             customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.StakeholderNotFound);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.ProfileUpdateFailed,

@@ -13,14 +13,12 @@ public sealed class When_ActivatingProvider_WithUnknownProviderKey_Should
     {
         var providerRepository = Substitute.For<IRepository<Provider>>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
-        var timeProvider = TimeProvider.System;
-
         providerRepository.ListAsync(Arg.Any<ISpecification<Provider>>(), Arg.Any<CancellationToken>())
             .Returns([
-                Provider.Create(ProviderType.Email, "Primary", "primary", true, timeProvider.GetUtcNow())
+                Provider.Create(ProviderType.Email, "Primary", "primary", true, DateTimeOffset.UtcNow)
             ]);
 
-        var sut = new ActivateProviderHandler(providerRepository, unitOfWork, timeProvider);
+        var sut = new ActivateProviderHandler(providerRepository, unitOfWork);
 
         var result = await sut.HandleAsync(
             new ActivateProviderCommand(ProviderType.Email, "missing"),
