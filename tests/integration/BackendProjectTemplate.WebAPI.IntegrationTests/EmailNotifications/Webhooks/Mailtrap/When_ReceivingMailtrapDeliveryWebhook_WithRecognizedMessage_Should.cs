@@ -22,11 +22,10 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
         fixture,
         new Dictionary<string, string?>
         {
-            ["Notifications:Email:Mailtrap:WebhookSigningSecret"] = WebhookSigningSecret
+            ["Notifications:Email:Mailtrap:WebhookSigningSecret"] = "test-signing-secret"
         }),
         IAsyncLifetime
 {
-    private const string WebhookSigningSecret = "a416878dcd9837d75c5601aedad14f62";
     private Guid _providerId;
     private Guid _emailNotificationLogId;
     private Guid _webhookInboxId;
@@ -61,12 +60,12 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
                     new
                     {
                         @event = "delivery",
-                        message_id = "41223360-4850-11f1-0000-f15103b7459c",
+                        message_id = "mailtrap-message-id",
                         sending_stream = "transactional",
-                        email = "chukwuemekanweke256@gmail.com",
-                        sending_domain_name = "chidelu.com",
-                        timestamp = DateTimeOffset.Parse("2026-05-03T07:01:57+00:00").ToUnixTimeSeconds(),
-                        event_id = "4174a77d-4850-11f1-8d0a-0a58a9feac02"
+                        email = "ada@example.com",
+                        sending_domain_name = "mail.example.com",
+                        timestamp = DateTimeOffset.Parse("2026-05-03T12:05:00+00:00").ToUnixTimeSeconds(),
+                        event_id = "evt_123"
                     }
                 }
             };
@@ -76,7 +75,7 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
             {
                 Content = new StringContent(rawPayload, Encoding.UTF8, "application/json")
             };
-            request.Headers.Add("Mailtrap-Signature", ComputeSignature(WebhookSigningSecret, rawPayload));
+            request.Headers.Add("Mailtrap-Signature", ComputeSignature("test-signing-secret", rawPayload));
 
             _response = await Client.SendAsync(request);
         }
@@ -100,8 +99,8 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
 
             _webhookInboxId = inbox.Id;
             _outboxMessageId = outboxMessage.Id;
-            inbox.ProviderMessageId.ShouldBe("41223360-4850-11f1-0000-f15103b7459c");
-            inbox.WebhookEventId.ShouldBe("4174a77d-4850-11f1-8d0a-0a58a9feac02");
+            inbox.ProviderMessageId.ShouldBe("mailtrap-message-id");
+            inbox.WebhookEventId.ShouldBe("evt_123");
             inbox.WebhookProcessingStatus.ShouldBe(WebhookProcessingStatus.Received);
             log.DeliveredAtUtc.ShouldBeNull();
             outboxMessage.SentAtUtc.ShouldBeNull();
