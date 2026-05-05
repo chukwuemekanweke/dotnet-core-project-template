@@ -33,6 +33,7 @@ public sealed class When_ProcessingMailtrapDeliveryWebhook_WithInvalidSignature_
             CancellationToken.None);
 
         result.Status.ShouldBe(MailtrapDeliveryWebhookReceiptStatus.InvalidSignature);
+        result.StatusChangeReason.ShouldBe(KnownWebhookStatusChangeReasons.Shared.InvalidSignature);
         await context.EmailDeliveryWebhookInboxRepository.DidNotReceive().AddAsync(Arg.Any<EmailDeliveryWebhookInbox>(), Arg.Any<CancellationToken>());
         await context.UnitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }

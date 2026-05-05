@@ -1,6 +1,7 @@
 using BackendProjectTemplate.WebAPI.Features.EmailNotifications.Webhooks.Mailtrap;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using System.Text;
 
@@ -14,7 +15,7 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithUnsupportedEvent_S
         var context = new EmailNotificationsControllerTestContext();
         const string payload = "{\"events\":[{\"event\":\"open\",\"message_id\":\"mailtrap-message-id\",\"sending_stream\":\"transactional\",\"email\":\"ada@example.com\",\"sending_domain_name\":\"mail.example.com\",\"timestamp\":1746273900,\"event_id\":\"evt_123\"}]}";
 
-        var sut = new MailtrapWebhooksController(context.CreateHandler());
+        var sut = new MailtrapWebhooksController(context.CreateHandler(), NullLogger<MailtrapWebhooksController>.Instance);
         sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext()
