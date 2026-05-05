@@ -42,6 +42,7 @@ services:
       Jwt__Issuer: BackendProjectTemplate
       Jwt__Audience: BackendProjectTemplate.Clients
       Jwt__SigningKey: super-secret-template-signing-key-change-me
+      Notifications__Email__Mailtrap__WebhookSigningSecret: ${MAILTRAP_WEBHOOK_SIGNING_SECRET}
       OpenTelemetry__ServiceName: BackendProjectTemplate.WebAPI
       OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
       PYROSCOPE_APPLICATION_NAME: backendprojecttemplate.webapi
