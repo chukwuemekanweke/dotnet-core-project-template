@@ -32,7 +32,7 @@ public sealed class UploadAvatarHandler(
             string.IsNullOrWhiteSpace(command.ContentType) ||
             !command.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
         {
-            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.ToString());
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.Value.ToString());
             customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.InvalidFile);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.AvatarUploadFailed,
@@ -45,7 +45,7 @@ public sealed class UploadAvatarHandler(
         var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId.Value, cancellationToken);
         if (stakeholder is null)
         {
-            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.ToString());
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.Value.ToString());
             customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.StakeholderNotFound);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.AvatarUploadFailed,

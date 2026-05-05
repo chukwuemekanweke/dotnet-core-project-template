@@ -6,8 +6,7 @@ namespace BackendProjectTemplate.Application.Providers.Features.ActivateProvider
 
 public sealed class ActivateProviderHandler(
     IRepository<Provider> providerRepository,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    IUnitOfWork unitOfWork)
 {
     public async Task<ActivateProviderResult> HandleAsync(ActivateProviderCommand command, CancellationToken cancellationToken)
     {

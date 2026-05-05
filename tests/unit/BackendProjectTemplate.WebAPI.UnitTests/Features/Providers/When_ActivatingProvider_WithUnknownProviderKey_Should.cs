@@ -24,7 +24,7 @@ public sealed class When_ActivatingProvider_WithUnknownProviderKey_Should
             ]);
 
         var sut = new ProvidersController(
-            new ActivateProviderHandler(repository, unitOfWork, TimeProvider.System),
+            new ActivateProviderHandler(repository, unitOfWork),
             new ActivateProviderValidator());
 
         var result = await sut.ActivateProvider(request, CancellationToken.None);
