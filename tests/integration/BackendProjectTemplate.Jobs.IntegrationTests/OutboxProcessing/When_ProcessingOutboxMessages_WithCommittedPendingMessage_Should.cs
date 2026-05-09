@@ -14,75 +14,55 @@ using System.Threading.Channels;
 namespace BackendProjectTemplate.Jobs.IntegrationTests.OutboxProcessing;
 
 [Collection(nameof(ContainersCollection))]
-public sealed class WhenProcessingPendingOutboxMessages_Should
+public sealed class When_ProcessingOutboxMessages_WithCommittedPendingMessage_Should
     : JobsWorkerIntegrationTestBase
 {
-    private const string EventsExchange = "x.events.backendprojecttemplate.integrationtests";
     private readonly ContainersFixture _fixture;
     private readonly Channel<UserCreated> _channel = Channel.CreateUnbounded<UserCreated>();
     private ServiceProvider _subscriberServices = default!;
     private ISubscriber _subscriber = default!;
     private Guid _outboxMessageId;
-    private Guid _stakeholderId;
 
-    public WhenProcessingPendingOutboxMessages_Should(ContainersFixture fixture)
+    public When_ProcessingOutboxMessages_WithCommittedPendingMessage_Should(ContainersFixture fixture)
         : base(fixture)
     {
         _fixture = fixture;
     }
 
     [Fact]
-    public async Task MarkMessageAsSent()
+    public async Task WakeUpWithoutWaitingForFallbackPolling()
     {
-        await WhenTheJobsWorkerProcessesPendingOutboxMessages();
-        await ThenThePublishedMessageIsReceivedAndTheOutboxMessageIsMarkedAsSent();
+        await InsertPendingUserCreatedOutboxMessageAsync();
 
-        async Task WhenTheJobsWorkerProcessesPendingOutboxMessages()
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            var received = await _channel.Reader.ReadAsync(cts.Token);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var received = await _channel.Reader.ReadAsync(cts.Token);
 
-            received.StakeholderId.ShouldBe(_stakeholderId);
-            received.MessageId.ShouldNotBe(Guid.Empty);
+        received.MessageId.ShouldNotBe(Guid.Empty);
 
-            await WaitForConditionAsync(async () =>
-            {
-                await using var scope = CreateDbContextScope();
-                var dbContext = scope.DbContext;
-                var repository = new EfRepository<OutboxMessage>(dbContext);
-                var message = await repository.GetByIdAsync(_outboxMessageId);
-                return message?.SentAtUtc is not null;
-            });
-        }
-
-        async Task ThenThePublishedMessageIsReceivedAndTheOutboxMessageIsMarkedAsSent()
+        await WaitForConditionAsync(async () =>
         {
             await using var scope = CreateDbContextScope();
-            var dbContext = scope.DbContext;
-            var repository = new EfRepository<OutboxMessage>(dbContext);
-            var message = await repository.GetByIdAsync(_outboxMessageId);
-
-            message.ShouldNotBeNull();
-            message.SentAtUtc.ShouldNotBeNull();
-            message.AttemptCount.ShouldBe(0);
-            message.LastError.ShouldBeNull();
-        }
+            var message = await new EfRepository<OutboxMessage>(scope.DbContext).GetByIdAsync(_outboxMessageId);
+            return message?.SentAtUtc is not null;
+        });
     }
 
-    protected override async Task InitializeWorkerTestAsync()
-    {
-        await StartRabbitMqSubscriberAsync();
-        await SeedPendingUserCreatedOutboxMessageAsync();
-    }
+    protected override Task InitializeWorkerTestAsync() => StartRabbitMqSubscriberAsync();
 
     protected override async Task DisposeWorkerTestAsync()
     {
         await DisposeSubscriberAsync();
-        await DeleteOutboxRecordsAsync();
+        await DeleteOutboxRecordAsync();
     }
 
     protected override void RegisterWorkers(IServiceCollection services, IConfiguration configuration) =>
         services.AddOutboxMessageProcessing(configuration);
+
+    protected override IReadOnlyDictionary<string, string?> GetAdditionalConfiguration() =>
+        new Dictionary<string, string?>
+        {
+            [$"{OutboxProcessingOptions.SectionName}:PollIntervalSeconds"] = "30"
+        };
 
     private async Task StartRabbitMqSubscriberAsync()
     {
@@ -94,8 +74,8 @@ public sealed class WhenProcessingPendingOutboxMessages_Should
             UserName = _fixture.RabbitMqUserName,
             Password = _fixture.RabbitMqPassword,
             VirtualHost = _fixture.RabbitMqVirtualHost,
-            SubscriptionName = $"jobs-outbox-{Guid.CreateVersion7():N}",
-            ExchangeName = EventsExchange,
+            SubscriptionName = $"jobs-outbox-immediate-{Guid.CreateVersion7():N}",
+            ExchangeName = CustomJobsApplicationFactory.EventsExchange,
             PrefetchCount = 1,
             MaxRetryCount = 10,
             ConcurrentMessageCount = 1
@@ -111,14 +91,9 @@ public sealed class WhenProcessingPendingOutboxMessages_Should
         await _subscriber.StartAsync(CancellationToken.None);
     }
 
-    private async Task SeedPendingUserCreatedOutboxMessageAsync()
+    private async Task InsertPendingUserCreatedOutboxMessageAsync()
     {
-        _stakeholderId = Guid.CreateVersion7();
-
-        var @event = new UserCreated
-        {
-            StakeholderId = _stakeholderId
-        };
+        var @event = new UserCreated();
         var outboxMessage = OutboxMessage.CreateEvent(
             @event.MessageId,
             typeof(UserCreated).FullName.ShouldNotBeNull(),
@@ -129,13 +104,12 @@ public sealed class WhenProcessingPendingOutboxMessages_Should
         _outboxMessageId = outboxMessage.Id;
 
         await using var scope = CreateDbContextScope();
-        var dbContext = scope.DbContext;
-        var repository = new EfRepository<OutboxMessage>(dbContext);
+        var repository = new EfRepository<OutboxMessage>(scope.DbContext);
         await repository.AddAsync(outboxMessage);
-        await dbContext.SaveChangesAsync();
+        await scope.DbContext.SaveChangesAsync();
     }
 
-    private async Task DeleteOutboxRecordsAsync()
+    private async Task DeleteOutboxRecordAsync()
     {
         if (_outboxMessageId == Guid.Empty)
         {
@@ -143,8 +117,7 @@ public sealed class WhenProcessingPendingOutboxMessages_Should
         }
 
         await using var scope = CreateDbContextScope();
-        var dbContext = scope.DbContext;
-        var repository = new EfRepository<OutboxMessage>(dbContext);
+        var repository = new EfRepository<OutboxMessage>(scope.DbContext);
         var message = await repository.GetByIdAsync(_outboxMessageId);
 
         if (message is null)
@@ -153,7 +126,7 @@ public sealed class WhenProcessingPendingOutboxMessages_Should
         }
 
         repository.Remove(message);
-        await dbContext.SaveChangesAsync();
+        await scope.DbContext.SaveChangesAsync();
     }
 
     private async Task DisposeSubscriberAsync()
@@ -175,4 +148,3 @@ public sealed class WhenProcessingPendingOutboxMessages_Should
             channel.Writer.WriteAsync(message, cancellationToken).AsTask();
     }
 }
-

@@ -18,8 +18,9 @@ public sealed class When_ProcessingOutboxMessages_WithPendingMessage_Should
         var repository = Substitute.For<IRepository<OutboxMessage>>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var dispatcher = Substitute.For<IOutboxMessageDispatcher>();
+        var signal = new OutboxProcessingSignal();
         var state = new BackgroundServiceReadinessState([new BackgroundServiceDescriptor(OutboxMessageProcessor.ServiceName)]);
-        var message = OutboxMessage.CreateEvent(Guid.CreateVersion7(), "type", "{}", DateTimeOffset.UtcNow);
+        var message = OutboxMessage.CreateEvent(Guid.CreateVersion7(), "type", "{}", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
         var services = new ServiceCollection()
             .AddSingleton(repository)
             .AddSingleton(unitOfWork)
@@ -28,12 +29,15 @@ public sealed class When_ProcessingOutboxMessages_WithPendingMessage_Should
 
         repository.ListAsync(Arg.Any<ISpecification<OutboxMessage>>(), Arg.Any<CancellationToken>())
             .Returns([message]);
+        repository.FirstOrDefaultAsync(Arg.Any<ISpecification<OutboxMessage>>(), Arg.Any<CancellationToken>())
+            .Returns((OutboxMessage?)null);
 
         var sut = new OutboxMessageProcessor(
             NullLogger<OutboxMessageProcessor>.Instance,
             services.GetRequiredService<IServiceScopeFactory>(),
             TimeProvider.System,
             Options.Create(new OutboxProcessingOptions { BatchSize = 10, PollIntervalSeconds = 1 }),
+            signal,
             state);
 
         await sut.StartAsync(CancellationToken.None);
@@ -41,6 +45,8 @@ public sealed class When_ProcessingOutboxMessages_WithPendingMessage_Should
         await sut.StopAsync(CancellationToken.None);
 
         state.IsReady.ShouldBeTrue();
+        message.AvailableAtUtc.ShouldNotBe(default);
+        message.AvailableAtUtc.ShouldBeLessThanOrEqualTo(message.SentAtUtc!.Value);
         message.SentAtUtc.ShouldNotBeNull();
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

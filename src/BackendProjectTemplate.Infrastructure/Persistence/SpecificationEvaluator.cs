@@ -21,11 +21,25 @@ public static class SpecificationEvaluator
 
         if (specification.OrderBy is not null)
         {
-            query = query.OrderBy(specification.OrderBy);
+            var orderedQuery = query.OrderBy(specification.OrderBy);
+
+            if (specification.ThenBy is not null)
+            {
+                orderedQuery = orderedQuery.ThenBy(specification.ThenBy);
+            }
+
+            query = orderedQuery;
         }
         else if (specification.OrderByDescending is not null)
         {
-            query = query.OrderByDescending(specification.OrderByDescending);
+            var orderedQuery = query.OrderByDescending(specification.OrderByDescending);
+
+            if (specification.ThenByDescending is not null)
+            {
+                orderedQuery = orderedQuery.ThenByDescending(specification.ThenByDescending);
+            }
+
+            query = orderedQuery;
         }
 
         if (specification.Skip.HasValue)

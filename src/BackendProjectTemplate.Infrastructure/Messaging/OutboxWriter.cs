@@ -16,14 +16,23 @@ internal sealed class OutboxWriter(
 
     public Task AddEventAsync<TEvent>(TEvent message, CancellationToken cancellationToken = default)
         where TEvent : BaseEvent =>
-        AddEventMessageAsync(message, cancellationToken);
+        throw new InvalidOperationException("A delivery time must be supplied by the caller.");
+
+    public Task AddEventAsync<TEvent>(TEvent message, DateTimeOffset deliverAtUtc, CancellationToken cancellationToken = default)
+        where TEvent : BaseEvent =>
+        AddEventMessageAsync(message, deliverAtUtc, cancellationToken);
 
     public Task AddCommandAsync<TCommand>(TCommand message, CancellationToken cancellationToken = default)
         where TCommand : BaseCommand =>
-        AddCommandMessageAsync(message, cancellationToken);
+        throw new InvalidOperationException("A delivery time must be supplied by the caller.");
+
+    public Task AddCommandAsync<TCommand>(TCommand message, DateTimeOffset deliverAtUtc, CancellationToken cancellationToken = default)
+        where TCommand : BaseCommand =>
+        AddCommandMessageAsync(message, deliverAtUtc, cancellationToken);
 
     private Task AddEventMessageAsync<TEvent>(
         TEvent message,
+        DateTimeOffset deliverAtUtc,
         CancellationToken cancellationToken)
         where TEvent : BaseEvent
     {
@@ -35,6 +44,7 @@ internal sealed class OutboxWriter(
             typeName,
             payload,
             message.OccuredAt,
+            deliverAtUtc,
             currentActor.CorrelationId,
             Activity.Current?.Id);
 
@@ -43,6 +53,7 @@ internal sealed class OutboxWriter(
 
     private Task AddCommandMessageAsync<TCommand>(
         TCommand message,
+        DateTimeOffset deliverAtUtc,
         CancellationToken cancellationToken)
         where TCommand : BaseCommand
     {
@@ -54,6 +65,7 @@ internal sealed class OutboxWriter(
             typeName,
             payload,
             message.RequestedAt,
+            deliverAtUtc,
             currentActor.CorrelationId,
             Activity.Current?.Id);
 

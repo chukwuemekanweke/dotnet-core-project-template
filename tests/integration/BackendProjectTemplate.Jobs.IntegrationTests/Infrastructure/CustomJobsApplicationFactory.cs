@@ -35,7 +35,7 @@ public sealed class CustomJobsApplicationFactory(
                 ["Messaging:RabbitMq:VirtualHost"] = rabbitMqVirtualHost,
                 ["Messaging:RabbitMq:EventsExchange"] = EventsExchange,
                 ["Messaging:RabbitMq:CommandsExchange"] = CommandsExchange,
-                ["Outbox:PollIntervalSeconds"] = "1",
+                [$"{BackendProjectTemplate.Jobs.OutboxProcessing.OutboxProcessingOptions.SectionName}:PollIntervalSeconds"] = "1",
                 ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
                 ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
             });

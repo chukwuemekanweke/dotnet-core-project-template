@@ -17,6 +17,7 @@ public sealed class When_ProcessingOutboxMessages_WithNoPendingMessages_Should
         var repository = Substitute.For<IRepository<OutboxMessage>>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var dispatcher = Substitute.For<IOutboxMessageDispatcher>();
+        var signal = new OutboxProcessingSignal();
         var state = new BackgroundServiceReadinessState([new BackgroundServiceDescriptor(OutboxMessageProcessor.ServiceName)]);
         var services = new ServiceCollection()
             .AddSingleton(repository)
@@ -26,12 +27,15 @@ public sealed class When_ProcessingOutboxMessages_WithNoPendingMessages_Should
 
         repository.ListAsync(Arg.Any<ISpecification<OutboxMessage>>(), Arg.Any<CancellationToken>())
             .Returns(Array.Empty<OutboxMessage>());
+        repository.FirstOrDefaultAsync(Arg.Any<ISpecification<OutboxMessage>>(), Arg.Any<CancellationToken>())
+            .Returns((OutboxMessage?)null);
 
         var sut = new OutboxMessageProcessor(
             NullLogger<OutboxMessageProcessor>.Instance,
             services.GetRequiredService<IServiceScopeFactory>(),
             TimeProvider.System,
             Options.Create(new OutboxProcessingOptions { BatchSize = 10, PollIntervalSeconds = 1 }),
+            signal,
             state);
 
         await sut.StartAsync(CancellationToken.None);

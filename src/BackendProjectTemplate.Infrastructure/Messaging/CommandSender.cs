@@ -6,9 +6,18 @@ namespace BackendProjectTemplate.Infrastructure.Messaging;
 
 internal sealed class CommandSender(
     IOutboxWriter outboxWriter,
-    ICurrentActor currentActor) : ICommandSender
+    ICurrentActor currentActor,
+    TimeProvider timeProvider) : ICommandSender
 {
-    public Task SendAsync<TCommand>(TCommand message, CancellationToken cancellationToken = default)
+    public Task SendAsync<TCommand>(TCommand message, CancellationToken cancellationToken)
+        where TCommand : BaseCommand
+        => SendInternalAsync(message, timeProvider.GetUtcNow(), cancellationToken);
+
+    public Task ScheduleSendAsync<TCommand>(TCommand message, DateTimeOffset deliverAtUtc, CancellationToken cancellationToken)
+        where TCommand : BaseCommand
+        => SendInternalAsync(message, deliverAtUtc, cancellationToken);
+
+    private Task SendInternalAsync<TCommand>(TCommand message, DateTimeOffset deliverAtUtc, CancellationToken cancellationToken)
         where TCommand : BaseCommand
     {
         if (!message.StakeholderId.HasValue && Guid.TryParse(currentActor.ActorId, out var stakeholderId))
@@ -26,6 +35,6 @@ internal sealed class CommandSender(
             message.TenantId = currentActor.TenantId.Value;
         }
 
-        return outboxWriter.AddCommandAsync(message, cancellationToken);
+        return outboxWriter.AddCommandAsync(message, deliverAtUtc, cancellationToken);
     }
 }

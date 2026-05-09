@@ -18,8 +18,9 @@ public sealed class When_ProcessingOutboxMessages_WhenDispatchFails_Should
         var repository = Substitute.For<IRepository<OutboxMessage>>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var dispatcher = Substitute.For<IOutboxMessageDispatcher>();
+        var signal = new OutboxProcessingSignal();
         var state = new BackgroundServiceReadinessState([new BackgroundServiceDescriptor(OutboxMessageProcessor.ServiceName)]);
-        var message = OutboxMessage.CreateEvent(Guid.CreateVersion7(), "type", "{}", DateTimeOffset.UtcNow);
+        var message = OutboxMessage.CreateEvent(Guid.CreateVersion7(), "type", "{}", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
         var services = new ServiceCollection()
             .AddSingleton(repository)
             .AddSingleton(unitOfWork)
@@ -28,6 +29,8 @@ public sealed class When_ProcessingOutboxMessages_WhenDispatchFails_Should
 
         repository.ListAsync(Arg.Any<ISpecification<OutboxMessage>>(), Arg.Any<CancellationToken>())
             .Returns([message]);
+        repository.FirstOrDefaultAsync(Arg.Any<ISpecification<OutboxMessage>>(), Arg.Any<CancellationToken>())
+            .Returns((OutboxMessage?)null);
         dispatcher.DispatchAsync(message, Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("boom")));
 
@@ -35,7 +38,8 @@ public sealed class When_ProcessingOutboxMessages_WhenDispatchFails_Should
             NullLogger<OutboxMessageProcessor>.Instance,
             services.GetRequiredService<IServiceScopeFactory>(),
             TimeProvider.System,
-            Options.Create(new OutboxProcessingOptions { BatchSize = 10, PollIntervalSeconds = 1 }),
+            Options.Create(new OutboxProcessingOptions { BatchSize = 10, PollIntervalSeconds = 1, RetryBaseDelaySeconds = 1, MaxRetryDelaySeconds = 60 }),
+            signal,
             state);
 
         await sut.StartAsync(CancellationToken.None);
@@ -43,6 +47,7 @@ public sealed class When_ProcessingOutboxMessages_WhenDispatchFails_Should
         await sut.StopAsync(CancellationToken.None);
 
         message.AttemptCount.ShouldBe(1);
+        message.AvailableAtUtc.ShouldBeGreaterThan(message.LastAttemptAtUtc!.Value);
         message.LastError!.ShouldContain("boom");
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

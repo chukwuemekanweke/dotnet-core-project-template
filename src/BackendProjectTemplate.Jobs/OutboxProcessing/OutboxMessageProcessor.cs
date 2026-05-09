@@ -10,6 +10,7 @@ public sealed class OutboxMessageProcessor(
     IServiceScopeFactory serviceScopeFactory,
     TimeProvider timeProvider,
     IOptions<OutboxProcessingOptions> options,
+    OutboxProcessingSignal signal,
     BackgroundServiceReadinessState readinessState) : BackgroundService
 {
     public const string ServiceName = nameof(OutboxMessageProcessor);
@@ -18,23 +19,26 @@ public sealed class OutboxMessageProcessor(
     {
         readinessState.MarkReady(ServiceName);
 
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds));
-
-        do
+        while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await ProcessPendingMessagesAsync(stoppingToken);
+                var nextDelay = await ProcessPendingMessagesAsync(stoppingToken);
+                await signal.WaitAsync(nextDelay, stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
             }
             catch (Exception exception)
             {
                 logger.LogError(exception, "Outbox message processing iteration failed.");
+                await signal.WaitAsync(TimeSpan.FromSeconds(options.Value.PollIntervalSeconds), stoppingToken);
             }
         }
-        while (await timer.WaitForNextTickAsync(stoppingToken));
     }
 
-    private async Task ProcessPendingMessagesAsync(CancellationToken cancellationToken)
+    private async Task<TimeSpan> ProcessPendingMessagesAsync(CancellationToken cancellationToken)
     {
         using var scope = serviceScopeFactory.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IRepository<OutboxMessage>>();
@@ -43,7 +47,7 @@ public sealed class OutboxMessageProcessor(
         var now = timeProvider.GetUtcNow();
 
         var messages = await repository.ListAsync(
-            new PendingOutboxMessagesSpecification(options.Value.BatchSize),
+            new PendingOutboxMessagesSpecification(options.Value.BatchSize, now),
             cancellationToken);
 
         foreach (var message in messages)
@@ -61,7 +65,7 @@ public sealed class OutboxMessageProcessor(
                     message.MessageId,
                     message.Type);
 
-                message.MarkAttempt(now, exception.Message);
+                message.MarkFailed(now, GetNextRetryAtUtc(message, now), exception.Message);
             }
 
             repository.Update(message);
@@ -71,16 +75,60 @@ public sealed class OutboxMessageProcessor(
         {
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
+
+        var nextPendingMessage = await repository.FirstOrDefaultAsync(new NextPendingOutboxMessageSpecification(), cancellationToken);
+        return GetNextDelay(nextPendingMessage?.AvailableAtUtc, now);
+    }
+
+    private DateTimeOffset GetNextRetryAtUtc(OutboxMessage message, DateTimeOffset utcNow)
+    {
+        var attemptNumber = message.AttemptCount + 1;
+        var exponent = Math.Min(attemptNumber - 1, 16);
+        var scaledDelay = options.Value.RetryBaseDelaySeconds * Math.Pow(2, exponent);
+        var boundedDelay = Math.Min(scaledDelay, options.Value.MaxRetryDelaySeconds);
+        return utcNow.AddSeconds(boundedDelay);
+    }
+
+    private TimeSpan GetNextDelay(DateTimeOffset? nextAvailableAtUtc, DateTimeOffset utcNow)
+    {
+        var fallbackDelay = TimeSpan.FromSeconds(options.Value.PollIntervalSeconds);
+
+        if (!nextAvailableAtUtc.HasValue)
+        {
+            return fallbackDelay;
+        }
+
+        var nextDelay = nextAvailableAtUtc.Value - utcNow;
+        if (nextDelay <= TimeSpan.Zero)
+        {
+            return TimeSpan.Zero;
+        }
+
+        return nextDelay < fallbackDelay
+            ? nextDelay
+            : fallbackDelay;
     }
 
     private sealed class PendingOutboxMessagesSpecification : Specification<OutboxMessage>
     {
-        public PendingOutboxMessagesSpecification(int batchSize)
+        public PendingOutboxMessagesSpecification(int batchSize, DateTimeOffset utcNow)
         {
-            Where(message => message.SentAtUtc == null);
-            ApplyOrderBy(message => message.EnqueuedAtUtc);
+            Where(message => message.SentAtUtc == null && message.AvailableAtUtc <= utcNow);
+            ApplyOrderBy(message => message.AvailableAtUtc);
+            ApplyThenBy(message => message.EnqueuedAtUtc);
             ApplyPaging(0, batchSize);
             EnableTracking();
+        }
+    }
+
+    private sealed class NextPendingOutboxMessageSpecification : Specification<OutboxMessage>
+    {
+        public NextPendingOutboxMessageSpecification()
+        {
+            Where(message => message.SentAtUtc == null);
+            ApplyOrderBy(message => message.AvailableAtUtc);
+            ApplyThenBy(message => message.EnqueuedAtUtc);
+            ApplyPaging(0, 1);
         }
     }
 }
