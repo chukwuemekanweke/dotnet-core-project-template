@@ -21,6 +21,16 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                 schema: "payments",
                 table: "Wallets");
 
+            migrationBuilder.DropColumn(
+                name: "RowVersion",
+                schema: "payments",
+                table: "PaymentWebhookInboxes");
+
+            migrationBuilder.DropColumn(
+                name: "RowVersion",
+                schema: "payments",
+                table: "PaymentTransactions");
+
             migrationBuilder.AddColumn<DateTimeOffset>(
                 name: "AvailableAtUtc",
                 schema: "integration",
@@ -89,6 +99,22 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                 name: "RowVersion",
                 schema: "payments",
                 table: "Wallets",
+                type: "bigint",
+                nullable: false,
+                defaultValue: 0L);
+
+            migrationBuilder.AddColumn<long>(
+                name: "RowVersion",
+                schema: "payments",
+                table: "PaymentWebhookInboxes",
+                type: "bigint",
+                nullable: false,
+                defaultValue: 0L);
+
+            migrationBuilder.AddColumn<long>(
+                name: "RowVersion",
+                schema: "payments",
+                table: "PaymentTransactions",
                 type: "bigint",
                 nullable: false,
                 defaultValue: 0L);

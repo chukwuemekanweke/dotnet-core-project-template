@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BackendProjectTemplate.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260509130007_AddOutboxDelayedDispatching")]
+    [Migration("20260509135849_AddOutboxDelayedDispatching")]
     partial class AddOutboxDelayedDispatching
     {
         /// <inheritdoc />
@@ -1030,8 +1030,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<long>("RowVersion")
-                        .HasColumnType("bigint");
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<Guid>("StakeholderId")
                         .HasColumnType("uuid");
@@ -1120,8 +1123,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("ReceivedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("RowVersion")
-                        .HasColumnType("bigint");
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<int>("SignatureValidationStatus")
                         .HasColumnType("integer");

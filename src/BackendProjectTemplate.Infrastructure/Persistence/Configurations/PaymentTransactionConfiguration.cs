@@ -37,6 +37,9 @@ public sealed class PaymentTransactionConfiguration : IEntityTypeConfiguration<P
         builder.Property(transaction => transaction.StatusChangeReason)
             .HasMaxLength(500);
 
+        builder.Property(transaction => transaction.RowVersion)
+            .IsRowVersion();
+
         builder.Property(transaction => transaction.ProviderPayloadMetadata)
             .HasColumnType("jsonb")
             .HasConversion(

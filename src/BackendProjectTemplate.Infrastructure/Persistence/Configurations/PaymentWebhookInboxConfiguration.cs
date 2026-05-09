@@ -35,6 +35,9 @@ public sealed class PaymentWebhookInboxConfiguration : IEntityTypeConfiguration<
         builder.Property(inbox => inbox.ProcessingError)
             .HasMaxLength(4000);
 
+        builder.Property(inbox => inbox.RowVersion)
+            .IsRowVersion();
+
         builder.HasIndex(inbox => inbox.MerchantReference)
             .HasFilter("\"MerchantReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
 
