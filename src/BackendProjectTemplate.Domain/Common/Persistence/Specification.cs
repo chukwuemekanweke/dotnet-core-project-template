@@ -9,7 +9,9 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     public Expression<Func<TEntity, bool>>? Criteria { get; private set; }
     public IReadOnlyCollection<Expression<Func<TEntity, object>>> Includes => _includes;
     public Expression<Func<TEntity, object>>? OrderBy { get; private set; }
+    public Expression<Func<TEntity, object>>? ThenBy { get; private set; }
     public Expression<Func<TEntity, object>>? OrderByDescending { get; private set; }
+    public Expression<Func<TEntity, object>>? ThenByDescending { get; private set; }
     public int? Skip { get; private set; }
     public int? Take { get; private set; }
     public bool AsNoTracking { get; private set; } = true;
@@ -22,8 +24,14 @@ public abstract class Specification<TEntity> : ISpecification<TEntity>
     protected void ApplyOrderBy(Expression<Func<TEntity, object>> orderByExpression) =>
         OrderBy = orderByExpression;
 
+    protected void ApplyThenBy(Expression<Func<TEntity, object>> thenByExpression) =>
+        ThenBy = thenByExpression;
+
     protected void ApplyOrderByDescending(Expression<Func<TEntity, object>> orderByDescendingExpression) =>
         OrderByDescending = orderByDescendingExpression;
+
+    protected void ApplyThenByDescending(Expression<Func<TEntity, object>> thenByDescendingExpression) =>
+        ThenByDescending = thenByDescendingExpression;
 
     protected void ApplyPaging(int skip, int take)
     {

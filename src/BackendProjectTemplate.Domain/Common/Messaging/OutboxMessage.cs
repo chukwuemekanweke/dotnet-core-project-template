@@ -15,7 +15,8 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
         string payload,
         string? correlationId,
         string? activityId,
-        DateTimeOffset enqueuedAtUtc)
+        DateTimeOffset enqueuedAtUtc,
+        DateTimeOffset availableAtUtc)
     {
         MessageId = messageId;
         Kind = kind;
@@ -24,6 +25,7 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
         CorrelationId = correlationId;
         ActivityId = activityId;
         EnqueuedAtUtc = enqueuedAtUtc;
+        AvailableAtUtc = availableAtUtc;
     }
 
     public Guid MessageId { get; private set; }
@@ -33,6 +35,7 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
     public string? CorrelationId { get; private set; }
     public string? ActivityId { get; private set; }
     public DateTimeOffset EnqueuedAtUtc { get; private set; }
+    public DateTimeOffset AvailableAtUtc { get; private set; }
     public DateTimeOffset? SentAtUtc { get; private set; }
     public DateTimeOffset? LastAttemptAtUtc { get; private set; }
     public int AttemptCount { get; private set; }
@@ -43,18 +46,20 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
         string type,
         string payload,
         DateTimeOffset occurredAtUtc,
+        DateTimeOffset availableAtUtc,
         string? correlationId = null,
         string? activityId = null) =>
-        new(messageId, OutboxMessageKind.Event, type, payload, correlationId, activityId, occurredAtUtc);
+        new(messageId, OutboxMessageKind.Event, type, payload, correlationId, activityId, occurredAtUtc, availableAtUtc);
 
     public static OutboxMessage CreateCommand(
         Guid messageId,
         string type,
         string payload,
         DateTimeOffset requestedAtUtc,
+        DateTimeOffset availableAtUtc,
         string? correlationId = null,
         string? activityId = null) =>
-        new(messageId, OutboxMessageKind.Command, type, payload, correlationId, activityId, requestedAtUtc);
+        new(messageId, OutboxMessageKind.Command, type, payload, correlationId, activityId, requestedAtUtc, availableAtUtc);
 
     public void MarkAttempt(DateTimeOffset utcNow, string? error = null)
     {
@@ -62,6 +67,12 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
         LastAttemptAtUtc = utcNow;
         LastError = error;
         Touch(utcNow);
+    }
+
+    public void MarkFailed(DateTimeOffset utcNow, DateTimeOffset nextAvailableAtUtc, string? error = null)
+    {
+        MarkAttempt(utcNow, error);
+        AvailableAtUtc = nextAvailableAtUtc;
     }
 
     public void MarkSent(DateTimeOffset utcNow)

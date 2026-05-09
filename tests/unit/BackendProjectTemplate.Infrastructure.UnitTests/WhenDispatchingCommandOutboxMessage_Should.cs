@@ -20,6 +20,7 @@ public sealed class WhenDispatchingCommandOutboxMessage_Should
             command.MessageId,
             typeof(TestCommand).FullName.ShouldNotBeNull(),
             JsonSerializer.Serialize(command),
+            command.RequestedAt,
             command.RequestedAt);
 
         var sut = new RabbitMqOutboxMessageDispatcher(publisher, sender);

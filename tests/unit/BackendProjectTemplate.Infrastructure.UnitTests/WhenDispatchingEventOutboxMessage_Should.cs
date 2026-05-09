@@ -24,6 +24,7 @@ public sealed class WhenDispatchingEventOutboxMessage_Should
             @event.MessageId,
             typeof(UserCreated).FullName.ShouldNotBeNull(),
             JsonSerializer.Serialize(@event),
+            @event.OccuredAt,
             @event.OccuredAt);
 
         var sut = new RabbitMqOutboxMessageDispatcher(publisher, sender);

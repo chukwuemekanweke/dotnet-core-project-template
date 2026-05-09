@@ -116,26 +116,37 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
 
     private IConfiguration BuildConfiguration() =>
         new ConfigurationBuilder()
-            .AddInMemoryCollection(
-                new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:PostgresWrite"] = _fixture.PostgresConnectionString,
-                    ["ConnectionStrings:PostgresRead"] = _fixture.PostgresConnectionString,
-                    ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
-                    [$"{OutboxProcessingOptions.SectionName}:BatchSize"] = "50",
-                    [$"{OutboxProcessingOptions.SectionName}:PollIntervalSeconds"] = "1",
-                    [$"{PaymentReconciliationOptions.SectionName}:StaleThreshold"] = "00:00:00",
-                    [$"{PaymentReconciliationOptions.SectionName}:PollInterval"] = "00:00:01",
-                    ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
-                    ["Messaging:RabbitMq:HostName"] = _fixture.RabbitMqHostName,
-                    ["Messaging:RabbitMq:Port"] = _fixture.RabbitMqPort.ToString(),
-                    ["Messaging:RabbitMq:UserName"] = _fixture.RabbitMqUserName,
-                    ["Messaging:RabbitMq:Password"] = _fixture.RabbitMqPassword,
-                    ["Messaging:RabbitMq:VirtualHost"] = _fixture.RabbitMqVirtualHost,
-                    ["Messaging:RabbitMq:EventsExchange"] = CustomJobsApplicationFactory.EventsExchange,
-                    ["Messaging:RabbitMq:CommandsExchange"] = CustomJobsApplicationFactory.CommandsExchange,
-                    ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
-                    ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
-                }.Concat(GetAdditionalConfiguration()).ToDictionary())
+            .AddInMemoryCollection(BuildConfigurationValues())
             .Build();
+
+    private IReadOnlyDictionary<string, string?> BuildConfigurationValues()
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:PostgresWrite"] = _fixture.PostgresConnectionString,
+            ["ConnectionStrings:PostgresRead"] = _fixture.PostgresConnectionString,
+            ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
+            [$"{OutboxProcessingOptions.SectionName}:BatchSize"] = "50",
+            [$"{OutboxProcessingOptions.SectionName}:PollIntervalSeconds"] = "1",
+            [$"{PaymentReconciliationOptions.SectionName}:StaleThreshold"] = "00:00:00",
+            [$"{PaymentReconciliationOptions.SectionName}:PollInterval"] = "00:00:01",
+            ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
+            ["Messaging:RabbitMq:HostName"] = _fixture.RabbitMqHostName,
+            ["Messaging:RabbitMq:Port"] = _fixture.RabbitMqPort.ToString(),
+            ["Messaging:RabbitMq:UserName"] = _fixture.RabbitMqUserName,
+            ["Messaging:RabbitMq:Password"] = _fixture.RabbitMqPassword,
+            ["Messaging:RabbitMq:VirtualHost"] = _fixture.RabbitMqVirtualHost,
+            ["Messaging:RabbitMq:EventsExchange"] = CustomJobsApplicationFactory.EventsExchange,
+            ["Messaging:RabbitMq:CommandsExchange"] = CustomJobsApplicationFactory.CommandsExchange,
+            ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
+            ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
+        };
+
+        foreach (var pair in GetAdditionalConfiguration())
+        {
+            values[pair.Key] = pair.Value;
+        }
+
+        return values;
+    }
 }

@@ -16,6 +16,9 @@ public sealed class WalletConfiguration : IEntityTypeConfiguration<Wallet>
             .HasPrecision(18, 2)
             .IsRequired();
 
+        builder.Property(x => x.RowVersion)
+            .IsRowVersion();
+
         builder.HasIndex(wallet => new { wallet.StakeholderId, wallet.CurrencyId })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE");
