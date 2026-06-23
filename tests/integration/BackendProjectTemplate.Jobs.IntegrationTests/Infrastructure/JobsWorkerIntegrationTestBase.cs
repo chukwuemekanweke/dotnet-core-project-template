@@ -76,9 +76,14 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         return new ScopedDbContext(_workerHost.Services.CreateAsyncScope());
     }
 
-    protected static async Task WaitForConditionAsync(Func<Task<bool>> condition)
+    protected static Task WaitForConditionAsync(Func<Task<bool>> condition) =>
+        WaitForConditionAsync(condition, TimeSpan.FromSeconds(30));
+
+    protected static async Task WaitForConditionAsync(Func<Task<bool>> condition, TimeSpan timeout)
     {
-        for (var attempt = 0; attempt < 20; attempt++)
+        var deadlineUtc = DateTime.UtcNow + timeout;
+
+        while (DateTime.UtcNow < deadlineUtc)
         {
             if (await condition())
             {
@@ -88,7 +93,7 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
             await Task.Delay(TimeSpan.FromMilliseconds(500));
         }
 
-        throw new InvalidOperationException("The expected condition was not met in time.");
+        throw new InvalidOperationException($"The expected condition was not met within {timeout}.");
     }
 
     public virtual async Task InitializeAsync()

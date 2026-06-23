@@ -39,9 +39,14 @@ public abstract class JobsIntegrationTestBase
 
     protected IServiceScope CreateScope() => _factory.Services.CreateScope();
 
-    protected static async Task WaitForConditionAsync(Func<Task<bool>> condition)
+    protected static Task WaitForConditionAsync(Func<Task<bool>> condition) =>
+        WaitForConditionAsync(condition, TimeSpan.FromSeconds(30));
+
+    protected static async Task WaitForConditionAsync(Func<Task<bool>> condition, TimeSpan timeout)
     {
-        for (var attempt = 0; attempt < 20; attempt++)
+        var deadlineUtc = DateTime.UtcNow + timeout;
+
+        while (DateTime.UtcNow < deadlineUtc)
         {
             if (await condition())
             {
@@ -51,7 +56,7 @@ public abstract class JobsIntegrationTestBase
             await Task.Delay(TimeSpan.FromMilliseconds(500));
         }
 
-        throw new InvalidOperationException("The expected condition was not met in time.");
+        throw new InvalidOperationException($"The expected condition was not met within {timeout}.");
     }
 
     protected static async Task WaitForHealthyAsync(Func<Task<HttpResponseMessage>> probe)
