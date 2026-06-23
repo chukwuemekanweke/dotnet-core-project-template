@@ -135,6 +135,7 @@
     {
       "exclude": [
         ".template.config/**/*",
+        ".git/**/*",
         ".vs/**/*",
         ".dotnet/**/*",
         "scripts/**/*",

@@ -47,6 +47,8 @@ Create a new solution:
 dotnet new backend-template --organizationAbbreviation CN --clientName Acme --clientProjectName Ordering -o .\CN.Acme.Ordering
 ```
 
+This creates a fresh project tree without the template repository's `.git` history.
+
 The generated root name becomes `{OrganizationAbbreviation}.{ClientName}.{ClientProjectName}` and is applied to the solution, projects, folders, and namespaces. The organization abbreviation is intended for short forms such as `CN` and should be at most 3 characters.
 
 If you want an interactive prompt instead of typing the parameters yourself, run:
@@ -56,6 +58,7 @@ If you want an interactive prompt instead of typing the parameters yourself, run
 ```
 
 The script prompts for organization abbreviation, client name, and client project name, then installs the local template and creates the solution for you. If you leave organization blank, it defaults to `CN`.
+When `git` is available on `PATH`, the script also initializes a new repository in the generated project directory.
 
 There is also a bash version:
 
@@ -64,6 +67,7 @@ There is also a bash version:
 ```
 
 It supports the same inputs and generated naming convention.
+When `git` is available on `PATH`, it also initializes a new repository in the generated project directory.
 
 ## Local Development
 

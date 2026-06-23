@@ -206,5 +206,13 @@ dotnet new backend-template \
   --clientProjectName "$project_segment" \
   --output "$resolved_output_directory"
 
+if command -v git >/dev/null 2>&1; then
+  printf '\n'
+  printf 'Initializing a new git repository...\n'
+  git -C "$resolved_output_directory" init
+else
+  printf 'Git was not found on PATH. Skipping repository initialization.\n' >&2
+fi
+
 printf '\n'
 printf 'Created %s at %s\n' "$root_name" "$resolved_output_directory"

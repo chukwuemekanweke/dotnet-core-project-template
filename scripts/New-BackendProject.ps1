@@ -161,5 +161,17 @@ if ($LASTEXITCODE -ne 0) {
     throw "Project creation failed."
 }
 
+if (Get-Command git -ErrorAction SilentlyContinue) {
+    Write-Host ""
+    Write-Host "Initializing a new git repository..."
+    & git -C $resolvedOutputDirectory init
+    if ($LASTEXITCODE -ne 0) {
+        throw "Git repository initialization failed."
+    }
+}
+else {
+    Write-Warning "Git was not found on PATH. Skipping repository initialization."
+}
+
 Write-Host ""
 Write-Host "Created $rootName at $resolvedOutputDirectory"
