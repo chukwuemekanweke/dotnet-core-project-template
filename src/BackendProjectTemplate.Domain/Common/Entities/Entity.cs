@@ -33,6 +33,4 @@ public abstract class Entity : IAuditableEntity, ISoftDelete
         DeletedBy = string.IsNullOrWhiteSpace(actorId) ? ActorDefaults.SystemActorId : actorId;
     }
 
-    public void Touch(DateTimeOffset utcNow, string actorId = ActorDefaults.SystemActorId) =>
-        SetUpdatedAudit(utcNow, actorId);
 }

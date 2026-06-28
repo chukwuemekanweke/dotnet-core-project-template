@@ -10,17 +10,7 @@ public sealed class When_MarkingPaymentAsSucceeded_WithTerminalStatus_Should
     [Fact]
     public void ThrowAggregateStateException()
     {
-        var transaction = PaymentTransaction.Create(
-            "merchant-ref",
-            PaymentIntent.WalletTopUp,
-            Guid.CreateVersion7(),
-            1000m,
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            DateTimeOffset.UtcNow);
+        var transaction = PaymentTransaction.Create("merchant-ref", PaymentIntent.WalletTopUp, Guid.CreateVersion7(), 1000m, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         transaction.MarkInitiated("provider-ref", null, null, "payment_initiated");
         transaction.MarkFailed("provider-ref", "failed", "provider_failed", DateTimeOffset.UtcNow);
@@ -29,3 +19,4 @@ public sealed class When_MarkingPaymentAsSucceeded_WithTerminalStatus_Should
             transaction.MarkSucceeded("provider-ref", "success", DateTimeOffset.UtcNow));
     }
 }
+

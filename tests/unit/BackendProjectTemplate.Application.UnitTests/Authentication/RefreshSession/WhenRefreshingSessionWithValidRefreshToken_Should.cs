@@ -19,18 +19,19 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_Should
         var lastName = AuthenticationTestData.LastName();
         var securityStamp = Guid.CreateVersion7().ToString("N");
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
-        var user = AppUser.Create(email, firstName, lastName, now);
-        user.MarkEmailVerified(now);
+        var user = AppUser.Create(email);
+        user.MarkEmailVerified();
         user.SecurityStamp = securityStamp;
 
-        var storedRefreshToken = AuthenticationRefreshToken.Create(
+        var storedRefreshToken = AuthenticationRefreshToken.Create(user.Id, "HASH", securityStamp, now.AddDays(30));
+        var stakeholder = Stakeholder.Create(
             user.Id,
-            "HASH",
-            securityStamp,
-            now.AddDays(30),
-            now);
-        var stakeholder = Stakeholder.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), firstName, lastName, now);
-        var expectedAccessToken = new AccessToken("access-token", now.AddMinutes(5));
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            firstName,
+            lastName);
+        var expectedAccessToken = new AccessToken("access-token", now.AddHours(1));
         var expectedRefreshToken = new RefreshToken("refresh-token", now.AddDays(30));
 
         var context = new AuthenticationFlowTestContext();
@@ -55,4 +56,12 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_Should
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+
+
+
+
+
+
+
+
 

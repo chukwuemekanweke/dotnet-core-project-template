@@ -35,7 +35,7 @@ public sealed class When_HandlingEmailDeliveryWebhookReceived_WithAlreadyDeliver
             context.Clock.GetUtcNow());
 
         log.MarkSent("mailtrap-message-id", context.Clock.GetUtcNow());
-        log.MarkDelivered(DateTimeOffset.Parse("2026-05-03T13:01:00+00:00"), context.Clock.GetUtcNow());
+        log.MarkDelivered(DateTimeOffset.Parse("2026-05-03T13:01:00+00:00"));
         context.EmailDeliveryWebhookInboxRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailDeliveryWebhookInboxByEventIdSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -61,3 +61,4 @@ public sealed class When_HandlingEmailDeliveryWebhookReceived_WithAlreadyDeliver
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+

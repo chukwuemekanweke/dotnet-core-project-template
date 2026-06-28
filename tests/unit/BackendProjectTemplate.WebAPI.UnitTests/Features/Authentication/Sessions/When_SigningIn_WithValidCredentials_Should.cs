@@ -25,7 +25,7 @@ public sealed class When_SigningIn_WithValidCredentials_Should
         var refreshValidator = Substitute.For<IValidator<RefreshSessionRequest>>();
         var request = new SignInRequest("jane@example.com", "P@ssw0rd123!");
         var user = context.CreateUser(request.Email);
-        user.MarkEmailVerified(context.Clock.GetUtcNow());
+        user.MarkEmailVerified();
         var stakeholder = context.CreateStakeholder(user.Id);
 
         validator.ValidateAsync(request, Arg.Any<CancellationToken>()).Returns(new ValidationResult());
@@ -65,3 +65,4 @@ public sealed class When_SigningIn_WithValidCredentials_Should
         payload.RefreshToken.ShouldBe("refresh-token");
     }
 }
+

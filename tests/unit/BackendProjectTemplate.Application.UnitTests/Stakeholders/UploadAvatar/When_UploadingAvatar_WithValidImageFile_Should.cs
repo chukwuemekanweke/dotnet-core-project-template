@@ -14,24 +14,14 @@ public sealed class When_UploadingAvatar_WithValidImageFile_Should
     [Fact]
     public async Task PersistAvatarUrl()
     {
-        var currentActor = Substitute.For<ICurrentActor>();
         var stakeholderRepository = Substitute.For<IRepository<Stakeholder>>();
         var objectStorageService = Substitute.For<IObjectStorageService>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
-        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 21, 12, 0, 0, TimeSpan.Zero));
         var stakeholderId = Guid.CreateVersion7();
-        var stakeholder = Stakeholder.Create(
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            "Jane",
-            "Doe",
-            timeProvider.GetUtcNow());
-        await using var stream = new MemoryStream([1, 2, 3]);
+        var stakeholder = Stakeholder.Create(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Jane", "Doe");
+        await using var stream = new MemoryStream([1]);
 
-        currentActor.ActorId.Returns(stakeholderId.ToString());
         stakeholderRepository.GetByIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(stakeholder);
         objectStorageService.UploadPublicAsync(Arg.Any<ObjectStorageUploadRequest>(), Arg.Any<CancellationToken>())
@@ -41,8 +31,7 @@ public sealed class When_UploadingAvatar_WithValidImageFile_Should
             stakeholderRepository,
             objectStorageService,
             customTelemetryContext,
-            unitOfWork,
-            timeProvider);
+            unitOfWork);
 
         var result = await sut.HandleAsync(
             new UploadAvatarCommand(stream, "avatar.png", "image/png", stream.Length, new ActorContext(stakeholderId, Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
@@ -52,9 +41,6 @@ public sealed class When_UploadingAvatar_WithValidImageFile_Should
         stakeholder.AvatarUrl.ShouldBe("https://example.com/avatar.png");
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
-
-    private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => utcNow;
-    }
 }
+
+

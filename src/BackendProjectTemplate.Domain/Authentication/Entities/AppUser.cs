@@ -10,7 +10,7 @@ public sealed class AppUser : IdentityUser<Guid>, IAuditableEntity, ISoftDelete
     {
     }
 
-    private AppUser(string email, DateTimeOffset utcNow)
+    private AppUser(string email)
     {
         var normalizedEmail = email.Trim();
 
@@ -25,19 +25,16 @@ public sealed class AppUser : IdentityUser<Guid>, IAuditableEntity, ISoftDelete
     public bool IsDeleted { get; private set; }
     public DateTimeOffset? DeletedAtUtc { get; private set; }
     public string? DeletedBy { get; private set; }
-    public static AppUser Create(string email, DateTimeOffset utcNow) =>
-        new(email, utcNow);
+    public static AppUser Create(string email) =>
+        new(email);
 
-    public static AppUser Create(string email, string firstName, string lastName, DateTimeOffset utcNow) =>
-        new(email, utcNow);
+    public static AppUser Create(string email, string firstName, string lastName) =>
+        new(email);
 
-    public void MarkEmailVerified(DateTimeOffset utcNow)
+    public void MarkEmailVerified()
     {
         EmailConfirmed = true;
-        UpdatedAtUtc = utcNow;
     }
-
-    public void Touch(DateTimeOffset utcNow) => UpdatedAtUtc = utcNow;
 
     public void SetCreatedAudit(DateTimeOffset utcNow, string actorId)
     {

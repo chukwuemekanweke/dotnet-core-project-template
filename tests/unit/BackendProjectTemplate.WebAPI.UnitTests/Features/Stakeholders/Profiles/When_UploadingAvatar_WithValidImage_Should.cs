@@ -25,9 +25,9 @@ public sealed class When_UploadingAvatar_WithValidImage_Should
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var stakeholderId = Guid.CreateVersion7();
-        var stakeholder = Stakeholder.Create(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Jane", "Doe", DateTimeOffset.UtcNow);
+        var stakeholder = Stakeholder.Create(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Jane", "Doe");
         await using var stream = new MemoryStream(Encoding.UTF8.GetBytes("avatar"));
-        var avatar = new FormFile(stream, 0, stream.Length, "avatar", "avatar.png")
+        var avatar = new FormFile(stream, 0, stream.Length, "file", "avatar.png")
         {
             Headers = new HeaderDictionary(),
             ContentType = "image/png"
@@ -39,8 +39,8 @@ public sealed class When_UploadingAvatar_WithValidImage_Should
             .Returns("https://example.com/avatar.png");
 
         var sut = new ProfilesController(
-            new UploadAvatarHandler(stakeholderRepository, objectStorageService, customTelemetryContext, unitOfWork, TimeProvider.System),
-            new UpdateProfileHandler(stakeholderRepository, customTelemetryContext, unitOfWork, TimeProvider.System),
+            new UploadAvatarHandler(stakeholderRepository, objectStorageService, customTelemetryContext, unitOfWork),
+            new UpdateProfileHandler(stakeholderRepository, customTelemetryContext, unitOfWork),
             currentActor);
 
         var result = await sut.UploadAvatar(new UploadAvatarRequest(avatar), CancellationToken.None);
@@ -50,3 +50,5 @@ public sealed class When_UploadingAvatar_WithValidImage_Should
         payload.AvatarUrl.ShouldBe("https://example.com/avatar.png");
     }
 }
+
+

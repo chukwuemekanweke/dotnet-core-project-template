@@ -2,6 +2,7 @@ using BackendProjectTemplate.Domain.Common.Caching;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
+using BackendProjectTemplate.Infrastructure.Http;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -95,18 +96,21 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient(HttpClientNames.IpApiCom, client =>
         {
             client.BaseAddress = new Uri(ipApiComOptions.BaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(5);
-        });
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .AddPolicyHandler(HttpRetryPolicies.CreateTransientRetryPolicy());
         services.AddHttpClient(HttpClientNames.IpInfo, client =>
         {
             client.BaseAddress = new Uri(ipInfoOptions.BaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(5);
-        });
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .AddPolicyHandler(HttpRetryPolicies.CreateTransientRetryPolicy());
         services.AddHttpClient(HttpClientNames.IpWhoIs, client =>
         {
             client.BaseAddress = new Uri(ipWhoIsOptions.BaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(5);
-        });
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .AddPolicyHandler(HttpRetryPolicies.CreateTransientRetryPolicy());
 
         services.AddSingleton<IIpGeolocationProvider, IpApiComClient>();
         services.AddSingleton<IIpGeolocationProvider, IpInfoClient>();

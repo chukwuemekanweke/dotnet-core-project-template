@@ -17,8 +17,7 @@ public sealed class CreditWalletHandler(
     IRepository<Currency> currencyRepository,
     IRepository<Wallet> walletRepository,
     IRepository<WalletTransaction> walletTransactionRepository,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext)
+    IUnitOfWork unitOfWork) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -42,11 +41,10 @@ public sealed class CreditWalletHandler(
         var wallet = await walletRepository.FirstOrDefaultAsync(
             new WalletByStakeholderAndCurrencySpecification(message.StakeholderId.Value, message.CurrencyId),
             cancellationToken);
-        var now = timeProvider.GetUtcNow();
 
         if (wallet is null)
         {
-            wallet = Wallet.Create(message.StakeholderId.Value, message.TenantId, message.CurrencyId, now);
+            wallet = Wallet.Create(message.StakeholderId.Value, message.TenantId, message.CurrencyId);
             wallet.Credit(message.Amount);
             await walletRepository.AddAsync(wallet, cancellationToken);
             CustomTelemetryContext.AddCustomEvent(
@@ -70,16 +68,7 @@ public sealed class CreditWalletHandler(
         var walletFundingNarrative = WalletTransactionNarratives.WalletFunding;
 
         await walletTransactionRepository.AddAsync(
-            WalletTransaction.CreateCredit(
-                wallet.Id,
-                message.PaymentTransactionId,
-                message.MerchantReference,
-                message.Amount,
-                message.CurrencyId,
-                now,
-                WalletTransactionCategory.WalletFunding,
-                walletFundingNarrative.Title,
-                walletFundingNarrative.CreateDescription()),
+            WalletTransaction.CreateCredit(wallet.Id, message.PaymentTransactionId, message.MerchantReference, message.Amount, message.CurrencyId, WalletTransactionCategory.WalletFunding, walletFundingNarrative.Title, walletFundingNarrative.CreateDescription()),
             cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -97,3 +86,5 @@ public sealed class CreditWalletHandler(
                 }));
     }
 }
+
+

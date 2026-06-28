@@ -60,24 +60,15 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
                 }));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now));
+            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns(EmailNotificationTemplate.Create(
-                NotificationType.AccountLocked,
-                "Account locked notification",
-                "Account locked",
-                "AccountLocked.html",
-                now));
+            .Returns(EmailNotificationTemplate.Create(NotificationType.AccountLocked, "Account locked notification", "Account locked", "AccountLocked.html"));
         tenantRepository.FirstOrDefaultAsync(
                 Arg.Any<TenantByIdSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Tenant.Create(
-                tenantId,
-                "Moveaex",
-                "moveaex",
-                now));
+            .Returns(Tenant.Create(tenantId, "Moveaex", "moveaex"));
         transportProvider.ProviderKey.Returns("mailtrap");
         hostEnvironment.ContentRootPath.Returns(templateRoot);
 
@@ -100,5 +91,12 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
         await transportProvider.DidNotReceive().SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>());
     }
 }
+
+
+
+
+
+
+
 
 

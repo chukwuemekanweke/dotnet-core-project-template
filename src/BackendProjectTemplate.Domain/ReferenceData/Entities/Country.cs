@@ -12,8 +12,7 @@ public sealed class Country : Entity, IAggregateRoot
         string name,
         string shortCode,
         string? callingCode,
-        string flagUrl,
-        DateTimeOffset utcNow)
+        string flagUrl)
     {
         Name = name;
         ShortCode = shortCode;
@@ -30,7 +29,6 @@ public sealed class Country : Entity, IAggregateRoot
         string name,
         string shortCode,
         string? callingCode,
-        string flagUrl,
-        DateTimeOffset utcNow) =>
-        new(name, shortCode, callingCode, flagUrl, utcNow);
+        string flagUrl) =>
+        new(name, shortCode, callingCode, flagUrl);
 }

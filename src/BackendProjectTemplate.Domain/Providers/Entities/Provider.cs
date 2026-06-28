@@ -31,8 +31,7 @@ public sealed class Provider : Entity, IAggregateRoot
         ProviderType providerType,
         string providerName,
         string providerKey,
-        bool isActive,
-        DateTimeOffset utcNow) =>
+        bool isActive) =>
         new(providerType, providerName, providerKey, isActive);
 
     public void SetActive(bool isActive)

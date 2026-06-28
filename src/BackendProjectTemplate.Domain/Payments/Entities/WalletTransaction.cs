@@ -64,7 +64,6 @@ public sealed class WalletTransaction : Entity, IAggregateRoot
         string merchantReference,
         decimal amount,
         Guid currencyId,
-        DateTimeOffset utcNow,
         WalletTransactionCategory transactionCategory,
         string transactionTitle,
         string? description) =>
@@ -85,7 +84,6 @@ public sealed class WalletTransaction : Entity, IAggregateRoot
         string merchantReference,
         decimal amount,
         Guid currencyId,
-        DateTimeOffset utcNow,
         WalletTransactionCategory transactionCategory,
         string transactionTitle,
         string? description = null) =>

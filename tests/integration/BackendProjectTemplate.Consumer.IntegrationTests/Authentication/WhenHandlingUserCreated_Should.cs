@@ -143,15 +143,15 @@ public sealed class WhenHandlingUserCreated_Should(ContainersFixture fixture)
         var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
         var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var user = AppUser.Create(_email, _firstName, _lastName, timeProvider.GetUtcNow());
+        var user = AppUser.Create(_email, _firstName, _lastName);
 
-        var createResult = await identityService.CreateAsync(user, Password);
+        var createResult = await identityService.CreateAsync(user);
         createResult.Succeeded.ShouldBeTrue();
         _userId = user.Id;
 
         var now = timeProvider.GetUtcNow();
-        var stakeholderType = StakeholderType.Create(_tenantId, "Individual Customer", "individual_customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, _firstName, _lastName, now);
+        var stakeholderType = StakeholderType.Create(_tenantId, "Individual Customer", "individual-customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, _firstName, _lastName);
 
         await dbContext.StakeholderTypes.AddAsync(stakeholderType);
         await dbContext.Stakeholders.AddAsync(stakeholder);
@@ -211,4 +211,11 @@ public sealed class WhenHandlingUserCreated_Should(ContainersFixture fixture)
         await unitOfWork.SaveChangesAsync();
     }
 }
+
+
+
+
+
+
+
 

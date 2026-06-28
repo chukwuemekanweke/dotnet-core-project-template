@@ -12,20 +12,11 @@ public sealed class WhenRefreshingSessionAfterPasswordChange_Should
     public async Task InvalidateRefreshToken()
     {
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
-        var user = AppUser.Create(
-            AuthenticationTestData.Email(),
-            AuthenticationTestData.FirstName(),
-            AuthenticationTestData.LastName(),
-            now);
-        user.MarkEmailVerified(now);
+        var user = AppUser.Create(AuthenticationTestData.Email());
+        user.MarkEmailVerified();
         user.SecurityStamp = "current-stamp";
 
-        var storedRefreshToken = AuthenticationRefreshToken.Create(
-            user.Id,
-            "HASH",
-            "old-stamp",
-            now.AddDays(30),
-            now);
+        var storedRefreshToken = AuthenticationRefreshToken.Create(user.Id, "HASH", "previous-stamp", now.AddDays(30));
 
         var context = new AuthenticationFlowTestContext();
         context.RefreshTokenService.FindByTokenAsync("refresh-token", Arg.Any<CancellationToken>())
@@ -42,4 +33,10 @@ public sealed class WhenRefreshingSessionAfterPasswordChange_Should
         context.RefreshTokenService.Received(1).Revoke(storedRefreshToken, Arg.Any<DateTimeOffset>());
     }
 }
+
+
+
+
+
+
 

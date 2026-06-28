@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -8,12 +9,11 @@ using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.Features.Payments.InitiatePayment;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using WireMock.RequestBuilders;
@@ -149,17 +149,16 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
         var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         _email = WebApiIntegrationTestData.Email();
 
-        var user = AppUser.Create(_email, "Ada", "Lovelace", now);
+        var user = AppUser.Create(_email, "Ada", "Lovelace");
         (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
-        user.MarkEmailVerified(now);
+        user.MarkEmailVerified();
         (await identityService.UpdateAsync(user)).Succeeded.ShouldBeTrue();
 
-        var country = Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg", now);
-        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace", now);
+        var country = Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg");
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace");
 
         await countryRepository.AddAsync(country);
         await stakeholderTypeRepository.AddAsync(stakeholderType);
@@ -175,10 +174,9 @@ public sealed class When_InitiatingPayment_WithSupportedProviderAndCurrency_Shou
     {
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var currency = Currency.Create("NGN", "Naira", true, now);
-        var countryCurrency = CountryCurrency.Create(_countryId, currency.Id, true, true, now);
-        var provider = PaymentProvider.Create("SafeHaven", PaymentProviderKeys.SafeHaven, true, now);
+        var currency = Currency.Create("NGN", "Naira", true);
+        var countryCurrency = CountryCurrency.Create(_countryId, currency.Id, true, true);
+        var provider = PaymentProvider.Create("SafeHaven", PaymentProviderKeys.SafeHaven, true);
         provider.SetConfiguration(currency.Id, Contracts.Payments.PaymentIntent.WalletTopUp, Contracts.Payments.PaymentMethodType.BankTransfer, true);
 
         await dbContext.Currencies.AddAsync(currency);

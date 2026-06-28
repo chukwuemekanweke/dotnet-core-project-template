@@ -22,9 +22,15 @@ public sealed class WhenSigningInWithLockedAccount_Should
         var ipAddress = AuthenticationTestData.IpAddress();
         var userAgent = AuthenticationTestData.UserAgent();
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
-        var user = AppUser.Create(email, firstName, lastName, now);
-        user.MarkEmailVerified(now);
-        var stakeholder = Stakeholder.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), firstName, lastName, now);
+        var user = AppUser.Create(email);
+        user.MarkEmailVerified();
+        var stakeholder = Stakeholder.Create(
+            user.Id,
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            firstName,
+            lastName);
 
         var context = new AuthenticationFlowTestContext();
         context.IdentityService.FindByEmailAsync(email).Returns(user);
@@ -52,4 +58,11 @@ public sealed class WhenSigningInWithLockedAccount_Should
         await context.IdentityService.DidNotReceive().CheckPasswordAsync(Arg.Any<AppUser>(), Arg.Any<string>());
     }
 }
+
+
+
+
+
+
+
 

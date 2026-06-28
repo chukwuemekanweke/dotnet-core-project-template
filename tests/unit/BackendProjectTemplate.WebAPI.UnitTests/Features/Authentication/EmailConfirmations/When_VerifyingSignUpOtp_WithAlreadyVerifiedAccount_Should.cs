@@ -18,7 +18,7 @@ public sealed class When_VerifyingSignUpOtp_WithAlreadyVerifiedAccount_Should
         var validator = Substitute.For<IValidator<SignUpOtpRequest>>();
         var request = new SignUpOtpRequest("jane@example.com", "123456");
         var user = context.CreateUser(request.Email);
-        user.MarkEmailVerified(context.Clock.GetUtcNow());
+        user.MarkEmailVerified();
 
         validator.ValidateAsync(request, Arg.Any<CancellationToken>()).Returns(new ValidationResult());
         context.IdentityService.FindByEmailAsync(request.Email).Returns(user);
@@ -32,3 +32,4 @@ public sealed class When_VerifyingSignUpOtp_WithAlreadyVerifiedAccount_Should
         payload.Message.ShouldContain("already verified", Case.Insensitive);
     }
 }
+

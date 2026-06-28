@@ -28,7 +28,7 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should(ContainersFix
         _stakeholderId = Guid.CreateVersion7();
 
         using var scope = CreateDbContextScope();
-        var currency = Currency.Create("NGN", "Naira", true, TimeProvider.System.GetUtcNow());
+        var currency = Currency.Create("NGN", "Naira", true);
         scope.DbContext.Currencies.Add(currency);
         await scope.DbContext.SaveChangesAsync();
 
@@ -105,3 +105,4 @@ public sealed class When_HandlingCreditWallet_WithNewWallet_Should(ContainersFix
         }
     }
 }
+

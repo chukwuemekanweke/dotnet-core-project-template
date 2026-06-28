@@ -10,11 +10,7 @@ public sealed class WhenCreatingTenantEmailBaseTemplate_Should
         var utcNow = DateTimeOffset.UtcNow;
         var tenantId = Guid.CreateVersion7();
 
-        var template = TenantEmailBaseTemplate.Create(
-            tenantId,
-            " Primary tenant brand ",
-            " <html><body>{{:BodyHtml:}}</body></html> ",
-            utcNow);
+        var template = TenantEmailBaseTemplate.Create(tenantId, " Primary tenant brand ", " <html><body>{{:BodyHtml:}}</body></html> ");
 
         template.TenantId.ShouldBe(tenantId);
         template.Description.ShouldBe("Primary tenant brand");
@@ -23,4 +19,5 @@ public sealed class WhenCreatingTenantEmailBaseTemplate_Should
         template.UpdatedAtUtc.ShouldBe(default);
     }
 }
+
 

@@ -42,6 +42,7 @@ internal sealed class EmailNotificationDispatcher(
         var emailNotificationLog = await emailNotificationLogRepository.FirstOrDefaultAsync(
             new EmailNotificationLogByMessageIdSpecification(command.MessageId),
             cancellationToken);
+
         if (emailNotificationLog?.SentAtUtc is not null)
         {
             logger?.LogWarning(
@@ -143,7 +144,7 @@ internal sealed class EmailNotificationDispatcher(
         }
         catch (Exception ex)
         {
-            emailNotificationLog.MarkFailed(ex.Message, timeProvider.GetUtcNow());
+            emailNotificationLog.MarkFailed(ex.Message);
             emailNotificationLogRepository.Update(emailNotificationLog);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             throw;

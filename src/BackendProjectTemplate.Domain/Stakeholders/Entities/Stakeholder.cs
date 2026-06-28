@@ -19,8 +19,7 @@ public sealed class Stakeholder : Entity, IAggregateRoot
         Guid countryId,
         Guid stakeholderTypeId,
         string firstName,
-        string lastName,
-        DateTimeOffset utcNow)
+        string lastName)
     {
         AppUserId = appUserId;
         TenantId = tenantId;
@@ -48,18 +47,16 @@ public sealed class Stakeholder : Entity, IAggregateRoot
         Guid countryId,
         Guid stakeholderTypeId,
         string firstName,
-        string lastName,
-        DateTimeOffset utcNow) =>
-        new(appUserId, tenantId, countryId, stakeholderTypeId, firstName, lastName, utcNow);
+        string lastName) =>
+        new(appUserId, tenantId, countryId, stakeholderTypeId, firstName, lastName);
 
-    public void UpdateProfile(string firstName, string lastName, DateTimeOffset utcNow)
+    public void UpdateProfile(string firstName, string lastName)
     {
         FirstName = NormalizeName(firstName, nameof(firstName), MaxFirstNameLength);
         LastName = NormalizeName(lastName, nameof(lastName), MaxLastNameLength);
-        Touch(utcNow);
     }
 
-    public void SetAvatarUrl(string avatarUrl, DateTimeOffset utcNow)
+    public void SetAvatarUrl(string avatarUrl)
     {
         var normalizedAvatarUrl = avatarUrl.Trim();
         if (string.IsNullOrWhiteSpace(normalizedAvatarUrl))
@@ -73,13 +70,11 @@ public sealed class Stakeholder : Entity, IAggregateRoot
         }
 
         AvatarUrl = normalizedAvatarUrl;
-        Touch(utcNow);
     }
 
-    public void MarkVerified(DateTimeOffset utcNow)
+    public void MarkVerified()
     {
         IsVerified = true;
-        Touch(utcNow);
     }
 
     private static string NormalizeName(string value, string argumentName, int maxLength)

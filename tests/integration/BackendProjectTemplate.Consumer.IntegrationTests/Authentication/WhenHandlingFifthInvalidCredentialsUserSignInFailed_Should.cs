@@ -140,10 +140,9 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should(C
         var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
         var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var now = timeProvider.GetUtcNow();
-        var user = AppUser.Create(_email, _firstName, _lastName, now);
+        var user = AppUser.Create(_email, _firstName, _lastName);
 
-        var createResult = await identityService.CreateAsync(user, Password);
+        var createResult = await identityService.CreateAsync(user);
         createResult.Succeeded.ShouldBeTrue();
 
         user.AccessFailedCount = 4;
@@ -152,8 +151,8 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should(C
         var updateResult = await identityService.UpdateAsync(user);
         updateResult.Succeeded.ShouldBeTrue();
 
-        var stakeholderType = StakeholderType.Create(_tenantId, "Individual Customer", "individual_customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, _firstName, _lastName, now);
+        var stakeholderType = StakeholderType.Create(_tenantId, "Individual Customer", "individual-customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, _firstName, _lastName);
 
         await dbContext.StakeholderTypes.AddAsync(stakeholderType);
         await dbContext.Stakeholders.AddAsync(stakeholder);
@@ -208,4 +207,11 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should(C
         await dbContext.SaveChangesAsync();
     }
 }
+
+
+
+
+
+
+
 

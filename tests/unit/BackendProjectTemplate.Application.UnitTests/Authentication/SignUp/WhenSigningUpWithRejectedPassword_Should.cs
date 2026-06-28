@@ -23,7 +23,7 @@ public sealed class WhenSigningUpWithRejectedPassword_Should
         var context = new AuthenticationFlowTestContext();
 
         context.IdentityService.FindByEmailAsync(email).Returns((AppUser?)null);
-        context.IdentityService.CreateAsync(Arg.Any<AppUser>(), password).Returns(
+        context.IdentityService.CreateAsync(Arg.Any<AppUser>(), Arg.Any<string>()).Returns(
             IdentityResult.Failed(new IdentityError
             {
                 Code = nameof(IdentityErrorDescriber.PasswordRequiresDigit),

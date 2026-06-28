@@ -49,7 +49,7 @@ public sealed class WhenSendingEmailNotificationFails_Should
                 }));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now));
+            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -77,5 +77,7 @@ public sealed class WhenSendingEmailNotificationFails_Should
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+
+
 
 

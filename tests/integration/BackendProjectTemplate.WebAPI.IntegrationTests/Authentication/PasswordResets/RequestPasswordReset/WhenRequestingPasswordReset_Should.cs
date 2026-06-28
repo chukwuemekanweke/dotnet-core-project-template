@@ -87,12 +87,12 @@ public sealed class WhenRequestingPasswordReset_Should(ContainersFixture fixture
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var now = timeProvider.GetUtcNow();
-        var user = AppUser.Create(_email, _firstName, _lastName, now);
+        var user = AppUser.Create(_email);
         var createResult = await identityService.CreateAsync(user, Password);
         createResult.Succeeded.ShouldBeTrue();
 
-        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, _firstName, _lastName, now);
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, _firstName, _lastName);
 
         await stakeholderTypeRepository.AddAsync(stakeholderType);
         await stakeholderRepository.AddAsync(stakeholder);
@@ -169,7 +169,7 @@ public sealed class WhenRequestingPasswordReset_Should(ContainersFixture fixture
         }
 
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg", now);
+        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg");
         await countryWriteRepository.AddAsync(country);
         await unitOfWork.SaveChangesAsync();
         _createdCountryForTest = true;
@@ -211,4 +211,13 @@ public sealed class WhenRequestingPasswordReset_Should(ContainersFixture fixture
         }
     }
 }
+
+
+
+
+
+
+
+
+
 

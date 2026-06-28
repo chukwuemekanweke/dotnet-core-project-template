@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Json;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Domain.Authentication.Entities;
@@ -6,6 +8,7 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
@@ -13,8 +16,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using System.Net;
-using System.Net.Http.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Payments.WalletTransactions;
 
@@ -37,6 +38,7 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
     private Guid _walletId;
     private Guid _firstWalletTransactionId;
     private Guid _secondWalletTransactionId;
+    private bool _createdCountryForTest;
     private HttpResponseMessage? _response;
 
     public async Task InitializeAsync()
@@ -100,21 +102,26 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
         var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
-        var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Domain.ReferenceData.Entities.Country>>();
+        var countryReadRepository = scope.ServiceProvider.GetRequiredService<IReadRepository<Country>>();
+        var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         _email = WebApiIntegrationTestData.Email();
 
-        var user = AppUser.Create(_email, "Ada", "Lovelace", now);
+        var user = AppUser.Create(_email, "Ada", "Lovelace");
         (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
-        user.MarkEmailVerified(now);
+        user.MarkEmailVerified();
         (await identityService.UpdateAsync(user)).Succeeded.ShouldBeTrue();
 
-        var country = Domain.ReferenceData.Entities.Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg", now);
-        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace", now);
+        var country = (await countryReadRepository.ListAsync(new FirstCountrySpecification())).FirstOrDefault();
+        if (country is null)
+        {
+            country = Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg");
+            await countryRepository.AddAsync(country);
+            _createdCountryForTest = true;
+        }
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace");
 
-        await countryRepository.AddAsync(country);
         await stakeholderTypeRepository.AddAsync(stakeholderType);
         await stakeholderRepository.AddAsync(stakeholder);
         await unitOfWork.SaveChangesAsync();
@@ -128,10 +135,9 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
     {
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
 
-        var currency = Currency.Create("NGN", "Naira", true, now);
-        var wallet = Wallet.Create(_stakeholderId, _tenantId, currency.Id, now);
+        var currency = Currency.Create("NGN", "Naira", true);
+        var wallet = Wallet.Create(_stakeholderId, _tenantId, currency.Id);
         wallet.Credit(3700m);
 
         await dbContext.Currencies.AddAsync(currency);
@@ -147,7 +153,6 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
             "merchant-ref-1",
             2500m,
             currency.Id,
-            now,
             WalletTransactionCategory.WalletFunding,
             WalletTransactionNarratives.WalletFunding.Title,
             WalletTransactionNarratives.WalletFunding.CreateDescription());
@@ -157,7 +162,6 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
             "merchant-ref-2",
             1200m,
             currency.Id,
-            now.AddMinutes(1),
             WalletTransactionCategory.BankTransferCredit,
             WalletTransactionNarratives.BankTransferCredit.Title,
             WalletTransactionNarratives.BankTransferCredit.CreateDescription());
@@ -166,8 +170,8 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
         await dbContext.WalletTransactions.AddAsync(secondTransaction);
         await dbContext.SaveChangesAsync();
 
-        dbContext.Entry(firstTransaction).Property(item => item.CreatedAtUtc).CurrentValue = now;
-        dbContext.Entry(secondTransaction).Property(item => item.CreatedAtUtc).CurrentValue = now.AddMinutes(1);
+        dbContext.Entry(firstTransaction).Property(item => item.CreatedAtUtc).CurrentValue = DateTimeOffset.UtcNow;
+        dbContext.Entry(secondTransaction).Property(item => item.CreatedAtUtc).CurrentValue = DateTimeOffset.UtcNow.AddMinutes(1);
         await dbContext.SaveChangesAsync();
 
         _firstWalletTransactionId = firstTransaction.Id;
@@ -217,7 +221,7 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
         }
 
         var country = await dbContext.Countries.FirstOrDefaultAsync(item => item.Id == _countryId);
-        if (country is not null)
+        if (_createdCountryForTest && country is not null)
         {
             dbContext.Countries.Remove(country);
         }
@@ -232,4 +236,9 @@ public sealed class When_GettingWalletTransactions_WithExistingTransactions_Shou
     }
 
     private IServiceScope CreateScope() => _factory.Services.CreateScope();
+
+    private sealed class FirstCountrySpecification : Specification<Country>
+    {
+        public FirstCountrySpecification() => ApplyPaging(0, 1);
+    }
 }

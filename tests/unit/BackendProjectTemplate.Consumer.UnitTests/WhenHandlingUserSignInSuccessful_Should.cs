@@ -38,7 +38,7 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
         var userAgent = ConsumerTestData.UserAgent();
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
-        var user = AppUser.Create(email, firstName, lastName, DateTimeOffset.UtcNow);
+        var user = AppUser.Create(email, firstName, lastName);
         var appUserId = Guid.CreateVersion7();
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
@@ -87,4 +87,8 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+
+
+
+
 

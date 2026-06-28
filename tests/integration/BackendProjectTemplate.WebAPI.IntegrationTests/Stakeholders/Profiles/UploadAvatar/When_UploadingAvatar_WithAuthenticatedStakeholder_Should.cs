@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -6,7 +7,6 @@ using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Infrastructure.Storage;
-using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
@@ -104,18 +104,17 @@ public sealed class When_UploadingAvatar_WithAuthenticatedStakeholder_Should(Con
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         var firstName = WebApiIntegrationTestData.FirstName();
         var lastName = WebApiIntegrationTestData.LastName();
         _email = WebApiIntegrationTestData.Email();
 
-        var user = AppUser.Create(_email, firstName, lastName, now);
+        var user = AppUser.Create(_email, firstName, lastName);
         (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
-        user.MarkEmailVerified(now);
+        user.MarkEmailVerified();
         (await identityService.UpdateAsync(user)).Succeeded.ShouldBeTrue();
 
-        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, firstName, lastName, now);
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, firstName, lastName);
 
         await stakeholderTypeRepository.AddAsync(stakeholderType);
         await stakeholderRepository.AddAsync(stakeholder);
@@ -130,7 +129,7 @@ public sealed class When_UploadingAvatar_WithAuthenticatedStakeholder_Should(Con
         using var scope = CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IRepository<Provider>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var provider = Provider.Create(ProviderType.FileStorage, "Noop", ObjectStorageProviderKeys.Noop, true, scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow());
+        var provider = Provider.Create(ProviderType.FileStorage, "Noop", ObjectStorageProviderKeys.Noop, true);
 
         _providerId = provider.Id;
         await repository.AddAsync(provider);
@@ -149,7 +148,7 @@ public sealed class When_UploadingAvatar_WithAuthenticatedStakeholder_Should(Con
             return existing[0].Id;
         }
 
-        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg", scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow());
+        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg");
         await writeRepository.AddAsync(country);
         await unitOfWork.SaveChangesAsync();
         _createdCountryForTest = true;

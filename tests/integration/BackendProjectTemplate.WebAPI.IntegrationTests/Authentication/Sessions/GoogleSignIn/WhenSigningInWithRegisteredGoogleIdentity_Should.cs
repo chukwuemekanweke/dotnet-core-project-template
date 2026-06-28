@@ -91,8 +91,8 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_Should(ContainersF
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         var now = timeProvider.GetUtcNow();
-        var user = AppUser.Create(_email, _firstName, _lastName, now);
-        user.MarkEmailVerified(now);
+        var user = AppUser.Create(_email);
+        user.MarkEmailVerified();
 
         var createResult = await identityService.CreateAsync(user);
         createResult.Succeeded.ShouldBeTrue();
@@ -101,11 +101,11 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_Should(ContainersF
             user,
             ExternalLoginProviders.Google,
             _googleSubject,
-            ExternalLoginProviders.Google);
+            "Google");
         addLoginResult.Succeeded.ShouldBeTrue();
 
-        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, _firstName, _lastName, now);
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, _firstName, _lastName);
 
         await stakeholderTypeRepository.AddAsync(stakeholderType);
         await stakeholderRepository.AddAsync(stakeholder);
@@ -175,7 +175,7 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_Should(ContainersF
         }
 
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg", now);
+        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg");
         await countryWriteRepository.AddAsync(country);
         await unitOfWork.SaveChangesAsync();
         _createdCountryForTest = true;
@@ -207,4 +207,14 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_Should(ContainersF
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
 

@@ -9,7 +9,7 @@ public sealed class WhenCreatingEmailProvider_Should
     {
         var utcNow = DateTimeOffset.UtcNow;
 
-        var provider = Provider.Create(ProviderType.Email, " Mailtrap ", " mailtrap ", true, utcNow);
+        var provider = Provider.Create(ProviderType.Email, " Mailtrap ", " mailtrap ", true);
 
         provider.ProviderName.ShouldBe("Mailtrap");
         provider.ProviderKey.ShouldBe("mailtrap");
@@ -18,5 +18,6 @@ public sealed class WhenCreatingEmailProvider_Should
         provider.UpdatedAtUtc.ShouldBe(default);
     }
 }
+
 
 

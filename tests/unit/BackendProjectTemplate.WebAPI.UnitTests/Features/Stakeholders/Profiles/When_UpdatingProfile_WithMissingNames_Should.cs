@@ -26,13 +26,11 @@ public sealed class When_UpdatingProfile_WithMissingNames_Should
                 Substitute.For<IRepository<Stakeholder>>(),
                 Substitute.For<IObjectStorageService>(),
                 customTelemetryContext,
-                Substitute.For<IUnitOfWork>(),
-                TimeProvider.System),
+                Substitute.For<IUnitOfWork>()),
             new UpdateProfileHandler(
                 Substitute.For<IRepository<Stakeholder>>(),
                 customTelemetryContext,
-                Substitute.For<IUnitOfWork>(),
-                TimeProvider.System),
+                Substitute.For<IUnitOfWork>()),
             currentActor);
 
         var result = await sut.UpdateProfile(new UpdateProfileRequest(string.Empty, string.Empty), CancellationToken.None);

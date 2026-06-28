@@ -10,8 +10,7 @@ public sealed class UploadAvatarHandler(
     IRepository<Stakeholder> stakeholderRepository,
     IObjectStorageService objectStorageService,
     ICustomTelemetryContext customTelemetryContext,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    IUnitOfWork unitOfWork)
 {
     private const long MaxAvatarFileSizeBytes = 2 * 1024 * 1024;
 
@@ -65,7 +64,7 @@ public sealed class UploadAvatarHandler(
             new ObjectStorageUploadRequest(objectKey, command.Content, command.ContentType),
             cancellationToken);
 
-        stakeholder.SetAvatarUrl(avatarUrl, timeProvider.GetUtcNow());
+        stakeholder.SetAvatarUrl(avatarUrl);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.AvatarUploadCompleted,

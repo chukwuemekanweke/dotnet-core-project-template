@@ -27,10 +27,11 @@ internal sealed class EmailNotificationsControllerTestContext
             Clock);
 
     public Provider CreateMailtrapProvider() =>
-        Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, Clock.GetUtcNow());
+        Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true);
 
     internal sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
+

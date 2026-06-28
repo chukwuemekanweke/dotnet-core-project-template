@@ -142,17 +142,16 @@ public sealed class When_InitiatingPayment_WithCredoProvider_Should : IAsyncLife
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
         var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         _email = WebApiIntegrationTestData.Email();
 
-        var user = AppUser.Create(_email, "Ada", "Lovelace", now);
+        var user = AppUser.Create(_email, "Ada", "Lovelace");
         (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
-        user.MarkEmailVerified(now);
+        user.MarkEmailVerified();
         (await identityService.UpdateAsync(user)).Succeeded.ShouldBeTrue();
 
-        var country = Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg", now);
-        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace", now);
+        var country = Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg");
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace");
 
         await countryRepository.AddAsync(country);
         await stakeholderTypeRepository.AddAsync(stakeholderType);
@@ -168,10 +167,9 @@ public sealed class When_InitiatingPayment_WithCredoProvider_Should : IAsyncLife
     {
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var currency = Currency.Create("NGN", "Naira", true, now);
-        var countryCurrency = CountryCurrency.Create(_countryId, currency.Id, true, true, now);
-        var provider = PaymentProvider.Create("Credo", PaymentProviderKeys.Credo, true, now);
+        var currency = Currency.Create("NGN", "Naira", true);
+        var countryCurrency = CountryCurrency.Create(_countryId, currency.Id, true, true);
+        var provider = PaymentProvider.Create("Credo", PaymentProviderKeys.Credo, true);
         provider.SetConfiguration(currency.Id, Contracts.Payments.PaymentIntent.WalletTopUp, Contracts.Payments.PaymentMethodType.PaymentLink, true);
 
         await dbContext.Currencies.AddAsync(currency);

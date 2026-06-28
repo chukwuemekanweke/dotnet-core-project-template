@@ -12,15 +12,12 @@ public sealed class AuthenticationRefreshToken : Entity, IAggregateRoot
         Guid appUserId,
         string tokenHash,
         string securityStamp,
-        DateTimeOffset expiresAtUtc,
-        DateTimeOffset utcNow)
+        DateTimeOffset expiresAtUtc)
     {
         AppUserId = appUserId;
         TokenHash = tokenHash;
         SecurityStamp = securityStamp;
         ExpiresAtUtc = expiresAtUtc;
-        CreatedAtUtc = utcNow;
-        UpdatedAtUtc = utcNow;
     }
 
     public Guid AppUserId { get; private set; }
@@ -34,9 +31,8 @@ public sealed class AuthenticationRefreshToken : Entity, IAggregateRoot
         Guid appUserId,
         string tokenHash,
         string securityStamp,
-        DateTimeOffset expiresAtUtc,
-        DateTimeOffset utcNow) =>
-        new(appUserId, tokenHash, securityStamp, expiresAtUtc, utcNow);
+        DateTimeOffset expiresAtUtc) =>
+        new(appUserId, tokenHash, securityStamp, expiresAtUtc);
 
     public bool CanBeRedeemed(string securityStamp, DateTimeOffset utcNow) =>
         RevokedAtUtc is null
@@ -51,6 +47,5 @@ public sealed class AuthenticationRefreshToken : Entity, IAggregateRoot
         }
 
         RevokedAtUtc = utcNow;
-        UpdatedAtUtc = utcNow;
     }
 }

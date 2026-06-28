@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Infrastructure.Payments.Credo.Payloads;
 using Microsoft.Extensions.Options;
-using Polly;
 
 namespace BackendProjectTemplate.Infrastructure.Payments.Credo;
 
@@ -11,82 +10,81 @@ internal sealed class CredoClient(
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient(PaymentHttpClientNames.Credo);
     private readonly CredoOptions _options = options.Value;
 
-    private readonly AsyncPolicy _retryPolicy = Policy
-        .Handle<HttpRequestException>()
-        .Or<TaskCanceledException>()
-        .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromMilliseconds(200 * Math.Pow(2, retryAttempt)));
-
     public Task<CredoInitializeTransactionResponse> InitializeTransactionAsync(
         CredoInitializeTransactionRequest request,
         CancellationToken cancellationToken) =>
-        _retryPolicy.ExecuteAsync(
-            async ct =>
-            {
-                ApplyAuthorizationHeader(_options.PublicKey);
-
-                using var response = await _httpClient.PostAsJsonAsync(
-                    "/transaction/initialize",
-                    CreatePayload(request),
-                    ct);
-                response.EnsureSuccessStatusCode();
-
-                var payload = await response.Content.ReadAsAsync<CredoInitializeTransactionHttpResponse>(ct)
-                    ?? throw new InvalidOperationException("Credo initialize transaction response was empty.");
-
-                if (payload.Data is null)
-                {
-                    throw new InvalidOperationException("Credo initialize transaction response did not contain data.");
-                }
-
-                return new CredoInitializeTransactionResponse(
-                    payload.Data.AuthorizationUrl,
-                    payload.Data.Reference,
-                    payload.Data.CredoReference,
-                    payload.Data.Crn);
-            },
-            cancellationToken);
+        InitializeTransactionCoreAsync(request, cancellationToken);
 
     public Task<CredoVerifyTransactionResponse> VerifyTransactionAsync(
         string reference,
         CancellationToken cancellationToken) =>
-        _retryPolicy.ExecuteAsync(
-            async ct =>
-            {
-                ApplyAuthorizationHeader(_options.SecretKey);
+        VerifyTransactionCoreAsync(reference, cancellationToken);
 
-                using var response = await _httpClient.GetAsync(
-                    $"/transaction/{Uri.EscapeDataString(reference)}/verify",
-                    ct);
-                response.EnsureSuccessStatusCode();
+    private async Task<CredoInitializeTransactionResponse> InitializeTransactionCoreAsync(
+        CredoInitializeTransactionRequest request,
+        CancellationToken cancellationToken)
+    {
+        ApplyAuthorizationHeader(_options.PublicKey);
 
-                var payload = await response.Content.ReadAsAsync<CredoVerifyTransactionHttpResponse>(ct)
-                    ?? throw new InvalidOperationException("Credo verify transaction response was empty.");
-
-                if (payload.Data is null)
-                {
-                    throw new InvalidOperationException("Credo verify transaction response did not contain data.");
-                }
-
-                return new CredoVerifyTransactionResponse(
-                    payload.Message,
-                    payload.Data.BusinessCode,
-                    payload.Data.TransRef,
-                    payload.Data.BusinessRef,
-                    payload.Data.DebitedAmount,
-                    payload.Data.TransAmount,
-                    payload.Data.TransFeeAmount,
-                    payload.Data.SettlementAmount,
-                    payload.Data.CustomerId,
-                    payload.Data.TransactionDate,
-                    payload.Data.ChannelId,
-                    payload.Data.CurrencyCode,
-                    payload.Data.Status,
-                    payload.Data.Metadata?.Select(item => new CredoMetadataEntry(
-                        item.InsightTag,
-                        item.InsightTagValue,
-                        item.InsightTagDisplay)).ToArray());
-            },
+        using var response = await _httpClient.PostAsJsonAsync(
+            "/transaction/initialize",
+            CreatePayload(request),
             cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var payload = await response.Content.ReadAsAsync<CredoInitializeTransactionHttpResponse>(cancellationToken)
+            ?? throw new InvalidOperationException("Credo initialize transaction response was empty.");
+
+        if (payload.Data is null)
+        {
+            throw new InvalidOperationException("Credo initialize transaction response did not contain data.");
+        }
+
+        return new CredoInitializeTransactionResponse(
+            payload.Data.AuthorizationUrl,
+            payload.Data.Reference,
+            payload.Data.CredoReference,
+            payload.Data.Crn);
+    }
+
+    private async Task<CredoVerifyTransactionResponse> VerifyTransactionCoreAsync(
+        string reference,
+        CancellationToken cancellationToken)
+    {
+        ApplyAuthorizationHeader(_options.SecretKey);
+
+        using var response = await _httpClient.GetAsync(
+            $"/transaction/{Uri.EscapeDataString(reference)}/verify",
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var payload = await response.Content.ReadAsAsync<CredoVerifyTransactionHttpResponse>(cancellationToken)
+            ?? throw new InvalidOperationException("Credo verify transaction response was empty.");
+
+        if (payload.Data is null)
+        {
+            throw new InvalidOperationException("Credo verify transaction response did not contain data.");
+        }
+
+        return new CredoVerifyTransactionResponse(
+            payload.Message,
+            payload.Data.BusinessCode,
+            payload.Data.TransRef,
+            payload.Data.BusinessRef,
+            payload.Data.DebitedAmount,
+            payload.Data.TransAmount,
+            payload.Data.TransFeeAmount,
+            payload.Data.SettlementAmount,
+            payload.Data.CustomerId,
+            payload.Data.TransactionDate,
+            payload.Data.ChannelId,
+            payload.Data.CurrencyCode,
+            payload.Data.Status,
+            payload.Data.Metadata?.Select(item => new CredoMetadataEntry(
+                item.InsightTag,
+                item.InsightTagValue,
+                item.InsightTagDisplay)).ToArray());
+    }
 
     private CredoInitializeTransactionPayload CreatePayload(CredoInitializeTransactionRequest request) =>
         new(

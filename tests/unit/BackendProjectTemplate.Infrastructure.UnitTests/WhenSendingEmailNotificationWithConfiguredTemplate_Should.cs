@@ -61,24 +61,15 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_Should
                 }));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now));
+            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns(EmailNotificationTemplate.Create(
-                NotificationType.SignInSuccessful,
-                "Sign-in successful notification",
-                "Successful sign-in from {{:IpAddress:}}",
-                "SignInSuccessful.html",
-                now));
+            .Returns(EmailNotificationTemplate.Create(NotificationType.SignInSuccessful, "Sign-in successful notification", "Successful sign-in from {{:IpAddress:}}", "SignInSuccessful.html"));
         tenantRepository.FirstOrDefaultAsync(
                 Arg.Any<TenantByIdSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Tenant.Create(
-                tenantId,
-                "Moveaex",
-                "moveaex",
-                now));
+            .Returns(Tenant.Create(tenantId, "Moveaex", "moveaex"));
         transportProvider.ProviderKey.Returns("mailtrap");
         transportProvider.SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>())
             .Returns(new EmailTransportSendResult("mailtrap-message-id"));
@@ -105,5 +96,12 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_Should
             Arg.Any<CancellationToken>());
     }
 }
+
+
+
+
+
+
+
 
 

@@ -22,14 +22,9 @@ public sealed class RefreshTokenService(
         var rawToken = GenerateRawToken();
         var expiresAtUtc = utcNow.AddDays(_options.LifetimeDays);
         var securityStamp = await GetRequiredSecurityStampAsync(user, cancellationToken);
-        var refreshToken = AuthenticationRefreshToken.Create(
-            user.Id,
-            ComputeHash(rawToken),
-            securityStamp,
-            expiresAtUtc,
-            utcNow);
+        var refreshToken = AuthenticationRefreshToken.Create(user.Id, ComputeHash(rawToken), securityStamp, expiresAtUtc);
 
-        await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
+        await refreshTokenRepository.AddAsync(refreshToken);
 
         return new RefreshToken(rawToken, expiresAtUtc);
     }
@@ -79,3 +74,4 @@ public sealed class RefreshTokenService(
         return securityStamp;
     }
 }
+

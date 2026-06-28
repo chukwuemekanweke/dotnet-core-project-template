@@ -17,20 +17,11 @@ public sealed class When_ReconcilingPayments_WithExpiredVerification_Should
         var currency = context.CreateCurrency("NGN");
         var provider = context.CreatePaymentProvider("Credo", PaymentProviderKeys.Credo);
         var paymentProviderService = Substitute.For<IPaymentProviderService>();
-        var transaction = PaymentTransaction.Create(
-            "merchant-expired",
-            PaymentIntent.WalletTopUp,
-            provider.Id,
-            1000m,
-            currency.Id,
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            context.Clock.GetUtcNow().AddHours(-25));
+        var transaction = PaymentTransaction.Create("merchant-expired", PaymentIntent.WalletTopUp, provider.Id, 1000m, currency.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         transaction.MarkInitiated("provider-ref", null, null, KnownPaymentTransactionChangeReasons.PaymentInitiated);
         transaction.SetPaymentMethodType(PaymentMethodType.PaymentLink);
+        transaction.RecordStatusCheck(context.Clock.GetUtcNow().AddHours(-25));
 
         context.PaymentTransactionRepository.ListAsync(Arg.Any<ISpecification<PaymentTransaction>>(), Arg.Any<CancellationToken>())
             .Returns([transaction]);
@@ -61,3 +52,4 @@ public sealed class When_ReconcilingPayments_WithExpiredVerification_Should
         await context.EventPublisher.DidNotReceive().PublishAsync(Arg.Any<SuccessfulPaymentConfirmed>(), Arg.Any<CancellationToken>());
     }
 }
+

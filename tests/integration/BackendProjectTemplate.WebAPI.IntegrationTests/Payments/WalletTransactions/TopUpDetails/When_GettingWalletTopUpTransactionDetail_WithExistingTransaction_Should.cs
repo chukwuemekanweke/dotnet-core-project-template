@@ -9,6 +9,7 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
@@ -39,6 +40,7 @@ public sealed class When_GettingWalletTopUpTransactionDetail_WithExistingTransac
     private Guid _paymentProviderId;
     private Guid _paymentTransactionId;
     private Guid _walletTransactionId;
+    private bool _createdCountryForTest;
     private HttpResponseMessage? _response;
 
     public async Task InitializeAsync()
@@ -104,21 +106,26 @@ public sealed class When_GettingWalletTopUpTransactionDetail_WithExistingTransac
         var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
-        var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Domain.ReferenceData.Entities.Country>>();
+        var countryReadRepository = scope.ServiceProvider.GetRequiredService<IReadRepository<Country>>();
+        var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         _email = WebApiIntegrationTestData.Email();
 
-        var user = AppUser.Create(_email, "Ada", "Lovelace", now);
+        var user = AppUser.Create(_email, "Ada", "Lovelace");
         (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
-        user.MarkEmailVerified(now);
+        user.MarkEmailVerified();
         (await identityService.UpdateAsync(user)).Succeeded.ShouldBeTrue();
 
-        var country = Domain.ReferenceData.Entities.Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg", now);
-        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace", now);
+        var country = (await countryReadRepository.ListAsync(new FirstCountrySpecification())).FirstOrDefault();
+        if (country is null)
+        {
+            country = Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg");
+            await countryRepository.AddAsync(country);
+            _createdCountryForTest = true;
+        }
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace");
 
-        await countryRepository.AddAsync(country);
         await stakeholderTypeRepository.AddAsync(stakeholderType);
         await stakeholderRepository.AddAsync(stakeholder);
         await unitOfWork.SaveChangesAsync();
@@ -132,12 +139,11 @@ public sealed class When_GettingWalletTopUpTransactionDetail_WithExistingTransac
     {
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
 
-        var currency = Currency.Create("NGN", "Naira", true, now);
-        var wallet = Wallet.Create(_stakeholderId, _tenantId, currency.Id, now);
+        var currency = Currency.Create("NGN", "Naira", true);
+        var wallet = Wallet.Create(_stakeholderId, _tenantId, currency.Id);
         wallet.Credit(2500m);
-        var paymentProvider = PaymentProvider.Create("SafeHaven", PaymentProviderKeys.SafeHaven, true, now);
+        var paymentProvider = PaymentProvider.Create("SafeHaven", PaymentProviderKeys.SafeHaven, true);
         var paymentTransaction = PaymentTransaction.Create(
             "merchant-ref-1",
             PaymentIntent.WalletTopUp,
@@ -147,10 +153,9 @@ public sealed class When_GettingWalletTopUpTransactionDetail_WithExistingTransac
             _countryId,
             Guid.CreateVersion7(),
             _stakeholderId,
-            _tenantId,
-            now);
+            _tenantId);
         paymentTransaction.SetPaymentMethodType(PaymentMethodType.BankTransfer);
-        paymentTransaction.MarkInitiated("provider-ref-1", null, now.AddMinutes(15), "Payment initiated.");
+        paymentTransaction.MarkInitiated("provider-ref-1", null, null, "Payment initiated.");
 
         var walletTransaction = WalletTransaction.CreateCredit(
             wallet.Id,
@@ -158,7 +163,6 @@ public sealed class When_GettingWalletTopUpTransactionDetail_WithExistingTransac
             "merchant-ref-1",
             2500m,
             currency.Id,
-            now,
             WalletTransactionCategory.WalletFunding,
             WalletTransactionNarratives.WalletFunding.Title,
             WalletTransactionNarratives.WalletFunding.CreateDescription());
@@ -226,7 +230,7 @@ public sealed class When_GettingWalletTopUpTransactionDetail_WithExistingTransac
         }
 
         var country = await dbContext.Countries.FirstOrDefaultAsync(item => item.Id == _countryId);
-        if (country is not null)
+        if (_createdCountryForTest && country is not null)
         {
             dbContext.Countries.Remove(country);
         }
@@ -241,4 +245,9 @@ public sealed class When_GettingWalletTopUpTransactionDetail_WithExistingTransac
     }
 
     private IServiceScope CreateScope() => _factory.Services.CreateScope();
+
+    private sealed class FirstCountrySpecification : Specification<Country>
+    {
+        public FirstCountrySpecification() => ApplyPaging(0, 1);
+    }
 }

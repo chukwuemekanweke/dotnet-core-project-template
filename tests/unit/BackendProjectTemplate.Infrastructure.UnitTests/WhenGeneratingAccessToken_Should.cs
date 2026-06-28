@@ -13,17 +13,12 @@ public sealed class WhenGeneratingAccessToken_Should
     public void IncludeStakeholderIdClaim()
     {
         var stakeholderId = Guid.CreateVersion7();
-        var user = AppUser.Create(
-            InfrastructureTestData.Email(),
-            InfrastructureTestData.FirstName(),
-            InfrastructureTestData.LastName(),
-            new DateTimeOffset(2026, 4, 16, 0, 0, 0, TimeSpan.Zero));
+        var user = AppUser.Create(InfrastructureTestData.Email());
         var sut = new JwtTokenGenerator(
             Options.Create(new JwtOptions
             {
                 Issuer = "tests",
-                Audience = "tests",
-                SigningKey = "super-secret-template-signing-key-change-me"
+                Audience = "tests"
             }),
             new FakeTimeProvider());
 
@@ -38,4 +33,8 @@ public sealed class WhenGeneratingAccessToken_Should
         public override DateTimeOffset GetUtcNow() => new(2026, 4, 16, 0, 0, 0, TimeSpan.Zero);
     }
 }
+
+
+
+
 

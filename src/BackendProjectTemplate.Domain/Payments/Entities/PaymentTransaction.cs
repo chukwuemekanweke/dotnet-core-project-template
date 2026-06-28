@@ -64,8 +64,7 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
         Guid countryId,
         Guid initiatedByUserId,
         Guid stakeholderId,
-        Guid tenantId,
-        DateTimeOffset utcNow) =>
+        Guid tenantId) =>
         new(
             merchantReference.Trim(),
             paymentIntent,

@@ -54,8 +54,7 @@ internal sealed class AuthenticationControllerTestContext
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
-        UnitOfWork,
-        Clock);
+        UnitOfWork);
 
     public GoogleSignUpHandler CreateGoogleSignUpHandler() => new(
         IdentityService,
@@ -64,8 +63,7 @@ internal sealed class AuthenticationControllerTestContext
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
-        UnitOfWork,
-        Clock);
+        UnitOfWork);
 
     public SignInHandler CreateSignInHandler() => new(
         IdentityService,
@@ -128,28 +126,30 @@ internal sealed class AuthenticationControllerTestContext
         AppUser.Create(
             email ?? "jane@example.com",
             firstName ?? "Jane",
-            lastName ?? "Doe",
-            Clock.GetUtcNow());
+            lastName ?? "Doe");
 
     public Stakeholder CreateStakeholder(Guid appUserId) =>
         Stakeholder.Create(
             appUserId,
-            Guid.CreateVersion7(),
+            CurrentActor.TenantId!.Value,
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             "Jane",
-            "Doe",
-            Clock.GetUtcNow());
+            "Doe");
 
     public StakeholderType CreateStakeholderType() =>
         StakeholderType.Create(
             CurrentActor.TenantId!.Value,
             StakeholderDefaults.TypeName,
-            StakeholderDefaults.TypeKey,
-            Clock.GetUtcNow());
+            StakeholderDefaults.TypeKey);
 
     internal sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
+
+
+
+
+

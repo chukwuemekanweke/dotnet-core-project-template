@@ -23,7 +23,7 @@ public sealed class Wallet : Entity, IAggregateRoot
     public decimal Balance { get; private set; }
     public uint RowVersion { get; private set; }
 
-    public static Wallet Create(Guid stakeholderId, Guid tenantId, Guid currencyId, DateTimeOffset utcNow) =>
+    public static Wallet Create(Guid stakeholderId, Guid tenantId, Guid currencyId) =>
         new(stakeholderId, tenantId, currencyId, 0m);
 
     public void Credit(decimal amount)

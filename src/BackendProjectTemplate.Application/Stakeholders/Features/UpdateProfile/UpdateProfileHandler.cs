@@ -8,8 +8,7 @@ namespace BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile
 public sealed class UpdateProfileHandler(
     IRepository<Stakeholder> stakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    IUnitOfWork unitOfWork)
 {
     public async Task<UpdateProfileResult> HandleAsync(UpdateProfileCommand command, CancellationToken cancellationToken)
     {
@@ -46,7 +45,7 @@ public sealed class UpdateProfileHandler(
             return new UpdateProfileResult(UpdateProfileStatus.StakeholderNotFound);
         }
 
-        stakeholder.UpdateProfile(command.FirstName, command.LastName, timeProvider.GetUtcNow());
+        stakeholder.UpdateProfile(command.FirstName, command.LastName);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.ProfileUpdateCompleted,

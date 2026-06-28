@@ -11,8 +11,7 @@ public sealed class TenantEmailBaseTemplate : Entity
     private TenantEmailBaseTemplate(
         Guid tenantId,
         string description,
-        string htmlTemplate,
-        DateTimeOffset utcNow)
+        string htmlTemplate)
     {
         TenantId = tenantId;
         Description = description.Trim();
@@ -26,7 +25,6 @@ public sealed class TenantEmailBaseTemplate : Entity
     public static TenantEmailBaseTemplate Create(
         Guid tenantId,
         string description,
-        string htmlTemplate,
-        DateTimeOffset utcNow) =>
-        new(tenantId, description, htmlTemplate, utcNow);
+        string htmlTemplate) =>
+        new(tenantId, description, htmlTemplate);
 }

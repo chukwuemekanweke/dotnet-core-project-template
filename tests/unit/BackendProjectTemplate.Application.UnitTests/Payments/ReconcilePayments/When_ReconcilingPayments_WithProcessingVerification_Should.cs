@@ -17,17 +17,7 @@ public sealed class When_ReconcilingPayments_WithProcessingVerification_Should
         var currency = context.CreateCurrency("NGN");
         var provider = context.CreatePaymentProvider("SafeHaven", PaymentProviderKeys.SafeHaven);
         var paymentProviderService = Substitute.For<IPaymentProviderService>();
-        var transaction = PaymentTransaction.Create(
-            "merchant-processing",
-            PaymentIntent.Subscription,
-            provider.Id,
-            1000m,
-            currency.Id,
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            context.Clock.GetUtcNow());
+        var transaction = PaymentTransaction.Create("merchant-processing", PaymentIntent.Subscription, provider.Id, 1000m, currency.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         transaction.MarkInitiated("provider-ref", null, null, KnownPaymentTransactionChangeReasons.PaymentInitiated);
 
@@ -58,3 +48,4 @@ public sealed class When_ReconcilingPayments_WithProcessingVerification_Should
         await context.EventPublisher.DidNotReceive().PublishAsync(Arg.Any<SuccessfulPaymentConfirmed>(), Arg.Any<CancellationToken>());
     }
 }
+

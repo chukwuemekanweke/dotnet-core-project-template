@@ -17,7 +17,7 @@ public sealed class When_GettingCountries_WithoutCachedResponse_Should
         var now = new DateTimeOffset(2026, 4, 21, 12, 0, 0, TimeSpan.Zero);
         var entities = new[]
         {
-            Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg", now)
+            Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg")
         };
 
         cache.GetAsync<GetCountriesResponse[]>(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -38,3 +38,5 @@ public sealed class When_GettingCountries_WithoutCachedResponse_Should
             Arg.Any<CancellationToken>());
     }
 }
+
+

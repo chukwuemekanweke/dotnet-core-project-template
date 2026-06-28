@@ -23,9 +23,10 @@ public sealed class When_MarkingEmailNotificationLogAsDelivered_WhenAlreadyDeliv
             null,
             enqueuedAtUtc);
 
-        log.MarkDelivered(firstDeliveredAtUtc, firstDeliveredAtUtc);
-        log.MarkDelivered(secondDeliveredAtUtc, secondDeliveredAtUtc);
+        log.MarkDelivered(firstDeliveredAtUtc);
+        log.MarkDelivered(secondDeliveredAtUtc);
 
         log.DeliveredAtUtc.ShouldBe(firstDeliveredAtUtc);
     }
 }
+

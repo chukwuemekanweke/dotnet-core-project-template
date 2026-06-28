@@ -24,9 +24,15 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_Should
         const string token = "signed-jwt";
 
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
-        var user = AppUser.Create(email, firstName, lastName, now);
-        user.MarkEmailVerified(now);
-        var stakeholder = Stakeholder.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), firstName, lastName, now);
+        var user = AppUser.Create(email);
+        user.MarkEmailVerified();
+        var stakeholder = Stakeholder.Create(
+            user.Id,
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            firstName,
+            lastName);
 
         var context = new AuthenticationFlowTestContext();
         var expectedToken = new AccessToken(token, now.AddHours(1));
@@ -61,4 +67,11 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_Should
             Arg.Any<CancellationToken>());
     }
 }
+
+
+
+
+
+
+
 

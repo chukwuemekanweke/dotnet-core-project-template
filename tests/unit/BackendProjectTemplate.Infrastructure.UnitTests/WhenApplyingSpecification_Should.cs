@@ -13,13 +13,11 @@ public sealed class WhenApplyingSpecification_Should
         const string firstEmail = "alpha@example.com";
         const string secondEmail = "bravo@example.com";
         const string thirdEmail = "charlie@example.com";
-        var createdAt = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
-
         var users = new[]
         {
-            AppUser.Create(firstEmail, createdAt),
-            AppUser.Create(secondEmail, createdAt),
-            AppUser.Create(thirdEmail, createdAt)
+            AppUser.Create(firstEmail),
+            AppUser.Create(secondEmail),
+            AppUser.Create(thirdEmail)
         }.AsQueryable();
 
         var specification = new OrderedPagedUsersSpecification();
@@ -45,4 +43,7 @@ public sealed class WhenApplyingSpecification_Should
         }
     }
 }
+
+
+
 

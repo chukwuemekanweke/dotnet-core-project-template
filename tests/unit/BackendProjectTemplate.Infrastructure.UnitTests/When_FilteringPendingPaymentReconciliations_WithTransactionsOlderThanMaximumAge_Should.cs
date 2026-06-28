@@ -36,20 +36,11 @@ public sealed class When_FilteringPendingPaymentReconciliations_WithTransactions
 
     private static PaymentTransaction CreateInitiatedTransaction(DateTimeOffset createdAtUtc)
     {
-        var transaction = PaymentTransaction.Create(
-            $"pay_{Guid.CreateVersion7():N}",
-            PaymentIntent.WalletTopUp,
-            Guid.CreateVersion7(),
-            1000m,
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            createdAtUtc);
+        var transaction = PaymentTransaction.Create($"pay_{Guid.CreateVersion7():N}", PaymentIntent.WalletTopUp, Guid.CreateVersion7(), 1000m, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         transaction.MarkInitiated("provider-ref", null, null, "payment_initiated");
         transaction.SetCreatedAudit(createdAtUtc, "system");
         return transaction;
     }
 }
+

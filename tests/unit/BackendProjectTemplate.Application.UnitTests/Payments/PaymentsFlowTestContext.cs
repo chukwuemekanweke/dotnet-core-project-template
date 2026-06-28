@@ -5,15 +5,12 @@ using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ReconcilePayments;
-using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
 using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Application.UnitTests.Payments;
 
@@ -47,8 +44,7 @@ internal sealed class PaymentsFlowTestContext
             PaymentTransactionRepository,
             PaymentProviderServices,
             CustomTelemetryContext,
-            UnitOfWork,
-            Clock);
+            UnitOfWork);
 
     public GetStakeholderWalletTransactionsHandler CreateGetStakeholderWalletTransactionsHandler() =>
         new(WalletTransactionReadModelRepository);
@@ -105,26 +101,23 @@ internal sealed class PaymentsFlowTestContext
             Clock);
 
     public Stakeholder CreateStakeholder(Guid appUserId, Guid tenantId, Guid countryId) =>
-        Stakeholder.Create(
-            appUserId,
-            tenantId,
-            countryId,
-            Guid.CreateVersion7(),
-            "Ada",
-            "Lovelace",
-            Clock.GetUtcNow());
+        Stakeholder.Create(appUserId, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace");
 
     public Currency CreateCurrency(string currencyCode) =>
-        Currency.Create(currencyCode, currencyCode, true, Clock.GetUtcNow());
+        Currency.Create(currencyCode, currencyCode, true);
 
-    public CountryCurrency CreateCountryCurrency(Guid countryId, Guid currencyId) =>
-        CountryCurrency.Create(countryId, currencyId, true, true, Clock.GetUtcNow());
+    public CountryCurrency CreateCountryCurrency(Guid countryId, Guid currencyId, bool isDefault = true, bool isActive = true) =>
+        CountryCurrency.Create(countryId, currencyId, isDefault, isActive);
 
     public PaymentProvider CreatePaymentProvider(string providerName, string providerKey, bool isActive = true) =>
-        PaymentProvider.Create(providerName, providerKey, isActive, Clock.GetUtcNow());
+        PaymentProvider.Create(providerName, providerKey, isActive);
 
     internal sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
+
+
+
+

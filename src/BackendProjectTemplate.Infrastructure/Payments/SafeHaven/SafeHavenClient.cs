@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using BackendProjectTemplate.Infrastructure.Payments.SafeHaven.Payloads;
 using Microsoft.Extensions.Options;
-using Polly;
 
 namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
 
@@ -24,11 +23,6 @@ internal sealed class SafeHavenClient(
     private SafeHavenTokenResponse? _cachedToken;
     private DateTimeOffset _tokenExpiry = DateTimeOffset.MinValue;
 
-    private readonly AsyncPolicy _retryPolicy = Policy
-        .Handle<HttpRequestException>()
-        .Or<TaskCanceledException>()
-        .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromMilliseconds(200 * Math.Pow(2, retryAttempt)));
-
     public async Task<SafeHavenResponse<SafeHavenVirtualAccount>> CreateVirtualAccountAsync(
         SafeHavenCreateVirtualAccountRequest request,
         CancellationToken cancellationToken)
@@ -46,16 +40,11 @@ internal sealed class SafeHavenClient(
             CallbackUrl: _options.CallbackUrl,
             ExternalReference: request.ExternalReference);
 
-        return await _retryPolicy.ExecuteAsync(async ct =>
-        {
-            using var response = await PostAsJsonAsync("/virtual-accounts", payload, ct);
-            response.EnsureSuccessStatusCode();
+        using var response = await PostAsJsonAsync("/virtual-accounts", payload, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenVirtualAccount>>(SerializerOptions, ct)
-                ?? throw new InvalidOperationException("SafeHaven create virtual account response was empty.");
-
-            return wrapper;
-        }, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenVirtualAccount>>(SerializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("SafeHaven create virtual account response was empty.");
     }
 
     public async Task<SafeHavenResponse<SafeHavenVirtualAccount>> GetVirtualAccountAsync(
@@ -64,16 +53,13 @@ internal sealed class SafeHavenClient(
     {
         await EnsureAuthenticatedAsync(cancellationToken);
 
-        return await _retryPolicy.ExecuteAsync(async ct =>
-        {
-            using var httpRequest = CreateAuthenticatedRequest(HttpMethod.Get, $"/virtual-accounts/{virtualAccountId}");
-            using var response = await _httpClient.SendAsync(httpRequest, ct);
-            response.EnsureSuccessStatusCode();
+        using var httpRequest = CreateAuthenticatedRequest(HttpMethod.Get, $"/virtual-accounts/{virtualAccountId}");
+        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-            await using var stream = await response.Content.ReadAsStreamAsync(ct);
-            return await JsonSerializer.DeserializeAsync<SafeHavenResponse<SafeHavenVirtualAccount>>(stream, SerializerOptions, ct)
-                ?? throw new InvalidOperationException("SafeHaven get virtual account response was empty.");
-        }, cancellationToken);
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        return await JsonSerializer.DeserializeAsync<SafeHavenResponse<SafeHavenVirtualAccount>>(stream, SerializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("SafeHaven get virtual account response was empty.");
     }
 
     public async Task<SafeHavenResponse<SafeHavenIdentityVerification>> InitiateIdentityVerificationAsync(
@@ -88,16 +74,11 @@ internal sealed class SafeHavenClient(
             DebitAccountNumber: request.DebitAccountNumber,
             Async: false);
 
-        return await _retryPolicy.ExecuteAsync(async ct =>
-        {
-            using var response = await PostAsJsonAsync("/identity/v2", payload, ct);
-            response.EnsureSuccessStatusCode();
+        using var response = await PostAsJsonAsync("/identity/v2", payload, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenIdentityVerification>>(SerializerOptions, ct)
-                ?? throw new InvalidOperationException("SafeHaven identity verification initiation response was empty.");
-
-            return wrapper;
-        }, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenIdentityVerification>>(SerializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("SafeHaven identity verification initiation response was empty.");
     }
 
     public async Task<SafeHavenResponse<SafeHavenIdentityVerification>> ValidateIdentityVerificationAsync(
@@ -106,16 +87,11 @@ internal sealed class SafeHavenClient(
     {
         await EnsureAuthenticatedAsync(cancellationToken);
 
-        return await _retryPolicy.ExecuteAsync(async ct =>
-        {
-            using var response = await PostAsJsonAsync("/identity/v2/validate", request, ct);
-            response.EnsureSuccessStatusCode();
+        using var response = await PostAsJsonAsync("/identity/v2/validate", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenIdentityVerification>>(SerializerOptions, ct)
-                ?? throw new InvalidOperationException("SafeHaven identity verification validation response was empty.");
-
-            return wrapper;
-        }, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenIdentityVerification>>(SerializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("SafeHaven identity verification validation response was empty.");
     }
 
     public async Task<SafeHavenResponse<SafeHavenSubAccount>> CreateSubAccountAsync(
@@ -138,16 +114,11 @@ internal sealed class SafeHavenClient(
                 AccountNumber: _options.AutoSweepAccountNumber,
                 Schedule: "Instant"));
 
-        return await _retryPolicy.ExecuteAsync(async ct =>
-        {
-            using var response = await PostAsJsonAsync("/accounts/v2/subaccount", payload, ct);
-            response.EnsureSuccessStatusCode();
+        using var response = await PostAsJsonAsync("/accounts/v2/subaccount", payload, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenSubAccount>>(SerializerOptions, ct)
-                ?? throw new InvalidOperationException("SafeHaven create sub-account response was empty.");
-
-            return wrapper;
-        }, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<SafeHavenResponse<SafeHavenSubAccount>>(SerializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("SafeHaven create sub-account response was empty.");
     }
 
     public async Task<SafeHavenResponse<IReadOnlyList<SafeHavenAccountStatementEntry>>> GetAccountStatementAsync(
@@ -184,17 +155,12 @@ internal sealed class SafeHavenClient(
             uri += "?" + string.Join("&", queryParams);
         }
 
-        return await _retryPolicy.ExecuteAsync(async ct =>
-        {
-            using var httpRequest = CreateAuthenticatedRequest(HttpMethod.Get, uri);
-            using var response = await _httpClient.SendAsync(httpRequest, ct);
-            response.EnsureSuccessStatusCode();
+        using var httpRequest = CreateAuthenticatedRequest(HttpMethod.Get, uri);
+        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-            var wrapper = await response.Content.ReadFromJsonAsync<SafeHavenResponse<IReadOnlyList<SafeHavenAccountStatementEntry>>>(SerializerOptions, ct)
-                ?? throw new InvalidOperationException("SafeHaven account statement response was empty.");
-
-            return wrapper;
-        }, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<SafeHavenResponse<IReadOnlyList<SafeHavenAccountStatementEntry>>>(SerializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("SafeHaven account statement response was empty.");
     }
 
     private async Task EnsureAuthenticatedAsync(CancellationToken cancellationToken)
@@ -243,15 +209,17 @@ internal sealed class SafeHavenClient(
     private Task<SafeHavenTokenResponse> ExchangeTokenAsync(
         SafeHavenTokenRequest request,
         CancellationToken cancellationToken) =>
-        _retryPolicy.ExecuteAsync(async ct =>
-        {
-            using var response = await System.Net.Http.Json.HttpClientJsonExtensions.PostAsJsonAsync(_httpClient, "/oauth2/token", request, ct);
-            response.EnsureSuccessStatusCode();
+        ExchangeTokenCoreAsync(request, cancellationToken);
 
-            var token = await response.Content.ReadFromJsonAsync<SafeHavenTokenResponse>(SerializerOptions, ct)
-                ?? throw new InvalidOperationException("SafeHaven token response was empty.");
+    private async Task<SafeHavenTokenResponse> ExchangeTokenCoreAsync(
+        SafeHavenTokenRequest request,
+        CancellationToken cancellationToken)
+    {
+        using var response = await System.Net.Http.Json.HttpClientJsonExtensions.PostAsJsonAsync(_httpClient, "/oauth2/token", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-            return token;
-        }, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<SafeHavenTokenResponse>(SerializerOptions, cancellationToken)
+            ?? throw new InvalidOperationException("SafeHaven token response was empty.");
+    }
 
 }

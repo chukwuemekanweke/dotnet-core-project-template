@@ -14,16 +14,7 @@ public sealed class When_HandlingCreditWallet_WithDuplicatePaymentTransaction_Sh
         var command = context.CreateCreditWalletCommand(2500m, Guid.CreateVersion7());
 
         context.WalletTransactionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<WalletTransaction>>(), Arg.Any<CancellationToken>())
-            .Returns(WalletTransaction.CreateCredit(
-                Guid.CreateVersion7(),
-                command.PaymentTransactionId,
-                command.MerchantReference,
-                command.Amount,
-                command.CurrencyId,
-                context.Clock.GetUtcNow(),
-                WalletTransactionCategory.WalletFunding,
-                WalletTransactionNarratives.WalletFunding.Title,
-                WalletTransactionNarratives.WalletFunding.CreateDescription()));
+            .Returns(WalletTransaction.CreateCredit(Guid.CreateVersion7(), command.PaymentTransactionId, command.MerchantReference, command.Amount, command.CurrencyId, WalletTransactionCategory.WalletFunding, WalletTransactionNarratives.WalletFunding.Title, WalletTransactionNarratives.WalletFunding.CreateDescription()));
 
         await context.CreateCreditWalletHandler().HandleAsync(command, CancellationToken.None);
 
@@ -32,3 +23,4 @@ public sealed class When_HandlingCreditWallet_WithDuplicatePaymentTransaction_Sh
         context.WalletRepository.DidNotReceive().Update(Arg.Any<Wallet>());
     }
 }
+

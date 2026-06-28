@@ -16,7 +16,7 @@ public sealed class WhenCreatingStakeholder_Should
         const string lastName = "Lovelace";
         var now = new DateTimeOffset(2026, 4, 6, 0, 0, 0, TimeSpan.Zero);
 
-        var stakeholder = Stakeholder.Create(appUserId, tenantId, countryId, stakeholderTypeId, firstName, lastName, now);
+        var stakeholder = Stakeholder.Create(appUserId, tenantId, countryId, stakeholderTypeId, firstName, lastName);
 
         stakeholder.AppUserId.ShouldBe(appUserId);
         stakeholder.TenantId.ShouldBe(tenantId);
@@ -29,4 +29,5 @@ public sealed class WhenCreatingStakeholder_Should
         stakeholder.UpdatedAtUtc.ShouldBe(default);
     }
 }
+
 

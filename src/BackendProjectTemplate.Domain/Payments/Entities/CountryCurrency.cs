@@ -25,14 +25,12 @@ public sealed class CountryCurrency : Entity, IAggregateRoot
         Guid countryId,
         Guid currencyId,
         bool isDefault,
-        bool isActive,
-        DateTimeOffset utcNow) =>
+        bool isActive) =>
         new(countryId, currencyId, isDefault, isActive);
 
-    public void SetState(bool isDefault, bool isActive, DateTimeOffset utcNow)
+    public void SetState(bool isDefault, bool isActive)
     {
         IsDefault = isDefault;
         IsActive = isActive;
-        Touch(utcNow);
     }
 }

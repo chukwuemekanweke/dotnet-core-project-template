@@ -26,8 +26,7 @@ public sealed class PaymentProvider : Entity, IAggregateRoot
     public static PaymentProvider Create(
         string providerName,
         string providerKey,
-        bool isActive,
-        DateTimeOffset utcNow) =>
+        bool isActive) =>
         new(providerName, providerKey, isActive);
 
     public void SetActive(bool isActive)

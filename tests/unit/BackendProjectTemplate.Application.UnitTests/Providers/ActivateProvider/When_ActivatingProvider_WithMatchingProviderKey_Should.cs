@@ -13,9 +13,8 @@ public sealed class When_ActivatingProvider_WithMatchingProviderKey_Should
     {
         var providerRepository = Substitute.For<IRepository<Provider>>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
-        var createdAt = new DateTimeOffset(2026, 4, 21, 12, 0, 0, TimeSpan.Zero);
-        var activeProvider = Provider.Create(ProviderType.Email, "Primary", "primary", true, createdAt);
-        var inactiveProvider = Provider.Create(ProviderType.Email, "Secondary", "secondary", false, createdAt);
+        var activeProvider = Provider.Create(ProviderType.Email, "Primary", "primary", true);
+        var inactiveProvider = Provider.Create(ProviderType.Email, "Secondary", "secondary", false);
 
         providerRepository.ListAsync(Arg.Any<ISpecification<Provider>>(), Arg.Any<CancellationToken>())
             .Returns([activeProvider, inactiveProvider]);
@@ -33,3 +32,5 @@ public sealed class When_ActivatingProvider_WithMatchingProviderKey_Should
     }
 
 }
+
+
