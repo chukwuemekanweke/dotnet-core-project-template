@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Domain.Payments.Services;
+using BackendProjectTemplate.Infrastructure.Http;
 using BackendProjectTemplate.Infrastructure.Payments.Credo;
 using BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
 using Microsoft.Extensions.Configuration;
@@ -19,13 +20,15 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient(PaymentHttpClientNames.SafeHaven, client =>
         {
             client.BaseAddress = new Uri(safeHavenOptions.BaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .AddPolicyHandler(HttpRetryPolicies.CreateTransientRetryPolicy());
         services.AddHttpClient(PaymentHttpClientNames.Credo, client =>
         {
             client.BaseAddress = new Uri(credoOptions.BaseUrl);
             client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        })
+        .AddPolicyHandler(HttpRetryPolicies.CreateTransientRetryPolicy());
 
         services.AddScoped<ISafeHavenClient, SafeHavenClient>();
         services.AddScoped<ICredoClient, CredoClient>();

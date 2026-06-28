@@ -42,6 +42,7 @@ internal sealed class EmailNotificationDispatcher(
         var emailNotificationLog = await emailNotificationLogRepository.FirstOrDefaultAsync(
             new EmailNotificationLogByMessageIdSpecification(command.MessageId),
             cancellationToken);
+
         if (emailNotificationLog?.SentAtUtc is not null)
         {
             logger?.LogWarning(

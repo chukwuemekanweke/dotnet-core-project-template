@@ -73,14 +73,12 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         ProviderMessageId = NormalizeProviderMessageId(providerMessageId);
         SentAtUtc = utcNow;
         FailureReason = null;
-        Touch(utcNow);
     }
 
     public void MarkFailed(string reason, DateTimeOffset utcNow)
     {
         SentAtUtc = null;
         FailureReason = NormalizeFailureReason(reason);
-        Touch(utcNow);
     }
 
     public void MarkDelivered(DateTimeOffset deliveredAtUtc, DateTimeOffset utcNow)
@@ -91,7 +89,6 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         }
 
         DeliveredAtUtc = deliveredAtUtc;
-        Touch(utcNow);
     }
 
     private static string NormalizeFailureReason(string reason)

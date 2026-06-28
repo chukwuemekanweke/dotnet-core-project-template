@@ -80,7 +80,7 @@ public sealed class CustomWebApplicationFactory(
                     services.AddHttpClient("payments-safehaven", client =>
                     {
                         client.BaseAddress = new Uri(safeHavenBaseUrl);
-                        client.Timeout = TimeSpan.FromSeconds(30);
+                        client.Timeout = TimeSpan.FromSeconds(10);
                     });
                 }
 
