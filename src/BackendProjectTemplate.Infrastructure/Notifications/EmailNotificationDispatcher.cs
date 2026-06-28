@@ -144,7 +144,7 @@ internal sealed class EmailNotificationDispatcher(
         }
         catch (Exception ex)
         {
-            emailNotificationLog.MarkFailed(ex.Message, timeProvider.GetUtcNow());
+            emailNotificationLog.MarkFailed(ex.Message);
             emailNotificationLogRepository.Update(emailNotificationLog);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             throw;

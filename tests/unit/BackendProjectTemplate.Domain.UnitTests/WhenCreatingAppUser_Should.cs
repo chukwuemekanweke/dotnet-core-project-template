@@ -13,7 +13,7 @@ public sealed class WhenCreatingAppUser_Should
 
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
 
-        var user = AppUser.Create(rawEmail, now);
+        var user = AppUser.Create(rawEmail);
 
         user.Email.ShouldBe(expectedEmail);
         user.UserName.ShouldBe(expectedEmail);
@@ -21,4 +21,5 @@ public sealed class WhenCreatingAppUser_Should
         user.UpdatedAtUtc.ShouldBe(default);
     }
 }
+
 

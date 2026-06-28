@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Constants;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
-using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -19,8 +18,7 @@ public sealed class GoogleSignUpHandler(
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    IUnitOfWork unitOfWork)
 {
     public async Task<GoogleSignUpResult> HandleAsync(GoogleSignUpCommand request, CancellationToken cancellationToken)
     {
@@ -47,9 +45,8 @@ public sealed class GoogleSignUpHandler(
             return new GoogleSignUpResult(GoogleSignUpStatus.DuplicateEmail);
         }
 
-        var now = timeProvider.GetUtcNow();
-        var user = AppUser.Create(googleIdentity.Email, request.FirstName, request.LastName, now);
-        user.MarkEmailVerified(now);
+        var user = AppUser.Create(googleIdentity.Email);
+        user.MarkEmailVerified();
 
         var tenantId = request.ActorContext.TenantId
             ?? throw new InvalidOperationException("Tenant id is required to sign up.");
@@ -107,21 +104,14 @@ public sealed class GoogleSignUpHandler(
                 $"Stakeholder type '{StakeholderDefaults.TypeKey}' is not configured for tenant '{tenantId}'.");
         }
 
-        var stakeholder = Stakeholder.Create(
-            user.Id,
-            tenantId,
-            request.CountryId,
-            stakeholderType.Id,
-            request.FirstName,
-            request.LastName,
-            now);
-        await stakeholderRepository.AddAsync(stakeholder, cancellationToken);
+        var stakeholder = Stakeholder.Create(user.Id, tenantId, request.CountryId, stakeholderType.Id, request.FirstName, request.LastName);
+        await stakeholderRepository.AddAsync(stakeholder);
 
         await eventPublisher.PublishAsync(new UserCreated
         {
             StakeholderId = stakeholder.Id,
-            FlowId = request.ActorContext.FlowId,
-            OccuredAt = now
+            TenantId = tenantId,
+            FlowId = request.ActorContext.FlowId
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -133,3 +123,9 @@ public sealed class GoogleSignUpHandler(
         return new GoogleSignUpResult(GoogleSignUpStatus.Accepted, googleIdentity.Email);
     }
 }
+
+
+
+
+
+

@@ -94,16 +94,11 @@ public sealed class WhenSendingEmailNotification_Should
                 Bcc: ["bcc-one@test.local"]));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now));
+            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true));
         templateRepository.FirstOrDefaultAsync(Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(EmailNotificationTemplate.Create(
-                NotificationType.SignInSuccessful,
-                "Sign-in successful notification",
-                "Subject {{:IpAddress:}}",
-                "SignInSuccessful.html",
-                now));
+            .Returns(EmailNotificationTemplate.Create(NotificationType.SignInSuccessful, "Sign-in successful notification", "Subject {{:IpAddress:}}", "SignInSuccessful.html"));
         tenantRepository.FirstOrDefaultAsync(Arg.Any<TenantByIdSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Tenant.Create(tenantId, "Moveaex", "moveaex", now));
+            .Returns(Tenant.Create(tenantId, "Moveaex", "moveaex"));
         transportProvider.ProviderKey.Returns("mailtrap");
         transportProvider.SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>())
             .Returns(new EmailTransportSendResult("mailtrap-message-id"));
@@ -149,5 +144,12 @@ public sealed class WhenSendingEmailNotification_Should
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+
+
+
+
+
+
+
 
 

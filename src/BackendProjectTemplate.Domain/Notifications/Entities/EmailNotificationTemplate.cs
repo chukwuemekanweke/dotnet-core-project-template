@@ -13,8 +13,7 @@ public sealed class EmailNotificationTemplate : Entity, IAggregateRoot
         NotificationType notificationType,
         string description,
         string subject,
-        string templateFileName,
-        DateTimeOffset utcNow)
+        string templateFileName)
     {
         NotificationType = notificationType;
         Description = description.Trim();
@@ -31,7 +30,6 @@ public sealed class EmailNotificationTemplate : Entity, IAggregateRoot
         NotificationType notificationType,
         string description,
         string subject,
-        string templateFileName,
-        DateTimeOffset utcNow) =>
-        new(notificationType, description, subject, templateFileName, utcNow);
+        string templateFileName) =>
+        new(notificationType, description, subject, templateFileName);
 }

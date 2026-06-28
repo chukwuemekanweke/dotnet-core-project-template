@@ -24,11 +24,7 @@ public sealed class WhenSigningUpWithValidGoogleIdentity_Should
         var firstName = AuthenticationTestData.FirstName();
         var lastName = AuthenticationTestData.LastName();
         var tenantId = Guid.CreateVersion7();
-        var stakeholderType = StakeholderType.Create(
-            tenantId,
-            StakeholderDefaults.TypeName,
-            StakeholderDefaults.TypeKey,
-            context.Clock.GetUtcNow());
+        var stakeholderType = StakeholderType.Create(tenantId, StakeholderDefaults.TypeName, StakeholderDefaults.TypeKey);
 
         context.GoogleIdentityTokenService.ValidateAsync("google-id-token", Arg.Any<CancellationToken>())
             .Returns(new GoogleIdentityTokenPayload(subject, email, "Google User"));
@@ -71,4 +67,6 @@ public sealed class WhenSigningUpWithValidGoogleIdentity_Should
             Arg.Any<CancellationToken>());
     }
 }
+
+
 

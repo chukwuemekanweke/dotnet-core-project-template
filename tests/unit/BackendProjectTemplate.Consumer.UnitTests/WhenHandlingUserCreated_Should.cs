@@ -39,7 +39,7 @@ public sealed class WhenHandlingUserCreated_Should
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
         var otpCode = ConsumerTestData.Otp();
-        var user = AppUser.Create(email, firstName, lastName, DateTimeOffset.UtcNow);
+        var user = AppUser.Create(email, firstName, lastName);
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
@@ -116,4 +116,8 @@ public sealed class WhenHandlingUserCreated_Should
         public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
+
+
+
+
 

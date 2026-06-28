@@ -51,7 +51,7 @@ public sealed class SignUpOtpHandler(
         }
 
         var now = timeProvider.GetUtcNow();
-        user.MarkEmailVerified(now);
+        user.MarkEmailVerified();
         var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 

@@ -106,8 +106,7 @@ public sealed class When_ReceivingSafeHavenVirtualAccountTransferWebhook_WithRec
     {
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var provider = PaymentProvider.Create("SafeHaven", "safehaven", true, now);
+        var provider = PaymentProvider.Create("SafeHaven", "safehaven", true);
         var transaction = PaymentTransaction.Create(
             "payment-ref",
             Contracts.Payments.PaymentIntent.WalletTopUp,
@@ -117,8 +116,7 @@ public sealed class When_ReceivingSafeHavenVirtualAccountTransferWebhook_WithRec
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            now);
+            Guid.CreateVersion7());
         transaction.MarkInitiated("provider-ref", null, null, "payment_initiated");
 
         await dbContext.PaymentProviders.AddAsync(provider);

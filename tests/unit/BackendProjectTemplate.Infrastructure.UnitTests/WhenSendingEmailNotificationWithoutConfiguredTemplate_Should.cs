@@ -48,7 +48,7 @@ public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_Should
                 }));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now));
+            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -72,5 +72,7 @@ public sealed class WhenSendingEmailNotificationWithoutConfiguredTemplate_Should
         exception.Message.ShouldBe("No email template is configured for notification type 'AccountLocked'.");
     }
 }
+
+
 
 

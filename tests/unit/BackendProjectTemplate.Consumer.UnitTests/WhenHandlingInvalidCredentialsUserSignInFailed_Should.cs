@@ -34,14 +34,23 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
         var tenantId = Guid.CreateVersion7();
-        var user = AppUser.Create(email, firstName, lastName, DateTimeOffset.UtcNow);
+        var user = AppUser.Create(email, firstName, lastName);
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         identityService.FindByEmailAsync(email).Returns(user);
         identityService.AccessFailedAsync(user).Returns(IdentityResult.Success);
         identityService.IsLockedOutAsync(user).Returns(false);
 
-        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, TimeProvider.System, logger).HandleAsync(
+        await new UserSignInFailedHandler(
+            customTelemetryContext,
+            currentActorAccessor,
+            messageContext,
+            identityService,
+            stakeholderReadModelRepository,
+            commandSender,
+            unitOfWork,
+            TimeProvider.System,
+            logger).HandleAsync(
             new UserSignInFailed(
                 email,
                 ipAddress,
@@ -59,4 +68,8 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
         await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+
+
+
+
 

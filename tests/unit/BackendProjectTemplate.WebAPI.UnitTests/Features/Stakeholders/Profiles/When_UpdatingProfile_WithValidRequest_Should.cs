@@ -22,15 +22,15 @@ public sealed class When_UpdatingProfile_WithValidRequest_Should
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var stakeholderId = Guid.CreateVersion7();
-        var stakeholder = Stakeholder.Create(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Initial", "User", DateTimeOffset.UtcNow);
+        var stakeholder = Stakeholder.Create(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "Initial", "User");
         var request = new UpdateProfileRequest("Jane", "Doe");
 
         currentActor.ActorId.Returns(stakeholderId.ToString());
         stakeholderRepository.GetByIdAsync(stakeholderId, Arg.Any<CancellationToken>()).Returns(stakeholder);
 
         var sut = new ProfilesController(
-            new UploadAvatarHandler(stakeholderRepository, Substitute.For<IObjectStorageService>(), customTelemetryContext, unitOfWork, TimeProvider.System),
-            new UpdateProfileHandler(stakeholderRepository, customTelemetryContext, unitOfWork, TimeProvider.System),
+            new UploadAvatarHandler(stakeholderRepository, Substitute.For<IObjectStorageService>(), customTelemetryContext, unitOfWork),
+            new UpdateProfileHandler(stakeholderRepository, customTelemetryContext, unitOfWork),
             currentActor);
 
         var result = await sut.UpdateProfile(request, CancellationToken.None);
@@ -38,3 +38,5 @@ public sealed class When_UpdatingProfile_WithValidRequest_Should
         result.ShouldBeOfType<NoContentResult>();
     }
 }
+
+

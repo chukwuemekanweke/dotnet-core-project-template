@@ -125,7 +125,7 @@ public sealed class WhenUnhandledExceptionIsThrown_Should(ContainersFixture fixt
         }
 
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg", now);
+        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg");
         await countryWriteRepository.AddAsync(country);
         await unitOfWork.SaveChangesAsync();
         _createdCountryForTest = true;
@@ -141,4 +141,6 @@ public sealed class WhenUnhandledExceptionIsThrown_Should(ContainersFixture fixt
         }
     }
 }
+
+
 

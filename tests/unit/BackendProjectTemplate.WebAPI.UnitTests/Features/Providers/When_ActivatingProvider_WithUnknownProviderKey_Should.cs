@@ -20,7 +20,7 @@ public sealed class When_ActivatingProvider_WithUnknownProviderKey_Should
 
         repository.ListAsync(Arg.Any<ISpecification<Provider>>(), Arg.Any<CancellationToken>())
             .Returns([
-                Provider.Create(ProviderType.Email, "Primary", "primary", true, DateTimeOffset.UtcNow)
+                Provider.Create(ProviderType.Email, "Primary", "primary", true)
             ]);
 
         var sut = new ProvidersController(
@@ -33,3 +33,5 @@ public sealed class When_ActivatingProvider_WithUnknownProviderKey_Should
         objectResult.StatusCode.ShouldBe(StatusCodes.Status404NotFound);
     }
 }
+
+

@@ -20,8 +20,7 @@ public sealed class When_UpdatingProfile_WithAnonymousActor_Should
         var sut = new UpdateProfileHandler(
             Substitute.For<IRepository<Stakeholder>>(),
             customTelemetryContext,
-            Substitute.For<IUnitOfWork>(),
-            TimeProvider.System);
+            Substitute.For<IUnitOfWork>());
 
         var result = await sut.HandleAsync(
             new UpdateProfileCommand("Jane", "Doe", new ActorContext(null, Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),

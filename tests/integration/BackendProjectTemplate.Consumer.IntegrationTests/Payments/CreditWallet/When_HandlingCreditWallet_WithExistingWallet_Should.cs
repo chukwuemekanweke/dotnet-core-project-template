@@ -28,8 +28,8 @@ public sealed class When_HandlingCreditWallet_WithExistingWallet_Should(Containe
 
         using var scope = CreateDbContextScope();
         var now = TimeProvider.System.GetUtcNow();
-        var currency = Currency.Create("NGN", "Naira", true, now);
-        var wallet = Wallet.Create(_stakeholderId, _tenantId, currency.Id, now);
+        var currency = Currency.Create("NGN", "Naira", true);
+        var wallet = Wallet.Create(_stakeholderId, _tenantId, currency.Id);
         scope.DbContext.Currencies.Add(currency);
         scope.DbContext.Wallets.Add(wallet);
         await scope.DbContext.SaveChangesAsync();
@@ -105,3 +105,5 @@ public sealed class When_HandlingCreditWallet_WithExistingWallet_Should(Containe
         }
     }
 }
+
+

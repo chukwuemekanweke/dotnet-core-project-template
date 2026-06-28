@@ -14,11 +14,13 @@ public sealed class WhenMarkingEmailVerified_Should
 
         var createdAt = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
         var verifiedAt = createdAt.AddMinutes(5);
-        var user = AppUser.Create(email, firstName, lastName, createdAt);
+        var user = AppUser.Create(email);
 
-        user.MarkEmailVerified(verifiedAt);
+        user.MarkEmailVerified();
 
         user.EmailConfirmed.ShouldBeTrue();
     }
 }
+
+
 

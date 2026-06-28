@@ -33,8 +33,7 @@ public sealed class WhenCompletingPasswordResetWithValidOtp_Should
                 Guid.CreateVersion7(),
                 Guid.CreateVersion7(),
                 AuthenticationTestData.FirstName(),
-                AuthenticationTestData.LastName(),
-                context.Clock.GetUtcNow()));
+                AuthenticationTestData.LastName()));
 
         var result = await context.CreateCompletePasswordResetHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateCompletePasswordResetCommand(
@@ -48,4 +47,6 @@ public sealed class WhenCompletingPasswordResetWithValidOtp_Should
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+
+
 

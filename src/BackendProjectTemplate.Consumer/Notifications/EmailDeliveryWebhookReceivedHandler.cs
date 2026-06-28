@@ -66,7 +66,7 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
 
         var now = timeProvider.GetUtcNow();
         var wasAlreadyDelivered = emailNotificationLog.DeliveredAtUtc.HasValue;
-        emailNotificationLog.MarkDelivered(inbox.OccurredAtUtc, now);
+        emailNotificationLog.MarkDelivered(inbox.OccurredAtUtc);
         emailNotificationLogRepository.Update(emailNotificationLog);
         inbox.MarkProcessed(KnownWebhookStatusChangeReasons.Notifications.NotificationLogDelivered, now);
         emailDeliveryWebhookInboxRepository.Update(inbox);
@@ -99,3 +99,4 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
                 }));
     }
 }
+

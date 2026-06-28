@@ -11,8 +11,7 @@ public sealed class Tenant : Entity, IAggregateRoot
     private Tenant(
         Guid id,
         string name,
-        string brandKey,
-        DateTimeOffset utcNow)
+        string brandKey)
     {
         Id = id;
         Name = name.Trim();
@@ -25,7 +24,6 @@ public sealed class Tenant : Entity, IAggregateRoot
     public static Tenant Create(
         Guid id,
         string name,
-        string brandKey,
-        DateTimeOffset utcNow) =>
-        new(id, name, brandKey, utcNow);
+        string brandKey) =>
+        new(id, name, brandKey);
 }

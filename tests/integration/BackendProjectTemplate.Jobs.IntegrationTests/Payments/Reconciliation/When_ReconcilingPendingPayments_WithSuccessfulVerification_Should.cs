@@ -7,12 +7,12 @@ using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Payments;
 using BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 using BackendProjectTemplate.Jobs.Payments;
-using WireMock.RequestBuilders;
-using WireMock.ResponseBuilders;
-using WireMock.Server;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using WireMock.RequestBuilders;
+using WireMock.ResponseBuilders;
+using WireMock.Server;
 
 namespace BackendProjectTemplate.Jobs.IntegrationTests.Payments.Reconciliation;
 
@@ -134,8 +134,8 @@ public sealed class When_ReconcilingPendingPayments_WithSuccessfulVerification_S
     {
         await using var scope = CreateDbContextScope();
         var now = TimeProvider.System.GetUtcNow();
-        var provider = PaymentProvider.Create("Credo", "credo", true, now);
-        var currency = Currency.Create("NGN", "Naira", true, now);
+        var provider = PaymentProvider.Create("Credo", "credo", true);
+        var currency = Currency.Create("NGN", "Naira", true);
         var transaction = PaymentTransaction.Create(
             "merchant-success",
             Contracts.Payments.PaymentIntent.WalletTopUp,
@@ -145,8 +145,7 @@ public sealed class When_ReconcilingPendingPayments_WithSuccessfulVerification_S
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            now);
+            Guid.CreateVersion7());
         transaction.MarkInitiated("provider-ref", null, null, "payment_initiated");
         transaction.RecordStatusCheck(now.AddMinutes(-10));
 

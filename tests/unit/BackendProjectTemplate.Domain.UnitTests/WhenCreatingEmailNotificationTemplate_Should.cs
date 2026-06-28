@@ -10,12 +10,7 @@ public sealed class WhenCreatingEmailNotificationTemplate_Should
     {
         var utcNow = DateTimeOffset.UtcNow;
 
-        var template = EmailNotificationTemplate.Create(
-            NotificationType.SignInSuccessful,
-            " Sign-in successful notification ",
-            " Successful sign-in ",
-            " SignInSuccessful.html ",
-            utcNow);
+        var template = EmailNotificationTemplate.Create(NotificationType.SignInSuccessful, " Sign-in successful notification ", " Successful sign-in ", " SignInSuccessful.html ");
 
         template.NotificationType.ShouldBe(NotificationType.SignInSuccessful);
         template.Description.ShouldBe("Sign-in successful notification");
@@ -25,4 +20,5 @@ public sealed class WhenCreatingEmailNotificationTemplate_Should
         template.UpdatedAtUtc.ShouldBe(default);
     }
 }
+
 

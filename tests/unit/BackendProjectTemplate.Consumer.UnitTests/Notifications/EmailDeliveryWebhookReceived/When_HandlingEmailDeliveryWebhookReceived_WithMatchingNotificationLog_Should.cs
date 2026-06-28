@@ -27,7 +27,7 @@ public sealed class When_HandlingEmailDeliveryWebhookReceived_WithMatchingNotifi
             null,
             context.Clock.GetUtcNow());
         var deliveredAtUtc = DateTimeOffset.Parse("2026-05-03T13:05:00+00:00");
-        var provider = Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, context.Clock.GetUtcNow());
+        var provider = Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true);
         var inbox = EmailDeliveryWebhookInbox.Create(
             providerId,
             "evt_123",
@@ -76,3 +76,5 @@ public sealed class When_HandlingEmailDeliveryWebhookReceived_WithMatchingNotifi
                 properties[Observability.PropertyNames.Notifications.NotificationType] == NotificationType.SignInSuccessful.ToString()));
     }
 }
+
+

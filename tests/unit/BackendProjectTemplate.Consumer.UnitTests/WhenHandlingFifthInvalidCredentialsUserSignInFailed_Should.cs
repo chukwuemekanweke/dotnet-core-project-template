@@ -39,7 +39,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
         var lastName = ConsumerTestData.LastName();
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 7, 10, 0, 0, TimeSpan.Zero));
         var lockedUntilUtc = new DateTimeOffset(2026, 4, 7, 12, 0, 0, TimeSpan.Zero);
-        var user = AppUser.Create(email, firstName, lastName, DateTimeOffset.UtcNow);
+        var user = AppUser.Create(email, firstName, lastName);
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         identityService.FindByEmailAsync(email).Returns(user);
@@ -80,4 +80,8 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
         public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
+
+
+
+
 

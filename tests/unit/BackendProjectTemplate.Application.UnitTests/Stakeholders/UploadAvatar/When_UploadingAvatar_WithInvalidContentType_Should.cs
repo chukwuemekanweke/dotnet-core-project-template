@@ -23,8 +23,7 @@ public sealed class When_UploadingAvatar_WithInvalidContentType_Should
             Substitute.For<IRepository<Stakeholder>>(),
             Substitute.For<IObjectStorageService>(),
             customTelemetryContext,
-            Substitute.For<IUnitOfWork>(),
-            TimeProvider.System);
+            Substitute.For<IUnitOfWork>());
 
         var result = await sut.HandleAsync(
             new UploadAvatarCommand(stream, "avatar.txt", "text/plain", stream.Length, new ActorContext(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),

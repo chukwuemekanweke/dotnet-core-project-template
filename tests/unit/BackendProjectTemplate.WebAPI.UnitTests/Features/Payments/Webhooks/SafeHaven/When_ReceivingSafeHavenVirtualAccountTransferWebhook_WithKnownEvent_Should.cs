@@ -16,17 +16,7 @@ public sealed class When_ReceivingSafeHavenVirtualAccountTransferWebhook_WithKno
     {
         var context = new PaymentsControllerTestContext();
         var provider = context.CreatePaymentProvider("SafeHaven", PaymentProviderKeys.SafeHaven);
-        var transaction = PaymentTransaction.Create(
-            "payment-ref",
-            PaymentIntent.WalletTopUp,
-            provider.Id,
-            1000m,
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            context.Clock.GetUtcNow());
+        var transaction = PaymentTransaction.Create("payment-ref", PaymentIntent.WalletTopUp, provider.Id, 1000m, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         context.PaymentProviderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<PaymentProvider>>(), Arg.Any<CancellationToken>())
             .Returns(provider);
@@ -85,3 +75,4 @@ public sealed class When_ReceivingSafeHavenVirtualAccountTransferWebhook_WithKno
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+

@@ -61,16 +61,11 @@ public sealed class WhenSendingEmailNotificationWithoutTenantBaseTemplate_Should
                 }));
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now));
+            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns(EmailNotificationTemplate.Create(
-                NotificationType.SignInSuccessful,
-                "Sign-in successful notification",
-                "Successful sign-in",
-                "SignInSuccessful.html",
-                now));
+            .Returns(EmailNotificationTemplate.Create(NotificationType.SignInSuccessful, "Sign-in successful notification", "Successful sign-in", "SignInSuccessful.html"));
         tenantRepository.FirstOrDefaultAsync(
                 Arg.Any<TenantByIdSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -100,5 +95,9 @@ public sealed class WhenSendingEmailNotificationWithoutTenantBaseTemplate_Should
             Arg.Any<CancellationToken>());
     }
 }
+
+
+
+
 
 

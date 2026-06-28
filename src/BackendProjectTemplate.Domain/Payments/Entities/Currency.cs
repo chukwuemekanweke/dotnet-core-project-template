@@ -22,11 +22,10 @@ public sealed class Currency : Entity, IAggregateRoot
     public static Currency Create(
         string currencyCode,
         string currencyName,
-        bool isActive,
-        DateTimeOffset utcNow) =>
+        bool isActive) =>
         new(currencyCode, currencyName, isActive);
 
-    public void SetActive(bool isActive, DateTimeOffset utcNow)
+    public void SetActive(bool isActive)
     {
         IsActive = isActive;
     }

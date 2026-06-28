@@ -59,7 +59,7 @@ public sealed class When_GettingCountries_WithAvailableCountries_Should(Containe
         var repository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var country = Country.Create("Nigeria Test", "NGT", "+234", "https://example.com/ngt.svg", now);
+        var country = Country.Create("Nigeria Test", "NGT", "+234", "https://example.com/ngt.svg");
 
         _countryId = country.Id;
         await repository.AddAsync(country);
@@ -86,3 +86,4 @@ public sealed class When_GettingCountries_WithAvailableCountries_Should(Containe
         await unitOfWork.SaveChangesAsync();
     }
 }
+

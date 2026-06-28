@@ -17,17 +17,7 @@ public sealed class When_ProcessingSafeHavenAccountDebitWebhook_WithRecognizedTr
         var context = new PaymentsFlowTestContext();
         var provider = context.CreatePaymentProvider("SafeHaven", PaymentProviderKeys.SafeHaven);
         PaymentWebhookInbox? capturedInbox = null;
-        var transaction = PaymentTransaction.Create(
-            "payment-ref",
-            PaymentIntent.WalletTopUp,
-            provider.Id,
-            1000m,
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            context.Clock.GetUtcNow());
+        var transaction = PaymentTransaction.Create("payment-ref", PaymentIntent.WalletTopUp, provider.Id, 1000m, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         context.PaymentProviderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<PaymentProvider>>(), Arg.Any<CancellationToken>())
             .Returns(provider);
@@ -55,3 +45,4 @@ public sealed class When_ProcessingSafeHavenAccountDebitWebhook_WithRecognizedTr
         capturedInbox.WebhookProcessingStatus.ShouldBe(WebhookProcessingStatus.Ignored);
     }
 }
+

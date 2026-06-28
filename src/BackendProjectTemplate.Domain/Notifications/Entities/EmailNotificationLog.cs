@@ -75,13 +75,13 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         FailureReason = null;
     }
 
-    public void MarkFailed(string reason, DateTimeOffset utcNow)
+    public void MarkFailed(string reason)
     {
         SentAtUtc = null;
         FailureReason = NormalizeFailureReason(reason);
     }
 
-    public void MarkDelivered(DateTimeOffset deliveredAtUtc, DateTimeOffset utcNow)
+    public void MarkDelivered(DateTimeOffset deliveredAtUtc)
     {
         if (DeliveredAtUtc.HasValue)
         {

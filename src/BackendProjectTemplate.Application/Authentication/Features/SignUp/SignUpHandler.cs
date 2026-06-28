@@ -1,11 +1,10 @@
-using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Application.Authentication.Constants;
-using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 using Microsoft.AspNetCore.Identity;
@@ -18,8 +17,7 @@ public sealed class SignUpHandler(
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    IUnitOfWork unitOfWork)
 {
     public async Task<SignUpResult> HandleAsync(SignUpCommand request, CancellationToken cancellationToken)
     {
@@ -36,8 +34,7 @@ public sealed class SignUpHandler(
             return new SignUpResult(SignUpStatus.DuplicateEmail);
         }
 
-        var now = timeProvider.GetUtcNow();
-        var user = AppUser.Create(request.Email, request.FirstName, request.LastName, now);
+        var user = AppUser.Create(request.Email);
         var tenantId = request.ActorContext.TenantId
             ?? throw new InvalidOperationException("Tenant id is required to sign up.");
         await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
@@ -71,21 +68,14 @@ public sealed class SignUpHandler(
                 $"Stakeholder type '{StakeholderDefaults.TypeKey}' is not configured for tenant '{tenantId}'.");
         }
 
-        var stakeholder = Stakeholder.Create(
-            user.Id,
-            tenantId,
-            request.CountryId,
-            stakeholderType.Id,
-            request.FirstName,
-            request.LastName,
-            now);
-        await stakeholderRepository.AddAsync(stakeholder, cancellationToken);
+        var stakeholder = Stakeholder.Create(user.Id, tenantId, request.CountryId, stakeholderType.Id, request.FirstName, request.LastName);
+        await stakeholderRepository.AddAsync(stakeholder);
 
         await eventPublisher.PublishAsync(new UserCreated
         {
             StakeholderId = stakeholder.Id,
-            FlowId = request.ActorContext.FlowId,
-            OccuredAt = now
+            TenantId = tenantId,
+            FlowId = request.ActorContext.FlowId
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -96,3 +86,9 @@ public sealed class SignUpHandler(
         return new SignUpResult(SignUpStatus.Accepted);
     }
 }
+
+
+
+
+
+

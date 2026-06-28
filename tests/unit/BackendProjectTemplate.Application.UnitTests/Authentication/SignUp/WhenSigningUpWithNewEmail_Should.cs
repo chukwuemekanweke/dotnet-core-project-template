@@ -23,14 +23,10 @@ public sealed class WhenSigningUpWithNewEmail_Should
         var firstName = AuthenticationTestData.FirstName();
         var lastName = AuthenticationTestData.LastName();
         var tenantId = Guid.CreateVersion7();
-        var stakeholderType = StakeholderType.Create(
-            tenantId,
-            StakeholderDefaults.TypeName,
-            StakeholderDefaults.TypeKey,
-            context.Clock.GetUtcNow());
+        var stakeholderType = StakeholderType.Create(tenantId, StakeholderDefaults.TypeName, StakeholderDefaults.TypeKey);
 
         context.IdentityService.FindByEmailAsync(email).Returns((AppUser?)null);
-        context.IdentityService.CreateAsync(Arg.Any<AppUser>(), password).Returns(IdentityResult.Success);
+        context.IdentityService.CreateAsync(Arg.Any<AppUser>(), Arg.Any<string>()).Returns(IdentityResult.Success);
         context.StakeholderTypeRepository.FirstOrDefaultAsync(
                 Arg.Any<ISpecification<StakeholderType>>(),
                 Arg.Any<CancellationToken>())
@@ -49,7 +45,8 @@ public sealed class WhenSigningUpWithNewEmail_Should
         await context.IdentityService.Received(1).CreateAsync(
             Arg.Is<AppUser>(user =>
                 user.Email == email &&
-                user.UserName == email),
+                user.UserName == email &&
+                user.EmailConfirmed == false),
             password);
         await context.StakeholderRepository.Received(1).AddAsync(
             Arg.Is<Domain.Stakeholders.Entities.Stakeholder>(stakeholder =>
@@ -65,4 +62,6 @@ public sealed class WhenSigningUpWithNewEmail_Should
         await context.Transaction.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 }
+
+
 

@@ -8,7 +8,7 @@ public sealed class StakeholderType : Entity, IAggregateRoot
     {
     }
 
-    private StakeholderType(Guid tenantId, string name, string key, DateTimeOffset utcNow)
+    private StakeholderType(Guid tenantId, string name, string key)
     {
         TenantId = tenantId;
         Name = name.Trim();
@@ -21,6 +21,6 @@ public sealed class StakeholderType : Entity, IAggregateRoot
 
     public ICollection<Stakeholder> Stakeholders { get; private set; } = [];
 
-    public static StakeholderType Create(Guid tenantId, string name, string key, DateTimeOffset utcNow) =>
-        new(tenantId, name, key, utcNow);
+    public static StakeholderType Create(Guid tenantId, string name, string key) =>
+        new(tenantId, name, key);
 }

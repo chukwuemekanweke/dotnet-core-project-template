@@ -15,7 +15,7 @@ public sealed class When_ActivatingProvider_WithUnknownProviderKey_Should
         var unitOfWork = Substitute.For<IUnitOfWork>();
         providerRepository.ListAsync(Arg.Any<ISpecification<Provider>>(), Arg.Any<CancellationToken>())
             .Returns([
-                Provider.Create(ProviderType.Email, "Primary", "primary", true, DateTimeOffset.UtcNow)
+                Provider.Create(ProviderType.Email, "Primary", "primary", true)
             ]);
 
         var sut = new ActivateProviderHandler(providerRepository, unitOfWork);
@@ -28,3 +28,5 @@ public sealed class When_ActivatingProvider_WithUnknownProviderKey_Should
         await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+
+

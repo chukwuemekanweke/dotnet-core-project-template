@@ -49,8 +49,7 @@ internal sealed class AuthenticationFlowTestContext
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
-        UnitOfWork,
-        Clock);
+        UnitOfWork);
     public GoogleSignUpHandler CreateGoogleSignUpHandler() => new(
         IdentityService,
         GoogleIdentityTokenService,
@@ -58,8 +57,7 @@ internal sealed class AuthenticationFlowTestContext
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
-        UnitOfWork,
-        Clock);
+        UnitOfWork);
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(
         IdentityService,
         EventPublisher,
@@ -214,8 +212,7 @@ internal sealed class AuthenticationFlowTestContext
         AppUser.Create(
             email ?? AuthenticationTestData.Email(),
             firstName ?? AuthenticationTestData.FirstName(),
-            lastName ?? AuthenticationTestData.LastName(),
-            Clock.GetUtcNow());
+            lastName ?? AuthenticationTestData.LastName());
 
     internal sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
@@ -224,3 +221,5 @@ internal sealed class AuthenticationFlowTestContext
         public override DateTimeOffset GetUtcNow() => _utcNow;
     }
 }
+
+

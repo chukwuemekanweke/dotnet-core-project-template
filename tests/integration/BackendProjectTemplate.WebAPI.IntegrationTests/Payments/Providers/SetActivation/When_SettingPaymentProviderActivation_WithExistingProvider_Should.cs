@@ -4,6 +4,7 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -91,17 +92,16 @@ public sealed class When_SettingPaymentProviderActivation_WithExistingProvider_S
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
         var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         _email = WebApiIntegrationTestData.Email();
 
-        var user = AppUser.Create(_email, "Ada", "Lovelace", now);
+        var user = AppUser.Create(_email);
         (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
-        user.MarkEmailVerified(now);
+        user.MarkEmailVerified();
         (await identityService.UpdateAsync(user)).Succeeded.ShouldBeTrue();
 
-        var country = Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg", now);
-        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
-        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace", now);
+        var country = Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg");
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
+        var stakeholder = Stakeholder.Create(user.Id, _tenantId, country.Id, stakeholderType.Id, "Ada", "Lovelace");
 
         await countryRepository.AddAsync(country);
         await stakeholderTypeRepository.AddAsync(stakeholderType);
@@ -117,8 +117,7 @@ public sealed class When_SettingPaymentProviderActivation_WithExistingProvider_S
     {
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var provider = PaymentProvider.Create("Credo", "credo", false, now);
+        var provider = PaymentProvider.Create("Credo", PaymentProviderKeys.Credo, true);
 
         await dbContext.PaymentProviders.AddAsync(provider);
         await dbContext.SaveChangesAsync();
@@ -165,3 +164,14 @@ public sealed class When_SettingPaymentProviderActivation_WithExistingProvider_S
         await dbContext.SaveChangesAsync();
     }
 }
+
+
+
+
+
+
+
+
+
+
+

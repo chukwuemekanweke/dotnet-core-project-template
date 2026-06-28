@@ -158,7 +158,7 @@ public sealed class WhenSigningUpWithGoogleIdentity_Should(ContainersFixture fix
         }
 
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg", now);
+        var country = Country.Create("Default Country", "DF", "+0", "https://example.com/flag.svg");
         await countryWriteRepository.AddAsync(country);
         await unitOfWork.SaveChangesAsync();
         _createdCountryForTest = true;
@@ -172,7 +172,7 @@ public sealed class WhenSigningUpWithGoogleIdentity_Should(ContainersFixture fix
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer", now);
+        var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
 
         await stakeholderTypeRepository.AddAsync(stakeholderType);
         await unitOfWork.SaveChangesAsync();
@@ -212,4 +212,8 @@ public sealed class WhenSigningUpWithGoogleIdentity_Should(ContainersFixture fix
         }
     }
 }
+
+
+
+
 

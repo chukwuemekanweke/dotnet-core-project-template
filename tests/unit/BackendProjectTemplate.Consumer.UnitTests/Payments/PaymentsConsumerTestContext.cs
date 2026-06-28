@@ -1,12 +1,10 @@
-using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Consumer.Payments;
+using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Payments;
 
@@ -34,8 +32,7 @@ internal sealed class PaymentsConsumerTestContext
             CurrencyRepository,
             WalletRepository,
             WalletTransactionRepository,
-            UnitOfWork,
-            Clock);
+            UnitOfWork);
 
     public ActivateSubscriptionHandler CreateActivateSubscriptionHandler() =>
         new(
@@ -74,7 +71,7 @@ internal sealed class PaymentsConsumerTestContext
 
     public Currency CreateCurrency(Guid id, string currencyCode)
     {
-        var currency = Currency.Create(currencyCode, currencyCode, true, Clock.GetUtcNow());
+        var currency = Currency.Create(currencyCode, currencyCode, true);
         typeof(Domain.Common.Entities.Entity)
             .GetProperty(nameof(Domain.Common.Entities.Entity.Id))!
             .SetValue(currency, id);
@@ -86,3 +83,4 @@ internal sealed class PaymentsConsumerTestContext
         public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
+

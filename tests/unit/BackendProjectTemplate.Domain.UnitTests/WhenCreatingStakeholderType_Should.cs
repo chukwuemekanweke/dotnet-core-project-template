@@ -16,7 +16,7 @@ public sealed class WhenCreatingStakeholderType_Should
 
         var now = new DateTimeOffset(2026, 4, 6, 0, 0, 0, TimeSpan.Zero);
 
-        var stakeholderType = StakeholderType.Create(tenantId, rawName, rawKey, now);
+        var stakeholderType = StakeholderType.Create(tenantId, rawName, rawKey);
 
         stakeholderType.TenantId.ShouldBe(tenantId);
         stakeholderType.Name.ShouldBe(expectedName);
@@ -25,4 +25,5 @@ public sealed class WhenCreatingStakeholderType_Should
         stakeholderType.UpdatedAtUtc.ShouldBe(default);
     }
 }
+
 

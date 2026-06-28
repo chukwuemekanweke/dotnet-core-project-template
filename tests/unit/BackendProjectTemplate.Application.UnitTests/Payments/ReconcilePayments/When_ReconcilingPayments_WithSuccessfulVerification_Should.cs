@@ -18,17 +18,7 @@ public sealed class When_ReconcilingPayments_WithSuccessfulVerification_Should
         var currency = context.CreateCurrency("NGN");
         var provider = context.CreatePaymentProvider("Credo", PaymentProviderKeys.Credo);
         var paymentProviderService = Substitute.For<IPaymentProviderService>();
-        var transaction = PaymentTransaction.Create(
-            "merchant-success",
-            PaymentIntent.WalletTopUp,
-            provider.Id,
-            1000m,
-            currency.Id,
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            context.Clock.GetUtcNow());
+        var transaction = PaymentTransaction.Create("merchant-success", PaymentIntent.WalletTopUp, provider.Id, 1000m, currency.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
 
         transaction.MarkInitiated("provider-ref", null, null, KnownPaymentTransactionChangeReasons.PaymentInitiated);
 
@@ -65,3 +55,4 @@ public sealed class When_ReconcilingPayments_WithSuccessfulVerification_Should
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+

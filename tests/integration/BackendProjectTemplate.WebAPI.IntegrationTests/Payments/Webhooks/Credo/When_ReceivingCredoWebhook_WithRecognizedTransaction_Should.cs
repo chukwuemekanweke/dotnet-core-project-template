@@ -101,8 +101,8 @@ public sealed class When_ReceivingCredoWebhook_WithRecognizedTransaction_Should(
     {
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
-        var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var provider = PaymentProvider.Create("Credo", "credo", true, now);
+        var provider = await dbContext.PaymentProviders.FirstOrDefaultAsync(item => item.ProviderKey == "credo")
+            ?? PaymentProvider.Create("Credo", "credo", true);
         var transaction = PaymentTransaction.Create(
             "merchant-ref",
             Contracts.Payments.PaymentIntent.WalletTopUp,
@@ -112,11 +112,13 @@ public sealed class When_ReceivingCredoWebhook_WithRecognizedTransaction_Should(
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            now);
+            Guid.CreateVersion7());
         transaction.MarkInitiated("trans-ref", null, null, "payment_initiated");
 
-        await dbContext.PaymentProviders.AddAsync(provider);
+        if (dbContext.Entry(provider).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+        {
+            await dbContext.PaymentProviders.AddAsync(provider);
+        }
         await dbContext.PaymentTransactions.AddAsync(transaction);
         await dbContext.SaveChangesAsync();
 

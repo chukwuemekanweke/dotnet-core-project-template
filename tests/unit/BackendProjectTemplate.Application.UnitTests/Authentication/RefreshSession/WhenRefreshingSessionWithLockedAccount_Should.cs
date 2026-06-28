@@ -18,16 +18,15 @@ public sealed class WhenRefreshingSessionWithLockedAccount_Should
         var securityStamp = Guid.CreateVersion7().ToString("N");
         var lockedUntilUtc = new DateTimeOffset(2026, 4, 7, 12, 0, 0, TimeSpan.Zero);
         var now = new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero);
-        var user = AppUser.Create(email, firstName, lastName, now);
-        user.MarkEmailVerified(now);
+        var user = AppUser.Create(email);
+        user.MarkEmailVerified();
         user.SecurityStamp = securityStamp;
 
         var storedRefreshToken = AuthenticationRefreshToken.Create(
             user.Id,
             "HASH",
             securityStamp,
-            now.AddDays(30),
-            now);
+            now.AddDays(30));
 
         var context = new AuthenticationFlowTestContext();
         context.RefreshTokenService.FindByTokenAsync("refresh-token", Arg.Any<CancellationToken>())
@@ -46,4 +45,9 @@ public sealed class WhenRefreshingSessionWithLockedAccount_Should
         result.LockedUntilUtc.ShouldBe(lockedUntilUtc);
     }
 }
+
+
+
+
+
 

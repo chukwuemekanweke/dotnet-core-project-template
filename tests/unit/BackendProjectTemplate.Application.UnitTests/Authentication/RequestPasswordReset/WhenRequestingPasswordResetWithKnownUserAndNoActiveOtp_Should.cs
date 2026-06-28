@@ -1,11 +1,8 @@
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Authentication;
-using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests;
@@ -24,8 +21,7 @@ public sealed class WhenRequestingPasswordResetWithKnownUserAndNoActiveOtp_Shoul
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             AuthenticationTestData.FirstName(),
-            AuthenticationTestData.LastName(),
-            context.Clock.GetUtcNow());
+            AuthenticationTestData.LastName());
 
         context.IdentityService.FindByEmailAsync(user.Email!).Returns(user);
         context.StakeholderRepository.FirstOrDefaultAsync(
@@ -46,4 +42,6 @@ public sealed class WhenRequestingPasswordResetWithKnownUserAndNoActiveOtp_Shoul
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
+
+
 

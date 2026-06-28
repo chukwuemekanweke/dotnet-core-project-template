@@ -26,14 +26,9 @@ public sealed class When_RefreshingSession_WithValidRefreshToken_Should
         var refreshValidator = Substitute.For<IValidator<RefreshSessionRequest>>();
         var request = new RefreshSessionRequest("refresh-token");
         var user = context.CreateUser();
-        user.MarkEmailVerified(context.Clock.GetUtcNow());
+        user.MarkEmailVerified();
         user.SecurityStamp = "stamp";
-        var storedRefreshToken = AuthenticationRefreshToken.Create(
-            user.Id,
-            "HASH",
-            user.SecurityStamp,
-            context.Clock.GetUtcNow().AddDays(30),
-            context.Clock.GetUtcNow());
+        var storedRefreshToken = AuthenticationRefreshToken.Create(user.Id, "HASH", user.SecurityStamp, context.Clock.GetUtcNow().AddDays(30));
         var stakeholder = context.CreateStakeholder(user.Id);
 
         refreshValidator.ValidateAsync(request, Arg.Any<CancellationToken>()).Returns(new ValidationResult());
@@ -75,3 +70,5 @@ public sealed class When_RefreshingSession_WithValidRefreshToken_Should
         payload.RefreshToken.ShouldBe("new-refresh-token");
     }
 }
+
+

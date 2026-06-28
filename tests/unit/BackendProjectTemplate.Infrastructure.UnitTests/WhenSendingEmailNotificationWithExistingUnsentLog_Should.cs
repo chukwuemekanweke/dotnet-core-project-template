@@ -63,18 +63,13 @@ public sealed class WhenSendingEmailNotificationWithExistingUnsentLog_Should
                 Arg.Any<CancellationToken>())
             .Returns(existingLog);
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now));
+            .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns(EmailNotificationTemplate.Create(
-                NotificationType.SignInSuccessful,
-                "Sign-in successful notification",
-                "Subject {{:IpAddress:}}",
-                "SignInSuccessful.html",
-                now));
+            .Returns(EmailNotificationTemplate.Create(NotificationType.SignInSuccessful, "Sign-in successful notification", "Subject {{:IpAddress:}}", "SignInSuccessful.html"));
         tenantRepository.FirstOrDefaultAsync(Arg.Any<TenantByIdSpecification>(), Arg.Any<CancellationToken>())
-            .Returns(Tenant.Create(tenantId, "Default", "default", now));
+            .Returns(Tenant.Create(tenantId, "Default", "default"));
         transportProvider.ProviderKey.Returns("mailtrap");
         transportProvider.SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>())
             .Returns(new EmailTransportSendResult("mailtrap-message-id"));
@@ -111,3 +106,10 @@ public sealed class WhenSendingEmailNotificationWithExistingUnsentLog_Should
             TemplateSetsRootPath = "EmailTemplates/TemplateSets"
         };
 }
+
+
+
+
+
+
+

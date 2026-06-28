@@ -10,11 +10,7 @@ public sealed class WhenCreatingTenant_Should
         var utcNow = DateTimeOffset.UtcNow;
         var tenantId = Guid.CreateVersion7();
 
-        var tenant = Tenant.Create(
-            tenantId,
-            " Moveaex ",
-            " Moveaex ",
-            utcNow);
+        var tenant = Tenant.Create(tenantId, " Moveaex ", " Moveaex ");
 
         tenant.Id.ShouldBe(tenantId);
         tenant.Name.ShouldBe("Moveaex");
@@ -23,4 +19,5 @@ public sealed class WhenCreatingTenant_Should
         tenant.UpdatedAtUtc.ShouldBe(default);
     }
 }
+
 

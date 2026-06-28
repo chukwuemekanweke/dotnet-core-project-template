@@ -22,14 +22,7 @@ public sealed class WhenVerifyingOtpWithValidCode_Should
 
         var context = new AuthenticationFlowTestContext();
         var user = context.CreateUser(email, firstName, lastName);
-        var stakeholder = Stakeholder.Create(
-            user.Id,
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            firstName,
-            lastName,
-            context.Clock.GetUtcNow());
+        var stakeholder = Stakeholder.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), firstName, lastName);
 
         context.IdentityService.FindByEmailAsync(email).Returns(user);
         context.IdentityService.VerifySignUpOtpAsync(user, otp).Returns(true);
@@ -52,4 +45,6 @@ public sealed class WhenVerifyingOtpWithValidCode_Should
         await context.Transaction.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 }
+
+
 

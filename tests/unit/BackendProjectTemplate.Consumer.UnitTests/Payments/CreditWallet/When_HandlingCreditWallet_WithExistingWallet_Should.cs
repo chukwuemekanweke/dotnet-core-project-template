@@ -14,7 +14,7 @@ public sealed class When_HandlingCreditWallet_WithExistingWallet_Should
         var currencyId = Guid.CreateVersion7();
         var command = context.CreateCreditWalletCommand(2500m, currencyId);
         var currency = context.CreateCurrency(currencyId, "NGN");
-        var existingWallet = Wallet.Create(command.StakeholderId!.Value, command.TenantId, currencyId, context.Clock.GetUtcNow());
+        var existingWallet = Wallet.Create(command.StakeholderId!.Value, command.TenantId, currencyId);
         Wallet? capturedWallet = null;
         WalletTransaction? capturedTransaction = null;
 
@@ -42,3 +42,4 @@ public sealed class When_HandlingCreditWallet_WithExistingWallet_Should
         await context.WalletRepository.DidNotReceive().AddAsync(Arg.Any<Wallet>(), Arg.Any<CancellationToken>());
     }
 }
+

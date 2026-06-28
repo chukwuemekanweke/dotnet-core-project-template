@@ -112,7 +112,7 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
-        var provider = Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true, now);
+        var provider = Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true);
         var log = EmailNotificationLog.Create(
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
@@ -178,3 +178,5 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 }
+
+

@@ -24,13 +24,11 @@ public sealed class When_UploadingAvatar_WithMissingFile_Should
                 Substitute.For<IRepository<Stakeholder>>(),
                 Substitute.For<IObjectStorageService>(),
                 customTelemetryContext,
-                Substitute.For<IUnitOfWork>(),
-                TimeProvider.System),
+                Substitute.For<IUnitOfWork>()),
             new UpdateProfileHandler(
                 Substitute.For<IRepository<Stakeholder>>(),
                 customTelemetryContext,
-                Substitute.For<IUnitOfWork>(),
-                TimeProvider.System),
+                Substitute.For<IUnitOfWork>()),
             currentActor);
 
         var result = await sut.UploadAvatar(new UploadAvatarRequest(null!), CancellationToken.None);

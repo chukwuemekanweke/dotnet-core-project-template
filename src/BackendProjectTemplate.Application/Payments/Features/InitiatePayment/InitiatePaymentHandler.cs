@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
@@ -19,8 +18,7 @@ public sealed class InitiatePaymentHandler(
     IRepository<PaymentTransaction> paymentTransactionRepository,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
     ICustomTelemetryContext customTelemetryContext,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    IUnitOfWork unitOfWork)
 {
     public async Task<InitiatePaymentResult> HandleAsync(InitiatePaymentCommand command, CancellationToken cancellationToken)
     {
@@ -61,22 +59,11 @@ public sealed class InitiatePaymentHandler(
             ?? throw new PaymentProviderResolutionException(
                 $"No payment provider service is registered for '{paymentProvider.ProviderKey}'.");
 
-        var now = timeProvider.GetUtcNow();
         var merchantReference = $"pay_{Guid.CreateVersion7():N}";
 
-        var paymentTransaction = PaymentTransaction.Create(
-            merchantReference,
-            command.PaymentIntent,
-            paymentProvider.Id,
-            command.Amount,
-            command.CurrencyId,
-            stakeholder.CountryId,
-            stakeholder.AppUserId,
-            stakeholder.Id,
-            stakeholder.TenantId,
-            now);
+        var paymentTransaction = PaymentTransaction.Create(merchantReference, command.PaymentIntent, paymentProvider.Id, command.Amount, command.CurrencyId, stakeholder.CountryId, stakeholder.AppUserId, stakeholder.Id, stakeholder.TenantId);
 
-        await paymentTransactionRepository.AddAsync(paymentTransaction, cancellationToken);
+        await paymentTransactionRepository.AddAsync(paymentTransaction);
 
         var initiationResult = await paymentProviderService.InitiatePaymentAsync(
             new PaymentProviderInitiationRequest(
@@ -123,3 +110,5 @@ public sealed class InitiatePaymentHandler(
             initiationResult.InstructionFields);
     }
 }
+
+
