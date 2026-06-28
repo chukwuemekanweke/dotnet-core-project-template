@@ -33,6 +33,5 @@ public sealed class CountryCurrency : Entity, IAggregateRoot
     {
         IsDefault = isDefault;
         IsActive = isActive;
-        Touch(utcNow);
     }
 }

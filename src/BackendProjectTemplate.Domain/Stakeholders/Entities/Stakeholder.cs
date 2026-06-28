@@ -56,7 +56,6 @@ public sealed class Stakeholder : Entity, IAggregateRoot
     {
         FirstName = NormalizeName(firstName, nameof(firstName), MaxFirstNameLength);
         LastName = NormalizeName(lastName, nameof(lastName), MaxLastNameLength);
-        Touch(utcNow);
     }
 
     public void SetAvatarUrl(string avatarUrl, DateTimeOffset utcNow)
@@ -73,13 +72,11 @@ public sealed class Stakeholder : Entity, IAggregateRoot
         }
 
         AvatarUrl = normalizedAvatarUrl;
-        Touch(utcNow);
     }
 
     public void MarkVerified(DateTimeOffset utcNow)
     {
         IsVerified = true;
-        Touch(utcNow);
     }
 
     private static string NormalizeName(string value, string argumentName, int maxLength)

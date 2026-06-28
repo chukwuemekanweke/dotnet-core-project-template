@@ -6,7 +6,7 @@ namespace BackendProjectTemplate.Domain.UnitTests;
 public sealed class WhenMarkingEmailVerified_Should
 {
     [Fact]
-    public void UpdateConfirmationAndTimestamp()
+    public void UpdateConfirmation()
     {
         var email = DomainTestData.Email();
         var firstName = DomainTestData.FirstName();
@@ -19,7 +19,6 @@ public sealed class WhenMarkingEmailVerified_Should
         user.MarkEmailVerified(verifiedAt);
 
         user.EmailConfirmed.ShouldBeTrue();
-        user.UpdatedAtUtc.ShouldBe(verifiedAt);
     }
 }
 

@@ -29,6 +29,5 @@ public sealed class Currency : Entity, IAggregateRoot
     public void SetActive(bool isActive, DateTimeOffset utcNow)
     {
         IsActive = isActive;
-        Touch(utcNow);
     }
 }

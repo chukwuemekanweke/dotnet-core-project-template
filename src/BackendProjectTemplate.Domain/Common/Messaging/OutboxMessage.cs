@@ -66,7 +66,6 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
         AttemptCount++;
         LastAttemptAtUtc = utcNow;
         LastError = error;
-        Touch(utcNow);
     }
 
     public void MarkFailed(DateTimeOffset utcNow, DateTimeOffset nextAvailableAtUtc, string? error = null)
@@ -80,6 +79,5 @@ public sealed class OutboxMessage : Entity, IAggregateRoot
         SentAtUtc = utcNow;
         LastAttemptAtUtc = utcNow;
         LastError = null;
-        Touch(utcNow);
     }
 }

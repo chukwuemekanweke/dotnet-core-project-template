@@ -19,8 +19,6 @@ public sealed class AuthenticationRefreshToken : Entity, IAggregateRoot
         TokenHash = tokenHash;
         SecurityStamp = securityStamp;
         ExpiresAtUtc = expiresAtUtc;
-        CreatedAtUtc = utcNow;
-        UpdatedAtUtc = utcNow;
     }
 
     public Guid AppUserId { get; private set; }
@@ -51,6 +49,5 @@ public sealed class AuthenticationRefreshToken : Entity, IAggregateRoot
         }
 
         RevokedAtUtc = utcNow;
-        UpdatedAtUtc = utcNow;
     }
 }

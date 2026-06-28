@@ -34,10 +34,7 @@ public sealed class AppUser : IdentityUser<Guid>, IAuditableEntity, ISoftDelete
     public void MarkEmailVerified(DateTimeOffset utcNow)
     {
         EmailConfirmed = true;
-        UpdatedAtUtc = utcNow;
     }
-
-    public void Touch(DateTimeOffset utcNow) => UpdatedAtUtc = utcNow;
 
     public void SetCreatedAudit(DateTimeOffset utcNow, string actorId)
     {

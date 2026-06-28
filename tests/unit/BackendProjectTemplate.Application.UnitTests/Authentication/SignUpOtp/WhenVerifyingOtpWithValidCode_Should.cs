@@ -45,7 +45,6 @@ public sealed class WhenVerifyingOtpWithValidCode_Should
 
         result.Status.ShouldBe(SignUpOtpStatus.Success);
         user.EmailConfirmed.ShouldBeTrue();
-        user.UpdatedAtUtc.ShouldBe(context.Clock.GetUtcNow());
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserEmailConfirmed>(message => message.StakeholderId == stakeholder.Id),
             Arg.Any<CancellationToken>());
