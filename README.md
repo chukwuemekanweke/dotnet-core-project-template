@@ -106,6 +106,47 @@ Start the local stack:
 docker compose up --build
 ```
 
+If you want Docker Compose to start with the required environment variables, create your own local helper script first.
+
+For Bash:
+
+1. Create `docker-compose.local.sh`.
+2. Copy the contents of `docker-compose.env.example.sh` into `docker-compose.local.sh`.
+3. Replace the placeholder values with your own local values.
+4. Add your Docker Compose command at the end of the file.
+5. Run your local script.
+
+Example:
+
+```bash
+cp docker-compose.env.example.sh docker-compose.local.sh
+chmod +x docker-compose.local.sh
+```
+
+Your `docker-compose.local.sh` should look like this:
+
+```bash
+#!/usr/bin/env bash
+
+export GITHUB_USERNAME=""
+export GITHUB_PAT=""
+export MAILTRAP_TOKEN=""
+export MAILTRAP_WEBHOOK_SIGNING_SECRET=""
+export MAILTRAP_FROM_ADDRESS=""
+export MAILTRAP_FROM_NAME="BackendProjectTemplate"
+
+docker compose up -d --build --force-recreate
+```
+
+For PowerShell, follow the same pattern with `docker-compose.local.ps1`:
+
+1. Create `docker-compose.local.ps1`.
+2. Copy the equivalent environment variable assignments into it.
+3. Set your local values.
+4. Add the Docker Compose command at the end of the script.
+
+Run the local script instead of calling `docker compose` directly when you need those exported variables.
+
 Useful endpoints:
 
 - API: `http://localhost:8080`
