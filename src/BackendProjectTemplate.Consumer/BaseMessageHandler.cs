@@ -12,35 +12,18 @@ using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 
 namespace BackendProjectTemplate.Consumer;
 
-public abstract class BaseMessageHandler<TMessage> : IMessageHandler<TMessage>
+public abstract class BaseMessageHandler<TMessage>(
+    ICustomTelemetryContext customTelemetryContext,
+    ICurrentActorAccessor currentActorAccessor,
+    IMessageContext messageContext,
+    IRepository<MessageInbox> messageInboxRepository,
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider,
+    ILogger logger) : IMessageHandler<TMessage>
 {
     private static readonly ActivitySource ActivitySource = new(Observability.ActivitySourceName);
-    private readonly ICurrentActorAccessor currentActorAccessor;
-    private readonly IMessageContext messageContext;
-    private readonly IRepository<MessageInbox> messageInboxRepository;
-    private readonly IUnitOfWork unitOfWork;
-    private readonly TimeProvider timeProvider;
-    private readonly ILogger logger;
 
-    protected BaseMessageHandler(
-        ICustomTelemetryContext customTelemetryContext,
-        ICurrentActorAccessor currentActorAccessor,
-        IMessageContext messageContext,
-        IRepository<MessageInbox> messageInboxRepository,
-        IUnitOfWork unitOfWork,
-        TimeProvider timeProvider,
-        ILogger logger)
-    {
-        CustomTelemetryContext = customTelemetryContext;
-        this.currentActorAccessor = currentActorAccessor;
-        this.messageContext = messageContext;
-        this.messageInboxRepository = messageInboxRepository;
-        this.unitOfWork = unitOfWork;
-        this.timeProvider = timeProvider;
-        this.logger = logger;
-    }
-
-    protected ICustomTelemetryContext CustomTelemetryContext { get; }
+    protected ICustomTelemetryContext CustomTelemetryContext { get; } = customTelemetryContext;
 
     protected ICurrentActorAccessor ActorAccessor => currentActorAccessor;
 
