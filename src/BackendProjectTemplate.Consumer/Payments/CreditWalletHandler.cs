@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
@@ -17,7 +18,10 @@ public sealed class CreditWalletHandler(
     IRepository<Currency> currencyRepository,
     IRepository<Wallet> walletRepository,
     IRepository<WalletTransaction> walletTransactionRepository,
-    IUnitOfWork unitOfWork) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext)
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider,
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<CreditWalletHandler> logger) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -71,7 +75,6 @@ public sealed class CreditWalletHandler(
             WalletTransaction.CreateCredit(wallet.Id, message.PaymentTransactionId, message.MerchantReference, message.Amount, message.CurrencyId, WalletTransactionCategory.WalletFunding, walletFundingNarrative.Title, walletFundingNarrative.CreateDescription()),
             cancellationToken);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Payments.WalletCredited,
             ObservabilityEventProperties.Create(

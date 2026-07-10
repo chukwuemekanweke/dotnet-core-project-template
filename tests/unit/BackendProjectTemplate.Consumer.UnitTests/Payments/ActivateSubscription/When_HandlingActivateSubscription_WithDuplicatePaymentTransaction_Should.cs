@@ -24,6 +24,6 @@ public sealed class When_HandlingActivateSubscription_WithDuplicatePaymentTransa
 
         await context.CreateActivateSubscriptionHandler().HandleAsync(command, CancellationToken.None);
 
-        await context.UnitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

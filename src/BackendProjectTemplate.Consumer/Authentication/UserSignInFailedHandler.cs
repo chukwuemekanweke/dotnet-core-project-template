@@ -21,7 +21,8 @@ public sealed class UserSignInFailedHandler(
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    ILogger<UserSignInFailedHandler> logger) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor, messageContext)
+    ILogger<UserSignInFailedHandler> logger,
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -78,13 +79,12 @@ public sealed class UserSignInFailedHandler(
                         user.Email ?? message.EmailAddress,
                         new Dictionary<string, string>
                         {
-                            ["LockedUntilUtc"] = DateTimeFormatter.FormatHumanReadableUtc(lockedUntilUtc, timeProvider.GetUtcNow())
+                            ["LockedUntilUtc"] = DateTimeFormatter.FormatHumanReadableUtc(lockedUntilUtc, Clock.GetUtcNow())
                         }))
                 {
                     StakeholderId = stakeholder.StakeholderId
                 },
                 cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         CustomTelemetryContext.AddCustomEvent(

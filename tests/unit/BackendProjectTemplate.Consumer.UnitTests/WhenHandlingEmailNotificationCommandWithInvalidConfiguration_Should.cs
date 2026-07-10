@@ -19,6 +19,8 @@ public sealed class WhenHandlingEmailNotificationCommandWithInvalidConfiguration
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var messageContext = Substitute.For<IMessageContext>();
         var emailNotificationService = Substitute.For<IEmailNotificationService>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         var command = new SendNotificationCommand(
             Guid.CreateVersion7(),
@@ -37,7 +39,15 @@ public sealed class WhenHandlingEmailNotificationCommandWithInvalidConfiguration
             .Returns(_ => Task.FromException<EmailNotificationSendResult?>(new NotificationConfigurationException("No email provider is configured.")));
 
         var exception = await Should.ThrowAsync<CannotProcessMessageNonTransientException>(() =>
-            new SendNotificationHandler(customTelemetryContext, currentActorAccessor, messageContext, emailNotificationService)
+            new SendNotificationHandler(
+                    customTelemetryContext,
+                    currentActorAccessor,
+                    messageContext,
+                    emailNotificationService,
+                    unitOfWork,
+                    TimeProvider.System,
+                    messageInboxRepository,
+                    Substitute.For<ILogger<SendNotificationHandler>>())
                 .HandleAsync(command, CancellationToken.None));
 
         exception.Message.ShouldBe("No email provider is configured.");

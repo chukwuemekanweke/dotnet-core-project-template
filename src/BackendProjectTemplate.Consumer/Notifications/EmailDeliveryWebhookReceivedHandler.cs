@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
@@ -16,12 +17,15 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
     IReadRepository<Provider> providerRepository,
     IRepository<EmailDeliveryWebhookInbox> emailDeliveryWebhookInboxRepository,
     IRepository<EmailNotificationLog> emailNotificationLogRepository,
-    ICurrentActor currentActor,
+    ICurrentActorAccessor currentActorAccessor,
+    IMessageContext messageContext,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider) : IMessageHandler<EmailDeliveryWebhookReceived>
+    TimeProvider timeProvider,
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<EmailDeliveryWebhookReceivedHandler> logger) : BaseMessageHandler<EmailDeliveryWebhookReceived>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
-    public async Task HandleAsync(EmailDeliveryWebhookReceived message, CancellationToken cancellationToken)
+    protected override async Task HandleAsyncInternal(EmailDeliveryWebhookReceived message, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(message.ProviderMessageId))
         {
@@ -64,13 +68,12 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
                 $"Unable to process EmailDeliveryWebhookReceived because no notification log was found for provider message '{message.ProviderMessageId}'.");
         }
 
-        var now = timeProvider.GetUtcNow();
+        var now = Clock.GetUtcNow();
         var wasAlreadyDelivered = emailNotificationLog.DeliveredAtUtc.HasValue;
         emailNotificationLog.MarkDelivered(inbox.OccurredAtUtc);
         emailNotificationLogRepository.Update(emailNotificationLog);
         inbox.MarkProcessed(KnownWebhookStatusChangeReasons.Notifications.NotificationLogDelivered, now);
         emailDeliveryWebhookInboxRepository.Update(inbox);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         if (wasAlreadyDelivered)
         {
@@ -80,20 +83,15 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
         var provider = await providerRepository.FirstOrDefaultAsync(
             new ProviderByIdSpecification(message.ProviderId),
             cancellationToken);
-        if (provider is null)
-        {
-            throw new CannotProcessMessageNonTransientException(
-                $"Unable to process EmailDeliveryWebhookReceived because no provider was found for id '{message.ProviderId}'.");
-        }
 
-        customTelemetryContext.AddCustomEvent(
+        CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Notifications.EmailDelivered,
             ObservabilityEventProperties.Create(
-                currentActor,
+                ActorAccessor,
                 additionalProperties: new Dictionary<string, string>
                 {
                     [Observability.PropertyNames.Common.MessageId] = emailNotificationLog.MessageId.ToString(),
-                    [Observability.PropertyNames.Notifications.ProviderKey] = provider.ProviderKey,
+                    [Observability.PropertyNames.Notifications.ProviderKey] = provider?.ProviderKey ?? string.Empty,
                     [Observability.PropertyNames.Notifications.ProviderMessageId] = emailNotificationLog.ProviderMessageId ?? message.ProviderMessageId,
                     [Observability.PropertyNames.Notifications.NotificationType] = emailNotificationLog.NotificationType.ToString()
                 }));

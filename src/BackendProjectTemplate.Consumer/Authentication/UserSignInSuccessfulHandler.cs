@@ -24,7 +24,9 @@ public sealed class UserSignInSuccessfulHandler(
     IRepository<LoginActivity> loginActivityRepository,
     IUnitOfWork unitOfWork,
     IUserAgentParserService userAgentParserService,
-    TimeProvider timeProvider) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext)
+    TimeProvider timeProvider,
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<UserSignInSuccessfulHandler> logger) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -67,7 +69,7 @@ public sealed class UserSignInSuccessfulHandler(
             userAgentInfo.DeviceName,
             userAgentInfo.DevicePlatform,
             userAgentInfo.BrowserName,
-            timeProvider.GetUtcNow());
+            Clock.GetUtcNow());
 
         await loginActivityRepository.AddAsync(loginActivity, cancellationToken);
 
@@ -88,8 +90,6 @@ public sealed class UserSignInSuccessfulHandler(
                 StakeholderId = stakeholder.StakeholderId
             },
             cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.SignInPostProcessingCompleted,

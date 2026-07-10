@@ -24,13 +24,20 @@ public sealed class When_HandlingMessage_WithoutBaseContract_Should
         exception.Message.ShouldBe("TestMessage must inherit from BaseCommand or BaseEvent.");
     }
 
-    private sealed record TestMessage;
+    public sealed record TestMessage;
 
     private sealed class TestMessageHandler(
         ICustomTelemetryContext customTelemetryContext,
         ICurrentActorAccessor currentActorAccessor,
         IMessageContext messageContext)
-        : BaseMessageHandler<TestMessage>(customTelemetryContext, currentActorAccessor, messageContext)
+        : BaseMessageHandler<TestMessage>(
+            customTelemetryContext,
+            currentActorAccessor,
+            messageContext,
+            Substitute.For<IRepository<MessageInbox>>(),
+            Substitute.For<IUnitOfWork>(),
+            TimeProvider.System,
+            Substitute.For<ILogger>())
     {
         protected override Task HandleAsyncInternal(TestMessage message, CancellationToken cancellationToken) => Task.CompletedTask;
     }

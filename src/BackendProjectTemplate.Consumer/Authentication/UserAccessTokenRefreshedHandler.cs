@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
@@ -19,7 +20,9 @@ public sealed class UserAccessTokenRefreshedHandler(
     IRepository<LoginActivity> loginActivityRepository,
     IUnitOfWork unitOfWork,
     IUserAgentParserService userAgentParserService,
-    TimeProvider timeProvider) : BaseMessageHandler<UserAccessTokenRefreshed>(customTelemetryContext, currentActorAccessor, messageContext)
+    TimeProvider timeProvider,
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<UserAccessTokenRefreshedHandler> logger) : BaseMessageHandler<UserAccessTokenRefreshed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -49,11 +52,9 @@ public sealed class UserAccessTokenRefreshedHandler(
             userAgentInfo.DeviceName,
             userAgentInfo.DevicePlatform,
             userAgentInfo.BrowserName,
-            timeProvider.GetUtcNow());
+            Clock.GetUtcNow());
 
         await loginActivityRepository.AddAsync(loginActivity, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.SessionRefreshPostProcessingCompleted,

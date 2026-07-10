@@ -5,15 +5,12 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Formatting;
-using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Consumer.UnitTests;
 
@@ -28,6 +25,7 @@ public sealed class WhenHandlingUserCreated_Should
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var logger = Substitute.For<ILogger<UserCreatedHandler>>();
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 23, 10, 0, 0, TimeSpan.Zero));
@@ -57,7 +55,8 @@ public sealed class WhenHandlingUserCreated_Should
             unitOfWork,
             timeProvider,
             lockoutOptions,
-            logger).HandleAsync(
+            logger,
+            messageInboxRepository).HandleAsync(
             new UserCreated
             {
                 StakeholderId = stakeholderId,

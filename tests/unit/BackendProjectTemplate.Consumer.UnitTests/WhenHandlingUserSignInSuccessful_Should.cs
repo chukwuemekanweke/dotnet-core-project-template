@@ -30,6 +30,7 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
         var loginActivityRepository = Substitute.For<IRepository<LoginActivity>>();
         var userAgentParserService = Substitute.For<IUserAgentParserService>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
         var stakeholderId = Guid.CreateVersion7();
@@ -61,7 +62,9 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
             loginActivityRepository,
             unitOfWork,
             userAgentParserService,
-            TimeProvider.System).HandleAsync(
+            TimeProvider.System,
+            messageInboxRepository,
+            Substitute.For<ILogger<UserSignInSuccessfulHandler>>()).HandleAsync(
             new UserSignInSuccessful(ipAddress, userAgent)
             {
                 StakeholderId = stakeholderId,

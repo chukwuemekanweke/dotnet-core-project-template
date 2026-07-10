@@ -39,7 +39,14 @@ public sealed class When_HandlingBaseEvent_WithoutFlowId_Should
         ICustomTelemetryContext customTelemetryContext,
         ICurrentActorAccessor currentActorAccessor,
         IMessageContext messageContext)
-        : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext)
+        : BaseMessageHandler<UserCreated>(
+            customTelemetryContext,
+            currentActorAccessor,
+            messageContext,
+            Substitute.For<IRepository<MessageInbox>>(),
+            Substitute.For<IUnitOfWork>(),
+            TimeProvider.System,
+            Substitute.For<ILogger>())
     {
         protected override Task HandleAsyncInternal(UserCreated message, CancellationToken cancellationToken) => Task.CompletedTask;
     }

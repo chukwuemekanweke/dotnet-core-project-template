@@ -24,7 +24,8 @@ public sealed class UserCreatedHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     IOptions<AuthenticationLockoutOptions> lockoutOptions,
-    ILogger<UserCreatedHandler> logger) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext)
+    ILogger<UserCreatedHandler> logger,
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -62,7 +63,7 @@ public sealed class UserCreatedHandler(
         }
 
         var otpCode = await identityService.GenerateSignUpOtpAsync(user);
-        var now = timeProvider.GetUtcNow();
+        var now = Clock.GetUtcNow();
         var expiresAtUtc = now.Add(lockoutOptions.Value.Duration);
         await commandSender.SendAsync(
             new SendNotificationCommand(
@@ -85,7 +86,6 @@ public sealed class UserCreatedHandler(
                 StakeholderId = stakeholder.StakeholderId
             },
             cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSent,

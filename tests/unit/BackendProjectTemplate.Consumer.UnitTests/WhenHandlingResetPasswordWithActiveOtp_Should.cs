@@ -23,6 +23,7 @@ public sealed class WhenHandlingResetPasswordWithActiveOtp_Should
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
         var stakeholderId = Guid.CreateVersion7();
@@ -43,7 +44,9 @@ public sealed class WhenHandlingResetPasswordWithActiveOtp_Should
             stakeholderReadModelRepository,
             commandSender,
             unitOfWork,
-            TimeProvider.System).HandleAsync(
+            TimeProvider.System,
+            messageInboxRepository,
+            Substitute.For<ILogger<ResetPasswordHandler>>()).HandleAsync(
             new ResetPasswordCommand
             {
                 StakeholderId = stakeholderId,
@@ -58,7 +61,7 @@ public sealed class WhenHandlingResetPasswordWithActiveOtp_Should
             Arg.Any<int>(),
             Arg.Any<bool>());
         await commandSender.DidNotReceive().SendAsync(Arg.Any<Contracts.Commands.Notifications.SendNotificationCommand>(), Arg.Any<CancellationToken>());
-        await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
 

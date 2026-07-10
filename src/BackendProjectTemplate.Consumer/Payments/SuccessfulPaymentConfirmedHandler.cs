@@ -15,7 +15,10 @@ public sealed class SuccessfulPaymentConfirmedHandler(
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
     ICommandSender commandSender,
-    IUnitOfWork unitOfWork) : BaseMessageHandler<SuccessfulPaymentConfirmed>(customTelemetryContext, currentActorAccessor, messageContext)
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider,
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<SuccessfulPaymentConfirmedHandler> logger) : BaseMessageHandler<SuccessfulPaymentConfirmed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -78,6 +81,5 @@ public sealed class SuccessfulPaymentConfirmedHandler(
                     $"Unsupported payment intent '{message.PaymentIntent}'.");
         }
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

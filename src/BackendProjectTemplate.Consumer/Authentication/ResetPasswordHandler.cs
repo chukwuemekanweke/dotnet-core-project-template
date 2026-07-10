@@ -20,7 +20,9 @@ public sealed class ResetPasswordHandler(
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider) : BaseMessageHandler<ResetPasswordCommand>(customTelemetryContext, currentActorAccessor, messageContext)
+    TimeProvider timeProvider,
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<ResetPasswordHandler> logger) : BaseMessageHandler<ResetPasswordCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -63,14 +65,12 @@ public sealed class ResetPasswordHandler(
                         ["FirstName"] = stakeholder.FirstName,
                         ["LastName"] = stakeholder.LastName,
                         ["OtpCode"] = otp.Code,
-                        ["OtpExpiresAtUtc"] = DateTimeFormatter.FormatHumanReadableUtc(otp.ExpiresAtUtc, timeProvider.GetUtcNow())
+                    ["OtpExpiresAtUtc"] = DateTimeFormatter.FormatHumanReadableUtc(otp.ExpiresAtUtc, Clock.GetUtcNow())
                     }))
             {
                 StakeholderId = stakeholder.StakeholderId
             },
             cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetOtpSent,

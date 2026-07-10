@@ -27,6 +27,7 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         var logger = Substitute.For<ILogger<UserSignInFailedHandler>>();
         var email = ConsumerTestData.Email();
         var ipAddress = ConsumerTestData.IpAddress();
@@ -50,7 +51,8 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
             commandSender,
             unitOfWork,
             TimeProvider.System,
-            logger).HandleAsync(
+            logger,
+            messageInboxRepository).HandleAsync(
             new UserSignInFailed(
                 email,
                 ipAddress,
@@ -65,7 +67,7 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
         await commandSender.DidNotReceive().SendAsync(
             Arg.Any<SendNotificationCommand>(),
             Arg.Any<CancellationToken>());
-        await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }
 

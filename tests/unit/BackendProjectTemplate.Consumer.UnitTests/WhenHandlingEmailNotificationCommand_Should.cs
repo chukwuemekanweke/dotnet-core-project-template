@@ -17,6 +17,8 @@ public sealed class WhenHandlingEmailNotificationCommand_Should
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var messageContext = Substitute.For<IMessageContext>();
         var emailNotificationService = Substitute.For<IEmailNotificationService>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         currentActorAccessor.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         currentActorAccessor.FlowId.Returns(Guid.CreateVersion7().ToString("N"));
@@ -35,7 +37,15 @@ public sealed class WhenHandlingEmailNotificationCommand_Should
         emailNotificationService.SendAsync(command, Arg.Any<CancellationToken>())
             .Returns(new EmailNotificationSendResult("mailtrap", "mailtrap-message-id"));
 
-        await new SendNotificationHandler(customTelemetryContext, currentActorAccessor, messageContext, emailNotificationService)
+        await new SendNotificationHandler(
+                customTelemetryContext,
+                currentActorAccessor,
+                messageContext,
+                emailNotificationService,
+                unitOfWork,
+                TimeProvider.System,
+                messageInboxRepository,
+                Substitute.For<ILogger<SendNotificationHandler>>())
             .HandleAsync(command, CancellationToken.None);
 
         await emailNotificationService.Received(1).SendAsync(command, Arg.Any<CancellationToken>());

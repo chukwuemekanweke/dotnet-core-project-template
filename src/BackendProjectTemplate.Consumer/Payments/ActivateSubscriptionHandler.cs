@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -15,7 +16,9 @@ public sealed class ActivateSubscriptionHandler(
     IMessageContext messageContext,
     IRepository<SubscriptionActivation> subscriptionActivationRepository,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider) : BaseMessageHandler<ActivateSubscriptionCommand>(customTelemetryContext, currentActorAccessor, messageContext)
+    TimeProvider timeProvider,
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<ActivateSubscriptionHandler> logger) : BaseMessageHandler<ActivateSubscriptionCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -42,10 +45,9 @@ public sealed class ActivateSubscriptionHandler(
                 null,
                 message.Amount,
                 message.CurrencyId,
-                timeProvider.GetUtcNow()),
+                Clock.GetUtcNow()),
             cancellationToken);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Payments.SubscriptionActivated,
             ObservabilityEventProperties.Create(
