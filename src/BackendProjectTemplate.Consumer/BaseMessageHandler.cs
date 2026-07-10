@@ -16,21 +16,13 @@ public abstract class BaseMessageHandler<TMessage>(
     ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
-    IRepository<MessageInbox>? messageInboxRepository,
-    IUnitOfWork? unitOfWork,
+    IRepository<MessageInbox> messageInboxRepository,
+    IUnitOfWork unitOfWork,
     TimeProvider timeProvider) : IMessageHandler<TMessage>
 {
     private static readonly ActivitySource ActivitySource = new(Observability.ActivitySourceName);
 
     protected ICustomTelemetryContext CustomTelemetryContext { get; } = customTelemetryContext;
-
-    protected BaseMessageHandler(
-        ICustomTelemetryContext customTelemetryContext,
-        ICurrentActorAccessor currentActorAccessor,
-        IMessageContext messageContext)
-        : this(customTelemetryContext, currentActorAccessor, messageContext, null, null!, TimeProvider.System)
-    {
-    }
 
     public async Task HandleAsync(TMessage message, CancellationToken cancellationToken)
     {
@@ -56,7 +48,7 @@ public abstract class BaseMessageHandler<TMessage>(
 
             CustomTelemetryContext
                 .SetProperty(Observability.PropertyNames.Common.MessageId, baseEvent.MessageId.ToString())
-                .SetProperty("OccurredAt", baseEvent.OccuredAt.ToString("O"))
+                .SetProperty(Observability.PropertyNames.Common.OccurredAt, baseEvent.OccuredAt.ToString("O"))
                 .SetProperty(Observability.PropertyNames.Common.StakeholderId, baseEvent.StakeholderId?.ToString() ?? string.Empty)
                 .SetProperty(Observability.PropertyNames.Common.TenantId, tenantId?.ToString() ?? string.Empty)
                 .SetProperty(Observability.PropertyNames.Common.CorrelationId, messageContext.CorrelationId)
@@ -82,7 +74,7 @@ public abstract class BaseMessageHandler<TMessage>(
 
             CustomTelemetryContext
                 .SetProperty(Observability.PropertyNames.Common.MessageId, baseCommand.MessageId.ToString())
-                .SetProperty("RequestedAt", baseCommand.RequestedAt.ToString("O"))
+                .SetProperty(Observability.PropertyNames.Common.RequestedAt, baseCommand.RequestedAt.ToString("O"))
                 .SetProperty(Observability.PropertyNames.Common.StakeholderId, baseCommand.StakeholderId?.ToString() ?? string.Empty)
                 .SetProperty(Observability.PropertyNames.Common.TenantId, baseCommand.TenantId.ToString())
                 .SetProperty(Observability.PropertyNames.Common.CorrelationId, messageContext.CorrelationId)
@@ -94,15 +86,12 @@ public abstract class BaseMessageHandler<TMessage>(
                 $"{typeof(TMessage).Name} must inherit from {nameof(BaseCommand)} or {nameof(BaseEvent)}.");
         }
 
-        if (messageInboxRepository is not null)
+        var existingInbox = await messageInboxRepository.FirstOrDefaultAsync(
+            new MessageInboxByMessageIdAndTypeSpecification(messageId, messageType),
+            cancellationToken);
+        if (existingInbox is not null)
         {
-            var existingInbox = await messageInboxRepository.FirstOrDefaultAsync(
-                new MessageInboxByMessageIdAndTypeSpecification(messageId, messageType),
-                cancellationToken);
-            if (existingInbox is not null)
-            {
-                return;
-            }
+            return;
         }
 
         foreach (var telemetryParameter in GetTelemetryParameters(message))
@@ -112,18 +101,9 @@ public abstract class BaseMessageHandler<TMessage>(
 
         await HandleAsyncInternal(message, cancellationToken);
 
-        if (messageInboxRepository is not null)
-        {
-            var inbox = MessageInbox.Create(messageId, messageType, timeProvider.GetUtcNow());
-            await messageInboxRepository.AddAsync(inbox, cancellationToken);
-            if (unitOfWork is null)
-            {
-                throw new InvalidOperationException(
-                    $"{nameof(IUnitOfWork)} is required when message inbox tracking is enabled.");
-            }
-
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-        }
+        var inbox = MessageInbox.Create(messageId, messageType, timeProvider.GetUtcNow());
+        await messageInboxRepository.AddAsync(inbox, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     protected virtual IEnumerable<(string Key, string Value)> GetTelemetryParameters(TMessage message) => [];

@@ -21,7 +21,7 @@ public sealed class ResetPasswordHandler(
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<ResetPasswordCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<ResetPasswordCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -70,8 +70,6 @@ public sealed class ResetPasswordHandler(
                 StakeholderId = stakeholder.StakeholderId
             },
             cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetOtpSent,

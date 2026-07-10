@@ -28,6 +28,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         var logger = Substitute.For<ILogger<UserSignInFailedHandler>>();
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
@@ -49,7 +50,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(stakeholderId, Guid.CreateVersion7(), email, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
 
-        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, timeProvider, logger).HandleAsync(
+        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, timeProvider, logger, messageInboxRepository).HandleAsync(
             new UserSignInFailed(
                 email,
                 ipAddress,

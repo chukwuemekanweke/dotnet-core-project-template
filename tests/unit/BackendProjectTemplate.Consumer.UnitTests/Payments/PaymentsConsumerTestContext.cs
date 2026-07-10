@@ -18,11 +18,12 @@ internal sealed class PaymentsConsumerTestContext
     public IRepository<Wallet> WalletRepository { get; } = Substitute.For<IRepository<Wallet>>();
     public IRepository<WalletTransaction> WalletTransactionRepository { get; } = Substitute.For<IRepository<WalletTransaction>>();
     public IRepository<SubscriptionActivation> SubscriptionActivationRepository { get; } = Substitute.For<IRepository<SubscriptionActivation>>();
+    public IRepository<MessageInbox> MessageInboxRepository { get; } = Substitute.For<IRepository<MessageInbox>>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 14, 0, 0, TimeSpan.Zero));
 
     public SuccessfulPaymentConfirmedHandler CreateSuccessfulPaymentConfirmedHandler() =>
-        new(CustomTelemetryContext, CurrentActorAccessor, MessageContext, CommandSender, UnitOfWork);
+        new(CustomTelemetryContext, CurrentActorAccessor, MessageContext, CommandSender, UnitOfWork, Clock, MessageInboxRepository);
 
     public CreditWalletHandler CreateCreditWalletHandler() =>
         new(
@@ -32,7 +33,9 @@ internal sealed class PaymentsConsumerTestContext
             CurrencyRepository,
             WalletRepository,
             WalletTransactionRepository,
-            UnitOfWork);
+            UnitOfWork,
+            Clock,
+            MessageInboxRepository);
 
     public ActivateSubscriptionHandler CreateActivateSubscriptionHandler() =>
         new(
@@ -41,7 +44,8 @@ internal sealed class PaymentsConsumerTestContext
             MessageContext,
             SubscriptionActivationRepository,
             UnitOfWork,
-            Clock);
+            Clock,
+            MessageInboxRepository);
 
     public CreditWalletCommand CreateCreditWalletCommand(decimal amount, Guid currencyId)
     {

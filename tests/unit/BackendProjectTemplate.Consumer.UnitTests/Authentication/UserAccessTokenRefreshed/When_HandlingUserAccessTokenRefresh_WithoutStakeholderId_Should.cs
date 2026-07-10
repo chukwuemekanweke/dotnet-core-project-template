@@ -30,7 +30,8 @@ public sealed class When_HandlingUserAccessTokenRefresh_WithoutStakeholderId_Sho
             Substitute.For<IRepository<LoginActivity>>(),
             Substitute.For<IUnitOfWork>(),
             Substitute.For<IUserAgentParserService>(),
-            TimeProvider.System);
+            TimeProvider.System,
+            Substitute.For<IRepository<MessageInbox>>());
 
         var exception = await Should.ThrowAsync<CannotProcessMessageNonTransientException>(() =>
             sut.HandleAsync(

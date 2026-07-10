@@ -22,7 +22,7 @@ public sealed class UserSignInFailedHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     ILogger<UserSignInFailedHandler> logger,
-    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -85,7 +85,6 @@ public sealed class UserSignInFailedHandler(
                     StakeholderId = stakeholder.StakeholderId
                 },
                 cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         CustomTelemetryContext.AddCustomEvent(

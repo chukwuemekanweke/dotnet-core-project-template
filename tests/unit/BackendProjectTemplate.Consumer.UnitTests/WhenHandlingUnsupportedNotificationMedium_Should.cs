@@ -19,6 +19,8 @@ public sealed class WhenHandlingUnsupportedNotificationMedium_Should
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var messageContext = Substitute.For<IMessageContext>();
         var emailNotificationService = Substitute.For<IEmailNotificationService>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         var command = new SendNotificationCommand(
             Guid.CreateVersion7(),
@@ -34,7 +36,14 @@ public sealed class WhenHandlingUnsupportedNotificationMedium_Should
                 }));
 
         var exception = await Should.ThrowAsync<FailedToProcessMessageException>(() =>
-            new SendNotificationHandler(customTelemetryContext, currentActorAccessor, messageContext, emailNotificationService)
+            new SendNotificationHandler(
+                    customTelemetryContext,
+                    currentActorAccessor,
+                    messageContext,
+                    emailNotificationService,
+                    unitOfWork,
+                    TimeProvider.System,
+                    messageInboxRepository)
                 .HandleAsync(command, CancellationToken.None));
 
         exception.Message.ShouldBe("Notification medium 'Sms' is not supported.");

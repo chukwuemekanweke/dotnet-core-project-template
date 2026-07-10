@@ -19,8 +19,8 @@ public sealed class CreditWalletHandler(
     IRepository<Wallet> walletRepository,
     IRepository<WalletTransaction> walletTransactionRepository,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider = null!,
-    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    TimeProvider timeProvider,
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -74,7 +74,6 @@ public sealed class CreditWalletHandler(
             WalletTransaction.CreateCredit(wallet.Id, message.PaymentTransactionId, message.MerchantReference, message.Amount, message.CurrencyId, WalletTransactionCategory.WalletFunding, walletFundingNarrative.Title, walletFundingNarrative.CreateDescription()),
             cancellationToken);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Payments.WalletCredited,
             ObservabilityEventProperties.Create(

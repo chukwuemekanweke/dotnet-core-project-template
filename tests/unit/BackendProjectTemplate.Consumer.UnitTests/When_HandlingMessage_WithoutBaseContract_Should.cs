@@ -30,7 +30,13 @@ public sealed class When_HandlingMessage_WithoutBaseContract_Should
         ICustomTelemetryContext customTelemetryContext,
         ICurrentActorAccessor currentActorAccessor,
         IMessageContext messageContext)
-        : BaseMessageHandler<TestMessage>(customTelemetryContext, currentActorAccessor, messageContext)
+        : BaseMessageHandler<TestMessage>(
+            customTelemetryContext,
+            currentActorAccessor,
+            messageContext,
+            Substitute.For<IRepository<MessageInbox>>(),
+            Substitute.For<IUnitOfWork>(),
+            TimeProvider.System)
     {
         protected override Task HandleAsyncInternal(TestMessage message, CancellationToken cancellationToken) => Task.CompletedTask;
     }

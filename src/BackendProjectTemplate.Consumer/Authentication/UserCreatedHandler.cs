@@ -25,7 +25,7 @@ public sealed class UserCreatedHandler(
     TimeProvider timeProvider,
     IOptions<AuthenticationLockoutOptions> lockoutOptions,
     ILogger<UserCreatedHandler> logger,
-    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -86,7 +86,6 @@ public sealed class UserCreatedHandler(
                 StakeholderId = stakeholder.StakeholderId
             },
             cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSent,

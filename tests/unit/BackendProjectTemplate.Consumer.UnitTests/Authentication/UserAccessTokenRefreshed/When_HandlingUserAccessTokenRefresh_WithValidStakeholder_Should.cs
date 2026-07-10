@@ -24,6 +24,7 @@ public sealed class When_HandlingUserAccessTokenRefresh_WithValidStakeholder_Sho
         var loginActivityIpAddressResolver = Substitute.For<ILoginActivityIpAddressResolver>();
         var loginActivityRepository = Substitute.For<IRepository<LoginActivity>>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         var userAgentParserService = Substitute.For<IUserAgentParserService>();
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 21, 12, 0, 0, TimeSpan.Zero));
         var stakeholderId = Guid.CreateVersion7();
@@ -61,7 +62,8 @@ public sealed class When_HandlingUserAccessTokenRefresh_WithValidStakeholder_Sho
             loginActivityRepository,
             unitOfWork,
             userAgentParserService,
-            timeProvider);
+            timeProvider,
+            messageInboxRepository);
 
         await sut.HandleAsync(message, CancellationToken.None);
 

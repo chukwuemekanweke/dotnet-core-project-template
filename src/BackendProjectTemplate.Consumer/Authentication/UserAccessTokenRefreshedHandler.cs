@@ -21,7 +21,7 @@ public sealed class UserAccessTokenRefreshedHandler(
     IUnitOfWork unitOfWork,
     IUserAgentParserService userAgentParserService,
     TimeProvider timeProvider,
-    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<UserAccessTokenRefreshed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<UserAccessTokenRefreshed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -54,8 +54,6 @@ public sealed class UserAccessTokenRefreshedHandler(
             timeProvider.GetUtcNow());
 
         await loginActivityRepository.AddAsync(loginActivity, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.SessionRefreshPostProcessingCompleted,

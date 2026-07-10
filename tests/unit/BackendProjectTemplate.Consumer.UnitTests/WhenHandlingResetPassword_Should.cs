@@ -25,6 +25,7 @@ public sealed class WhenHandlingResetPassword_Should
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 23, 10, 0, 0, TimeSpan.Zero));
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
@@ -56,7 +57,8 @@ public sealed class WhenHandlingResetPassword_Should
             stakeholderReadModelRepository,
             commandSender,
             unitOfWork,
-            timeProvider).HandleAsync(
+            timeProvider,
+            messageInboxRepository).HandleAsync(
             new ResetPasswordCommand
             {
                 StakeholderId = stakeholderId,

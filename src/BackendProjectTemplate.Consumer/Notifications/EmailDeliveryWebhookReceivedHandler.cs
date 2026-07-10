@@ -22,7 +22,7 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<EmailDeliveryWebhookReceived>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<EmailDeliveryWebhookReceived>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     protected override async Task HandleAsyncInternal(EmailDeliveryWebhookReceived message, CancellationToken cancellationToken)
     {
@@ -73,7 +73,6 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
         emailNotificationLogRepository.Update(emailNotificationLog);
         inbox.MarkProcessed(KnownWebhookStatusChangeReasons.Notifications.NotificationLogDelivered, now);
         emailDeliveryWebhookInboxRepository.Update(inbox);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         if (wasAlreadyDelivered)
         {
@@ -83,11 +82,6 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
         var provider = await providerRepository.FirstOrDefaultAsync(
             new ProviderByIdSpecification(message.ProviderId),
             cancellationToken);
-        if (provider is null)
-        {
-            throw new CannotProcessMessageNonTransientException(
-                $"Unable to process EmailDeliveryWebhookReceived because no provider was found for id '{message.ProviderId}'.");
-        }
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Notifications.EmailDelivered,
@@ -96,7 +90,7 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
                 additionalProperties: new Dictionary<string, string>
                 {
                     [Observability.PropertyNames.Common.MessageId] = emailNotificationLog.MessageId.ToString(),
-                    [Observability.PropertyNames.Notifications.ProviderKey] = provider.ProviderKey,
+                    [Observability.PropertyNames.Notifications.ProviderKey] = provider?.ProviderKey ?? string.Empty,
                     [Observability.PropertyNames.Notifications.ProviderMessageId] = emailNotificationLog.ProviderMessageId ?? message.ProviderMessageId,
                     [Observability.PropertyNames.Notifications.NotificationType] = emailNotificationLog.NotificationType.ToString()
                 }));

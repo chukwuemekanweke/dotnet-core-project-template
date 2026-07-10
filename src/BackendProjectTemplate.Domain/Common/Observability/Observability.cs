@@ -11,6 +11,8 @@ public static class Observability
         {
             public const string MessageType = "message_type";
             public const string MessageId = "message_id";
+            public const string OccurredAt = "occurred_at";
+            public const string RequestedAt = "requested_at";
             public const string UserId = "user_id";
             public const string StakeholderId = "stakeholder_id";
             public const string TenantId = "tenant_id";

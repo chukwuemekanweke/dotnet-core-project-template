@@ -45,7 +45,7 @@ public sealed class When_HandlingEmailDeliveryWebhookReceived_WithAlreadyProcess
             .FirstOrDefaultAsync(Arg.Any<EmailNotificationLogByProviderMessageIdSpecification>(), Arg.Any<CancellationToken>());
         context.EmailNotificationLogRepository.DidNotReceive().Update(Arg.Any<EmailNotificationLog>());
         context.EmailDeliveryWebhookInboxRepository.DidNotReceive().Update(Arg.Any<EmailDeliveryWebhookInbox>());
-        await context.UnitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         inbox.WebhookProcessingStatus.ShouldBe(WebhookProcessingStatus.Processed);
     }
 }

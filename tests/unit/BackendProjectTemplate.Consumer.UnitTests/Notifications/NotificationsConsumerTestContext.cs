@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Consumer.Notifications;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
@@ -23,6 +24,7 @@ internal sealed class NotificationsConsumerTestContext
     public ICurrentActorAccessor CurrentActorAccessor { get; } = Substitute.For<ICurrentActorAccessor>();
     public IMessageContext MessageContext { get; } = Substitute.For<IMessageContext>();
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
+    public IRepository<MessageInbox> MessageInboxRepository { get; } = Substitute.For<IRepository<MessageInbox>>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 5, 3, 13, 0, 0, TimeSpan.Zero));
 
@@ -35,7 +37,8 @@ internal sealed class NotificationsConsumerTestContext
             MessageContext,
             CustomTelemetryContext,
             UnitOfWork,
-            Clock);
+            Clock,
+            MessageInboxRepository);
 
     internal sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
