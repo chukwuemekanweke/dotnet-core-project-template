@@ -43,7 +43,8 @@ public sealed class WhenHandlingUnsupportedNotificationMedium_Should
                     emailNotificationService,
                     unitOfWork,
                     TimeProvider.System,
-                    messageInboxRepository)
+                    messageInboxRepository,
+                    Substitute.For<ILogger<SendNotificationHandler>>())
                 .HandleAsync(command, CancellationToken.None));
 
         exception.Message.ShouldBe("Notification medium 'Sms' is not supported.");

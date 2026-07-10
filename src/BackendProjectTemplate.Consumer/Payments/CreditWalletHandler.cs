@@ -20,7 +20,8 @@ public sealed class CreditWalletHandler(
     IRepository<WalletTransaction> walletTransactionRepository,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<CreditWalletHandler> logger) : BaseMessageHandler<CreditWalletCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 

@@ -36,7 +36,8 @@ public sealed class When_HandlingUserAccessTokenRefresh_ForUnknownStakeholder_Sh
             Substitute.For<IUnitOfWork>(),
             Substitute.For<IUserAgentParserService>(),
             TimeProvider.System,
-            Substitute.For<IRepository<MessageInbox>>());
+            Substitute.For<IRepository<MessageInbox>>(),
+            Substitute.For<ILogger<UserAccessTokenRefreshedHandler>>());
 
         var exception = await Should.ThrowAsync<CannotProcessMessageNonTransientException>(() =>
             sut.HandleAsync(

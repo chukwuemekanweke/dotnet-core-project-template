@@ -17,7 +17,8 @@ public sealed class ActivateSubscriptionHandler(
     IRepository<SubscriptionActivation> subscriptionActivationRepository,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<ActivateSubscriptionCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<ActivateSubscriptionHandler> logger) : BaseMessageHandler<ActivateSubscriptionCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -44,7 +45,7 @@ public sealed class ActivateSubscriptionHandler(
                 null,
                 message.Amount,
                 message.CurrencyId,
-                timeProvider.GetUtcNow()),
+                Clock.GetUtcNow()),
             cancellationToken);
 
         CustomTelemetryContext.AddCustomEvent(

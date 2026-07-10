@@ -16,7 +16,8 @@ public sealed class SendNotificationHandler(
     IEmailNotificationService emailNotificationService,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<SendNotificationCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<SendNotificationHandler> logger) : BaseMessageHandler<SendNotificationCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 

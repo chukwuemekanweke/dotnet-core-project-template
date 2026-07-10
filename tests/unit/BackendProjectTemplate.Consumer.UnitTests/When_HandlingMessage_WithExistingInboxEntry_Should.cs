@@ -23,13 +23,15 @@ public sealed class When_HandlingMessage_WithExistingInboxEntry_Should
         var messageId = Guid.CreateVersion7();
         var messageType = typeof(TestEvent).FullName!;
         var inbox = MessageInbox.Create(messageId, messageType, timeProvider.GetUtcNow());
+        var logger = Substitute.For<ILogger>();
         var handler = new TestEventHandler(
             customTelemetryContext,
             currentActorAccessor,
             messageContext,
             messageInboxRepository,
             unitOfWork,
-            timeProvider);
+            timeProvider,
+            logger);
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         messageInboxRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<MessageInbox>>(), Arg.Any<CancellationToken>())
@@ -41,9 +43,19 @@ public sealed class When_HandlingMessage_WithExistingInboxEntry_Should
         await messageInboxRepository.DidNotReceive().AddAsync(Arg.Any<MessageInbox>(), Arg.Any<CancellationToken>());
         messageInboxRepository.DidNotReceive().Update(Arg.Any<MessageInbox>());
         await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        logger.ReceivedCalls().Any(call =>
+        {
+            var arguments = call.GetArguments();
+            var message = arguments[2]?.ToString();
+
+            return arguments[0] is LogLevel.Warning &&
+                message?.Contains("Skipping duplicate message", StringComparison.Ordinal) == true &&
+                message.Contains(messageId.ToString(), StringComparison.Ordinal) &&
+                message.Contains(messageType, StringComparison.Ordinal);
+        }).ShouldBeTrue();
     }
 
-    private sealed record TestEvent : BaseEvent;
+    public sealed record TestEvent : BaseEvent;
 
     private sealed class TestEventHandler(
         ICustomTelemetryContext customTelemetryContext,
@@ -51,8 +63,9 @@ public sealed class When_HandlingMessage_WithExistingInboxEntry_Should
         IMessageContext messageContext,
         IRepository<MessageInbox> messageInboxRepository,
         IUnitOfWork unitOfWork,
-        TimeProvider timeProvider)
-        : BaseMessageHandler<TestEvent>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+        TimeProvider timeProvider,
+        ILogger logger)
+        : BaseMessageHandler<TestEvent>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
     {
         public int HandledCount { get; private set; }
 

@@ -45,7 +45,8 @@ public sealed class WhenHandlingResetPasswordWithActiveOtp_Should
             commandSender,
             unitOfWork,
             TimeProvider.System,
-            messageInboxRepository).HandleAsync(
+            messageInboxRepository,
+            Substitute.For<ILogger<ResetPasswordHandler>>()).HandleAsync(
             new ResetPasswordCommand
             {
                 StakeholderId = stakeholderId,

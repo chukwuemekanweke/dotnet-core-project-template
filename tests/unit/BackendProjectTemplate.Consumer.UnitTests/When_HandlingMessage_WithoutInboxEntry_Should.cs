@@ -29,7 +29,8 @@ public sealed class When_HandlingMessage_WithoutInboxEntry_Should
             messageContext,
             messageInboxRepository,
             unitOfWork,
-            timeProvider);
+            timeProvider,
+            Substitute.For<ILogger>());
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         messageInboxRepository.FirstOrDefaultAsync(
@@ -50,7 +51,7 @@ public sealed class When_HandlingMessage_WithoutInboxEntry_Should
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    private sealed record TestEvent : BaseEvent;
+    public sealed record TestEvent : BaseEvent;
 
     private sealed class TestEventHandler(
         ICustomTelemetryContext customTelemetryContext,
@@ -58,8 +59,9 @@ public sealed class When_HandlingMessage_WithoutInboxEntry_Should
         IMessageContext messageContext,
         IRepository<MessageInbox> messageInboxRepository,
         IUnitOfWork unitOfWork,
-        TimeProvider timeProvider)
-        : BaseMessageHandler<TestEvent>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+        TimeProvider timeProvider,
+        ILogger logger)
+        : BaseMessageHandler<TestEvent>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
     {
         public int HandledCount { get; private set; }
 

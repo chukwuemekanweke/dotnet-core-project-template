@@ -25,7 +25,8 @@ public sealed class UserSignInSuccessfulHandler(
     IUnitOfWork unitOfWork,
     IUserAgentParserService userAgentParserService,
     TimeProvider timeProvider,
-    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<UserSignInSuccessfulHandler> logger) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
@@ -68,7 +69,7 @@ public sealed class UserSignInSuccessfulHandler(
             userAgentInfo.DeviceName,
             userAgentInfo.DevicePlatform,
             userAgentInfo.BrowserName,
-            timeProvider.GetUtcNow());
+            Clock.GetUtcNow());
 
         await loginActivityRepository.AddAsync(loginActivity, cancellationToken);
 

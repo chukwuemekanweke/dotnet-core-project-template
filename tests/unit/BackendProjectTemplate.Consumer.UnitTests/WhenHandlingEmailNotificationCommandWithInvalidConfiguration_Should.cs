@@ -46,7 +46,8 @@ public sealed class WhenHandlingEmailNotificationCommandWithInvalidConfiguration
                     emailNotificationService,
                     unitOfWork,
                     TimeProvider.System,
-                    messageInboxRepository)
+                    messageInboxRepository,
+                    Substitute.For<ILogger<SendNotificationHandler>>())
                 .HandleAsync(command, CancellationToken.None));
 
         exception.Message.ShouldBe("No email provider is configured.");

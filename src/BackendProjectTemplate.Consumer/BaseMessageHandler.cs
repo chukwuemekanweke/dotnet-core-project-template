@@ -12,17 +12,39 @@ using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 
 namespace BackendProjectTemplate.Consumer;
 
-public abstract class BaseMessageHandler<TMessage>(
-    ICustomTelemetryContext customTelemetryContext,
-    ICurrentActorAccessor currentActorAccessor,
-    IMessageContext messageContext,
-    IRepository<MessageInbox> messageInboxRepository,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider) : IMessageHandler<TMessage>
+public abstract class BaseMessageHandler<TMessage> : IMessageHandler<TMessage>
 {
     private static readonly ActivitySource ActivitySource = new(Observability.ActivitySourceName);
+    private readonly ICurrentActorAccessor currentActorAccessor;
+    private readonly IMessageContext messageContext;
+    private readonly IRepository<MessageInbox> messageInboxRepository;
+    private readonly IUnitOfWork unitOfWork;
+    private readonly TimeProvider timeProvider;
+    private readonly ILogger logger;
 
-    protected ICustomTelemetryContext CustomTelemetryContext { get; } = customTelemetryContext;
+    protected BaseMessageHandler(
+        ICustomTelemetryContext customTelemetryContext,
+        ICurrentActorAccessor currentActorAccessor,
+        IMessageContext messageContext,
+        IRepository<MessageInbox> messageInboxRepository,
+        IUnitOfWork unitOfWork,
+        TimeProvider timeProvider,
+        ILogger logger)
+    {
+        CustomTelemetryContext = customTelemetryContext;
+        this.currentActorAccessor = currentActorAccessor;
+        this.messageContext = messageContext;
+        this.messageInboxRepository = messageInboxRepository;
+        this.unitOfWork = unitOfWork;
+        this.timeProvider = timeProvider;
+        this.logger = logger;
+    }
+
+    protected ICustomTelemetryContext CustomTelemetryContext { get; }
+
+    protected ICurrentActorAccessor ActorAccessor => currentActorAccessor;
+
+    protected TimeProvider Clock => timeProvider;
 
     public async Task HandleAsync(TMessage message, CancellationToken cancellationToken)
     {
@@ -91,6 +113,11 @@ public abstract class BaseMessageHandler<TMessage>(
             cancellationToken);
         if (existingInbox is not null)
         {
+            logger.LogWarning(
+                "Skipping duplicate message {MessageId} of type {MessageType} because it already exists in the inbox.",
+                messageId,
+                messageType);
+
             return;
         }
 

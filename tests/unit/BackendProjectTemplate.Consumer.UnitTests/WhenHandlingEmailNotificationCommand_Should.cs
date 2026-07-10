@@ -44,7 +44,8 @@ public sealed class WhenHandlingEmailNotificationCommand_Should
                 emailNotificationService,
                 unitOfWork,
                 TimeProvider.System,
-                messageInboxRepository)
+                messageInboxRepository,
+                Substitute.For<ILogger<SendNotificationHandler>>())
             .HandleAsync(command, CancellationToken.None);
 
         await emailNotificationService.Received(1).SendAsync(command, Arg.Any<CancellationToken>());

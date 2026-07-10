@@ -45,7 +45,8 @@ public sealed class When_HandlingBaseEvent_WithoutFlowId_Should
             messageContext,
             Substitute.For<IRepository<MessageInbox>>(),
             Substitute.For<IUnitOfWork>(),
-            TimeProvider.System)
+            TimeProvider.System,
+            Substitute.For<ILogger>())
     {
         protected override Task HandleAsyncInternal(UserCreated message, CancellationToken cancellationToken) => Task.CompletedTask;
     }

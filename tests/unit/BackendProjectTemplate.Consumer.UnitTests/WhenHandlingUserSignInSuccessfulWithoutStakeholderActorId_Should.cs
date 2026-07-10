@@ -49,7 +49,8 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutStakeholderActorId_Sh
             unitOfWork,
             userAgentParserService,
             TimeProvider.System,
-            messageInboxRepository).HandleAsync(
+            messageInboxRepository,
+            Substitute.For<ILogger<UserSignInSuccessfulHandler>>()).HandleAsync(
                 new UserSignInSuccessful(ipAddress, userAgent)
                 {
                     TenantId = tenantId

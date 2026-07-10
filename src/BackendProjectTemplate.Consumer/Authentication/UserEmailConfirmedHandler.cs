@@ -14,7 +14,7 @@ public sealed class UserEmailConfirmedHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     ILogger<UserEmailConfirmedHandler> logger,
-    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<UserEmailConfirmed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<UserEmailConfirmed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     protected override Task HandleAsyncInternal(UserEmailConfirmed message, CancellationToken cancellationToken)
     {

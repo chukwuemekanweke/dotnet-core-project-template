@@ -63,7 +63,8 @@ public sealed class When_HandlingUserAccessTokenRefresh_WithValidStakeholder_Sho
             unitOfWork,
             userAgentParserService,
             timeProvider,
-            messageInboxRepository);
+            messageInboxRepository,
+            Substitute.For<ILogger<UserAccessTokenRefreshedHandler>>());
 
         await sut.HandleAsync(message, CancellationToken.None);
 

@@ -27,6 +27,7 @@ internal sealed class NotificationsConsumerTestContext
     public IRepository<MessageInbox> MessageInboxRepository { get; } = Substitute.For<IRepository<MessageInbox>>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 5, 3, 13, 0, 0, TimeSpan.Zero));
+    public ILogger<EmailDeliveryWebhookReceivedHandler> EmailDeliveryWebhookReceivedLogger { get; } = Substitute.For<ILogger<EmailDeliveryWebhookReceivedHandler>>();
 
     public EmailDeliveryWebhookReceivedHandler CreateEmailDeliveryWebhookReceivedHandler() =>
         new(
@@ -38,7 +39,8 @@ internal sealed class NotificationsConsumerTestContext
             CustomTelemetryContext,
             UnitOfWork,
             Clock,
-            MessageInboxRepository);
+            MessageInboxRepository,
+            EmailDeliveryWebhookReceivedLogger);
 
     internal sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {

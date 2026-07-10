@@ -17,7 +17,8 @@ public sealed class SuccessfulPaymentConfirmedHandler(
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<SuccessfulPaymentConfirmed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<SuccessfulPaymentConfirmedHandler> logger) : BaseMessageHandler<SuccessfulPaymentConfirmed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 

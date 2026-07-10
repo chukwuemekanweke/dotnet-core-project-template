@@ -22,7 +22,8 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<EmailDeliveryWebhookReceived>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
+    IRepository<MessageInbox> messageInboxRepository,
+    ILogger<EmailDeliveryWebhookReceivedHandler> logger) : BaseMessageHandler<EmailDeliveryWebhookReceived>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
     protected override async Task HandleAsyncInternal(EmailDeliveryWebhookReceived message, CancellationToken cancellationToken)
     {
@@ -67,7 +68,7 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
                 $"Unable to process EmailDeliveryWebhookReceived because no notification log was found for provider message '{message.ProviderMessageId}'.");
         }
 
-        var now = timeProvider.GetUtcNow();
+        var now = Clock.GetUtcNow();
         var wasAlreadyDelivered = emailNotificationLog.DeliveredAtUtc.HasValue;
         emailNotificationLog.MarkDelivered(inbox.OccurredAtUtc);
         emailNotificationLogRepository.Update(emailNotificationLog);
@@ -83,10 +84,10 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
             new ProviderByIdSpecification(message.ProviderId),
             cancellationToken);
 
-        customTelemetryContext.AddCustomEvent(
+        CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Notifications.EmailDelivered,
             ObservabilityEventProperties.Create(
-                currentActorAccessor,
+                ActorAccessor,
                 additionalProperties: new Dictionary<string, string>
                 {
                     [Observability.PropertyNames.Common.MessageId] = emailNotificationLog.MessageId.ToString(),
