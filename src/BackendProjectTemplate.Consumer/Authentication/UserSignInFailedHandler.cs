@@ -21,7 +21,8 @@ public sealed class UserSignInFailedHandler(
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    ILogger<UserSignInFailedHandler> logger) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor, messageContext)
+    ILogger<UserSignInFailedHandler> logger,
+    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<UserSignInFailed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 

@@ -24,7 +24,8 @@ public sealed class UserSignInSuccessfulHandler(
     IRepository<LoginActivity> loginActivityRepository,
     IUnitOfWork unitOfWork,
     IUserAgentParserService userAgentParserService,
-    TimeProvider timeProvider) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext)
+    TimeProvider timeProvider,
+    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<UserSignInSuccessful>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 

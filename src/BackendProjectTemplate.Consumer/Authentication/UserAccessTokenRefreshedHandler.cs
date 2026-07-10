@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
@@ -19,7 +20,8 @@ public sealed class UserAccessTokenRefreshedHandler(
     IRepository<LoginActivity> loginActivityRepository,
     IUnitOfWork unitOfWork,
     IUserAgentParserService userAgentParserService,
-    TimeProvider timeProvider) : BaseMessageHandler<UserAccessTokenRefreshed>(customTelemetryContext, currentActorAccessor, messageContext)
+    TimeProvider timeProvider,
+    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<UserAccessTokenRefreshed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 

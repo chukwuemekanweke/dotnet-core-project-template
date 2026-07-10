@@ -21,6 +21,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<Country> Countries => Set<Country>();
     public DbSet<Currency> Currencies => Set<Currency>();
     public DbSet<CountryCurrency> CountryCurrencies => Set<CountryCurrency>();
+    public DbSet<MessageInbox> MessageInboxes => Set<MessageInbox>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<Provider> Providers => Set<Provider>();
     public DbSet<PaymentProvider> PaymentProviders => Set<PaymentProvider>();

@@ -1,12 +1,10 @@
 using BackendProjectTemplate.Domain.Common.Messaging;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using BackendProjectTemplate.Jobs.OutboxProcessing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Jobs.UnitTests.OutboxProcessing;

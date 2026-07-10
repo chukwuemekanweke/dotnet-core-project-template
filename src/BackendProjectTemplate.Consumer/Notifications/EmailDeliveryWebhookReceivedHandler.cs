@@ -2,6 +2,7 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
@@ -16,12 +17,14 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
     IReadRepository<Provider> providerRepository,
     IRepository<EmailDeliveryWebhookInbox> emailDeliveryWebhookInboxRepository,
     IRepository<EmailNotificationLog> emailNotificationLogRepository,
-    ICurrentActor currentActor,
+    ICurrentActorAccessor currentActorAccessor,
+    IMessageContext messageContext,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider) : IMessageHandler<EmailDeliveryWebhookReceived>
+    TimeProvider timeProvider,
+    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<EmailDeliveryWebhookReceived>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
-    public async Task HandleAsync(EmailDeliveryWebhookReceived message, CancellationToken cancellationToken)
+    protected override async Task HandleAsyncInternal(EmailDeliveryWebhookReceived message, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(message.ProviderMessageId))
         {
@@ -89,7 +92,7 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Notifications.EmailDelivered,
             ObservabilityEventProperties.Create(
-                currentActor,
+                currentActorAccessor,
                 additionalProperties: new Dictionary<string, string>
                 {
                     [Observability.PropertyNames.Common.MessageId] = emailNotificationLog.MessageId.ToString(),

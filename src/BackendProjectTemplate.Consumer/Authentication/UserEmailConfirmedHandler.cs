@@ -1,6 +1,8 @@
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Persistence;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 
 namespace BackendProjectTemplate.Consumer.Authentication;
@@ -9,7 +11,10 @@ public sealed class UserEmailConfirmedHandler(
     ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
-    ILogger<UserEmailConfirmedHandler> logger) : BaseMessageHandler<UserEmailConfirmed>(customTelemetryContext, currentActorAccessor, messageContext)
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider,
+    ILogger<UserEmailConfirmedHandler> logger,
+    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<UserEmailConfirmed>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     protected override Task HandleAsyncInternal(UserEmailConfirmed message, CancellationToken cancellationToken)
     {

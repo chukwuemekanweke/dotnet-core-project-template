@@ -24,7 +24,8 @@ public sealed class UserCreatedHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     IOptions<AuthenticationLockoutOptions> lockoutOptions,
-    ILogger<UserCreatedHandler> logger) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext)
+    ILogger<UserCreatedHandler> logger,
+    IRepository<MessageInbox>? messageInboxRepository = null) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
