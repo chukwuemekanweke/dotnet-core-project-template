@@ -172,5 +172,24 @@ Matching WebAPI request DTO location:
 
 ## Pull Requests
 
-- When asked to write a PR title and description, always use the repository's PR template from `.github/pull_request_template.md`.
-- Do not invent a free-form description when a template exists.
+- When generating a pull request title or description, always use the repository
+  pull request template from `.github/pull_request_template.md` as the structure.
+- Always return the description as Markdown and keep it ready to paste directly
+  into GitHub or a PR editor.
+- When summarizing changes for a branch, review all commits on that branch and
+  reflect the full scope of work in the PR content.
+- Use concise, professional language and tailor the summary to the actual files,
+  features, and impact introduced by the branch.
+- Prefer a title that clearly states the main change and affected area, such as
+  `feat(scope): summary of the change`.
+
+## Documentation voice
+
+- Write documentation and pull request descriptions in the maintainer's human
+  tone: direct, natural, concise, and grounded in the work that actually changed.
+- Write as an engineer explaining the implementation to another engineer. Use
+  plain language, concrete details, and normal sentence structure.
+- Avoid generic filler, marketing language, exaggerated claims, repetitive
+  summaries, and wording that sounds automated or generated.
+- Keep important technical details and tradeoffs, but do not make the writing
+  formal or elaborate when a simpler explanation is clearer.
