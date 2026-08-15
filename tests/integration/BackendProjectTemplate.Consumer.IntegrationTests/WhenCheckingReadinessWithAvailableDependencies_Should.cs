@@ -1,6 +1,6 @@
-using System.Net;
 using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 using Shouldly;
+using System.Net;
 
 namespace BackendProjectTemplate.Consumer.IntegrationTests;
 

@@ -1,5 +1,4 @@
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
-using BackendProjectTemplate.Application.UnitTests.Payments;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Payments.ActivatePaymentProvider;

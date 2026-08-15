@@ -1,7 +1,5 @@
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Providers.Entities;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Providers.ActivateProvider;

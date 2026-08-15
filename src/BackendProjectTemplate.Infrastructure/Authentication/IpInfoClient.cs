@@ -1,6 +1,6 @@
-using System.Text.Json;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 

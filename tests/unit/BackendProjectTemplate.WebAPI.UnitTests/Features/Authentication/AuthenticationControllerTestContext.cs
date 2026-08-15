@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Constants;
+using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExistence;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
@@ -14,9 +15,7 @@ using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using NSubstitute;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication;
 
@@ -55,6 +54,8 @@ internal sealed class AuthenticationControllerTestContext
         StakeholderRepository,
         CustomTelemetryContext,
         UnitOfWork);
+
+    public CheckEmailExistenceHandler CreateCheckEmailExistenceHandler() => new(IdentityService);
 
     public GoogleSignUpHandler CreateGoogleSignUpHandler() => new(
         IdentityService,

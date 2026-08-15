@@ -1,10 +1,11 @@
-using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExistence;
+using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
-using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
+using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
@@ -13,9 +14,7 @@ using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Application.UnitTests.Authentication;
 
@@ -50,6 +49,7 @@ internal sealed class AuthenticationFlowTestContext
         StakeholderRepository,
         CustomTelemetryContext,
         UnitOfWork);
+    public CheckEmailExistenceHandler CreateCheckEmailExistenceHandler() => new(IdentityService);
     public GoogleSignUpHandler CreateGoogleSignUpHandler() => new(
         IdentityService,
         GoogleIdentityTokenService,

@@ -239,6 +239,7 @@ function Test-StagedChanges {
 
 function Invoke-Checks {
     Write-Host "Running repository checks..." -ForegroundColor Cyan
+    Invoke-NativeCommand "dotnet" @("format", "BackendProjectTemplate.slnx", "style", "--no-restore", "--verify-no-changes", "--diagnostics", "IDE0005")
     Invoke-NativeCommand "dotnet" @("build", "BackendProjectTemplate.slnx", "--no-restore")
     Invoke-NativeCommand "dotnet" @("test", "BackendProjectTemplate.slnx", "--no-build")
 }

@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Http.Json;
 using BackendProjectTemplate.Application.Authentication.Constants;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Domain.Authentication.Entities;
@@ -12,6 +10,8 @@ using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests;
 

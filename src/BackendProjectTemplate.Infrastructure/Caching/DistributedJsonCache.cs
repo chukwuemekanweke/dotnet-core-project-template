@@ -1,6 +1,6 @@
-using System.Text.Json;
 using BackendProjectTemplate.Domain.Common.Caching;
 using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.Caching;
 

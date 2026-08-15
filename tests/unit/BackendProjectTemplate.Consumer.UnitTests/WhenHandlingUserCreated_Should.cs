@@ -9,7 +9,6 @@ using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace BackendProjectTemplate.Consumer.UnitTests;

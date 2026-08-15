@@ -1,12 +1,10 @@
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Jobs.Authentication;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Jobs.UnitTests.Authentication.IpAddressLocationEnrichment;
 

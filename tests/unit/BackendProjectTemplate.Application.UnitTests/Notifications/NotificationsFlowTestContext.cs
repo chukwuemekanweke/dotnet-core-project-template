@@ -1,10 +1,8 @@
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using BackendProjectTemplate.Domain.Common.Messaging;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Services;
 using BackendProjectTemplate.Domain.Providers.Entities;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Application.UnitTests.Notifications;
 

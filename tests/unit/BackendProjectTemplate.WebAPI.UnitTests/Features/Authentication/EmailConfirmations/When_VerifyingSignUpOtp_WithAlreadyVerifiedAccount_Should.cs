@@ -1,10 +1,8 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmations;
-using BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication.EmailConfirmations;

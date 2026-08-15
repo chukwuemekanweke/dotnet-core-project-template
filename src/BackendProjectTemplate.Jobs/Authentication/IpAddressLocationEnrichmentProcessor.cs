@@ -1,6 +1,6 @@
-using BackendProjectTemplate.Domain.Authentication.Specifications;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
+using BackendProjectTemplate.Domain.Authentication.Specifications;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using Microsoft.Extensions.Options;

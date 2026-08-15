@@ -1,5 +1,5 @@
-using Mailtrap.Emails.Requests;
 using BackendProjectTemplate.Infrastructure.Notifications;
+using Mailtrap.Emails.Requests;
 using Shouldly;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;

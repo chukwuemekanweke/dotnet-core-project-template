@@ -5,7 +5,6 @@ using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Payments.CreditWallet;

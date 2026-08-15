@@ -13,7 +13,7 @@ public sealed class RateLimitingOptions
 
     public FixedWindowPolicyOptions SignUpPolicy { get; init; } = new(5, 10, 0);
 
-    public FixedWindowPolicyOptions EmailConfirmationPolicy { get; init; } = new(5, 5, 0);
+    public FixedWindowPolicyOptions EmailOperationsPolicy { get; init; } = new(5, 5, 0);
 
     public FixedWindowPolicyOptions PasswordResetPolicy { get; init; } = new(5, 15, 0);
 

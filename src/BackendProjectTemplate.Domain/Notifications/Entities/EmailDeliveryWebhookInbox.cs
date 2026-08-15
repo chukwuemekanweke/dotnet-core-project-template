@@ -1,6 +1,6 @@
 using BackendProjectTemplate.Contracts.Payments;
-using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Entities;
+using BackendProjectTemplate.Domain.Common.Exceptions;
 
 namespace BackendProjectTemplate.Domain.Notifications.Entities;
 

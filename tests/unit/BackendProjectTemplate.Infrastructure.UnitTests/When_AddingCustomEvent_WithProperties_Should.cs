@@ -1,8 +1,8 @@
-using System.Diagnostics;
-using System.Text.Json;
 using BackendProjectTemplate.Infrastructure.Observability;
 using Microsoft.Extensions.Logging;
 using Shouldly;
+using System.Diagnostics;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 

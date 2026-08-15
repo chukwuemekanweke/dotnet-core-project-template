@@ -1,10 +1,10 @@
-using System.Text.Json;
 using BackendProjectTemplate.Contracts.Commands;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
 using NSubstitute;
 using Shouldly;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 

@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Notifications.Entities;
-using Shouldly;
 
 namespace BackendProjectTemplate.Domain.UnitTests;
 

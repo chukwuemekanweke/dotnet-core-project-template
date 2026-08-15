@@ -1,9 +1,7 @@
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
-using BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication.Sessions;

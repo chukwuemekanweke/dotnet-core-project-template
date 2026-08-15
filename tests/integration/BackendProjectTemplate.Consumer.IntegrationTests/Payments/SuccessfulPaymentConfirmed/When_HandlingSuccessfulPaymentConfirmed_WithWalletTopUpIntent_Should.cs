@@ -1,13 +1,11 @@
 using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 using BackendProjectTemplate.Consumer.Payments;
 using BackendProjectTemplate.Contracts.Commands.Payments;
-using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
-using System.Text.Json;
 using Shouldly;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Payments.SuccessfulPaymentConfirmed;
 

@@ -1,7 +1,7 @@
-using System.Linq.Expressions;
-using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence;
 

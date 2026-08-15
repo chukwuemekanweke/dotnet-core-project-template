@@ -1,8 +1,8 @@
-using System.Data.Common;
-using System.Diagnostics;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
+using System.Data.Common;
+using System.Diagnostics;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence.Interceptors;
 

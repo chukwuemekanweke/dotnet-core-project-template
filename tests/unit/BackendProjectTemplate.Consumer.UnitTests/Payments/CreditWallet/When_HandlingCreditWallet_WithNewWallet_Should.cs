@@ -1,4 +1,3 @@
-using BackendProjectTemplate.Consumer.UnitTests.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Shouldly;

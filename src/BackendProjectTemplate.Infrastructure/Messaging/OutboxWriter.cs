@@ -1,10 +1,10 @@
-using System.Text.Json;
-using System.Diagnostics;
 using BackendProjectTemplate.Contracts.Commands;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using System.Diagnostics;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.Messaging;
 

@@ -9,8 +9,8 @@ using BackendProjectTemplate.Infrastructure.Payments;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Infrastructure.Storage;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
-using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
 using BackendProjectTemplate.WebAPI.Infrastructure;
+using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
 

@@ -1,6 +1,4 @@
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
-using Microsoft.Extensions.Logging;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Worker;

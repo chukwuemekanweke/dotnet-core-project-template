@@ -1,16 +1,14 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
-using BackendProjectTemplate.Domain.Common.Notifications;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
-using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
+using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 using BackendProjectTemplate.Infrastructure.Notifications;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NSubstitute;
-using Shouldly;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 

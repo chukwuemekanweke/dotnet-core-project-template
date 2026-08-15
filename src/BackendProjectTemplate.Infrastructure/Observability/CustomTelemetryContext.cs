@@ -1,7 +1,7 @@
-using System.Diagnostics;
-using System.Text.Json;
 using BackendProjectTemplate.Domain.Common.Observability;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.Observability;
 

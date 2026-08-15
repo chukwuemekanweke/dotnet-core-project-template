@@ -1,11 +1,9 @@
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.PasswordResets;
-using BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication.PasswordResets;

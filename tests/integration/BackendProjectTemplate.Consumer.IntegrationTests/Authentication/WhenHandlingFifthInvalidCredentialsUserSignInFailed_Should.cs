@@ -1,4 +1,3 @@
-using System.Text.Json;
 using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
@@ -6,13 +5,14 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Infrastructure.Persistence;
 using Chidelu.Integration.Messaging.RabbitMQ.Core;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using BackendProjectTemplate.Infrastructure.Persistence;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Authentication;
 

@@ -1,6 +1,6 @@
-using System.Security.Cryptography;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Caching;
+using System.Security.Cryptography;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 

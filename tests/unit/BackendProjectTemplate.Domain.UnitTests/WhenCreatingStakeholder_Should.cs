@@ -1,5 +1,4 @@
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using Shouldly;
 
 namespace BackendProjectTemplate.Domain.UnitTests;
 

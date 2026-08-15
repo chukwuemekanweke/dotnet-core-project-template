@@ -8,8 +8,9 @@ This repository is a `.NET 10` backend template. Any agent working here should f
 - Never run `dotnet build` and `dotnet test` in parallel in this repository.
 - Reason: parallel execution can leave `testhost` processes holding DLL locks and cause transient copy failures during build.
 - Preferred verification flow:
-  1. `dotnet build BackendProjectTemplate.slnx --no-restore`
-  2. `dotnet test BackendProjectTemplate.slnx --no-build`
+  1. `dotnet format BackendProjectTemplate.slnx style --no-restore --verify-no-changes --diagnostics IDE0005`
+  2. `dotnet build BackendProjectTemplate.slnx --no-restore`
+  3. `dotnet test BackendProjectTemplate.slnx --no-build`
 
 ## Architecture
 
@@ -165,6 +166,7 @@ Matching WebAPI request DTO location:
 - ASP.NET Core Identity is the authentication base. Do not reintroduce custom authentication flows when built-in Identity behavior is sufficient.
 - Keep application dependencies narrow. If wrapping `UserManager`, expose only the methods the application currently uses.
 - Always simplify type and namespace usage inside files. Do not use fully qualified type names when a `using` directive makes the code clearer.
+- Order `using` directives alphabetically and remove unused `using` directives from every file you create or modify.
 - When multiple types have the same name, prefer `using` aliases for the ambiguous types instead of leaving fully qualified names inline throughout the file.
 - Keep top-level types in separate files. Do not place an interface and its implementation in the same `.cs` file.
 - Enum values should always start from `1` unless an existing enum in the repository already forces a different persisted contract.

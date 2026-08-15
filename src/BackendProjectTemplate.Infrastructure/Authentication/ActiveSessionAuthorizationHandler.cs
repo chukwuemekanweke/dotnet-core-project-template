@@ -1,6 +1,6 @@
-using System.IdentityModel.Tokens.Jwt;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 

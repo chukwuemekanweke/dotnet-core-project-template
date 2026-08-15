@@ -1,10 +1,10 @@
-using System.Security.Cryptography;
-using System.Text;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Specifications;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 

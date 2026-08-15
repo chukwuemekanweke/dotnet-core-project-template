@@ -1,4 +1,3 @@
-using System.Text.Json;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
@@ -6,6 +5,7 @@ using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.WebAPI.Features.Payments.Webhooks.SafeHaven;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Payments.Webhooks.SafeHaven;
 

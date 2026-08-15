@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Http.Json;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -7,6 +5,8 @@ using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Payments.Webhooks.SafeHaven.VirtualAccountTransfer;
 

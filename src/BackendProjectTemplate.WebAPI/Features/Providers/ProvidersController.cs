@@ -2,7 +2,6 @@ using Asp.Versioning;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.WebAPI.Infrastructure;
-using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

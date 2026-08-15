@@ -1,5 +1,5 @@
-using BackendProjectTemplate.Domain.Payments.ReadModels;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Payments.ReadModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence;

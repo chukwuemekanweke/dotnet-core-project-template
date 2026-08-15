@@ -1,9 +1,9 @@
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Text.RegularExpressions;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence;
 

@@ -1,10 +1,9 @@
 using BackendProjectTemplate.Consumer.Notifications;
-using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Notifications;
 using BackendProjectTemplate.Domain.Common.Observability;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Consumer.UnitTests;
 

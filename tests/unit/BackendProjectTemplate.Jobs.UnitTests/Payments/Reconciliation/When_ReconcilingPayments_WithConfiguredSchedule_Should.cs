@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Application;
-using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Messaging;
-using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;

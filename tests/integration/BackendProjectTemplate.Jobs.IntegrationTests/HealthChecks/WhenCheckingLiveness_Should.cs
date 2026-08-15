@@ -1,6 +1,6 @@
-using System.Net;
 using BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 using Shouldly;
+using System.Net;
 
 namespace BackendProjectTemplate.Jobs.IntegrationTests.HealthChecks;
 

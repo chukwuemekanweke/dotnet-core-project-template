@@ -1,5 +1,5 @@
-using BackendProjectTemplate.Domain.Notifications.Services;
 using BackendProjectTemplate.Domain.Common;
+using BackendProjectTemplate.Domain.Notifications.Services;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
