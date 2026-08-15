@@ -37,6 +37,9 @@ jobs:
       - name: Restore solution
         run: dotnet restore "${{ env.SOLUTION }}"
 
+      - name: Check using directives
+        run: dotnet format "${{ env.SOLUTION }}" style --no-restore --verify-no-changes --diagnostics IDE0005
+
       - name: Build solution (Release)
         run: dotnet build "${{ env.SOLUTION }}" --configuration Release --no-restore
 

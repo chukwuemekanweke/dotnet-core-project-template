@@ -1,7 +1,6 @@
-using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
-using BackendProjectTemplate.Application.UnitTests.Payments;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Services;

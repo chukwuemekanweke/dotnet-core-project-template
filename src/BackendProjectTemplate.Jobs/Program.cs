@@ -1,9 +1,9 @@
 using BackendProjectTemplate.Application;
-using BackendProjectTemplate.Jobs.Authentication;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Payments;
 using BackendProjectTemplate.Infrastructure.Persistence;
+using BackendProjectTemplate.Jobs.Authentication;
 using BackendProjectTemplate.Jobs.HealthChecks;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using BackendProjectTemplate.Jobs.Observability;

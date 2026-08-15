@@ -1,7 +1,3 @@
-using System.Net;
-using System.Net.Http.Json;
-using System.Security.Cryptography;
-using System.Text;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -9,6 +5,10 @@ using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Net;
+using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Payments.Webhooks.Credo;
 

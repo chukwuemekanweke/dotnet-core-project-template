@@ -1,4 +1,3 @@
-using BackendProjectTemplate.Consumer.UnitTests.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Payments.ActivateSubscription;

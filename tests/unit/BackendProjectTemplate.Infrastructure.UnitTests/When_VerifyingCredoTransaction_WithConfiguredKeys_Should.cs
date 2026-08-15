@@ -1,9 +1,8 @@
-using System.Net;
-using System.Net.Http;
-using System.Text;
 using BackendProjectTemplate.Infrastructure.Payments.Credo;
 using Microsoft.Extensions.Options;
 using Shouldly;
+using System.Net;
+using System.Text;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 

@@ -1,6 +1,5 @@
-using System.Diagnostics;
-using BackendProjectTemplate.Contracts.Common;
 using BackendProjectTemplate.Contracts.Commands;
+using BackendProjectTemplate.Contracts.Common;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -9,6 +8,7 @@ using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
+using System.Diagnostics;
 
 namespace BackendProjectTemplate.Consumer;
 

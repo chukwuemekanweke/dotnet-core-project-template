@@ -1,13 +1,9 @@
 using BackendProjectTemplate.Consumer.Notifications;
 using BackendProjectTemplate.Domain.Common.Auditing;
-using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Notifications.Specifications;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
-using Microsoft.Extensions.Logging;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Notifications;
 

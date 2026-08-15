@@ -1,17 +1,14 @@
-using System.Net;
+using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
-using BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
 using Shouldly;
+using System.Net;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication.Sessions;
 

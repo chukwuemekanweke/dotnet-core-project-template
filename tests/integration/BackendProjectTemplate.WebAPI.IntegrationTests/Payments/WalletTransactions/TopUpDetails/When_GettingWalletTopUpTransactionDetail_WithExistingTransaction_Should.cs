@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Http.Json;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
 using BackendProjectTemplate.Contracts.Payments;
@@ -17,6 +15,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Payments.WalletTransactions.TopUpDetails;
 

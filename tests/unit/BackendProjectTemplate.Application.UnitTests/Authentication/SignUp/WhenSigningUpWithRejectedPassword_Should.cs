@@ -4,7 +4,6 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Observability;
 using Microsoft.AspNetCore.Identity;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests;

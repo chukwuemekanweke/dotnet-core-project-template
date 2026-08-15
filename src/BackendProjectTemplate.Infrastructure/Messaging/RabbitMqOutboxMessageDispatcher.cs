@@ -1,11 +1,11 @@
+using BackendProjectTemplate.Domain.Common.Messaging;
+using Chidelu.Integration.Messaging.RabbitMQ.Core;
+using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
+using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
-using BackendProjectTemplate.Domain.Common.Messaging;
-using Chidelu.Integration.Messaging.RabbitMQ.Core;
 using DomainObservability = BackendProjectTemplate.Domain.Common.Observability.Observability;
-using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Infrastructure.Messaging;
 

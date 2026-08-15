@@ -1,4 +1,3 @@
-using System.Text.Json;
 using BackendProjectTemplate.Application;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -10,6 +9,7 @@ using BackendProjectTemplate.Jobs.Payments;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Text.Json;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;

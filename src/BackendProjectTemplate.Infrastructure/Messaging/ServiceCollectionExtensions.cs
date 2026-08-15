@@ -1,8 +1,8 @@
 using BackendProjectTemplate.Domain.Common.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Infrastructure.Messaging;
 

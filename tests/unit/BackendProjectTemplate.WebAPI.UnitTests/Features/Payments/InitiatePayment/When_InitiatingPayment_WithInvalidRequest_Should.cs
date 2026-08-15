@@ -1,4 +1,3 @@
-using NSubstitute;
 using BackendProjectTemplate.WebAPI.Features.Payments.InitiatePayment;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;

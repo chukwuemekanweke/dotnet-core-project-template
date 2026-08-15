@@ -1,4 +1,3 @@
-using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
 using BackendProjectTemplate.Infrastructure.Messaging;
@@ -12,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using NSubstitute;
-using AppDbContext = BackendProjectTemplate.Infrastructure.Persistence.AppDbContext;
 
 namespace BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 

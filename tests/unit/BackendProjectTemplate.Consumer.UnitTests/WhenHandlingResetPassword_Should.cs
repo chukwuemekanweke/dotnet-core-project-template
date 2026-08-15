@@ -4,12 +4,9 @@ using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Formatting;
-using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Consumer.UnitTests;
 

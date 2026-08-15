@@ -1,5 +1,5 @@
-global using Xunit;
-global using BackendProjectTemplate.Domain.Common.Persistence;
 global using BackendProjectTemplate.Domain.Common.Messaging;
-global using NSubstitute;
+global using BackendProjectTemplate.Domain.Common.Persistence;
 global using Microsoft.Extensions.Logging;
+global using NSubstitute;
+global using Xunit;

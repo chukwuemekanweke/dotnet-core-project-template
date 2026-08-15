@@ -1,12 +1,12 @@
 using BackendProjectTemplate.Consumer.IntegrationTests.Infrastructure;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Notifications.Entities;
+using BackendProjectTemplate.Infrastructure.Persistence;
 using Chidelu.Integration.Messaging.RabbitMQ.Core;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher;
 using Chidelu.Integration.Messaging.RabbitMQ.Publisher.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using BackendProjectTemplate.Infrastructure.Persistence;
 using Shouldly;
 using EmailDeliveryWebhookReceivedEvent = BackendProjectTemplate.Contracts.Events.EmailDeliveryWebhookReceived;
 

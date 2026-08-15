@@ -1,5 +1,4 @@
 using BackendProjectTemplate.Contracts.Events;
-using BackendProjectTemplate.Application.UnitTests.Payments;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;

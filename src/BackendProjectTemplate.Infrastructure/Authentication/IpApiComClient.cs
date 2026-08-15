@@ -1,5 +1,5 @@
-using System.Text.Json;
 using BackendProjectTemplate.Domain.Authentication.Services;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 

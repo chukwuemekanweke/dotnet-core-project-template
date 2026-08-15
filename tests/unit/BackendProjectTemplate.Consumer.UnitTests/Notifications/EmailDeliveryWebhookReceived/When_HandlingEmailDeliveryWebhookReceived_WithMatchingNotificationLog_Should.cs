@@ -3,7 +3,6 @@ using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Notifications.Specifications;
 using BackendProjectTemplate.Domain.Providers.Entities;
-using NSubstitute;
 using Shouldly;
 using EmailDeliveryWebhookReceivedEvent = BackendProjectTemplate.Contracts.Events.EmailDeliveryWebhookReceived;
 

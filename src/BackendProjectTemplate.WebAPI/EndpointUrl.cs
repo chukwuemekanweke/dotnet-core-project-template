@@ -20,6 +20,12 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
     }
 
+    public static class EmailExistenceChecks
+    {
+        public const string Route = $"api/{Versions.V1Route}/authentication/email-existence-checks";
+        public static readonly string V1 = ToV1(Route);
+    }
+
     public static class Sessions
     {
         public const string Route = $"api/{Versions.V1Route}/authentication/sessions";

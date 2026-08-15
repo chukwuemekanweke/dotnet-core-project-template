@@ -1,18 +1,16 @@
-using System.Net;
-using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Messaging;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.EmailNotifications.Webhooks.Mailtrap;
 

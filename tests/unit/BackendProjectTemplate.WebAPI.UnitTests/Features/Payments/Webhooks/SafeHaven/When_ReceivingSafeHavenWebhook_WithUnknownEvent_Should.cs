@@ -1,6 +1,6 @@
-using System.Text.Json;
 using BackendProjectTemplate.WebAPI.Features.Payments.Webhooks.SafeHaven;
 using Shouldly;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Payments.Webhooks.SafeHaven;
 

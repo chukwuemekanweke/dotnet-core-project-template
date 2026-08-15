@@ -1,8 +1,8 @@
+using BackendProjectTemplate.Infrastructure.Payments.SafeHaven.Payloads;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using BackendProjectTemplate.Infrastructure.Payments.SafeHaven.Payloads;
-using Microsoft.Extensions.Options;
 
 namespace BackendProjectTemplate.Infrastructure.Payments.SafeHaven;
 

@@ -1,15 +1,11 @@
-using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Domain.Authentication.Entities;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
-using BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication.Registrations;

@@ -1,7 +1,7 @@
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
-using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;

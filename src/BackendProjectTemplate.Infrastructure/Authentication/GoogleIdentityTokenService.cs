@@ -1,9 +1,9 @@
-using System.IdentityModel.Tokens.Jwt;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 

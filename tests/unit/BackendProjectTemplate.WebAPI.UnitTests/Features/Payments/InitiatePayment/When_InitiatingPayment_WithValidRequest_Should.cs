@@ -1,4 +1,3 @@
-using NSubstitute;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;

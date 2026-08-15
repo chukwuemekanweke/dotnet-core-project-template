@@ -1,10 +1,8 @@
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.WebAPI.Features.Providers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Providers;

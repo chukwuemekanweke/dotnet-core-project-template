@@ -1,8 +1,6 @@
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
 using BackendProjectTemplate.Domain.Common.Caching;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.ReferenceData.GetCountries;

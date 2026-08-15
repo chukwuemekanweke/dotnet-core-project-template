@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Commands.Authentication;
-using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;

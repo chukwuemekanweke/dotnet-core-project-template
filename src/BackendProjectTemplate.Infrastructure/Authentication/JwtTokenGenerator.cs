@@ -1,10 +1,10 @@
+using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Authentication;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Authentication.Entities;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 

@@ -1,10 +1,8 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.UploadAvatar;

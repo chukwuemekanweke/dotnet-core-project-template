@@ -1,10 +1,10 @@
-using System.Security.Claims;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Shouldly;
+using System.Security.Claims;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests;
 

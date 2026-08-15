@@ -1,10 +1,8 @@
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Payments.Services;
-using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.Infrastructure.Payments.Credo;
 using Microsoft.Extensions.Options;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;

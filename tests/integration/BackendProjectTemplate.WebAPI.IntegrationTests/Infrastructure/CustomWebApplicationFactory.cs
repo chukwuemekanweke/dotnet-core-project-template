@@ -1,3 +1,5 @@
+using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Payments.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Caching.Distributed;
@@ -5,8 +7,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using StackExchange.Redis;
-using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Payments.Services;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 

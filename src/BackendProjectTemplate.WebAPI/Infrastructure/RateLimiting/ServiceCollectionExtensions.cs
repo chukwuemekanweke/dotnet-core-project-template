@@ -1,7 +1,6 @@
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 
@@ -16,7 +15,7 @@ public static class ServiceCollectionExtensions
         Validate(options.SignInPolicy, nameof(RateLimitingOptions.SignInPolicy));
         Validate(options.RefreshSessionPolicy, nameof(RateLimitingOptions.RefreshSessionPolicy));
         Validate(options.SignUpPolicy, nameof(RateLimitingOptions.SignUpPolicy));
-        Validate(options.EmailConfirmationPolicy, nameof(RateLimitingOptions.EmailConfirmationPolicy));
+        Validate(options.EmailOperationsPolicy, nameof(RateLimitingOptions.EmailOperationsPolicy));
         Validate(options.PasswordResetPolicy, nameof(RateLimitingOptions.PasswordResetPolicy));
 
         services.Configure<RateLimitingOptions>(configuration.GetSection(RateLimitingOptions.SectionName));
@@ -38,8 +37,8 @@ public static class ServiceCollectionExtensions
                 context => CreateFixedWindowPartition(options.SignUpPolicy, ResolveClientIpPartitionKey(context)));
 
             rateLimiterOptions.AddPolicy(
-                RateLimitingPolicyNames.EmailConfirmationPolicy,
-                context => CreateFixedWindowPartition(options.EmailConfirmationPolicy, ResolveClientIpPartitionKey(context)));
+                RateLimitingPolicyNames.EmailOperationsPolicy,
+                context => CreateFixedWindowPartition(options.EmailOperationsPolicy, ResolveClientIpPartitionKey(context)));
 
             rateLimiterOptions.AddPolicy(
                 RateLimitingPolicyNames.PasswordResetPolicy,

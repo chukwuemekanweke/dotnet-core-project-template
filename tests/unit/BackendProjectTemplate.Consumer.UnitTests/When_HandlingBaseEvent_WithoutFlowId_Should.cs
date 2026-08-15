@@ -1,9 +1,7 @@
-using BackendProjectTemplate.Consumer;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Consumer.UnitTests;
 

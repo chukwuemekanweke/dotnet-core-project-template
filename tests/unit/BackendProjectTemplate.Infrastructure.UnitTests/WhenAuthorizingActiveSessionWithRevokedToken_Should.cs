@@ -1,10 +1,10 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using NSubstitute;
 using Shouldly;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 

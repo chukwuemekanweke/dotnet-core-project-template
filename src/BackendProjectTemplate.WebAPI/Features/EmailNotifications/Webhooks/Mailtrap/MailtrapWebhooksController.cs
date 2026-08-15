@@ -2,7 +2,6 @@ using Asp.Versioning;
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 

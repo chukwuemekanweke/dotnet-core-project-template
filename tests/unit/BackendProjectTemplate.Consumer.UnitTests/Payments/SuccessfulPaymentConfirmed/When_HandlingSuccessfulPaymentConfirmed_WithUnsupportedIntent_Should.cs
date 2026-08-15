@@ -1,5 +1,3 @@
-using BackendProjectTemplate.Contracts.Events;
-using BackendProjectTemplate.Consumer.UnitTests.Payments;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 using Shouldly;
 

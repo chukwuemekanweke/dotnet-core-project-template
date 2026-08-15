@@ -1,4 +1,3 @@
-using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common;
 using BackendProjectTemplate.Domain.Notifications.Entities;

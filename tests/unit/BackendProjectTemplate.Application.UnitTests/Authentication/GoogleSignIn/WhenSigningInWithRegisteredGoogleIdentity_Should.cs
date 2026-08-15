@@ -3,9 +3,7 @@ using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests;

@@ -4,14 +4,10 @@ using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
-using NSubstitute;
 
 namespace BackendProjectTemplate.Consumer.UnitTests;
 

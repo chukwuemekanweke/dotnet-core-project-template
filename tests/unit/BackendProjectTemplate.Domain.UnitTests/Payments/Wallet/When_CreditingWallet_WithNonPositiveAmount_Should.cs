@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Payments.Entities;
-using Shouldly;
 
 namespace BackendProjectTemplate.Domain.UnitTests.Payments.Wallets;
 

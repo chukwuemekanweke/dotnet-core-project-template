@@ -1,4 +1,3 @@
-using System.Text.Json;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common;
@@ -9,6 +8,7 @@ using BackendProjectTemplate.WebAPI.Features.Payments.Webhooks.Credo;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Payments.Webhooks.Credo;
 

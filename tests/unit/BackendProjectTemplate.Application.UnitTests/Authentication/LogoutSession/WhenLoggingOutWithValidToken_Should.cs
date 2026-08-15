@@ -1,7 +1,6 @@
-using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
-using NSubstitute;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests;

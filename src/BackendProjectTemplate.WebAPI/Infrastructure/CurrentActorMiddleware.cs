@@ -1,10 +1,9 @@
-using System.Diagnostics;
-using System.Security.Claims;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using System.Security.Claims;
 
 namespace BackendProjectTemplate.WebAPI.Infrastructure;
 

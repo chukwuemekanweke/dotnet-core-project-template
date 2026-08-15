@@ -1,10 +1,8 @@
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
-using BackendProjectTemplate.Application.UnitTests.Payments;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
-using BackendProjectTemplate.Domain.Payments.Services;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Payments.ProcessSafeHavenWebhook;

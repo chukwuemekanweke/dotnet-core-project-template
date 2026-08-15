@@ -1,7 +1,5 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
-using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
-using BackendProjectTemplate.Consumer.UnitTests.Payments;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Payments.SuccessfulPaymentConfirmed;
 

@@ -2,7 +2,6 @@ using BackendProjectTemplate.Application.Authentication.Features.CompletePasswor
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests;

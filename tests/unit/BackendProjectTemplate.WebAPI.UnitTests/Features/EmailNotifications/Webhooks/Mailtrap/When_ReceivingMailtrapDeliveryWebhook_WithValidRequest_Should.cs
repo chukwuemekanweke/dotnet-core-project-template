@@ -1,4 +1,3 @@
-using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common;

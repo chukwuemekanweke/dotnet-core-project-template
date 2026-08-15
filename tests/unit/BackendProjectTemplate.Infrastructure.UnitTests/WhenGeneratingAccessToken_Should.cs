@@ -1,9 +1,9 @@
-using System.IdentityModel.Tokens.Jwt;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using Microsoft.Extensions.Options;
 using Shouldly;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests;
 

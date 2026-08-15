@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Consumer.Payments;
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
-using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;

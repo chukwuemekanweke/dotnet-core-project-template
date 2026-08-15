@@ -5,13 +5,13 @@ using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
+using EmailDeliveryWebhookReceivedEvent = BackendProjectTemplate.Contracts.Events.EmailDeliveryWebhookReceived;
 using ResetPassword = BackendProjectTemplate.Contracts.Commands.Authentication.ResetPasswordCommand;
 using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications.SendNotificationCommand;
+using SuccessfulPaymentConfirmedEvent = BackendProjectTemplate.Contracts.Events.SuccessfulPaymentConfirmed;
 using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.UserAccessTokenRefreshed;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 using UserEmailConfirmedEvent = BackendProjectTemplate.Contracts.Events.UserEmailConfirmed;
-using SuccessfulPaymentConfirmedEvent = BackendProjectTemplate.Contracts.Events.SuccessfulPaymentConfirmed;
-using EmailDeliveryWebhookReceivedEvent = BackendProjectTemplate.Contracts.Events.EmailDeliveryWebhookReceived;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
 using UserSignInSuccessfulEvent = BackendProjectTemplate.Contracts.Events.UserSignInSuccessful;
 

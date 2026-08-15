@@ -1,5 +1,5 @@
-using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using Microsoft.AspNetCore.Identity;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;

@@ -1,5 +1,4 @@
 using BackendProjectTemplate.Domain.Authentication.Entities;
-using Shouldly;
 
 namespace BackendProjectTemplate.Domain.UnitTests;
 

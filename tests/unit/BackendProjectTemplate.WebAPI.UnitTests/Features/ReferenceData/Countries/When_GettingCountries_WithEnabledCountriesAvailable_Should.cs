@@ -1,10 +1,8 @@
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
 using BackendProjectTemplate.Domain.Common.Caching;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.WebAPI.Features.ReferenceData.Countries;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
 using Shouldly;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.ReferenceData.Countries;
