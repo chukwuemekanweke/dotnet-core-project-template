@@ -1,16 +1,17 @@
-using System.Text;
+using BackendProjectTemplate.Application.Stakeholders.Features.GetProfile;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
 using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
+using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
+using System.Text;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Stakeholders.Profiles;
 
@@ -39,9 +40,11 @@ public sealed class When_UploadingAvatar_WithValidImage_Should
             .Returns("https://example.com/avatar.png");
 
         var sut = new ProfilesController(
+            new GetProfileHandler(Substitute.For<IStakeholderReadModelRepository>()),
             new UploadAvatarHandler(stakeholderRepository, objectStorageService, customTelemetryContext, unitOfWork),
             new UpdateProfileHandler(stakeholderRepository, customTelemetryContext, unitOfWork),
-            currentActor);
+            currentActor,
+            NullLogger<ProfilesController>.Instance);
 
         var result = await sut.UploadAvatar(new UploadAvatarRequest(avatar), CancellationToken.None);
 

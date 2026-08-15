@@ -1,9 +1,9 @@
 using Asp.Versioning;
-using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
+using BackendProjectTemplate.Application.Stakeholders.Features.GetProfile;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
+using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,10 +14,45 @@ namespace BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 [Authorize(Policy = AuthorizationPolicyNames.RequireActiveSession)]
 [Route($"{EndpointUrl.Stakeholders.Route}/me/profile")]
 public sealed class ProfilesController(
+    GetProfileHandler getProfileHandler,
     UploadAvatarHandler uploadAvatarHandler,
     UpdateProfileHandler updateProfileHandler,
-    ICurrentActor currentActor) : ControllerBase
+    ICurrentActor currentActor,
+    ILogger<ProfilesController> logger) : ControllerBase
 {
+    [HttpGet]
+    [ProducesResponseType<GetProfileResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GetProfileResponse>> GetProfile(
+        CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(currentActor.ActorId, out var stakeholderId))
+        {
+            logger.LogError(
+                "Unable to resolve the authenticated stakeholder from ActorId {ActorId}.",
+                currentActor.ActorId);
+            return Unauthorized();
+        }
+
+        var actorContext = new ActorContext(
+            stakeholderId,
+            currentActor.TenantId,
+            currentActor.CorrelationId,
+            currentActor.FlowId);
+
+        var result = await getProfileHandler.HandleAsync(
+            new GetProfileQuery(actorContext),
+            cancellationToken);
+
+        return result.Status switch
+        {
+            GetProfileStatus.Success => Ok(result.Profile),
+            GetProfileStatus.NotAuthenticated => Unauthorized(),
+            _ => NotFound()
+        };
+    }
+
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
