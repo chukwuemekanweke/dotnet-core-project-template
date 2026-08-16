@@ -29,6 +29,6 @@ public sealed class When_CompletingAvatarUpload_WithMismatchedSignature_Should
         result.Status.ShouldBe(CompleteAvatarUploadStatus.InvalidFile);
         upload.Status.ShouldBe(AvatarUploadStatus.Rejected);
         await context.ObjectStorageService.DidNotReceiveWithAnyArgs()
-            .PromotePrivateObjectToPublicAsync(default!, default);
+            .PromotePrivateObjectAsync(default!, default);
     }
 }

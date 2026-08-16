@@ -94,7 +94,9 @@ Configure an R2 lifecycle rule that deletes objects under this prefix after a sh
 {ApplicationFolder}/quarantine/avatars/
 ```
 
-After completion, the API records a `DeleteQuarantinedAvatarObject` command in the outbox with the avatar state change. The Consumer handles that command and deletes the private object through the configured storage provider. The lifecycle rule remains the fallback for abandoned uploads or commands that exhaust their retries. Keep the private bucket non-public; only validated copies belong in the configured public bucket.
+After completion, the API records a `DeleteQuarantinedObject` command in the outbox with the upload state change. The Consumer handles that reusable command and deletes the private object through the configured storage provider. The lifecycle rule remains the fallback for abandoned uploads or commands that exhaust their retries. Keep the private bucket non-public; only validated copies belong in the configured public bucket.
+
+The presigned upload workflow is implemented by `FileUploadService`. Feature modules provide an `IFileUploadPolicy` that defines their size limit, allowed content types and extensions, signature validation, expiry, object-key layout, and whether the validated object is promoted to public or private storage. The feature remains responsible for its own authorization, upload record, domain state changes, and use of the completed object. `AvatarUploadPolicy` is the profile-avatar implementation; document modules can provide their own policy without duplicating storage validation and promotion logic.
 
 ## Git workflow automation
 

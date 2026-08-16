@@ -79,7 +79,7 @@ public sealed class When_DeletingQuarantinedAvatarObject_WithExistingObject_Shou
         var uploadId = Guid.CreateVersion7();
         var tenantId = Guid.CreateVersion7();
         var objectKey = $"quarantine/avatars/tenants/{tenantId}/{uploadId:N}.png";
-        var command = new DeleteQuarantinedAvatarObject(uploadId, objectKey)
+        var command = new DeleteQuarantinedObject(uploadId, objectKey)
         {
             MessageId = Guid.CreateVersion7(),
             StakeholderId = Guid.CreateVersion7(),
@@ -93,7 +93,7 @@ public sealed class When_DeletingQuarantinedAvatarObject_WithExistingObject_Shou
             .RespondWith(Response.Create().WithStatusCode(HttpStatusCode.NoContent));
 
         using var scope = CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<DeleteQuarantinedAvatarObjectHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<DeleteQuarantinedObjectHandler>();
         await handler.HandleAsync(command, CancellationToken.None);
 
         _storageServer.LogEntries.Count(entry =>

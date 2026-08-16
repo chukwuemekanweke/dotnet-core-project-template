@@ -1,6 +1,7 @@
+using BackendProjectTemplate.Application.Common.FileUploads;
+using BackendProjectTemplate.Application.Stakeholders.AvatarUploads;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 
 namespace BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUpload;
@@ -8,20 +9,11 @@ namespace BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarU
 public sealed class CreateAvatarUploadHandler(
     IRepository<Stakeholder> stakeholderRepository,
     IRepository<AvatarUpload> avatarUploadRepository,
-    IObjectStorageService objectStorageService,
+    FileUploadService fileUploadService,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
-    private const long MaxAvatarFileSizeBytes = 2 * 1024 * 1024;
-    private static readonly IReadOnlyDictionary<string, string> AllowedContentTypes =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["image/jpeg"] = ".jpg",
-            ["image/png"] = ".png",
-            ["image/webp"] = ".webp"
-        };
-
     public async Task<CreateAvatarUploadResult> HandleAsync(
         CreateAvatarUploadCommand command,
         CancellationToken cancellationToken)
@@ -33,61 +25,50 @@ public sealed class CreateAvatarUploadHandler(
         }
 
         var stakeholderId = command.ActorContext.StakeholderId.Value;
-        if (string.IsNullOrWhiteSpace(command.FileName) ||
-            command.FileName.Length > 255 ||
-            string.IsNullOrWhiteSpace(command.ContentType) ||
-            command.ContentLength <= 0 ||
-            command.ContentLength > MaxAvatarFileSizeBytes)
+        var tenantId = command.ActorContext.TenantId.Value;
+        var preparation = fileUploadService.Prepare(
+            new FileUploadPreparationRequest(
+                tenantId,
+                stakeholderId,
+                command.FileName,
+                command.ContentType,
+                command.ContentLength),
+            AvatarUploadPolicy.Instance,
+            timeProvider.GetUtcNow());
+        if (!preparation.IsValid)
         {
             RecordFailure(command, stakeholderId, ObservabilityFailureReasons.InvalidFile);
             return new CreateAvatarUploadResult(
                 CreateAvatarUploadStatus.InvalidFile,
-                Error: "Avatar must be a JPEG, PNG, or WEBP file with size up to 2 MB.");
-        }
-
-        var contentType = command.ContentType.Trim().ToLowerInvariant();
-        if (!AllowedContentTypes.TryGetValue(contentType, out var extension))
-        {
-            RecordFailure(command, stakeholderId, ObservabilityFailureReasons.InvalidFile);
-            return new CreateAvatarUploadResult(
-                CreateAvatarUploadStatus.InvalidFile,
-                Error: "Avatar must be a JPEG, PNG, or WEBP file with size up to 2 MB.");
+                Error: preparation.Error);
         }
 
         var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId, cancellationToken);
-        if (stakeholder is null || stakeholder.TenantId != command.ActorContext.TenantId.Value)
+        if (stakeholder is null || stakeholder.TenantId != tenantId)
         {
             RecordFailure(command, stakeholderId, ObservabilityFailureReasons.StakeholderNotFound);
             return new CreateAvatarUploadResult(CreateAvatarUploadStatus.StakeholderNotFound);
         }
 
-        var expiresAtUtc = timeProvider.GetUtcNow().AddMinutes(10);
-        var uploadId = Guid.CreateVersion7();
-        var quarantineObjectKey =
-            $"quarantine/avatars/tenants/{stakeholder.TenantId}/stakeholders/{stakeholder.Id}/{uploadId:N}{extension}";
-        var finalObjectKey =
-            $"tenants/{stakeholder.TenantId}/stakeholders/{stakeholder.Id}/avatar/{uploadId:N}{extension}";
         var upload = AvatarUpload.Create(
-            uploadId,
+            preparation.UploadId!.Value,
             stakeholder.Id,
             stakeholder.TenantId,
-            command.FileName.Trim(),
-            contentType,
-            command.ContentLength,
-            extension,
-            quarantineObjectKey,
-            finalObjectKey,
-            expiresAtUtc);
+            preparation.OriginalFileName!,
+            preparation.ContentType!,
+            preparation.ContentLength!.Value,
+            preparation.FileExtension!,
+            preparation.QuarantineObjectKey!,
+            preparation.FinalObjectKey!,
+            preparation.ExpiresAtUtc!.Value);
 
         await avatarUploadRepository.AddAsync(upload, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var presignedUpload = await objectStorageService.CreatePrivatePresignedUploadAsync(
-            new ObjectStoragePresignedUploadRequest(upload.QuarantineObjectKey, contentType, expiresAtUtc),
-            cancellationToken);
+        var presignedUpload = await fileUploadService.CreatePresignedUploadAsync(preparation, cancellationToken);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.AvatarUploadInitiated,
-            CreateEventProperties(command, stakeholderId, upload.Id, contentType, command.ContentLength));
+            CreateEventProperties(command, stakeholderId, upload.Id, preparation.ContentType!, command.ContentLength));
 
         return new CreateAvatarUploadResult(
             CreateAvatarUploadStatus.Success,

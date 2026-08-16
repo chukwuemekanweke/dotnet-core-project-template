@@ -1,8 +1,9 @@
+using BackendProjectTemplate.Application.Common.FileUploads;
+using BackendProjectTemplate.Application.Stakeholders.AvatarUploads;
 using BackendProjectTemplate.Contracts.Commands.Storage;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
@@ -11,14 +12,12 @@ namespace BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvata
 public sealed class CompleteAvatarUploadHandler(
     IRepository<Stakeholder> stakeholderRepository,
     IRepository<AvatarUpload> avatarUploadRepository,
-    IObjectStorageService objectStorageService,
+    FileUploadService fileUploadService,
     ICommandSender commandSender,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
-    private const long MaxAvatarFileSizeBytes = 2 * 1024 * 1024;
-
     public async Task<CompleteAvatarUploadResult> HandleAsync(
         CompleteAvatarUploadCommand command,
         CancellationToken cancellationToken)
@@ -65,58 +64,25 @@ public sealed class CompleteAvatarUploadHandler(
             return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.Expired, Error: "Avatar upload has expired.");
         }
 
-        var metadata = await objectStorageService.GetPrivateObjectMetadataAsync(
-            upload.QuarantineObjectKey,
+        var completion = await fileUploadService.CompleteAsync(
+            new FileUploadCompletionRequest(
+                upload.QuarantineObjectKey,
+                upload.FinalObjectKey,
+                upload.ExpectedContentType,
+                upload.ExpectedContentLength),
+            AvatarUploadPolicy.Instance,
             cancellationToken);
-        if (metadata is null ||
-            metadata.ContentLength <= 0 ||
-            metadata.ContentLength > MaxAvatarFileSizeBytes ||
-            metadata.ContentLength != upload.ExpectedContentLength ||
-            !string.Equals(metadata.ContentType.Trim(), upload.ExpectedContentType, StringComparison.OrdinalIgnoreCase) ||
-            string.IsNullOrWhiteSpace(metadata.ETag))
-        {
-            return await RejectAsync(upload, command, "invalid_metadata", cancellationToken);
-        }
-
-        byte[] signature;
-        try
-        {
-            signature = await objectStorageService.ReadPrivateObjectRangeAsync(
-                new ObjectStorageRangeReadRequest(
-                    upload.QuarantineObjectKey,
-                    0,
-                    AvatarFileSignatureValidator.RequiredByteCount - 1,
-                    metadata.ETag),
-                cancellationToken);
-        }
-        catch (ObjectStoragePreconditionFailedException)
+        if (completion.Status == FileUploadCompletionStatus.ObjectChanged)
         {
             return await RejectChangedAsync(upload, command, cancellationToken);
         }
-
-        if (!AvatarFileSignatureValidator.Matches(upload.ExpectedContentType, signature))
+        if (completion.Status != FileUploadCompletionStatus.Success)
         {
-            return await RejectAsync(upload, command, "invalid_signature", cancellationToken);
+            return await RejectAsync(upload, command, completion.FailureReason!, cancellationToken);
         }
 
-        string finalUrl;
-        try
-        {
-            finalUrl = await objectStorageService.PromotePrivateObjectToPublicAsync(
-                new ObjectStoragePromotionRequest(
-                    upload.QuarantineObjectKey,
-                    upload.FinalObjectKey,
-                    metadata.ETag,
-                    upload.ExpectedContentType),
-                cancellationToken);
-        }
-        catch (ObjectStoragePreconditionFailedException)
-        {
-            return await RejectChangedAsync(upload, command, cancellationToken);
-        }
-
-        stakeholder.SetAvatarUrl(finalUrl);
-        upload.MarkCompleted(finalUrl, metadata.ETag);
+        stakeholder.SetAvatarUrl(completion.FinalUrl!);
+        upload.MarkCompleted(completion.FinalUrl!, completion.ValidatedETag!);
         await QueueQuarantineDeletionAsync(upload, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         customTelemetryContext.AddCustomEvent(
@@ -129,7 +95,7 @@ public sealed class CompleteAvatarUploadHandler(
                     [Observability.PropertyNames.Common.UploadId] = upload.Id.ToString()
                 }));
 
-        return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.Success, finalUrl);
+        return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.Success, completion.FinalUrl);
     }
 
     private async Task<CompleteAvatarUploadResult> RejectAsync(
@@ -160,7 +126,7 @@ public sealed class CompleteAvatarUploadHandler(
 
     private Task QueueQuarantineDeletionAsync(AvatarUpload upload, CancellationToken cancellationToken) =>
         commandSender.SendAsync(
-            new DeleteQuarantinedAvatarObject(upload.Id, upload.QuarantineObjectKey)
+            new DeleteQuarantinedObject(upload.Id, upload.QuarantineObjectKey)
             {
                 StakeholderId = upload.StakeholderId,
                 TenantId = upload.TenantId

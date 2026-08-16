@@ -22,7 +22,7 @@ public sealed class When_CompletingAvatarUpload_WithExpiredUpload_Should
         result.Status.ShouldBe(CompleteAvatarUploadStatus.Expired);
         upload.Status.ShouldBe(AvatarUploadStatus.Expired);
         await context.CommandSender.Received(1).SendAsync(
-            Arg.Is<DeleteQuarantinedAvatarObject>(command => command.ObjectKey == upload.QuarantineObjectKey),
+            Arg.Is<DeleteQuarantinedObject>(command => command.ObjectKey == upload.QuarantineObjectKey),
             Arg.Any<CancellationToken>());
     }
 }

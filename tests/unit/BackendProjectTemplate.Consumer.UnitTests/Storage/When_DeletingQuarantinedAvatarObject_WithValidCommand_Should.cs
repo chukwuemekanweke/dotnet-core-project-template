@@ -18,13 +18,13 @@ public sealed class When_DeletingQuarantinedAvatarObject_WithValidCommand_Should
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var uploadId = Guid.CreateVersion7();
         var objectKey = $"quarantine/avatars/{uploadId:N}.png";
-        var command = new DeleteQuarantinedAvatarObject(uploadId, objectKey)
+        var command = new DeleteQuarantinedObject(uploadId, objectKey)
         {
             StakeholderId = Guid.CreateVersion7(),
             TenantId = Guid.CreateVersion7()
         };
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
-        var sut = new DeleteQuarantinedAvatarObjectHandler(
+        var sut = new DeleteQuarantinedObjectHandler(
             Substitute.For<ICustomTelemetryContext>(),
             Substitute.For<ICurrentActorAccessor>(),
             messageContext,
@@ -32,7 +32,7 @@ public sealed class When_DeletingQuarantinedAvatarObject_WithValidCommand_Should
             unitOfWork,
             TimeProvider.System,
             messageInboxRepository,
-            Substitute.For<ILogger<DeleteQuarantinedAvatarObjectHandler>>());
+            Substitute.For<ILogger<DeleteQuarantinedObjectHandler>>());
 
         await sut.HandleAsync(command, CancellationToken.None);
 

@@ -22,6 +22,6 @@ public sealed class When_CompletingAvatarUpload_WithCompletedUpload_Should
         result.Status.ShouldBe(CompleteAvatarUploadStatus.Success);
         result.AvatarUrl.ShouldBe(upload.FinalUrl);
         await context.ObjectStorageService.DidNotReceiveWithAnyArgs()
-            .PromotePrivateObjectToPublicAsync(default!, default);
+            .PromotePrivateObjectAsync(default!, default);
     }
 }

@@ -17,7 +17,7 @@ public sealed class When_CompletingAvatarUpload_AfterPromotionObjectChanged_Shou
             .Returns(new ObjectStorageObjectMetadata(12, "image/png", "etag-a"));
         context.ObjectStorageService.ReadPrivateObjectRangeAsync(Arg.Any<ObjectStorageRangeReadRequest>(), Arg.Any<CancellationToken>())
             .Returns(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0 });
-        context.ObjectStorageService.PromotePrivateObjectToPublicAsync(Arg.Any<ObjectStoragePromotionRequest>(), Arg.Any<CancellationToken>())
+        context.ObjectStorageService.PromotePrivateObjectAsync(Arg.Any<ObjectStoragePromotionRequest>(), Arg.Any<CancellationToken>())
             .Returns<Task<string>>(_ => throw new ObjectStoragePreconditionFailedException("changed"));
 
         var result = await context.CompleteHandler().HandleAsync(

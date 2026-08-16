@@ -76,7 +76,7 @@ public static class ServiceCollectionExtensions
                 .AddHandler<SendNotification, SendNotificationHandler>()
                 .AddHandler<CreditWalletCommand, CreditWalletHandler>()
                 .AddHandler<ActivateSubscriptionCommand, ActivateSubscriptionHandler>()
-                .AddHandler<DeleteQuarantinedAvatarObject, DeleteQuarantinedAvatarObjectHandler>())
+                .AddHandler<DeleteQuarantinedObject, DeleteQuarantinedObjectHandler>())
             .AddHostedService(serviceProvider => new Worker(
                 serviceProvider.GetRequiredKeyedService<ISubscriber>(subscriberConfig.Key),
                 serviceProvider.GetRequiredKeyedService<IConsumer>(consumerConfig.Key),

@@ -9,6 +9,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
+using BackendProjectTemplate.Application.Common.FileUploads;
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
@@ -32,6 +33,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<StakeholderResolver>();
+        services.AddScoped<FileUploadService>();
         services.AddScoped<CheckEmailExistenceHandler>();
         services.AddScoped<GoogleSignUpHandler>();
         services.AddScoped<GoogleSignInHandler>();

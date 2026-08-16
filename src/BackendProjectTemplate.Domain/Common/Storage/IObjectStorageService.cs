@@ -13,7 +13,7 @@ public interface IObjectStorageService
     Task<byte[]> ReadPrivateObjectRangeAsync(
         ObjectStorageRangeReadRequest request,
         CancellationToken cancellationToken);
-    Task<string> PromotePrivateObjectToPublicAsync(
+    Task<string> PromotePrivateObjectAsync(
         ObjectStoragePromotionRequest request,
         CancellationToken cancellationToken);
     Task DeletePrivateObjectAsync(string objectKey, CancellationToken cancellationToken);

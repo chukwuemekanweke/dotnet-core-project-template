@@ -19,7 +19,7 @@ public sealed class When_CompletingAvatarUpload_WithValidObject_Should
             .Returns(new ObjectStorageObjectMetadata(12, "image/png", "etag-a"));
         context.ObjectStorageService.ReadPrivateObjectRangeAsync(Arg.Any<ObjectStorageRangeReadRequest>(), Arg.Any<CancellationToken>())
             .Returns(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0 });
-        context.ObjectStorageService.PromotePrivateObjectToPublicAsync(Arg.Any<ObjectStoragePromotionRequest>(), Arg.Any<CancellationToken>())
+        context.ObjectStorageService.PromotePrivateObjectAsync(Arg.Any<ObjectStoragePromotionRequest>(), Arg.Any<CancellationToken>())
             .Returns("https://cdn.example/avatar.png");
 
         var result = await context.CompleteHandler().HandleAsync(
@@ -33,7 +33,7 @@ public sealed class When_CompletingAvatarUpload_WithValidObject_Should
         upload.ValidatedETag.ShouldBe("etag-a");
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await context.CommandSender.Received(1).SendAsync(
-            Arg.Is<DeleteQuarantinedAvatarObject>(command =>
+            Arg.Is<DeleteQuarantinedObject>(command =>
                 command.UploadId == upload.Id &&
                 command.ObjectKey == upload.QuarantineObjectKey &&
                 command.StakeholderId == upload.StakeholderId &&

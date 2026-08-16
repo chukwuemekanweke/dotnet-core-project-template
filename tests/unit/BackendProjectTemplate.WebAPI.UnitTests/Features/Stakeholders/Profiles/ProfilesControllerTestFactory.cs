@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Common.FileUploads;
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
 using BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUpload;
 using BackendProjectTemplate.Application.Stakeholders.Features.GetProfile;
@@ -34,14 +35,14 @@ internal static class ProfilesControllerTestFactory
             new CreateAvatarUploadHandler(
                 stakeholderRepository,
                 avatarUploadRepository,
-                objectStorageService,
+                new FileUploadService(objectStorageService),
                 customTelemetryContext,
                 unitOfWork,
                 TimeProvider.System),
             new CompleteAvatarUploadHandler(
                 stakeholderRepository,
                 avatarUploadRepository,
-                objectStorageService,
+                new FileUploadService(objectStorageService),
                 Substitute.For<ICommandSender>(),
                 customTelemetryContext,
                 unitOfWork,

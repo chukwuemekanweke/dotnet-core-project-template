@@ -29,6 +29,6 @@ public sealed class When_CompletingAvatarUpload_WithInvalidMetadata_Should
         upload.Status.ShouldBe(AvatarUploadStatus.Rejected);
         context.Stakeholder.AvatarUrl.ShouldBeNull();
         await context.ObjectStorageService.DidNotReceiveWithAnyArgs()
-            .PromotePrivateObjectToPublicAsync(default!, default);
+            .PromotePrivateObjectAsync(default!, default);
     }
 }

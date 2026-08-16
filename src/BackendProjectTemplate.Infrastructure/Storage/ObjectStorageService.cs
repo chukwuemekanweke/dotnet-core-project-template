@@ -45,12 +45,12 @@ internal sealed class ObjectStorageService(
         return await provider.ReadPrivateObjectRangeAsync(request, cancellationToken);
     }
 
-    public async Task<string> PromotePrivateObjectToPublicAsync(
+    public async Task<string> PromotePrivateObjectAsync(
         ObjectStoragePromotionRequest request,
         CancellationToken cancellationToken)
     {
         var provider = await ResolveProviderAsync(cancellationToken);
-        return await provider.PromotePrivateObjectToPublicAsync(request, cancellationToken);
+        return await provider.PromotePrivateObjectAsync(request, cancellationToken);
     }
 
     public async Task DeletePrivateObjectAsync(string objectKey, CancellationToken cancellationToken)

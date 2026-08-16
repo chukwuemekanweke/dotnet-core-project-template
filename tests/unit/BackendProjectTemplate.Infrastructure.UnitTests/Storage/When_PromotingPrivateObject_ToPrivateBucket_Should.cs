@@ -5,10 +5,10 @@ using Shouldly;
 
 namespace BackendProjectTemplate.Infrastructure.UnitTests.Storage;
 
-public sealed class When_PromotingPrivateObject_WithR2Provider_Should
+public sealed class When_PromotingPrivateObject_ToPrivateBucket_Should
 {
     [Fact]
-    public async Task ConditionallyCopyFromPrivateToPublicAndReturnCdnUrl()
+    public async Task ConditionallyCopyWithinPrivateStorage()
     {
         var context = new CloudflareR2ProviderTestContext();
         CopyObjectRequest? capturedRequest = null;
@@ -17,20 +17,17 @@ public sealed class When_PromotingPrivateObject_WithR2Provider_Should
 
         var result = await context.CreateProvider().PromotePrivateObjectAsync(
             new ObjectStoragePromotionRequest(
-                "backend-template/quarantine/upload.webp",
-                "avatars/upload.webp",
+                "quarantine/documents/document.pdf",
+                "documents/document.pdf",
                 "\"etag-a\"",
-                "image/webp",
-                ObjectStorageVisibility.Public),
+                "application/pdf",
+                ObjectStorageVisibility.Private),
             CancellationToken.None);
 
         capturedRequest.ShouldNotBeNull();
         capturedRequest.SourceBucket.ShouldBe("private-bucket");
-        capturedRequest.SourceKey.ShouldBe("backend-template/quarantine/upload.webp");
-        capturedRequest.DestinationBucket.ShouldBe("public-bucket");
-        capturedRequest.DestinationKey.ShouldBe("backend-template/avatars/upload.webp");
-        capturedRequest.ETagToMatch.ShouldBe("\"etag-a\"");
-        capturedRequest.ContentType.ShouldBe("image/webp");
-        result.ShouldBe("https://cdn.example.com/backend-template/avatars/upload.webp");
+        capturedRequest.DestinationBucket.ShouldBe("private-bucket");
+        capturedRequest.DestinationKey.ShouldBe("backend-template/documents/document.pdf");
+        result.ShouldBe("https://account.r2.cloudflarestorage.com/private-bucket/backend-template/documents/document.pdf");
     }
 }

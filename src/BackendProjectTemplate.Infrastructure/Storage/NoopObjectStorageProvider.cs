@@ -31,9 +31,12 @@ internal sealed class NoopObjectStorageProvider : IObjectStorageProvider
         ObjectStorageRangeReadRequest request,
         CancellationToken cancellationToken) => Task.FromResult(Array.Empty<byte>());
 
-    public Task<string> PromotePrivateObjectToPublicAsync(
+    public Task<string> PromotePrivateObjectAsync(
         ObjectStoragePromotionRequest request,
-        CancellationToken cancellationToken) => Task.FromResult(BuildPublicUrl(request.DestinationObjectKey));
+        CancellationToken cancellationToken) => Task.FromResult(
+            request.DestinationVisibility == ObjectStorageVisibility.Public
+                ? BuildPublicUrl(request.DestinationObjectKey)
+                : $"https://example.invalid/private/{NormalizeObjectKey(request.DestinationObjectKey)}");
 
     public Task DeletePrivateObjectAsync(string objectKey, CancellationToken cancellationToken) => Task.CompletedTask;
 

@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Common.FileUploads;
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
 using BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUpload;
 using BackendProjectTemplate.Domain.Common.Auditing;
@@ -63,13 +64,19 @@ internal sealed class AvatarUploadHandlerTestContext
     }
 
     public CreateAvatarUploadHandler CreateHandler() =>
-        new(StakeholderRepository, AvatarUploadRepository, ObjectStorageService, Telemetry, UnitOfWork, new FixedTimeProvider(UtcNow));
+        new(
+            StakeholderRepository,
+            AvatarUploadRepository,
+            new FileUploadService(ObjectStorageService),
+            Telemetry,
+            UnitOfWork,
+            new FixedTimeProvider(UtcNow));
 
     public CompleteAvatarUploadHandler CompleteHandler() =>
         new(
             StakeholderRepository,
             AvatarUploadRepository,
-            ObjectStorageService,
+            new FileUploadService(ObjectStorageService),
             CommandSender,
             Telemetry,
             UnitOfWork,

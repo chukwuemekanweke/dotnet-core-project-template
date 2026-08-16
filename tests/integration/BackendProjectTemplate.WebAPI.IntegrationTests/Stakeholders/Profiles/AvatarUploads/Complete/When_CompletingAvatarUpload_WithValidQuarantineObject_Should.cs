@@ -70,9 +70,9 @@ public sealed class When_CompletingAvatarUpload_WithValidQuarantineObject_Should
         var dbContext = assertionScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var outboxMessage = await dbContext.OutboxMessages.SingleAsync(message =>
             message.Kind == OutboxMessageKind.Command &&
-            message.Type == typeof(DeleteQuarantinedAvatarObject).FullName &&
+            message.Type == typeof(DeleteQuarantinedObject).FullName &&
             message.Payload.Contains(createPayload.UploadId.ToString()));
-        var cleanupCommand = JsonSerializer.Deserialize<DeleteQuarantinedAvatarObject>(
+        var cleanupCommand = JsonSerializer.Deserialize<DeleteQuarantinedObject>(
             outboxMessage.Payload,
             new JsonSerializerOptions(JsonSerializerDefaults.Web));
         cleanupCommand.ShouldNotBeNull();

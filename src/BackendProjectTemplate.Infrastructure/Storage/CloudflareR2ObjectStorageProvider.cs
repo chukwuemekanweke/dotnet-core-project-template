@@ -110,12 +110,15 @@ internal sealed class CloudflareR2ObjectStorageProvider(
         }
     }
 
-    public async Task<string> PromotePrivateObjectToPublicAsync(
+    public async Task<string> PromotePrivateObjectAsync(
         ObjectStoragePromotionRequest request,
         CancellationToken cancellationToken)
     {
         var configuredOptions = GetConfiguredOptions();
         var destinationObjectKey = BuildScopedObjectKey(configuredOptions.ApplicationFolder, request.DestinationObjectKey);
+        var destinationBucketName = request.DestinationVisibility == ObjectStorageVisibility.Public
+            ? configuredOptions.PublicBucketName.Trim()
+            : configuredOptions.PrivateBucketName.Trim();
         using var client = clientFactory.Create(configuredOptions);
         try
         {
@@ -123,7 +126,7 @@ internal sealed class CloudflareR2ObjectStorageProvider(
             {
                 SourceBucket = configuredOptions.PrivateBucketName.Trim(),
                 SourceKey = BuildScopedObjectKey(configuredOptions.ApplicationFolder, request.SourceObjectKey),
-                DestinationBucket = configuredOptions.PublicBucketName.Trim(),
+                DestinationBucket = destinationBucketName,
                 DestinationKey = destinationObjectKey,
                 ETagToMatch = request.ExpectedSourceETag,
                 MetadataDirective = S3MetadataDirective.REPLACE,
@@ -135,7 +138,9 @@ internal sealed class CloudflareR2ObjectStorageProvider(
             throw new ObjectStoragePreconditionFailedException("The private object changed before it could be promoted.", exception);
         }
 
-        return BuildPublicUrl(configuredOptions, destinationObjectKey);
+        return request.DestinationVisibility == ObjectStorageVisibility.Public
+            ? BuildPublicUrl(configuredOptions, destinationObjectKey)
+            : $"{configuredOptions.Endpoint.TrimEnd('/')}/{destinationBucketName}/{destinationObjectKey}";
     }
 
     public async Task DeletePrivateObjectAsync(string objectKey, CancellationToken cancellationToken)
