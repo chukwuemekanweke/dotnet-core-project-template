@@ -8,4 +8,17 @@ internal interface IObjectStorageProvider
 
     Task<string> UploadPublicAsync(ObjectStorageUploadRequest request, CancellationToken cancellationToken);
     Task<string> UploadPrivateAsync(ObjectStorageUploadRequest request, CancellationToken cancellationToken);
+    Task<ObjectStoragePresignedUploadResult> CreatePrivatePresignedUploadAsync(
+        ObjectStoragePresignedUploadRequest request,
+        CancellationToken cancellationToken);
+    Task<ObjectStorageObjectMetadata?> GetPrivateObjectMetadataAsync(
+        string objectKey,
+        CancellationToken cancellationToken);
+    Task<byte[]> ReadPrivateObjectRangeAsync(
+        ObjectStorageRangeReadRequest request,
+        CancellationToken cancellationToken);
+    Task<string> PromotePrivateObjectToPublicAsync(
+        ObjectStoragePromotionRequest request,
+        CancellationToken cancellationToken);
+    Task DeletePrivateObjectAsync(string objectKey, CancellationToken cancellationToken);
 }

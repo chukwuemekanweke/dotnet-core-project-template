@@ -19,9 +19,10 @@ using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebho
 using BackendProjectTemplate.Application.Payments.Features.ReconcilePayments;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
 using BackendProjectTemplate.Application.ReferenceData.Features.GetCountries;
+using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
+using BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUpload;
 using BackendProjectTemplate.Application.Stakeholders.Features.GetProfile;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
-using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Application;
@@ -43,7 +44,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<RequestPasswordResetHandler>();
         services.AddScoped<ProcessMailtrapDeliveryWebhookHandler>();
         services.AddScoped<GetProfileHandler>();
-        services.AddScoped<UploadAvatarHandler>();
+        services.AddScoped<CreateAvatarUploadHandler>();
+        services.AddScoped<CompleteAvatarUploadHandler>();
         services.AddScoped<UpdateProfileHandler>();
         services.AddScoped<ActivateProviderHandler>();
         services.AddScoped<ActivatePaymentProviderHandler>();

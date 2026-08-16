@@ -1,0 +1,81 @@
+using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
+using BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUpload;
+using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Storage;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUploads;
+
+internal sealed class AvatarUploadHandlerTestContext
+{
+    public Guid StakeholderId { get; } = Guid.CreateVersion7();
+    public Guid TenantId { get; } = Guid.CreateVersion7();
+    public DateTimeOffset UtcNow { get; } = new(2026, 8, 16, 12, 0, 0, TimeSpan.Zero);
+    public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
+    public IRepository<AvatarUpload> AvatarUploadRepository { get; } = Substitute.For<IRepository<AvatarUpload>>();
+    public IObjectStorageService ObjectStorageService { get; } = Substitute.For<IObjectStorageService>();
+    public ICustomTelemetryContext Telemetry { get; } = Substitute.For<ICustomTelemetryContext>();
+    public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+
+    public Stakeholder Stakeholder { get; }
+
+    public AvatarUploadHandlerTestContext()
+    {
+        Stakeholder = Stakeholder.Create(
+            Guid.CreateVersion7(),
+            TenantId,
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            "Jane",
+            "Doe");
+        StakeholderRepository.GetByIdAsync(StakeholderId, Arg.Any<CancellationToken>()).Returns(Stakeholder);
+    }
+
+    public ActorContext ActorContext() =>
+        new(StakeholderId, TenantId, Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"));
+
+    public AvatarUpload PendingUpload(
+        string contentType = "image/png",
+        long contentLength = 12,
+        DateTimeOffset? expiresAtUtc = null)
+    {
+        var uploadId = Guid.CreateVersion7();
+        var extension = contentType switch
+        {
+            "image/jpeg" => ".jpg",
+            "image/webp" => ".webp",
+            _ => ".png"
+        };
+        return AvatarUpload.Create(
+            uploadId,
+            StakeholderId,
+            TenantId,
+            $"avatar{extension}",
+            contentType,
+            contentLength,
+            extension,
+            $"quarantine/{uploadId:N}{extension}",
+            $"avatars/{uploadId:N}{extension}",
+            expiresAtUtc ?? UtcNow.AddMinutes(10));
+    }
+
+    public CreateAvatarUploadHandler CreateHandler() =>
+        new(StakeholderRepository, AvatarUploadRepository, ObjectStorageService, Telemetry, UnitOfWork, new FixedTimeProvider(UtcNow));
+
+    public CompleteAvatarUploadHandler CompleteHandler() =>
+        new(
+            StakeholderRepository,
+            AvatarUploadRepository,
+            ObjectStorageService,
+            Telemetry,
+            UnitOfWork,
+            new FixedTimeProvider(UtcNow),
+            NullLogger<CompleteAvatarUploadHandler>.Instance);
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
+    }
+}

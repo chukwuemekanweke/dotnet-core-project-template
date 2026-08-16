@@ -20,6 +20,9 @@ public static class Observability
             public const string FlowId = "flow.id";
             public const string FailureReason = "failure_reason";
             public const string ExceptionType = "exception_type";
+            public const string UploadId = "upload_id";
+            public const string ContentType = "content_type";
+            public const string ContentLength = "content_length";
         }
 
         public static class Notifications
@@ -76,6 +79,7 @@ public static class Observability
             public const string ProfileUpdateFailed = "ProfileUpdateFailed";
             public const string AvatarUploadCompleted = "AvatarUploadCompleted";
             public const string AvatarUploadFailed = "AvatarUploadFailed";
+            public const string AvatarUploadInitiated = "AvatarUploadInitiated";
         }
 
         public static class Notifications

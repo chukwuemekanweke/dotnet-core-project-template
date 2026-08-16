@@ -1,7 +1,8 @@
 using Asp.Versioning;
+using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
+using BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUpload;
 using BackendProjectTemplate.Application.Stakeholders.Features.GetProfile;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
-using BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -15,7 +16,8 @@ namespace BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 [Route($"{EndpointUrl.Stakeholders.Route}/me/profile")]
 public sealed class ProfilesController(
     GetProfileHandler getProfileHandler,
-    UploadAvatarHandler uploadAvatarHandler,
+    CreateAvatarUploadHandler createAvatarUploadHandler,
+    CompleteAvatarUploadHandler completeAvatarUploadHandler,
     UpdateProfileHandler updateProfileHandler,
     ICurrentActor currentActor,
     ILogger<ProfilesController> logger) : ControllerBase
@@ -75,37 +77,65 @@ public sealed class ProfilesController(
         };
     }
 
-    [HttpPost("avatar")]
-    [RequestSizeLimit(2 * 1024 * 1024)]
-    [ProducesResponseType<UploadAvatarResponse>(StatusCodes.Status200OK)]
+    [HttpPost("avatar/uploads")]
+    [ProducesResponseType<CreateAvatarUploadResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<UploadAvatarResponse>> UploadAvatar(
-        [FromForm] UploadAvatarRequest request,
+    public async Task<ActionResult<CreateAvatarUploadResponse>> CreateAvatarUpload(
+        [FromBody] CreateAvatarUploadRequest request,
         CancellationToken cancellationToken)
     {
-        if (request.Avatar is null)
-        {
-            return BadRequest("Avatar file is required.");
-        }
-
-        await using var avatarStream = request.Avatar.OpenReadStream();
-        var result = await uploadAvatarHandler.HandleAsync(
-            new UploadAvatarCommand(
-                avatarStream,
-                request.Avatar.FileName,
-                request.Avatar.ContentType,
-                request.Avatar.Length,
-                ActorContext.FromCurrentActor(currentActor)),
+        var result = await createAvatarUploadHandler.HandleAsync(
+            new CreateAvatarUploadCommand(
+                request.FileName,
+                request.ContentType,
+                request.ContentLength,
+                ResolveActorContext()),
             cancellationToken);
 
         return result.Status switch
         {
-            UploadAvatarStatus.NotAuthenticated => Unauthorized(),
-            UploadAvatarStatus.StakeholderNotFound => NotFound(),
-            UploadAvatarStatus.InvalidFile => BadRequest(result.Error ?? "Invalid avatar file."),
-            _ => Ok(new UploadAvatarResponse(result.AvatarUrl ?? string.Empty))
+            CreateAvatarUploadStatus.NotAuthenticated => Unauthorized(),
+            CreateAvatarUploadStatus.StakeholderNotFound => NotFound(),
+            CreateAvatarUploadStatus.InvalidFile => BadRequest(result.Error ?? "Invalid avatar file."),
+            _ => Ok(new CreateAvatarUploadResponse(
+                result.UploadId!.Value,
+                result.UploadUrl!,
+                "PUT",
+                result.Headers!,
+                result.ExpiresAtUtc!.Value))
         };
     }
+
+    [HttpPost("avatar/uploads/{uploadId:guid}/complete")]
+    [ProducesResponseType<CompleteAvatarUploadResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<CompleteAvatarUploadResponse>> CompleteAvatarUpload(
+        [FromRoute] Guid uploadId,
+        CancellationToken cancellationToken)
+    {
+        var result = await completeAvatarUploadHandler.HandleAsync(
+            new CompleteAvatarUploadCommand(uploadId, ResolveActorContext()),
+            cancellationToken);
+
+        return result.Status switch
+        {
+            CompleteAvatarUploadStatus.NotAuthenticated => Unauthorized(),
+            CompleteAvatarUploadStatus.StakeholderNotFound => NotFound(),
+            CompleteAvatarUploadStatus.UploadNotFound => NotFound(),
+            CompleteAvatarUploadStatus.Expired => BadRequest(result.Error ?? "Avatar upload has expired."),
+            CompleteAvatarUploadStatus.InvalidFile => BadRequest(result.Error ?? "Invalid avatar upload."),
+            CompleteAvatarUploadStatus.UploadChanged => Conflict(result.Error ?? "Avatar upload changed during validation."),
+            _ => Ok(new CompleteAvatarUploadResponse(result.AvatarUrl!))
+        };
+    }
+
+    private ActorContext ResolveActorContext() =>
+        Guid.TryParse(currentActor.ActorId, out var stakeholderId)
+            ? new ActorContext(stakeholderId, currentActor.TenantId, currentActor.CorrelationId, currentActor.FlowId)
+            : ActorContext.FromAnonymousActor(currentActor);
 }

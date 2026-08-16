@@ -80,6 +80,22 @@ dotnet build
 dotnet test
 ```
 
+## Cloudflare R2 avatar uploads
+
+Avatar files are uploaded by the browser directly to the private R2 bucket through a 10-minute presigned `PUT`. The API validates the quarantined object and conditionally copies the exact validated ETag into the public bucket before updating the stakeholder profile.
+
+Configure `ObjectStorage:CloudflareR2` with the R2 S3 API endpoint, public and private bucket names, credentials, an application folder, and the public CDN/custom-domain base URL. `PublicBaseUrl` is used only for completed public objects; presigned uploads always use the S3 API endpoint.
+
+The private bucket also needs environment-specific CORS configuration. Allow `PUT` from each frontend origin, allow the `Content-Type` request header, and optionally expose `ETag`. Do not use a wildcard production origin unless that access is intentional.
+
+Configure an R2 lifecycle rule that deletes objects under this prefix after a short retention period:
+
+```text
+{ApplicationFolder}/quarantine/avatars/
+```
+
+The lifecycle rule is the fallback for abandoned uploads and best-effort cleanup failures. Keep the private bucket non-public; only validated copies belong in the configured public bucket.
+
 ## Git workflow automation
 
 The Windows PowerShell workflow command automates branch creation, validation,

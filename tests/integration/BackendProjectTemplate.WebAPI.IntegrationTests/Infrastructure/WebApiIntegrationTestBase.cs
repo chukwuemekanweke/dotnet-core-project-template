@@ -19,6 +19,7 @@ public abstract class WebApiIntegrationTestBase
 
     protected HttpClient Client { get; private set; } = default!;
     protected FakeGoogleIdentityTokenService GoogleIdentityTokenService => _factory.GoogleIdentityTokenService;
+    protected FakeObjectStorageService ObjectStorageService => _factory.ObjectStorageService;
 
     protected Task InitializeClientAsync()
     {

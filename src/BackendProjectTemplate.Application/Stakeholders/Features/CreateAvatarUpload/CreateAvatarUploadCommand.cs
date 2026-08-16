@@ -1,9 +1,8 @@
-namespace BackendProjectTemplate.Application.Stakeholders.Features.UploadAvatar;
-
 using BackendProjectTemplate.Domain.Common.Auditing;
 
-public sealed record UploadAvatarCommand(
-    Stream Content,
+namespace BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUpload;
+
+public sealed record CreateAvatarUploadCommand(
     string FileName,
     string ContentType,
     long ContentLength,

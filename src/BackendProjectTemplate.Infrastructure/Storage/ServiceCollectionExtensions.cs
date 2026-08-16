@@ -12,6 +12,7 @@ public static class ServiceCollectionExtensions
         services.Configure<CloudflareR2Options>(configuration.GetSection(CloudflareR2Options.SectionName));
 
         services.AddScoped<IObjectStorageService, ObjectStorageService>();
+        services.AddSingleton<ICloudflareR2ClientFactory, CloudflareR2ClientFactory>();
         services.AddScoped<IObjectStorageProvider, NoopObjectStorageProvider>();
         services.AddScoped<IObjectStorageProvider, CloudflareR2ObjectStorageProvider>();
 

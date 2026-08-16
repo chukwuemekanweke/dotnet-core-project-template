@@ -1,3 +1,3 @@
 namespace BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 
-public sealed record UploadAvatarRequest(IFormFile Avatar);
+public sealed record CompleteAvatarUploadResponse(string AvatarUrl);

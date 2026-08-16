@@ -21,6 +21,44 @@ internal sealed class ObjectStorageService(
         return await provider.UploadPrivateAsync(request, cancellationToken);
     }
 
+    public async Task<ObjectStoragePresignedUploadResult> CreatePrivatePresignedUploadAsync(
+        ObjectStoragePresignedUploadRequest request,
+        CancellationToken cancellationToken)
+    {
+        var provider = await ResolveProviderAsync(cancellationToken);
+        return await provider.CreatePrivatePresignedUploadAsync(request, cancellationToken);
+    }
+
+    public async Task<ObjectStorageObjectMetadata?> GetPrivateObjectMetadataAsync(
+        string objectKey,
+        CancellationToken cancellationToken)
+    {
+        var provider = await ResolveProviderAsync(cancellationToken);
+        return await provider.GetPrivateObjectMetadataAsync(objectKey, cancellationToken);
+    }
+
+    public async Task<byte[]> ReadPrivateObjectRangeAsync(
+        ObjectStorageRangeReadRequest request,
+        CancellationToken cancellationToken)
+    {
+        var provider = await ResolveProviderAsync(cancellationToken);
+        return await provider.ReadPrivateObjectRangeAsync(request, cancellationToken);
+    }
+
+    public async Task<string> PromotePrivateObjectToPublicAsync(
+        ObjectStoragePromotionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var provider = await ResolveProviderAsync(cancellationToken);
+        return await provider.PromotePrivateObjectToPublicAsync(request, cancellationToken);
+    }
+
+    public async Task DeletePrivateObjectAsync(string objectKey, CancellationToken cancellationToken)
+    {
+        var provider = await ResolveProviderAsync(cancellationToken);
+        await provider.DeletePrivateObjectAsync(objectKey, cancellationToken);
+    }
+
     private async Task<IObjectStorageProvider> ResolveProviderAsync(CancellationToken cancellationToken)
     {
         var activeProvider = await providerRepository.FirstOrDefaultAsync(
