@@ -23,7 +23,8 @@ public sealed class When_CompletingFileUpload_WithPrivatePolicy_Should
                 "quarantine/document.pdf",
                 "documents/document.pdf",
                 "application/pdf",
-                5),
+                5,
+                ObjectStorageVisibility.Private),
             new TestDocumentUploadPolicy(),
             CancellationToken.None);
 

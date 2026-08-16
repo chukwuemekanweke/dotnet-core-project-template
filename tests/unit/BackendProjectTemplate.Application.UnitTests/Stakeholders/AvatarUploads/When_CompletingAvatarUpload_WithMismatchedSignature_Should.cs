@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
 using BackendProjectTemplate.Domain.Common.Storage;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUploads;
@@ -15,7 +14,7 @@ public sealed class When_CompletingAvatarUpload_WithMismatchedSignature_Should
     {
         var context = new AvatarUploadHandlerTestContext();
         var upload = context.PendingUpload(contentType);
-        context.AvatarUploadRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<AvatarUpload>>(), Arg.Any<CancellationToken>())
+        context.FileUploadSessionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<FileUploadSession>>(), Arg.Any<CancellationToken>())
             .Returns(upload);
         context.ObjectStorageService.GetPrivateObjectMetadataAsync(upload.QuarantineObjectKey, Arg.Any<CancellationToken>())
             .Returns(new ObjectStorageObjectMetadata(12, contentType, "etag-a"));
@@ -27,7 +26,7 @@ public sealed class When_CompletingAvatarUpload_WithMismatchedSignature_Should
             CancellationToken.None);
 
         result.Status.ShouldBe(CompleteAvatarUploadStatus.InvalidFile);
-        upload.Status.ShouldBe(AvatarUploadStatus.Rejected);
+        upload.Status.ShouldBe(FileUploadStatus.Rejected);
         await context.ObjectStorageService.DidNotReceiveWithAnyArgs()
             .PromotePrivateObjectAsync(default!, default);
     }

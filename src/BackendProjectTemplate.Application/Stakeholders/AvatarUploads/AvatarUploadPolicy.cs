@@ -15,6 +15,7 @@ internal sealed class AvatarUploadPolicy : IFileUploadPolicy
 
     public static AvatarUploadPolicy Instance { get; } = new();
 
+    public string Key => "stakeholder-avatar-v1";
     public long MaxFileSizeBytes => 2 * 1024 * 1024;
     public int SignatureByteCount => 12;
     public TimeSpan UploadLifetime => TimeSpan.FromMinutes(10);

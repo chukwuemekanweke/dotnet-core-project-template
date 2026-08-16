@@ -5,6 +5,7 @@ namespace BackendProjectTemplate.Application.UnitTests.Common.FileUploads;
 
 internal sealed class TestDocumentUploadPolicy : IFileUploadPolicy
 {
+    public string Key => "test-pdf-document-v1";
     public long MaxFileSizeBytes => 10 * 1024 * 1024;
     public int SignatureByteCount => 5;
     public TimeSpan UploadLifetime => TimeSpan.FromMinutes(20);

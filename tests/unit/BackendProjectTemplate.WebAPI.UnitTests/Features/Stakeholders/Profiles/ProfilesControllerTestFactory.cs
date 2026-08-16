@@ -24,24 +24,24 @@ internal static class ProfilesControllerTestFactory
         IUnitOfWork unitOfWork,
         ICurrentActor currentActor,
         IObjectStorageService? objectStorageService = null,
-        IRepository<AvatarUpload>? avatarUploadRepository = null,
+        IRepository<FileUploadSession>? fileUploadSessionRepository = null,
         ILogger<ProfilesController>? logger = null)
     {
         objectStorageService ??= Substitute.For<IObjectStorageService>();
-        avatarUploadRepository ??= Substitute.For<IRepository<AvatarUpload>>();
+        fileUploadSessionRepository ??= Substitute.For<IRepository<FileUploadSession>>();
 
         return new ProfilesController(
             new GetProfileHandler(stakeholderReadModelRepository),
             new CreateAvatarUploadHandler(
                 stakeholderRepository,
-                avatarUploadRepository,
+                fileUploadSessionRepository,
                 new FileUploadService(objectStorageService),
                 customTelemetryContext,
                 unitOfWork,
                 TimeProvider.System),
             new CompleteAvatarUploadHandler(
                 stakeholderRepository,
-                avatarUploadRepository,
+                fileUploadSessionRepository,
                 new FileUploadService(objectStorageService),
                 Substitute.For<ICommandSender>(),
                 customTelemetryContext,

@@ -2,6 +2,7 @@ namespace BackendProjectTemplate.Application.Common.FileUploads;
 
 public sealed record FileUploadPreparationRequest(
     Guid TenantId,
+    string OwnerType,
     Guid OwnerId,
     string FileName,
     string ContentType,

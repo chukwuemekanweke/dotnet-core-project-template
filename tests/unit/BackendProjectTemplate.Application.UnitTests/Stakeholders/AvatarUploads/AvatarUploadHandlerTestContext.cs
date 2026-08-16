@@ -15,7 +15,7 @@ internal sealed class AvatarUploadHandlerTestContext
     public Guid TenantId { get; } = Guid.CreateVersion7();
     public DateTimeOffset UtcNow { get; } = new(2026, 8, 16, 12, 0, 0, TimeSpan.Zero);
     public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
-    public IRepository<AvatarUpload> AvatarUploadRepository { get; } = Substitute.For<IRepository<AvatarUpload>>();
+    public IRepository<FileUploadSession> FileUploadSessionRepository { get; } = Substitute.For<IRepository<FileUploadSession>>();
     public IObjectStorageService ObjectStorageService { get; } = Substitute.For<IObjectStorageService>();
     public ICommandSender CommandSender { get; } = Substitute.For<ICommandSender>();
     public ICustomTelemetryContext Telemetry { get; } = Substitute.For<ICustomTelemetryContext>();
@@ -38,7 +38,7 @@ internal sealed class AvatarUploadHandlerTestContext
     public ActorContext ActorContext() =>
         new(StakeholderId, TenantId, Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"));
 
-    public AvatarUpload PendingUpload(
+    public FileUploadSession PendingUpload(
         string contentType = "image/png",
         long contentLength = 12,
         DateTimeOffset? expiresAtUtc = null)
@@ -50,23 +50,28 @@ internal sealed class AvatarUploadHandlerTestContext
             "image/webp" => ".webp",
             _ => ".png"
         };
-        return AvatarUpload.Create(
+        return FileUploadSession.Create(
             uploadId,
-            StakeholderId,
             TenantId,
+            "stakeholder",
+            StakeholderId,
+            StakeholderId,
+            "stakeholder-profile-avatar",
+            "stakeholder-avatar-v1",
             $"avatar{extension}",
             contentType,
             contentLength,
             extension,
             $"quarantine/{uploadId:N}{extension}",
             $"avatars/{uploadId:N}{extension}",
+            ObjectStorageVisibility.Public,
             expiresAtUtc ?? UtcNow.AddMinutes(10));
     }
 
     public CreateAvatarUploadHandler CreateHandler() =>
         new(
             StakeholderRepository,
-            AvatarUploadRepository,
+            FileUploadSessionRepository,
             new FileUploadService(ObjectStorageService),
             Telemetry,
             UnitOfWork,
@@ -75,7 +80,7 @@ internal sealed class AvatarUploadHandlerTestContext
     public CompleteAvatarUploadHandler CompleteHandler() =>
         new(
             StakeholderRepository,
-            AvatarUploadRepository,
+            FileUploadSessionRepository,
             new FileUploadService(ObjectStorageService),
             CommandSender,
             Telemetry,

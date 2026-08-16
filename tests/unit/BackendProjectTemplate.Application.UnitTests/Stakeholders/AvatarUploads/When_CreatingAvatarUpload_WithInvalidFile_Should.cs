@@ -21,6 +21,6 @@ public sealed class When_CreatingAvatarUpload_WithInvalidFile_Should
             CancellationToken.None);
 
         result.Status.ShouldBe(CreateAvatarUploadStatus.InvalidFile);
-        await context.AvatarUploadRepository.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
+        await context.FileUploadSessionRepository.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
     }
 }

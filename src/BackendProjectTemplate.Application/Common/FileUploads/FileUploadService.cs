@@ -11,6 +11,11 @@ public sealed class FileUploadService(IObjectStorageService objectStorageService
         IFileUploadPolicy policy,
         DateTimeOffset utcNow)
     {
+        if (string.IsNullOrWhiteSpace(request.OwnerType))
+        {
+            throw new ArgumentException("An owner type is required.", nameof(request));
+        }
+
         if (string.IsNullOrWhiteSpace(request.FileName) ||
             request.FileName.Length > MaxFileNameLength ||
             string.IsNullOrWhiteSpace(request.ContentType) ||
@@ -27,7 +32,12 @@ public sealed class FileUploadService(IObjectStorageService objectStorageService
         }
 
         var uploadId = Guid.CreateVersion7();
-        var pathContext = new FileUploadPathContext(uploadId, request.TenantId, request.OwnerId, extension);
+        var pathContext = new FileUploadPathContext(
+            uploadId,
+            request.TenantId,
+            request.OwnerType.Trim(),
+            request.OwnerId,
+            extension);
         return new FileUploadPreparationResult(
             true,
             uploadId,
@@ -104,7 +114,7 @@ public sealed class FileUploadService(IObjectStorageService objectStorageService
                     request.FinalObjectKey,
                     metadata.ETag,
                     request.ExpectedContentType,
-                    policy.DestinationVisibility),
+                    request.DestinationVisibility),
                 cancellationToken);
             return new FileUploadCompletionResult(
                 FileUploadCompletionStatus.Success,

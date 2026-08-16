@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.FileUploads.Entities;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
@@ -157,7 +158,7 @@ public abstract class AvatarUploadIntegrationTestBase : IAsyncLifetime
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var userRepository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
-        var uploadRepository = scope.ServiceProvider.GetRequiredService<IRepository<AvatarUpload>>();
+        var uploadRepository = scope.ServiceProvider.GetRequiredService<IRepository<FileUploadSession>>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var providerRepository = scope.ServiceProvider.GetRequiredService<IRepository<Provider>>();

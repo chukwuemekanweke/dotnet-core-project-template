@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
 using BackendProjectTemplate.Contracts.Commands.Storage;
 using BackendProjectTemplate.Domain.Common.Storage;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUploads;
@@ -13,7 +12,7 @@ public sealed class When_CompletingAvatarUpload_WithValidObject_Should
     {
         var context = new AvatarUploadHandlerTestContext();
         var upload = context.PendingUpload();
-        context.AvatarUploadRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<AvatarUpload>>(), Arg.Any<CancellationToken>())
+        context.FileUploadSessionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<FileUploadSession>>(), Arg.Any<CancellationToken>())
             .Returns(upload);
         context.ObjectStorageService.GetPrivateObjectMetadataAsync(upload.QuarantineObjectKey, Arg.Any<CancellationToken>())
             .Returns(new ObjectStorageObjectMetadata(12, "image/png", "etag-a"));
@@ -28,15 +27,15 @@ public sealed class When_CompletingAvatarUpload_WithValidObject_Should
 
         result.Status.ShouldBe(CompleteAvatarUploadStatus.Success);
         context.Stakeholder.AvatarUrl.ShouldBe("https://cdn.example/avatar.png");
-        upload.Status.ShouldBe(AvatarUploadStatus.Completed);
-        upload.FinalUrl.ShouldBe(result.AvatarUrl);
+        upload.Status.ShouldBe(FileUploadStatus.Completed);
+        upload.FinalLocation.ShouldBe(result.AvatarUrl);
         upload.ValidatedETag.ShouldBe("etag-a");
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await context.CommandSender.Received(1).SendAsync(
             Arg.Is<DeleteQuarantinedObject>(command =>
                 command.UploadId == upload.Id &&
                 command.ObjectKey == upload.QuarantineObjectKey &&
-                command.StakeholderId == upload.StakeholderId &&
+                command.StakeholderId == upload.OwnerId &&
                 command.TenantId == upload.TenantId),
             Arg.Any<CancellationToken>());
     }

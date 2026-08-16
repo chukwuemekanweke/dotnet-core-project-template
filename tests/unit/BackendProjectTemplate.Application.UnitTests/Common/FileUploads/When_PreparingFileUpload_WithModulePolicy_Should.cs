@@ -17,6 +17,7 @@ public sealed class When_PreparingFileUpload_WithModulePolicy_Should
         var result = service.Prepare(
             new FileUploadPreparationRequest(
                 tenantId,
+                "contract",
                 ownerId,
                 " agreement.pdf ",
                 " APPLICATION/PDF ",

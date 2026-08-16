@@ -1,17 +1,18 @@
 using BackendProjectTemplate.Application.Common.FileUploads;
 using BackendProjectTemplate.Application.Stakeholders.AvatarUploads;
 using BackendProjectTemplate.Contracts.Commands.Storage;
+using BackendProjectTemplate.Domain.Common.FileUploads.Entities;
+using BackendProjectTemplate.Domain.Common.FileUploads.Specifications;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using BackendProjectTemplate.Domain.Stakeholders.Specifications;
 
 namespace BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
 
 public sealed class CompleteAvatarUploadHandler(
     IRepository<Stakeholder> stakeholderRepository,
-    IRepository<AvatarUpload> avatarUploadRepository,
+    IRepository<FileUploadSession> fileUploadSessionRepository,
     FileUploadService fileUploadService,
     ICommandSender commandSender,
     ICustomTelemetryContext customTelemetryContext,
@@ -35,25 +36,35 @@ public sealed class CompleteAvatarUploadHandler(
             return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.StakeholderNotFound);
         }
 
-        var upload = await avatarUploadRepository.FirstOrDefaultAsync(
-            new AvatarUploadByIdAndOwnerSpecification(command.UploadId, stakeholderId, tenantId),
+        var upload = await fileUploadSessionRepository.FirstOrDefaultAsync(
+            new FileUploadSessionByIdAndOwnerSpecification(
+                command.UploadId,
+                tenantId,
+                AvatarUploadOwnerTypes.Stakeholder,
+                stakeholderId,
+                AvatarUploadPurposes.ProfileAvatar),
             cancellationToken);
         if (upload is null)
         {
             return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.UploadNotFound);
         }
 
-        if (upload.Status == AvatarUploadStatus.Completed)
+        if (upload.Status == FileUploadStatus.Completed)
         {
-            return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.Success, upload.FinalUrl);
+            return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.Success, upload.FinalLocation);
         }
 
-        if (upload.Status != AvatarUploadStatus.Pending)
+        if (upload.Status != FileUploadStatus.Pending)
         {
             return new CompleteAvatarUploadResult(
-                upload.Status == AvatarUploadStatus.Expired
+                upload.Status == FileUploadStatus.Expired
                     ? CompleteAvatarUploadStatus.Expired
                     : CompleteAvatarUploadStatus.InvalidFile);
+        }
+
+        if (!string.Equals(upload.PolicyKey, AvatarUploadPolicy.Instance.Key, StringComparison.Ordinal))
+        {
+            return await RejectAsync(upload, command, "invalid_policy", cancellationToken);
         }
 
         if (timeProvider.GetUtcNow() > upload.ExpiresAtUtc)
@@ -69,7 +80,8 @@ public sealed class CompleteAvatarUploadHandler(
                 upload.QuarantineObjectKey,
                 upload.FinalObjectKey,
                 upload.ExpectedContentType,
-                upload.ExpectedContentLength),
+                upload.ExpectedContentLength,
+                upload.DestinationVisibility),
             AvatarUploadPolicy.Instance,
             cancellationToken);
         if (completion.Status == FileUploadCompletionStatus.ObjectChanged)
@@ -99,7 +111,7 @@ public sealed class CompleteAvatarUploadHandler(
     }
 
     private async Task<CompleteAvatarUploadResult> RejectAsync(
-        AvatarUpload upload,
+        FileUploadSession upload,
         CompleteAvatarUploadCommand command,
         string reason,
         CancellationToken cancellationToken)
@@ -112,7 +124,7 @@ public sealed class CompleteAvatarUploadHandler(
     }
 
     private async Task<CompleteAvatarUploadResult> RejectChangedAsync(
-        AvatarUpload upload,
+        FileUploadSession upload,
         CompleteAvatarUploadCommand command,
         CancellationToken cancellationToken)
     {
@@ -124,22 +136,22 @@ public sealed class CompleteAvatarUploadHandler(
         return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.UploadChanged, Error: "Avatar upload changed during validation.");
     }
 
-    private Task QueueQuarantineDeletionAsync(AvatarUpload upload, CancellationToken cancellationToken) =>
+    private Task QueueQuarantineDeletionAsync(FileUploadSession upload, CancellationToken cancellationToken) =>
         commandSender.SendAsync(
             new DeleteQuarantinedObject(upload.Id, upload.QuarantineObjectKey)
             {
-                StakeholderId = upload.StakeholderId,
+                StakeholderId = upload.InitiatedByStakeholderId,
                 TenantId = upload.TenantId
             },
             cancellationToken);
 
-    private void RecordFailure(CompleteAvatarUploadCommand command, AvatarUpload upload, string reason)
+    private void RecordFailure(CompleteAvatarUploadCommand command, FileUploadSession upload, string reason)
     {
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.AvatarUploadFailed,
             ObservabilityEventProperties.Create(
                 command.ActorContext,
-                upload.StakeholderId,
+                upload.InitiatedByStakeholderId,
                 reason,
                 new Dictionary<string, string>
                 {

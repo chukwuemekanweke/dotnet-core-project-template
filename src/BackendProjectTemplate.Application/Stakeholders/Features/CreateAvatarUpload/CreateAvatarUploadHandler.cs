@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Common.FileUploads;
 using BackendProjectTemplate.Application.Stakeholders.AvatarUploads;
+using BackendProjectTemplate.Domain.Common.FileUploads.Entities;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -8,7 +9,7 @@ namespace BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarU
 
 public sealed class CreateAvatarUploadHandler(
     IRepository<Stakeholder> stakeholderRepository,
-    IRepository<AvatarUpload> avatarUploadRepository,
+    IRepository<FileUploadSession> fileUploadSessionRepository,
     FileUploadService fileUploadService,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
@@ -29,6 +30,7 @@ public sealed class CreateAvatarUploadHandler(
         var preparation = fileUploadService.Prepare(
             new FileUploadPreparationRequest(
                 tenantId,
+                AvatarUploadOwnerTypes.Stakeholder,
                 stakeholderId,
                 command.FileName,
                 command.ContentType,
@@ -50,19 +52,24 @@ public sealed class CreateAvatarUploadHandler(
             return new CreateAvatarUploadResult(CreateAvatarUploadStatus.StakeholderNotFound);
         }
 
-        var upload = AvatarUpload.Create(
+        var upload = FileUploadSession.Create(
             preparation.UploadId!.Value,
-            stakeholder.Id,
             stakeholder.TenantId,
+            AvatarUploadOwnerTypes.Stakeholder,
+            stakeholder.Id,
+            stakeholder.Id,
+            AvatarUploadPurposes.ProfileAvatar,
+            AvatarUploadPolicy.Instance.Key,
             preparation.OriginalFileName!,
             preparation.ContentType!,
             preparation.ContentLength!.Value,
             preparation.FileExtension!,
             preparation.QuarantineObjectKey!,
             preparation.FinalObjectKey!,
+            AvatarUploadPolicy.Instance.DestinationVisibility,
             preparation.ExpiresAtUtc!.Value);
 
-        await avatarUploadRepository.AddAsync(upload, cancellationToken);
+        await fileUploadSessionRepository.AddAsync(upload, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var presignedUpload = await fileUploadService.CreatePresignedUploadAsync(preparation, cancellationToken);

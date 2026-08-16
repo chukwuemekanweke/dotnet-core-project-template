@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUpload;
 using BackendProjectTemplate.Domain.Common.Storage;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUploads;
@@ -14,8 +13,8 @@ public sealed class When_CreatingAvatarUpload_WithSupportedFormat_Should
     public async Task PersistPendingUploadAndReturnSignedPut(string contentType, string extension)
     {
         var context = new AvatarUploadHandlerTestContext();
-        AvatarUpload? persistedUpload = null;
-        context.AvatarUploadRepository.AddAsync(Arg.Do<AvatarUpload>(upload => persistedUpload = upload), Arg.Any<CancellationToken>())
+        FileUploadSession? persistedUpload = null;
+        context.FileUploadSessionRepository.AddAsync(Arg.Do<FileUploadSession>(upload => persistedUpload = upload), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
         context.ObjectStorageService.CreatePrivatePresignedUploadAsync(
                 Arg.Any<ObjectStoragePresignedUploadRequest>(),
@@ -32,7 +31,7 @@ public sealed class When_CreatingAvatarUpload_WithSupportedFormat_Should
         result.Status.ShouldBe(CreateAvatarUploadStatus.Success);
         result.Headers!["Content-Type"].ShouldBe(contentType);
         persistedUpload.ShouldNotBeNull();
-        persistedUpload.Status.ShouldBe(AvatarUploadStatus.Pending);
+        persistedUpload.Status.ShouldBe(FileUploadStatus.Pending);
         persistedUpload.FileExtension.ShouldBe(extension);
         persistedUpload.QuarantineObjectKey.ShouldContain($"/{persistedUpload.Id:N}{extension}");
         persistedUpload.QuarantineObjectKey.ShouldNotContain("untrusted.exe");

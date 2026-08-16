@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
 using BackendProjectTemplate.Domain.Common.Storage;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUploads;
@@ -12,7 +11,7 @@ public sealed class When_CompletingAvatarUpload_WithDatabaseFailure_Should
     {
         var context = new AvatarUploadHandlerTestContext();
         var upload = context.PendingUpload();
-        context.AvatarUploadRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<AvatarUpload>>(), Arg.Any<CancellationToken>()).Returns(upload);
+        context.FileUploadSessionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<FileUploadSession>>(), Arg.Any<CancellationToken>()).Returns(upload);
         context.ObjectStorageService.GetPrivateObjectMetadataAsync(upload.QuarantineObjectKey, Arg.Any<CancellationToken>())
             .Returns(new ObjectStorageObjectMetadata(12, "image/png", "etag-a"));
         context.ObjectStorageService.ReadPrivateObjectRangeAsync(Arg.Any<ObjectStorageRangeReadRequest>(), Arg.Any<CancellationToken>())
