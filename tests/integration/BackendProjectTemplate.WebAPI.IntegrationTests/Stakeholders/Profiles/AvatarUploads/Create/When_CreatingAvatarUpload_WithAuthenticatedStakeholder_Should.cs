@@ -1,5 +1,6 @@
+using BackendProjectTemplate.Domain.Common.FileUploads.Entities;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -28,10 +29,16 @@ public sealed class When_CreatingAvatarUpload_WithAuthenticatedStakeholder_Shoul
         payload.UploadUrl.ShouldContain($"/{PrivateBucketName}/{ApplicationFolder}/quarantine/avatars/");
         TrackUpload(payload.UploadId);
         using var scope = CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IRepository<AvatarUpload>>();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<FileUploadSession>>();
         var upload = await repository.GetByIdAsync(payload.UploadId);
         upload.ShouldNotBeNull();
-        upload.Status.ShouldBe(AvatarUploadStatus.Pending);
+        upload.Status.ShouldBe(FileUploadStatus.Pending);
+        upload.OwnerType.ShouldBe("stakeholder");
+        upload.OwnerId.ShouldBe(StakeholderId);
+        upload.InitiatedByStakeholderId.ShouldBe(StakeholderId);
+        upload.Purpose.ShouldBe("stakeholder-profile-avatar");
+        upload.PolicyKey.ShouldBe("stakeholder-avatar-v1");
+        upload.DestinationVisibility.ShouldBe(ObjectStorageVisibility.Public);
         upload.FileExtension.ShouldBe(".jpg");
         upload.QuarantineObjectKey.ShouldNotContain("profile.exe");
     }

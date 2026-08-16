@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.FileUploads.Entities;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -35,7 +36,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<EmailDeliveryWebhookInbox> EmailDeliveryWebhookInboxes => Set<EmailDeliveryWebhookInbox>();
     public DbSet<TenantEmailBaseTemplate> TenantEmailBaseTemplates => Set<TenantEmailBaseTemplate>();
     public DbSet<Stakeholder> Stakeholders => Set<Stakeholder>();
-    public DbSet<AvatarUpload> AvatarUploads => Set<AvatarUpload>();
+    public DbSet<FileUploadSession> FileUploadSessions => Set<FileUploadSession>();
     public DbSet<StakeholderType> StakeholderTypes => Set<StakeholderType>();
     public DbSet<AuthenticationRefreshToken> AuthenticationRefreshTokens => Set<AuthenticationRefreshToken>();
     public DbSet<IpAddress> IpAddresses => Set<IpAddress>();

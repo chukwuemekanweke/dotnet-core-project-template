@@ -453,7 +453,7 @@ function Start-FeatureBranch {
         throw "Remote branch 'origin/$branch' already exists. Choose another feature or resume that branch."
     }
 
-    Invoke-NativeCommand "git" @("switch", "--create", $branch, "origin/main")
+    Invoke-NativeCommand "git" @("switch", "--no-track", "--create", $branch, "origin/main")
     Write-Host "Ready on $branch" -ForegroundColor Green
 }
 

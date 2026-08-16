@@ -9,7 +9,7 @@ using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 
 namespace BackendProjectTemplate.Consumer.Storage;
 
-public sealed class DeleteQuarantinedAvatarObjectHandler(
+public sealed class DeleteQuarantinedObjectHandler(
     ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
@@ -17,8 +17,8 @@ public sealed class DeleteQuarantinedAvatarObjectHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     IRepository<MessageInbox> messageInboxRepository,
-    ILogger<DeleteQuarantinedAvatarObjectHandler> logger)
-    : BaseMessageHandler<DeleteQuarantinedAvatarObject>(
+    ILogger<DeleteQuarantinedObjectHandler> logger)
+    : BaseMessageHandler<DeleteQuarantinedObject>(
         customTelemetryContext,
         currentActorAccessor,
         messageContext,
@@ -28,19 +28,19 @@ public sealed class DeleteQuarantinedAvatarObjectHandler(
         logger)
 {
     protected override async Task HandleAsyncInternal(
-        DeleteQuarantinedAvatarObject message,
+        DeleteQuarantinedObject message,
         CancellationToken cancellationToken)
     {
         if (message.UploadId == Guid.Empty || string.IsNullOrWhiteSpace(message.ObjectKey))
         {
             throw new CannotProcessMessageNonTransientException(
-                "DeleteQuarantinedAvatarObject must contain a valid upload id and object key.");
+                "DeleteQuarantinedObject must contain a valid upload id and object key.");
         }
 
         await objectStorageService.DeletePrivateObjectAsync(message.ObjectKey, cancellationToken);
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(
-        DeleteQuarantinedAvatarObject message) =>
+        DeleteQuarantinedObject message) =>
         [(Observability.PropertyNames.Common.UploadId, message.UploadId.ToString())];
 }

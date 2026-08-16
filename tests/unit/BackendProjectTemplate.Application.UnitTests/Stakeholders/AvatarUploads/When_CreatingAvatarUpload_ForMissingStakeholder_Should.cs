@@ -18,6 +18,6 @@ public sealed class When_CreatingAvatarUpload_ForMissingStakeholder_Should
             CancellationToken.None);
 
         result.Status.ShouldBe(CreateAvatarUploadStatus.StakeholderNotFound);
-        await context.AvatarUploadRepository.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
+        await context.FileUploadSessionRepository.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
     }
 }

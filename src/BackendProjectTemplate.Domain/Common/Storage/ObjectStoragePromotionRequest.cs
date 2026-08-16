@@ -4,4 +4,5 @@ public sealed record ObjectStoragePromotionRequest(
     string SourceObjectKey,
     string DestinationObjectKey,
     string ExpectedSourceETag,
-    string ContentType);
+    string ContentType,
+    ObjectStorageVisibility DestinationVisibility);

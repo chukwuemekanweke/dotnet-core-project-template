@@ -1,8 +1,8 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.GetProfile;
 using BackendProjectTemplate.Contracts.Commands.Storage;
+using BackendProjectTemplate.Domain.Common.FileUploads.Entities;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.WebAPI.Features.Stakeholders.Profiles;
 using Microsoft.EntityFrameworkCore;
@@ -32,10 +32,10 @@ public sealed class When_CompletingAvatarUpload_WithValidQuarantineObject_Should
         createPayload.ShouldNotBeNull();
         TrackUpload(createPayload.UploadId);
 
-        AvatarUpload upload;
+        FileUploadSession upload;
         using (var scope = CreateScope())
         {
-            var repository = scope.ServiceProvider.GetRequiredService<IRepository<AvatarUpload>>();
+            var repository = scope.ServiceProvider.GetRequiredService<IRepository<FileUploadSession>>();
             upload = await repository.GetByIdAsync(createPayload.UploadId)
                 ?? throw new InvalidOperationException("The avatar upload was not persisted.");
         }
@@ -70,9 +70,9 @@ public sealed class When_CompletingAvatarUpload_WithValidQuarantineObject_Should
         var dbContext = assertionScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var outboxMessage = await dbContext.OutboxMessages.SingleAsync(message =>
             message.Kind == OutboxMessageKind.Command &&
-            message.Type == typeof(DeleteQuarantinedAvatarObject).FullName &&
+            message.Type == typeof(DeleteQuarantinedObject).FullName &&
             message.Payload.Contains(createPayload.UploadId.ToString()));
-        var cleanupCommand = JsonSerializer.Deserialize<DeleteQuarantinedAvatarObject>(
+        var cleanupCommand = JsonSerializer.Deserialize<DeleteQuarantinedObject>(
             outboxMessage.Payload,
             new JsonSerializerOptions(JsonSerializerDefaults.Web));
         cleanupCommand.ShouldNotBeNull();
@@ -81,7 +81,7 @@ public sealed class When_CompletingAvatarUpload_WithValidQuarantineObject_Should
         cleanupCommand.TenantId.ShouldBe(TenantId);
     }
 
-    private void ConfigureStorage(AvatarUpload upload, byte[] content, string etag)
+    private void ConfigureStorage(FileUploadSession upload, byte[] content, string etag)
     {
         StorageServer
             .Given(Request.Create()

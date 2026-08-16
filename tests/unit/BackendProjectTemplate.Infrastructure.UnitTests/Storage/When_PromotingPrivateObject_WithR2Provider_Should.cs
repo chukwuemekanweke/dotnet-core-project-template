@@ -15,12 +15,13 @@ public sealed class When_PromotingPrivateObject_WithR2Provider_Should
         context.Client.CopyObjectAsync(Arg.Do<CopyObjectRequest>(request => capturedRequest = request), Arg.Any<CancellationToken>())
             .Returns(new CopyObjectResponse());
 
-        var result = await context.CreateProvider().PromotePrivateObjectToPublicAsync(
+        var result = await context.CreateProvider().PromotePrivateObjectAsync(
             new ObjectStoragePromotionRequest(
                 "backend-template/quarantine/upload.webp",
                 "avatars/upload.webp",
                 "\"etag-a\"",
-                "image/webp"),
+                "image/webp",
+                ObjectStorageVisibility.Public),
             CancellationToken.None);
 
         capturedRequest.ShouldNotBeNull();

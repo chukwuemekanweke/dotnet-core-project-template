@@ -1,5 +1,5 @@
 namespace BackendProjectTemplate.Contracts.Commands.Storage;
 
-public sealed record DeleteQuarantinedAvatarObject(
+public sealed record DeleteQuarantinedObject(
     Guid UploadId,
     string ObjectKey) : BaseCommand;

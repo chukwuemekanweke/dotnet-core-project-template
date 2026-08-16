@@ -17,7 +17,7 @@ public sealed class When_DeletingQuarantinedAvatarObject_WithInvalidCommand_Shou
         var messageContext = Substitute.For<IMessageContext>();
         var objectStorageService = Substitute.For<IObjectStorageService>();
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
-        var sut = new DeleteQuarantinedAvatarObjectHandler(
+        var sut = new DeleteQuarantinedObjectHandler(
             Substitute.For<ICustomTelemetryContext>(),
             Substitute.For<ICurrentActorAccessor>(),
             messageContext,
@@ -25,8 +25,8 @@ public sealed class When_DeletingQuarantinedAvatarObject_WithInvalidCommand_Shou
             Substitute.For<IUnitOfWork>(),
             TimeProvider.System,
             Substitute.For<IRepository<MessageInbox>>(),
-            Substitute.For<ILogger<DeleteQuarantinedAvatarObjectHandler>>());
-        var command = new DeleteQuarantinedAvatarObject(Guid.Empty, string.Empty)
+            Substitute.For<ILogger<DeleteQuarantinedObjectHandler>>());
+        var command = new DeleteQuarantinedObject(Guid.Empty, string.Empty)
         {
             TenantId = Guid.CreateVersion7()
         };

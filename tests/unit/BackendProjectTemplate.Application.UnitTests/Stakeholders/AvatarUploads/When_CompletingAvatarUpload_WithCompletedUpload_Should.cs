@@ -1,5 +1,4 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUploads;
@@ -12,7 +11,7 @@ public sealed class When_CompletingAvatarUpload_WithCompletedUpload_Should
         var context = new AvatarUploadHandlerTestContext();
         var upload = context.PendingUpload();
         upload.MarkCompleted("https://cdn.example/avatar.png", "etag-a");
-        context.AvatarUploadRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<AvatarUpload>>(), Arg.Any<CancellationToken>())
+        context.FileUploadSessionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<FileUploadSession>>(), Arg.Any<CancellationToken>())
             .Returns(upload);
 
         var result = await context.CompleteHandler().HandleAsync(
@@ -20,8 +19,8 @@ public sealed class When_CompletingAvatarUpload_WithCompletedUpload_Should
             CancellationToken.None);
 
         result.Status.ShouldBe(CompleteAvatarUploadStatus.Success);
-        result.AvatarUrl.ShouldBe(upload.FinalUrl);
+        result.AvatarUrl.ShouldBe(upload.FinalLocation);
         await context.ObjectStorageService.DidNotReceiveWithAnyArgs()
-            .PromotePrivateObjectToPublicAsync(default!, default);
+            .PromotePrivateObjectAsync(default!, default);
     }
 }

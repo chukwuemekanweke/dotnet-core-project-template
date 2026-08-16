@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
 using BackendProjectTemplate.Contracts.Commands.Storage;
 using BackendProjectTemplate.Domain.Common.Storage;
-using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUploads;
@@ -13,14 +12,14 @@ public sealed class When_CompletingAvatarUpload_WithCleanupCommandFailure_Should
     {
         var context = new AvatarUploadHandlerTestContext();
         var upload = context.PendingUpload();
-        context.AvatarUploadRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<AvatarUpload>>(), Arg.Any<CancellationToken>()).Returns(upload);
+        context.FileUploadSessionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<FileUploadSession>>(), Arg.Any<CancellationToken>()).Returns(upload);
         context.ObjectStorageService.GetPrivateObjectMetadataAsync(upload.QuarantineObjectKey, Arg.Any<CancellationToken>())
             .Returns(new ObjectStorageObjectMetadata(12, "image/png", "etag-a"));
         context.ObjectStorageService.ReadPrivateObjectRangeAsync(Arg.Any<ObjectStorageRangeReadRequest>(), Arg.Any<CancellationToken>())
             .Returns(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0 });
-        context.ObjectStorageService.PromotePrivateObjectToPublicAsync(Arg.Any<ObjectStoragePromotionRequest>(), Arg.Any<CancellationToken>())
+        context.ObjectStorageService.PromotePrivateObjectAsync(Arg.Any<ObjectStoragePromotionRequest>(), Arg.Any<CancellationToken>())
             .Returns("https://cdn.example/avatar.png");
-        context.CommandSender.SendAsync(Arg.Any<DeleteQuarantinedAvatarObject>(), Arg.Any<CancellationToken>())
+        context.CommandSender.SendAsync(Arg.Any<DeleteQuarantinedObject>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new InvalidOperationException("outbox unavailable"));
 
         var action = () => context.CompleteHandler().HandleAsync(
