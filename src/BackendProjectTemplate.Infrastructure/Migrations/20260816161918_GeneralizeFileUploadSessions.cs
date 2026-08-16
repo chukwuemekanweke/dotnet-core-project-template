@@ -10,106 +10,52 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.EnsureSchema(name: "infrastructure");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_AvatarUploads_Stakeholders_StakeholderId",
-                schema: "stakeholders",
-                table: "AvatarUploads");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_AvatarUploads",
-                schema: "stakeholders",
-                table: "AvatarUploads");
-
-            migrationBuilder.DropIndex(
-                name: "IX_AvatarUploads_StakeholderId",
-                schema: "stakeholders",
-                table: "AvatarUploads");
-
-            migrationBuilder.RenameTable(
+            migrationBuilder.DropTable(
                 name: "AvatarUploads",
-                schema: "stakeholders",
-                newName: "FileUploadSessions",
-                newSchema: "infrastructure");
+                schema: "stakeholders");
 
-            migrationBuilder.RenameColumn(
-                name: "StakeholderId",
+            migrationBuilder.CreateTable(
+                name: "FileUploadSessions",
+                schema: "infrastructure",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    OwnerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    InitiatedByStakeholderId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Purpose = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    PolicyKey = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    OriginalFileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    ExpectedContentType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    ExpectedContentLength = table.Column<long>(type: "bigint", nullable: false),
+                    FileExtension = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    QuarantineObjectKey = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
+                    FinalObjectKey = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
+                    DestinationVisibility = table.Column<int>(type: "integer", nullable: false),
+                    FinalLocation = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
+                    ValidatedETag = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    ExpiresAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    RejectionReason = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    UpdatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FileUploadSessions", x => x.Id);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FileUploadSessions_Status_ExpiresAtUtc",
                 schema: "infrastructure",
                 table: "FileUploadSessions",
-                newName: "OwnerId");
-
-            migrationBuilder.RenameColumn(
-                name: "FinalUrl",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                newName: "FinalLocation");
-
-            migrationBuilder.RenameIndex(
-                name: "IX_AvatarUploads_Status_ExpiresAtUtc",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                newName: "IX_FileUploadSessions_Status_ExpiresAtUtc");
-
-            migrationBuilder.AddColumn<int>(
-                name: "DestinationVisibility",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                type: "integer",
-                nullable: false,
-                defaultValue: 2);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "InitiatedByStakeholderId",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                type: "uuid",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "OwnerType",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                type: "character varying(100)",
-                maxLength: 100,
-                nullable: false,
-                defaultValue: "stakeholder");
-
-            migrationBuilder.AddColumn<string>(
-                name: "PolicyKey",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                type: "character varying(100)",
-                maxLength: 100,
-                nullable: false,
-                defaultValue: "stakeholder-avatar-v1");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Purpose",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                type: "character varying(100)",
-                maxLength: 100,
-                nullable: false,
-                defaultValue: "stakeholder-profile-avatar");
-
-            migrationBuilder.Sql(
-                """
-                UPDATE infrastructure."FileUploadSessions"
-                SET "InitiatedByStakeholderId" = "OwnerId";
-
-                ALTER TABLE infrastructure."FileUploadSessions"
-                    ALTER COLUMN "DestinationVisibility" DROP DEFAULT,
-                    ALTER COLUMN "OwnerType" DROP DEFAULT,
-                    ALTER COLUMN "PolicyKey" DROP DEFAULT,
-                    ALTER COLUMN "Purpose" DROP DEFAULT;
-                """);
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_FileUploadSessions",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                column: "Id");
+                columns: new[] { "Status", "ExpiresAtUtc" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_FileUploadSessions_TenantId_OwnerType_OwnerId_Purpose",
@@ -121,86 +67,60 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_FileUploadSessions",
-                schema: "infrastructure",
-                table: "FileUploadSessions");
-
-            migrationBuilder.DropIndex(
-                name: "IX_FileUploadSessions_TenantId_OwnerType_OwnerId_Purpose",
-                schema: "infrastructure",
-                table: "FileUploadSessions");
-
-            migrationBuilder.DropColumn(
-                name: "DestinationVisibility",
-                schema: "infrastructure",
-                table: "FileUploadSessions");
-
-            migrationBuilder.DropColumn(
-                name: "InitiatedByStakeholderId",
-                schema: "infrastructure",
-                table: "FileUploadSessions");
-
-            migrationBuilder.DropColumn(
-                name: "OwnerType",
-                schema: "infrastructure",
-                table: "FileUploadSessions");
-
-            migrationBuilder.DropColumn(
-                name: "PolicyKey",
-                schema: "infrastructure",
-                table: "FileUploadSessions");
-
-            migrationBuilder.DropColumn(
-                name: "Purpose",
-                schema: "infrastructure",
-                table: "FileUploadSessions");
-
-            migrationBuilder.RenameColumn(
-                name: "OwnerId",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                newName: "StakeholderId");
-
-            migrationBuilder.RenameColumn(
-                name: "FinalLocation",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                newName: "FinalUrl");
-
-            migrationBuilder.RenameIndex(
-                name: "IX_FileUploadSessions_Status_ExpiresAtUtc",
-                schema: "infrastructure",
-                table: "FileUploadSessions",
-                newName: "IX_AvatarUploads_Status_ExpiresAtUtc");
-
-            migrationBuilder.RenameTable(
+            migrationBuilder.DropTable(
                 name: "FileUploadSessions",
-                schema: "infrastructure",
-                newName: "AvatarUploads",
-                newSchema: "stakeholders");
+                schema: "infrastructure");
 
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_AvatarUploads",
+            migrationBuilder.CreateTable(
+                name: "AvatarUploads",
                 schema: "stakeholders",
-                table: "AvatarUploads",
-                column: "Id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_AvatarUploads_Stakeholders_StakeholderId",
-                schema: "stakeholders",
-                table: "AvatarUploads",
-                column: "StakeholderId",
-                principalSchema: "stakeholders",
-                principalTable: "Stakeholders",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    StakeholderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    DeletedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    ExpectedContentLength = table.Column<long>(type: "bigint", nullable: false),
+                    ExpectedContentType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    ExpiresAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    FileExtension = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    FinalObjectKey = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
+                    FinalUrl = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    OriginalFileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    QuarantineObjectKey = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false),
+                    RejectionReason = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UpdatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    ValidatedETag = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AvatarUploads", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AvatarUploads_Stakeholders_StakeholderId",
+                        column: x => x.StakeholderId,
+                        principalSchema: "stakeholders",
+                        principalTable: "Stakeholders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AvatarUploads_StakeholderId",
                 schema: "stakeholders",
                 table: "AvatarUploads",
                 column: "StakeholderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AvatarUploads_Status_ExpiresAtUtc",
+                schema: "stakeholders",
+                table: "AvatarUploads",
+                columns: new[] { "Status", "ExpiresAtUtc" });
         }
     }
 }
