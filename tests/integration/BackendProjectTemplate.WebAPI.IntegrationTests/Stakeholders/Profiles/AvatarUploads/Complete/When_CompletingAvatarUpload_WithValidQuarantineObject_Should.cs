@@ -36,8 +36,8 @@ public sealed class When_CompletingAvatarUpload_WithValidQuarantineObject_Should
         using (var scope = CreateScope())
         {
             var repository = scope.ServiceProvider.GetRequiredService<IRepository<AvatarUpload>>();
-            upload = await repository.GetByIdAsync(createPayload.UploadId);
-            upload.ShouldNotBeNull();
+            upload = await repository.GetByIdAsync(createPayload.UploadId)
+                ?? throw new InvalidOperationException("The avatar upload was not persisted.");
         }
 
         var signature = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0 };

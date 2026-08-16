@@ -488,14 +488,15 @@ function Publish-FeatureBranch {
         throw "Unable to compare the branch with origin/main."
     }
     $aheadCount = [int]$aheadCountText
+    $hasCommittedChanges = $aheadCount -gt 0
 
-    if (-not $hasStagedChanges -and $aheadCount -eq 0) {
+    if (-not $hasStagedChanges -and -not $hasCommittedChanges) {
         throw "No staged or committed feature changes were found. Stage the intended files, review them with 'git diff --cached', and run publish again."
     }
 
     if (-not $hasStagedChanges) {
         Assert-CleanWorkingTree
-        Write-Host "No staged changes found; resuming PR creation from $aheadCount existing branch commit(s)." -ForegroundColor Yellow
+        Write-Host "All branch changes are already committed; skipping commit creation and continuing with $aheadCount existing branch commit(s)." -ForegroundColor Yellow
     }
 
     $existingPr = ((& gh pr list --head $branch --state open --json url --jq '.[0].url') -join "").Trim()
