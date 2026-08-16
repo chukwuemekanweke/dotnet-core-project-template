@@ -8,11 +8,13 @@ internal sealed class CloudflareR2ClientFactory : ICloudflareR2ClientFactory
     public IAmazonS3 Create(CloudflareR2Options options)
     {
         var credentials = new BasicAWSCredentials(options.AccessKeyId, options.SecretAccessKey);
+        var endpoint = new Uri(options.Endpoint.TrimEnd('/'), UriKind.Absolute);
         return new AmazonS3Client(credentials, new AmazonS3Config
         {
-            ServiceURL = options.Endpoint.TrimEnd('/'),
+            ServiceURL = endpoint.ToString().TrimEnd('/'),
             ForcePathStyle = true,
-            AuthenticationRegion = "auto"
+            AuthenticationRegion = "auto",
+            UseHttp = endpoint.Scheme == Uri.UriSchemeHttp
         });
     }
 }

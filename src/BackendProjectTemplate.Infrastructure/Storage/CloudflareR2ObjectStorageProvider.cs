@@ -45,6 +45,7 @@ internal sealed class CloudflareR2ObjectStorageProvider(
             ContentType = request.ContentType,
             Expires = request.ExpiresAtUtc.UtcDateTime
         });
+        uploadUrl = UseConfiguredEndpointScheme(uploadUrl, configuredOptions.Endpoint);
 
         return new ObjectStoragePresignedUploadResult(
             uploadUrl,
@@ -174,6 +175,17 @@ internal sealed class CloudflareR2ObjectStorageProvider(
         !string.IsNullOrWhiteSpace(configuredOptions.PublicBaseUrl)
             ? $"{configuredOptions.PublicBaseUrl.TrimEnd('/')}/{objectKey}"
             : $"{configuredOptions.Endpoint.TrimEnd('/')}/{configuredOptions.PublicBucketName.Trim()}/{objectKey}";
+
+    private static string UseConfiguredEndpointScheme(string uploadUrl, string endpoint)
+    {
+        var configuredEndpoint = new Uri(endpoint, UriKind.Absolute);
+        var presignedUrl = new UriBuilder(uploadUrl)
+        {
+            Scheme = configuredEndpoint.Scheme,
+            Port = configuredEndpoint.Port
+        };
+        return presignedUrl.Uri.AbsoluteUri;
+    }
 
     private static void EnsureConfigured(CloudflareR2Options configuredOptions)
     {

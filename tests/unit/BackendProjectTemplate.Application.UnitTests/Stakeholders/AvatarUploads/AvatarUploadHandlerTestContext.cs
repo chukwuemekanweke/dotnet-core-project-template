@@ -1,10 +1,10 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
 using BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUpload;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUploads;
 
@@ -16,6 +16,7 @@ internal sealed class AvatarUploadHandlerTestContext
     public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
     public IRepository<AvatarUpload> AvatarUploadRepository { get; } = Substitute.For<IRepository<AvatarUpload>>();
     public IObjectStorageService ObjectStorageService { get; } = Substitute.For<IObjectStorageService>();
+    public ICommandSender CommandSender { get; } = Substitute.For<ICommandSender>();
     public ICustomTelemetryContext Telemetry { get; } = Substitute.For<ICustomTelemetryContext>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
@@ -69,10 +70,10 @@ internal sealed class AvatarUploadHandlerTestContext
             StakeholderRepository,
             AvatarUploadRepository,
             ObjectStorageService,
+            CommandSender,
             Telemetry,
             UnitOfWork,
-            new FixedTimeProvider(UtcNow),
-            NullLogger<CompleteAvatarUploadHandler>.Instance);
+            new FixedTimeProvider(UtcNow));
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {

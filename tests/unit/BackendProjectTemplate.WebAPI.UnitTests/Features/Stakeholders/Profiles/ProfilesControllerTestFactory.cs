@@ -3,6 +3,7 @@ using BackendProjectTemplate.Application.Stakeholders.Features.CreateAvatarUploa
 using BackendProjectTemplate.Application.Stakeholders.Features.GetProfile;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -41,10 +42,10 @@ internal static class ProfilesControllerTestFactory
                 stakeholderRepository,
                 avatarUploadRepository,
                 objectStorageService,
+                Substitute.For<ICommandSender>(),
                 customTelemetryContext,
                 unitOfWork,
-                TimeProvider.System,
-                NullLogger<CompleteAvatarUploadHandler>.Instance),
+                TimeProvider.System),
             new UpdateProfileHandler(stakeholderRepository, customTelemetryContext, unitOfWork),
             currentActor,
             logger ?? NullLogger<ProfilesController>.Instance);

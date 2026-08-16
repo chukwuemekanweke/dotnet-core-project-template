@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
+using BackendProjectTemplate.Contracts.Commands.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Shouldly;
 
@@ -7,7 +8,7 @@ namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUpload
 public sealed class When_CompletingAvatarUpload_WithExpiredUpload_Should
 {
     [Fact]
-    public async Task MarkExpiredAndDeleteQuarantine()
+    public async Task MarkExpiredAndQueueQuarantineDeletion()
     {
         var context = new AvatarUploadHandlerTestContext();
         var upload = context.PendingUpload(expiresAtUtc: context.UtcNow.AddSeconds(-1));
@@ -20,6 +21,8 @@ public sealed class When_CompletingAvatarUpload_WithExpiredUpload_Should
 
         result.Status.ShouldBe(CompleteAvatarUploadStatus.Expired);
         upload.Status.ShouldBe(AvatarUploadStatus.Expired);
-        await context.ObjectStorageService.Received(1).DeletePrivateObjectAsync(upload.QuarantineObjectKey, Arg.Any<CancellationToken>());
+        await context.CommandSender.Received(1).SendAsync(
+            Arg.Is<DeleteQuarantinedAvatarObject>(command => command.ObjectKey == upload.QuarantineObjectKey),
+            Arg.Any<CancellationToken>());
     }
 }

@@ -24,7 +24,8 @@ public sealed class When_CreatingAvatarUpload_WithAuthenticatedStakeholder_Shoul
         payload.ShouldNotBeNull();
         payload.Method.ShouldBe("PUT");
         payload.Headers["Content-Type"].ShouldBe("image/jpeg");
-        payload.UploadUrl.ShouldContain("storage.integration.invalid/private/");
+        payload.UploadUrl.ShouldStartWith(StorageServer.Urls.Single());
+        payload.UploadUrl.ShouldContain($"/{PrivateBucketName}/{ApplicationFolder}/quarantine/avatars/");
         TrackUpload(payload.UploadId);
         using var scope = CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IRepository<AvatarUpload>>();

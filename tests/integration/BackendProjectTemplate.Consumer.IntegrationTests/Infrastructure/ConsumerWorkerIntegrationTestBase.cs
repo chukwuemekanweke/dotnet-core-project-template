@@ -4,6 +4,7 @@ using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Notifications;
 using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
+using BackendProjectTemplate.Infrastructure.Storage;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -70,6 +71,9 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         services.AddSingleton(messageContext);
     }
 
+    protected virtual IReadOnlyDictionary<string, string?> GetConfigurationOverrides() =>
+        new Dictionary<string, string?>();
+
     protected static async Task WaitForConditionAsync(Func<Task<bool>> condition)
     {
         for (var attempt = 0; attempt < 20; attempt++)
@@ -87,9 +91,8 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
 
     private async Task InitializeHostAsync()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
+        var configurationValues = new Dictionary<string, string?>
+        {
                 ["ConnectionStrings:PostgresWrite"] = _fixture.PostgresConnectionString,
                 ["ConnectionStrings:PostgresRead"] = _fixture.PostgresConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
@@ -104,8 +107,15 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
                 ["Notifications:Email:FromAddress"] = "no-reply@integrationtests.local",
                 ["Notifications:Email:FromName"] = "BackendProjectTemplate Integration Tests",
                 ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
-                ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
-            })
+            ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
+        };
+        foreach (var entry in GetConfigurationOverrides())
+        {
+            configurationValues[entry.Key] = entry.Value;
+        }
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configurationValues)
             .Build();
 
         var builder = Host.CreateApplicationBuilder();
@@ -120,6 +130,7 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddRedisCaching(configuration);
         builder.Services.AddTransactionalOutbox();
         builder.Services.AddNotificationServices(configuration);
+        builder.Services.AddObjectStorage(configuration);
         builder.Services.AddCustomTelemetryContext();
         builder.Services.AddBackendTelemetry(configuration);
         builder.Services.AddSubscribers(configuration);

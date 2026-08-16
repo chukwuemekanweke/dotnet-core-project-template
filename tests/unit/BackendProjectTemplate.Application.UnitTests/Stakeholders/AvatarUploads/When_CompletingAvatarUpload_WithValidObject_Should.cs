@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
+using BackendProjectTemplate.Contracts.Commands.Storage;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Shouldly;
@@ -8,7 +9,7 @@ namespace BackendProjectTemplate.Application.UnitTests.Stakeholders.AvatarUpload
 public sealed class When_CompletingAvatarUpload_WithValidObject_Should
 {
     [Fact]
-    public async Task PromotePersistAndDeleteQuarantine()
+    public async Task PromotePersistAndQueueQuarantineDeletion()
     {
         var context = new AvatarUploadHandlerTestContext();
         var upload = context.PendingUpload();
@@ -31,6 +32,12 @@ public sealed class When_CompletingAvatarUpload_WithValidObject_Should
         upload.FinalUrl.ShouldBe(result.AvatarUrl);
         upload.ValidatedETag.ShouldBe("etag-a");
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await context.ObjectStorageService.Received(1).DeletePrivateObjectAsync(upload.QuarantineObjectKey, Arg.Any<CancellationToken>());
+        await context.CommandSender.Received(1).SendAsync(
+            Arg.Is<DeleteQuarantinedAvatarObject>(command =>
+                command.UploadId == upload.Id &&
+                command.ObjectKey == upload.QuarantineObjectKey &&
+                command.StakeholderId == upload.StakeholderId &&
+                command.TenantId == upload.TenantId),
+            Arg.Any<CancellationToken>());
     }
 }

@@ -94,7 +94,7 @@ Configure an R2 lifecycle rule that deletes objects under this prefix after a sh
 {ApplicationFolder}/quarantine/avatars/
 ```
 
-The lifecycle rule is the fallback for abandoned uploads and best-effort cleanup failures. Keep the private bucket non-public; only validated copies belong in the configured public bucket.
+After completion, the API records a `DeleteQuarantinedAvatarObject` command in the outbox with the avatar state change. The Consumer handles that command and deletes the private object through the configured storage provider. The lifecycle rule remains the fallback for abandoned uploads or commands that exhaust their retries. Keep the private bucket non-public; only validated copies belong in the configured public bucket.
 
 ## Git workflow automation
 

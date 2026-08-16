@@ -27,6 +27,8 @@ public sealed class When_CompletingAvatarUpload_WithDatabaseFailure_Should
             CancellationToken.None);
 
         await action.ShouldThrowAsync<InvalidOperationException>();
-        await context.ObjectStorageService.DidNotReceiveWithAnyArgs().DeletePrivateObjectAsync(default!, default);
+        await context.CommandSender.Received(1).SendAsync(
+            Arg.Any<BackendProjectTemplate.Contracts.Commands.Storage.DeleteQuarantinedAvatarObject>(),
+            Arg.Any<CancellationToken>());
     }
 }

@@ -1,9 +1,10 @@
+using BackendProjectTemplate.Contracts.Commands.Storage;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Specifications;
-using Microsoft.Extensions.Logging;
 
 namespace BackendProjectTemplate.Application.Stakeholders.Features.CompleteAvatarUpload;
 
@@ -11,10 +12,10 @@ public sealed class CompleteAvatarUploadHandler(
     IRepository<Stakeholder> stakeholderRepository,
     IRepository<AvatarUpload> avatarUploadRepository,
     IObjectStorageService objectStorageService,
+    ICommandSender commandSender,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider,
-    ILogger<CompleteAvatarUploadHandler> logger)
+    TimeProvider timeProvider)
 {
     private const long MaxAvatarFileSizeBytes = 2 * 1024 * 1024;
 
@@ -59,8 +60,8 @@ public sealed class CompleteAvatarUploadHandler(
         if (timeProvider.GetUtcNow() > upload.ExpiresAtUtc)
         {
             upload.MarkExpired();
+            await QueueQuarantineDeletionAsync(upload, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            await TryDeleteQuarantineAsync(upload, cancellationToken);
             return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.Expired, Error: "Avatar upload has expired.");
         }
 
@@ -116,8 +117,8 @@ public sealed class CompleteAvatarUploadHandler(
 
         stakeholder.SetAvatarUrl(finalUrl);
         upload.MarkCompleted(finalUrl, metadata.ETag);
+        await QueueQuarantineDeletionAsync(upload, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        await TryDeleteQuarantineAsync(upload, cancellationToken);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.AvatarUploadCompleted,
             ObservabilityEventProperties.Create(
@@ -138,8 +139,8 @@ public sealed class CompleteAvatarUploadHandler(
         CancellationToken cancellationToken)
     {
         upload.Reject(reason);
+        await QueueQuarantineDeletionAsync(upload, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        await TryDeleteQuarantineAsync(upload, cancellationToken);
         RecordFailure(command, upload, reason);
         return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.InvalidFile, Error: "Avatar upload is invalid.");
     }
@@ -151,27 +152,20 @@ public sealed class CompleteAvatarUploadHandler(
     {
         const string reason = "object_changed";
         upload.Reject(reason);
+        await QueueQuarantineDeletionAsync(upload, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        await TryDeleteQuarantineAsync(upload, cancellationToken);
         RecordFailure(command, upload, reason);
         return new CompleteAvatarUploadResult(CompleteAvatarUploadStatus.UploadChanged, Error: "Avatar upload changed during validation.");
     }
 
-    private async Task TryDeleteQuarantineAsync(AvatarUpload upload, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await objectStorageService.DeletePrivateObjectAsync(upload.QuarantineObjectKey, cancellationToken);
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(
-                exception,
-                "Unable to delete quarantine object for avatar upload {UploadId} and stakeholder {StakeholderId}.",
-                upload.Id,
-                upload.StakeholderId);
-        }
-    }
+    private Task QueueQuarantineDeletionAsync(AvatarUpload upload, CancellationToken cancellationToken) =>
+        commandSender.SendAsync(
+            new DeleteQuarantinedAvatarObject(upload.Id, upload.QuarantineObjectKey)
+            {
+                StakeholderId = upload.StakeholderId,
+                TenantId = upload.TenantId
+            },
+            cancellationToken);
 
     private void RecordFailure(CompleteAvatarUploadCommand command, AvatarUpload upload, string reason)
     {

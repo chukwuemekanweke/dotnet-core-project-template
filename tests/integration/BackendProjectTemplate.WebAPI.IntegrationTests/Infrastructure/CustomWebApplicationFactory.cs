@@ -1,5 +1,4 @@
 using BackendProjectTemplate.Domain.Common.Authentication;
-using BackendProjectTemplate.Domain.Common.Storage;
 using BackendProjectTemplate.Domain.Payments.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -18,7 +17,6 @@ public sealed class CustomWebApplicationFactory(
     IReadOnlyDictionary<string, string?>? configurationOverrides = null) : WebApplicationFactory<Program>
 {
     public FakeGoogleIdentityTokenService GoogleIdentityTokenService { get; } = new();
-    public FakeObjectStorageService ObjectStorageService { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -67,8 +65,6 @@ public sealed class CustomWebApplicationFactory(
         {
             services.RemoveAll<IGoogleIdentityTokenService>();
             services.AddSingleton<IGoogleIdentityTokenService>(GoogleIdentityTokenService);
-            services.RemoveAll<IObjectStorageService>();
-            services.AddSingleton<IObjectStorageService>(ObjectStorageService);
 
             if (useFakePaymentProviderServices)
             {
