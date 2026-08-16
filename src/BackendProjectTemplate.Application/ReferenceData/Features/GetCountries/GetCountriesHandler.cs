@@ -7,7 +7,7 @@ namespace BackendProjectTemplate.Application.ReferenceData.Features.GetCountries
 
 public sealed class GetCountriesHandler(IRepository<Country> countries, IJsonCache cache)
 {
-    private const string CacheKey = "reference-data:countries:v2";
+    private const string CacheKey = "reference-data:countries";
 
     public async Task<IReadOnlyList<GetCountriesResponse>> HandleAsync(CancellationToken cancellationToken)
     {
