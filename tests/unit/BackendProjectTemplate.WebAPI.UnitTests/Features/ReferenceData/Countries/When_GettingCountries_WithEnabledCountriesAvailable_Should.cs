@@ -14,9 +14,10 @@ public sealed class When_GettingCountries_WithEnabledCountriesAvailable_Should
     {
         var repository = Substitute.For<IRepository<Country>>();
         var cache = Substitute.For<IJsonCache>();
+        var countryId = Guid.CreateVersion7();
         var response = new[]
         {
-            new GetCountriesResponse("Nigeria", "NG", "+234", "https://example.com/ng.svg")
+            new GetCountriesResponse(countryId, "Nigeria", "NG", "+234", "https://example.com/ng.svg")
         };
 
         cache.GetAsync<GetCountriesResponse[]>(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -28,5 +29,6 @@ public sealed class When_GettingCountries_WithEnabledCountriesAvailable_Should
 
         var ok = result.Result.ShouldBeOfType<OkObjectResult>();
         ok.Value.ShouldBe(response);
+        response[0].CountryId.ShouldBe(countryId);
     }
 }
