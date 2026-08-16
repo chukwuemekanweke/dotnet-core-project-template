@@ -12,9 +12,10 @@ public sealed class When_GettingCountries_WithCachedResponseAvailable_Should
     {
         var countries = Substitute.For<IRepository<Country>>();
         var cache = Substitute.For<IJsonCache>();
+        var countryId = Guid.CreateVersion7();
         var cachedResponse = new[]
         {
-            new GetCountriesResponse("Nigeria", "NG", "+234", "https://example.com/ng.svg")
+            new GetCountriesResponse(countryId, "Nigeria", "NG", "+234", "https://example.com/ng.svg")
         };
 
         cache.GetAsync<GetCountriesResponse[]>(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -25,6 +26,7 @@ public sealed class When_GettingCountries_WithCachedResponseAvailable_Should
         var result = await sut.HandleAsync(CancellationToken.None);
 
         result.ShouldBe(cachedResponse);
+        result[0].CountryId.ShouldBe(countryId);
         await countries.DidNotReceiveWithAnyArgs().ListAsync(default!, default);
     }
 }

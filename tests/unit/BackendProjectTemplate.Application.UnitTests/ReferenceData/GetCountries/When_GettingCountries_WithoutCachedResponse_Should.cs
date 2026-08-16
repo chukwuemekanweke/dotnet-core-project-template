@@ -28,6 +28,7 @@ public sealed class When_GettingCountries_WithoutCachedResponse_Should
         var result = await sut.HandleAsync(CancellationToken.None);
 
         result.Count.ShouldBe(1);
+        result[0].CountryId.ShouldBe(entities[0].Id);
         result[0].Name.ShouldBe("Nigeria");
         await cache.Received(1).SetAsync(
             Arg.Any<string>(),

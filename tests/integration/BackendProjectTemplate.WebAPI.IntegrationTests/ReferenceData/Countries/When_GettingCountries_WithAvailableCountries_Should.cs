@@ -49,7 +49,7 @@ public sealed class When_GettingCountries_WithAvailableCountries_Should(Containe
             _response.ShouldNotBeNull();
             _response.StatusCode.ShouldBe(HttpStatusCode.OK);
             payload.ShouldNotBeNull();
-            payload.Any(country => country.ShortCode == "NGT").ShouldBeTrue();
+            payload.Any(country => country.CountryId == _countryId && country.ShortCode == "NGT").ShouldBeTrue();
         }
     }
 
