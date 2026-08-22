@@ -13,6 +13,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmatio
 [ApiController]
 [ApiVersion("1.0")]
 [EnableRateLimiting(RateLimitingPolicyNames.EmailOperationsPolicy)]
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
 [Route(EndpointUrl.EmailConfirmations.Route)]
 public sealed class EmailConfirmationsController(
     SignUpOtpHandler handler,
@@ -34,18 +35,27 @@ public sealed class EmailConfirmationsController(
             return BadRequest(new ValidationProblemDetails(validationResult.ToValidationDictionary()));
         }
 
-        var command = new SignUpOtpCommand(request.Email, request.Otp, ActorContext.FromAnonymousActor(currentActor));
+        var command = new SignUpOtpCommand(
+            request.Email,
+            request.Otp,
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+            Request.Headers.UserAgent.ToString(),
+            ActorContext.FromAnonymousActor(currentActor));
 
         var result = await handler.HandleAsync(command, cancellationToken);
 
         return result.Status switch
         {
-            SignUpOtpStatus.Success => Ok(new SignUpOtpResponse("OTP verified. You can now sign in.")),
-            SignUpOtpStatus.AlreadyVerified => Ok(new SignUpOtpResponse("The account was already verified.")),
+            SignUpOtpStatus.Success => Ok(new SignUpOtpResponse(
+                result.Tokens!.AccessToken.Value,
+                result.Tokens.AccessToken.ExpiresAtUtc,
+                result.Tokens.RefreshToken.Value,
+                result.Tokens.RefreshToken.ExpiresAtUtc,
+                "Bearer")),
             _ => Problem(
                 statusCode: StatusCodes.Status400BadRequest,
-                title: "Invalid OTP",
-                detail: "The OTP is invalid, expired, or has already been consumed.")
+                title: "Unable to confirm email",
+                detail: "The confirmation request is invalid, expired, already completed, or unavailable.")
         };
     }
 
@@ -66,12 +76,8 @@ public sealed class EmailConfirmationsController(
             new RequestEmailConfirmationOtpCommand(request.Email, ActorContext.FromAnonymousActor(currentActor)),
             cancellationToken);
 
-        var message = result.Status switch
-        {
-            RequestEmailConfirmationOtpStatus.AlreadyVerified => "The account was already verified.",
-            _ => "If the account exists and still requires verification, an OTP will be sent when no active code exists."
-        };
-
-        return Ok(new RequestEmailConfirmationOtpResponse(message, result.RetryAtUtc));
+        return Ok(new RequestEmailConfirmationOtpResponse(
+            "If the account exists and still requires verification, an OTP will be sent when no active code exists.",
+            result.RetryAtUtc));
     }
 }

@@ -18,9 +18,25 @@ public sealed class RefreshTokenService(
 
     public async Task<RefreshToken> IssueAsync(AppUser user, CancellationToken cancellationToken)
     {
-        var utcNow = timeProvider.GetUtcNow();
+        var expiresAtUtc = timeProvider.GetUtcNow().AddDays(_options.LifetimeDays);
+        return await IssueAsync(user, expiresAtUtc, cancellationToken);
+    }
+
+    public async Task<RefreshToken> IssueAsync(
+        AppUser user,
+        TimeSpan lifetime,
+        CancellationToken cancellationToken)
+    {
+        var expiresAtUtc = timeProvider.GetUtcNow().Add(lifetime);
+        return await IssueAsync(user, expiresAtUtc, cancellationToken);
+    }
+
+    private async Task<RefreshToken> IssueAsync(
+        AppUser user,
+        DateTimeOffset expiresAtUtc,
+        CancellationToken cancellationToken)
+    {
         var rawToken = GenerateRawToken();
-        var expiresAtUtc = utcNow.AddDays(_options.LifetimeDays);
         var securityStamp = await GetRequiredSecurityStampAsync(user, cancellationToken);
         var refreshToken = AuthenticationRefreshToken.Create(user.Id, ComputeHash(rawToken), securityStamp, expiresAtUtc);
 
@@ -40,7 +56,7 @@ public sealed class RefreshTokenService(
         Revoke(currentRefreshToken, utcNow);
         refreshTokenRepository.Update(currentRefreshToken);
 
-        return await IssueAsync(user, cancellationToken);
+        return await IssueAsync(user, currentRefreshToken.ExpiresAtUtc, cancellationToken);
     }
 
     public void Revoke(AuthenticationRefreshToken refreshToken, DateTimeOffset utcNow)

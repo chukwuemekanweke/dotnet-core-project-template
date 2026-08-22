@@ -4,12 +4,15 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using Microsoft.AspNetCore.Identity;
 
 namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 
 public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
     ITwoFactorOtpService twoFactorOtpService,
+    IAccessTokenService accessTokenService,
+    IRefreshTokenService refreshTokenService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
@@ -41,6 +44,19 @@ public sealed class SignUpOtpHandler(
             return new SignUpOtpResult(SignUpOtpStatus.AlreadyVerified);
         }
 
+        if (await identityService.IsLockedOutAsync(user))
+        {
+            customTelemetryContext.SetProperty(
+                Observability.PropertyNames.Common.FailureReason,
+                UserSignInFailureReasons.LockedOut);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.EmailConfirmationFailed,
+                ObservabilityEventProperties.Create(
+                    request.ActorContext,
+                    failureReason: UserSignInFailureReasons.LockedOut));
+            return new SignUpOtpResult(SignUpOtpStatus.AccountUnavailable);
+        }
+
         if (!await twoFactorOtpService.ValidateOtpAsync(
                 user.Id,
                 request.Otp,
@@ -62,10 +78,27 @@ public sealed class SignUpOtpHandler(
         var updateResult = await identityService.UpdateAsync(user);
         if (!updateResult.Succeeded)
         {
+            if (updateResult.Errors.Any(error => error.Code == nameof(IdentityErrorDescriber.ConcurrencyFailure)))
+            {
+                return new SignUpOtpResult(SignUpOtpStatus.AlreadyVerified);
+            }
+
             throw new InvalidOperationException("Failed to update the user after OTP verification.");
         }
 
+        var accessToken = accessTokenService.Generate(user, stakeholder.Id);
+        var refreshToken = await refreshTokenService.IssueAsync(
+            user,
+            AuthenticationOtpDefaults.EmailConfirmationSessionLifetime,
+            cancellationToken);
+
         await eventPublisher.PublishAsync(new UserEmailConfirmed
+        {
+            StakeholderId = stakeholder.Id,
+            FlowId = request.ActorContext.FlowId,
+            OccuredAt = now
+        }, cancellationToken);
+        await eventPublisher.PublishAsync(new UserSignInSuccessful(request.IpAddress, request.UserAgent)
         {
             StakeholderId = stakeholder.Id,
             FlowId = request.ActorContext.FlowId,
@@ -77,6 +110,8 @@ public sealed class SignUpOtpHandler(
             Observability.EventNames.Authentication.EmailConfirmationCompleted,
             ObservabilityEventProperties.Create(request.ActorContext, stakeholder.Id));
 
-        return new SignUpOtpResult(SignUpOtpStatus.Success);
+        return new SignUpOtpResult(
+            SignUpOtpStatus.Success,
+            new AuthenticationTokens(accessToken, refreshToken));
     }
 }

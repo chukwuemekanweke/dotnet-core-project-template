@@ -63,6 +63,8 @@ internal sealed class AuthenticationFlowTestContext
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(
         IdentityService,
         TwoFactorOtpService,
+        AccessTokenService,
+        RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
@@ -180,10 +182,14 @@ internal sealed class AuthenticationFlowTestContext
 
     public static SignUpOtpCommand CreateSignUpOtpCommand(
         string? email = null,
-        string? otp = null) =>
+        string? otp = null,
+        string? ipAddress = null,
+        string? userAgent = null) =>
         new(
             email ?? AuthenticationTestData.Email(),
             otp ?? AuthenticationTestData.Otp(),
+            ipAddress ?? AuthenticationTestData.IpAddress(),
+            userAgent ?? AuthenticationTestData.UserAgent(),
             TestActorContext());
 
     public static RequestPasswordResetCommand CreateRequestPasswordResetCommand(string? email = null) =>

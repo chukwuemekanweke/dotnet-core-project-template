@@ -120,6 +120,8 @@ internal sealed class AuthenticationControllerTestContext
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(
         IdentityService,
         TwoFactorOtpService,
+        AccessTokenService,
+        RefreshTokenService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,

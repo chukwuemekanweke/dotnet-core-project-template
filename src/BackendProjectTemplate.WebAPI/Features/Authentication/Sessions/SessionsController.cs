@@ -19,6 +19,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 
 [ApiController]
 [ApiVersion("1.0")]
+[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
 [Route(EndpointUrl.Sessions.Route)]
 public sealed class SessionsController(
     SignInHandler handler,
