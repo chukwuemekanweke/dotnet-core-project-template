@@ -2,6 +2,7 @@ namespace BackendProjectTemplate.Domain.Common.Observability;
 
 public static class ObservabilityFailureReasons
 {
+    public const string ActiveOtpExists = "active_otp_exists";
     public const string AlreadyConfirmed = "already_confirmed";
     public const string DuplicateProcessing = "duplicate_processing";
     public const string DuplicateEmail = "duplicate_email";

@@ -19,4 +19,9 @@ public interface ITwoFactorOtpService
         Guid userId,
         OtpIntent intent,
         CancellationToken cancellationToken);
+
+    Task<TwoFactorOtp?> GetActiveOtpAsync(
+        Guid userId,
+        OtpIntent intent,
+        CancellationToken cancellationToken);
 }

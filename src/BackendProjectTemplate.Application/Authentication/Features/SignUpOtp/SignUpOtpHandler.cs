@@ -9,6 +9,7 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 
 public sealed class SignUpOtpHandler(
     IAuthenticationIdentityService identityService,
+    ITwoFactorOtpService twoFactorOtpService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
@@ -40,7 +41,11 @@ public sealed class SignUpOtpHandler(
             return new SignUpOtpResult(SignUpOtpStatus.AlreadyVerified);
         }
 
-        if (!await identityService.VerifySignUpOtpAsync(user, request.Otp))
+        if (!await twoFactorOtpService.ValidateOtpAsync(
+                user.Id,
+                request.Otp,
+                OtpIntent.EmailConfirmation,
+                cancellationToken))
         {
             customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.InvalidOtp);
             customTelemetryContext.AddCustomEvent(

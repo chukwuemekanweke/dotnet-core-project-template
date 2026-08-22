@@ -17,7 +17,8 @@ public sealed class SignUpHandler(
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider)
 {
     public async Task<SignUpResult> HandleAsync(SignUpCommand request, CancellationToken cancellationToken)
     {
@@ -83,7 +84,9 @@ public sealed class SignUpHandler(
             Observability.EventNames.Authentication.PasswordSignUpCompleted,
             ObservabilityEventProperties.Create(request.ActorContext, stakeholder.Id));
 
-        return new SignUpResult(SignUpStatus.Accepted);
+        return new SignUpResult(
+            SignUpStatus.Accepted,
+            RetryAtUtc: timeProvider.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
     }
 }
 

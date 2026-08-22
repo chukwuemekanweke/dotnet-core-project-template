@@ -4,6 +4,7 @@ using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
+using BackendProjectTemplate.Application.Authentication.Features.RequestEmailConfirmationOtp;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
@@ -43,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SignUpHandler>();
         services.AddScoped<SignUpOtpHandler>();
         services.AddScoped<SignInHandler>();
+        services.AddScoped<RequestEmailConfirmationOtpHandler>();
         services.AddScoped<RequestPasswordResetHandler>();
         services.AddScoped<ProcessMailtrapDeliveryWebhookHandler>();
         services.AddScoped<GetProfileHandler>();

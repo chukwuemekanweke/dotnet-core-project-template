@@ -145,6 +145,7 @@ These are the current business custom events for the implemented scope.
 - `GoogleSignUpCompleted`
 - `GoogleSignUpFailed`
 - `EmailConfirmationOtpSent`
+- `EmailConfirmationOtpSendSkipped`
 - `EmailConfirmationStarted`
 - `EmailConfirmationCompleted`
 - `EmailConfirmationFailed`
@@ -217,9 +218,12 @@ Expected business events:
 - `PasswordSignUpCompleted`
 - `PasswordSignUpFailed`
 - `EmailConfirmationOtpSent`
+- `EmailConfirmationOtpSendSkipped`
 
 Failure context currently expected:
 
+- `active_otp_exists`
+- `already_confirmed`
 - `duplicate_email`
 - `validation_failed`
 

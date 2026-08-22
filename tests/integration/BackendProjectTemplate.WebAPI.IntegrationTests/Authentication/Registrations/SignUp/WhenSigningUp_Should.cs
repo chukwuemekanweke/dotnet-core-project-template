@@ -1,5 +1,7 @@
+using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
@@ -70,6 +72,11 @@ public sealed class WhenSigningUp_Should(ContainersFixture fixture)
         {
             _response.ShouldNotBeNull();
             _response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+            var response = await _response.Content.ReadFromJsonAsync<SignUpResponse>();
+            response.ShouldNotBeNull();
+            response.RetryAtUtc.ShouldBeGreaterThan(DateTimeOffset.UtcNow);
+            response.RetryAtUtc.ShouldBeLessThanOrEqualTo(
+                DateTimeOffset.UtcNow.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
 
             using var scope = CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<IRepository<OutboxMessage>>();

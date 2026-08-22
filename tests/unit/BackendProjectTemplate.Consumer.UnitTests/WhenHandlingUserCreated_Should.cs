@@ -7,9 +7,7 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Formatting;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
-using BackendProjectTemplate.Infrastructure.Authentication;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
-using Microsoft.Extensions.Options;
 
 namespace BackendProjectTemplate.Consumer.UnitTests;
 
@@ -19,6 +17,7 @@ public sealed class WhenHandlingUserCreated_Should
     public async Task GenerateSignUpOtpAndQueueNotificationCommand()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var twoFactorOtpService = Substitute.For<ITwoFactorOtpService>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var messageContext = Substitute.For<IMessageContext>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
@@ -28,7 +27,6 @@ public sealed class WhenHandlingUserCreated_Should
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var logger = Substitute.For<ILogger<UserCreatedHandler>>();
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 23, 10, 0, 0, TimeSpan.Zero));
-        var lockoutOptions = Options.Create(new AuthenticationLockoutOptions { Duration = TimeSpan.FromHours(12) });
         var stakeholderId = Guid.CreateVersion7();
         var tenantId = Guid.CreateVersion7();
         var countryId = Guid.CreateVersion7();
@@ -42,7 +40,19 @@ public sealed class WhenHandlingUserCreated_Should
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(stakeholderId, user.Id, email, tenantId, countryId, Guid.CreateVersion7(), firstName, lastName, null, false));
         identityService.FindByIdAsync(user.Id).Returns(user);
-        identityService.GenerateSignUpOtpAsync(user).Returns(otpCode);
+        var otp = new TwoFactorOtp(
+            otpCode,
+            timeProvider.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
+        twoFactorOtpService.OtpExistsAsync(user.Id, OtpIntent.EmailConfirmation, Arg.Any<CancellationToken>())
+            .Returns(false);
+        twoFactorOtpService.GenerateOtpAsync(
+                user.Id,
+                OtpIntent.EmailConfirmation,
+                Arg.Any<CancellationToken>(),
+                6,
+                false)
+            .Returns(otp);
+        var otpSender = new EmailConfirmationOtpSender(twoFactorOtpService, commandSender, timeProvider);
 
         await new UserCreatedHandler(
             customTelemetryContext,
@@ -50,10 +60,9 @@ public sealed class WhenHandlingUserCreated_Should
             messageContext,
             identityService,
             stakeholderReadModelRepository,
-            commandSender,
+            otpSender,
             unitOfWork,
             timeProvider,
-            lockoutOptions,
             logger,
             messageInboxRepository).HandleAsync(
             new UserCreated
@@ -63,7 +72,12 @@ public sealed class WhenHandlingUserCreated_Should
             },
             CancellationToken.None);
 
-        await identityService.Received(1).GenerateSignUpOtpAsync(user);
+        await twoFactorOtpService.Received(1).GenerateOtpAsync(
+            user.Id,
+            OtpIntent.EmailConfirmation,
+            Arg.Any<CancellationToken>(),
+            6,
+            false);
         await identityService.Received(1).FindByIdAsync(user.Id);
         await commandSender.Received(1).SendAsync(
             Arg.Is<SendNotificationCommand>(command => HasExpectedNotificationCommand(
@@ -75,7 +89,7 @@ public sealed class WhenHandlingUserCreated_Should
                 firstName,
                 lastName,
                 otpCode,
-                DateTimeFormatter.FormatHumanReadableUtc(timeProvider.GetUtcNow().Add(lockoutOptions.Value.Duration), timeProvider.GetUtcNow()))),
+                DateTimeFormatter.FormatHumanReadableUtc(otp.ExpiresAtUtc, timeProvider.GetUtcNow()))),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

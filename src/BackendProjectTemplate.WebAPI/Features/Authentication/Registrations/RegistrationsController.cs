@@ -56,7 +56,8 @@ public sealed class RegistrationsController(
                 new Dictionary<string, string[]>(result.ValidationErrors ?? new Dictionary<string, string[]>()))),
             _ => Accepted((string?)null, new SignUpResponse(
                 request.Email,
-                "The sign-up request has been accepted. The account verification OTP will be sent shortly."))
+                "The sign-up request has been accepted. The account verification OTP will be sent shortly.",
+                result.RetryAtUtc!.Value))
         };
     }
 
