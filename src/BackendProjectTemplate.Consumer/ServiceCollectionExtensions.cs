@@ -9,6 +9,7 @@ using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
 using EmailDeliveryWebhookReceivedEvent = BackendProjectTemplate.Contracts.Events.EmailDeliveryWebhookReceived;
 using ResetPassword = BackendProjectTemplate.Contracts.Commands.Authentication.ResetPasswordCommand;
+using SendEmailConfirmationOtp = BackendProjectTemplate.Contracts.Commands.Authentication.SendEmailConfirmationOtpCommand;
 using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications.SendNotificationCommand;
 using SuccessfulPaymentConfirmedEvent = BackendProjectTemplate.Contracts.Events.SuccessfulPaymentConfirmed;
 using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.UserAccessTokenRefreshed;
@@ -24,6 +25,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddSubscribers(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ILoginActivityIpAddressResolver, LoginActivityIpAddressResolver>();
+        services.AddScoped<EmailConfirmationOtpSender>();
 
         var options = configuration
             .GetSection(RabbitMqMessagingOptions.SectionName)
@@ -73,6 +75,7 @@ public static class ServiceCollectionExtensions
                 .AddHandler<SuccessfulPaymentConfirmedEvent, SuccessfulPaymentConfirmedHandler>())
             .AddConsumer(consumerConfig, builder => builder
                 .AddHandler<ResetPassword, ResetPasswordHandler>()
+                .AddHandler<SendEmailConfirmationOtp, SendEmailConfirmationOtpHandler>()
                 .AddHandler<SendNotification, SendNotificationHandler>()
                 .AddHandler<CreditWalletCommand, CreditWalletHandler>()
                 .AddHandler<ActivateSubscriptionCommand, ActivateSubscriptionHandler>()

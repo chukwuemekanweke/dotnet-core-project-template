@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
 using Shouldly;
@@ -23,7 +24,12 @@ public sealed class WhenVerifyingOtpWithValidCode_Should
         var stakeholder = Stakeholder.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), firstName, lastName);
 
         context.IdentityService.FindByEmailAsync(email).Returns(user);
-        context.IdentityService.VerifySignUpOtpAsync(user, otp).Returns(true);
+        context.TwoFactorOtpService.ValidateOtpAsync(
+                user.Id,
+                otp,
+                OtpIntent.EmailConfirmation,
+                Arg.Any<CancellationToken>())
+            .Returns(true);
         context.IdentityService.UpdateAsync(Arg.Is<AppUser>(candidate => candidate.EmailConfirmed)).Returns(IdentityResult.Success);
         context.StakeholderRepository.FirstOrDefaultAsync(
                 Arg.Any<ISpecification<Stakeholder>>(),

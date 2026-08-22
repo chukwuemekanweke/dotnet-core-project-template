@@ -18,6 +18,25 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        if (builder.Environment.IsProduction())
+        {
+            policy
+                .WithOrigins("http://localhost:9000", "https://localhost:9000")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+            return;
+        }
+
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddValidatorsFromAssemblyContaining<SignUpValidator>();
 builder.Services
     .AddApiVersioning(options =>
@@ -55,6 +74,7 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+app.UseCors();
 app.UseAuthentication();
 app.UseMiddleware<CurrentActorMiddleware>();
 app.UseAuthorization();

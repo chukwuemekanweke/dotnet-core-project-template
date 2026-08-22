@@ -1,0 +1,68 @@
+using BackendProjectTemplate.Consumer.Authentication;
+using BackendProjectTemplate.Contracts.Commands.Authentication;
+using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
+
+namespace BackendProjectTemplate.Consumer.UnitTests.Authentication.EmailConfirmationOtp;
+
+public sealed class When_SendingEmailConfirmationOtp_WithConfirmedEmail_Should
+{
+    [Fact]
+    public async Task CaptureSkippedEventWithReason()
+    {
+        var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var twoFactorOtpService = Substitute.For<ITwoFactorOtpService>();
+        var stakeholderRepository = Substitute.For<IStakeholderReadModelRepository>();
+        var commandSender = Substitute.For<ICommandSender>();
+        var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
+        var messageContext = Substitute.For<IMessageContext>();
+        var stakeholderId = Guid.CreateVersion7();
+        var user = AppUser.Create(ConsumerTestData.Email());
+        user.MarkEmailVerified();
+        var stakeholder = new StakeholderReadModel(
+            stakeholderId,
+            user.Id,
+            user.Email!,
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            ConsumerTestData.FirstName(),
+            ConsumerTestData.LastName(),
+            null,
+            false);
+        identityService.FindByIdAsync(user.Id).Returns(user);
+        stakeholderRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
+            .Returns(stakeholder);
+        messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
+        var clock = TimeProvider.System;
+
+        await new SendEmailConfirmationOtpHandler(
+            customTelemetryContext,
+            Substitute.For<ICurrentActorAccessor>(),
+            messageContext,
+            identityService,
+            stakeholderRepository,
+            new EmailConfirmationOtpSender(twoFactorOtpService, commandSender, clock),
+            Substitute.For<IUnitOfWork>(),
+            clock,
+            Substitute.For<ILogger<SendEmailConfirmationOtpHandler>>(),
+            Substitute.For<IRepository<MessageInbox>>()).HandleAsync(
+            new SendEmailConfirmationOtpCommand
+            {
+                StakeholderId = stakeholderId,
+                TenantId = stakeholder.TenantId
+            },
+            CancellationToken.None);
+
+        await twoFactorOtpService.DidNotReceiveWithAnyArgs().OtpExistsAsync(default, default, default);
+        customTelemetryContext.Received(1).AddCustomEvent(
+            Observability.EventNames.Authentication.EmailConfirmationOtpSendSkipped,
+            Arg.Is<Dictionary<string, string>>(properties =>
+                properties[Observability.PropertyNames.Common.StakeholderId] == stakeholderId.ToString() &&
+                properties[Observability.PropertyNames.Common.FailureReason] == ObservabilityFailureReasons.AlreadyConfirmed));
+    }
+}

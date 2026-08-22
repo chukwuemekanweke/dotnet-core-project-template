@@ -1,4 +1,4 @@
-using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Contracts.Commands.Authentication;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -10,7 +10,7 @@ using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
 
 namespace BackendProjectTemplate.Consumer.Authentication;
 
-public sealed class UserCreatedHandler(
+public sealed class SendEmailConfirmationOtpHandler(
     ICustomTelemetryContext customTelemetryContext,
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
@@ -19,64 +19,75 @@ public sealed class UserCreatedHandler(
     EmailConfirmationOtpSender emailConfirmationOtpSender,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
-    ILogger<UserCreatedHandler> logger,
-    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<UserCreated>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
+    ILogger<SendEmailConfirmationOtpHandler> logger,
+    IRepository<MessageInbox> messageInboxRepository) : BaseMessageHandler<SendEmailConfirmationOtpCommand>(
+        customTelemetryContext,
+        currentActorAccessor,
+        messageContext,
+        messageInboxRepository,
+        unitOfWork,
+        timeProvider,
+        logger)
 {
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
-    protected override async Task HandleAsyncInternal(UserCreated message, CancellationToken cancellationToken)
+    protected override async Task HandleAsyncInternal(
+        SendEmailConfirmationOtpCommand message,
+        CancellationToken cancellationToken)
     {
         if (!message.StakeholderId.HasValue)
         {
-            throw new CannotProcessMessageNonTransientException("UserCreated must contain a valid stakeholder id.");
+            throw new CannotProcessMessageNonTransientException(
+                "SendEmailConfirmationOtpCommand must contain a valid stakeholder id.");
         }
 
-        var stakeholder = await stakeholderReadModelRepository.GetByStakeholderIdAsync(message.StakeholderId.Value, cancellationToken);
+        var stakeholder = await stakeholderReadModelRepository.GetByStakeholderIdAsync(
+            message.StakeholderId.Value,
+            cancellationToken);
         if (stakeholder is null)
         {
             throw new CannotProcessMessageNonTransientException(
-                $"Unable to process UserCreated because no stakeholder could be found for stakeholder '{message.StakeholderId}'.");
+                $"Unable to send an email confirmation OTP because stakeholder '{message.StakeholderId}' was not found.");
         }
 
         var user = await identityService.FindByIdAsync(stakeholder.AppUserId);
         if (user is null)
         {
             throw new CannotProcessMessageNonTransientException(
-                $"Unable to process UserCreated because no user could be found for stakeholder '{message.StakeholderId}'.");
+                $"Unable to send an email confirmation OTP because user '{stakeholder.AppUserId}' was not found.");
         }
 
         if (user.EmailConfirmed)
         {
-            logger.LogWarning(
-                "Skipping sign-up OTP delivery for email {EmailAddress} because the email is already confirmed.",
-                stakeholder.EmailAddress);
-
             AddOtpSendSkippedEvent(stakeholder.StakeholderId, ObservabilityFailureReasons.AlreadyConfirmed);
-
             return;
         }
 
-        var sent = await emailConfirmationOtpSender.SendAsync(stakeholder, cancellationToken);
-        if (!sent)
+        if (!await emailConfirmationOtpSender.SendAsync(stakeholder, cancellationToken))
         {
             AddOtpSendSkippedEvent(stakeholder.StakeholderId, ObservabilityFailureReasons.ActiveOtpExists);
             return;
         }
 
-        CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
+        CustomTelemetryContext.SetProperty(
+            Observability.PropertyNames.Common.StakeholderId,
+            stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSent,
             ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholder.StakeholderId));
     }
 
-    protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserCreated message)
+    protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(
+        SendEmailConfirmationOtpCommand message)
     {
         yield break;
     }
 
     private void AddOtpSendSkippedEvent(Guid stakeholderId, string reason)
     {
-        CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholderId.ToString());
+        CustomTelemetryContext.SetProperty(
+            Observability.PropertyNames.Common.StakeholderId,
+            stakeholderId.ToString());
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, reason);
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSendSkipped,

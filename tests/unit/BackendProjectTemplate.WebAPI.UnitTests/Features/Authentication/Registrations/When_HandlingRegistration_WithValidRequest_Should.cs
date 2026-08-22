@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 using FluentValidation;
@@ -47,5 +48,6 @@ public sealed class When_HandlingRegistration_WithValidRequest_Should
         var accepted = result.Result.ShouldBeOfType<AcceptedResult>();
         var response = accepted.Value.ShouldBeOfType<SignUpResponse>();
         response.Email.ShouldBe(request.Email);
+        response.RetryAtUtc.ShouldBe(context.Clock.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
     }
 }

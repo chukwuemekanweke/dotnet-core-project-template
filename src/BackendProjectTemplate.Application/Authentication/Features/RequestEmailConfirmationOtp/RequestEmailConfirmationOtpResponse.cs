@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.Application.Authentication.Features.RequestEmailConfirmationOtp;
+
+public sealed record RequestEmailConfirmationOtpResponse(string Message, DateTimeOffset RetryAtUtc);

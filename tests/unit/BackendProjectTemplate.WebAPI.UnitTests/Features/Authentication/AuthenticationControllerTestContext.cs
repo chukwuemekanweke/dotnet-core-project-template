@@ -5,6 +5,7 @@ using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
+using BackendProjectTemplate.Application.Authentication.Features.RequestEmailConfirmationOtp;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
@@ -53,7 +54,8 @@ internal sealed class AuthenticationControllerTestContext
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
-        UnitOfWork);
+        UnitOfWork,
+        Clock);
 
     public CheckEmailExistenceHandler CreateCheckEmailExistenceHandler() => new(IdentityService);
 
@@ -117,9 +119,18 @@ internal sealed class AuthenticationControllerTestContext
 
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(
         IdentityService,
+        TwoFactorOtpService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
+        UnitOfWork,
+        Clock);
+
+    public RequestEmailConfirmationOtpHandler CreateRequestEmailConfirmationOtpHandler() => new(
+        IdentityService,
+        TwoFactorOtpService,
+        CommandSender,
+        StakeholderResolver,
         UnitOfWork,
         Clock);
 

@@ -87,6 +87,15 @@ public sealed class TwoFactorOtpService(IJsonCache cache, TimeProvider timeProvi
         CancellationToken cancellationToken) =>
         await GetActiveAsync(userId, intent, cancellationToken) is not null;
 
+    public async Task<TwoFactorOtp?> GetActiveOtpAsync(
+        Guid userId,
+        OtpIntent intent,
+        CancellationToken cancellationToken)
+    {
+        var cachedOtp = await GetActiveAsync(userId, intent, cancellationToken);
+        return cachedOtp is null ? null : new TwoFactorOtp(cachedOtp.Code, cachedOtp.ExpiresAtUtc);
+    }
+
     private async Task<CachedTwoFactorOtp?> GetActiveAsync(
         Guid userId,
         OtpIntent intent,
@@ -127,6 +136,7 @@ public sealed class TwoFactorOtpService(IJsonCache cache, TimeProvider timeProvi
         intent switch
         {
             OtpIntent.PasswordReset => TimeSpan.FromMinutes(2),
+            OtpIntent.EmailConfirmation => AuthenticationOtpDefaults.EmailConfirmationLifetime,
             _ => throw new ArgumentOutOfRangeException(nameof(intent), intent, "Unsupported OTP intent.")
         };
 
@@ -134,6 +144,7 @@ public sealed class TwoFactorOtpService(IJsonCache cache, TimeProvider timeProvi
         intent switch
         {
             OtpIntent.PasswordReset => 5,
+            OtpIntent.EmailConfirmation => 5,
             _ => throw new ArgumentOutOfRangeException(nameof(intent), intent, "Unsupported OTP intent.")
         };
 
