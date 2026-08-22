@@ -55,7 +55,9 @@ public sealed class When_HandlingUserCreated_WithActiveOtp_Should
             new UserCreatedEvent
             {
                 StakeholderId = stakeholderId,
-                TenantId = tenantId
+                TenantId = tenantId,
+                RequestedAtUtc = clock.GetUtcNow(),
+                ExpiresAtUtc = clock.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime)
             },
             CancellationToken.None);
 

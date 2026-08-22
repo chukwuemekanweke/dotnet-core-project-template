@@ -7,7 +7,8 @@ public interface ITwoFactorOtpService
         OtpIntent intent,
         CancellationToken cancellationToken,
         int characterLength = 8,
-        bool isAlphaNumeric = true);
+        bool isAlphaNumeric = true,
+        DateTimeOffset? expiresAtUtc = null);
 
     Task<bool> ValidateOtpAsync(
         Guid userId,

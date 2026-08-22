@@ -11,14 +11,23 @@ public sealed class EmailConfirmationOtpSender(
     ICommandSender commandSender,
     TimeProvider timeProvider)
 {
-    public async Task<bool> SendAsync(StakeholderReadModel stakeholder, CancellationToken cancellationToken)
+    public async Task<EmailConfirmationOtpSendStatus> SendAsync(
+        StakeholderReadModel stakeholder,
+        DateTimeOffset expiresAtUtc,
+        CancellationToken cancellationToken)
     {
         if (await twoFactorOtpService.OtpExistsAsync(
                 stakeholder.AppUserId,
                 OtpIntent.EmailConfirmation,
                 cancellationToken))
         {
-            return false;
+            return EmailConfirmationOtpSendStatus.ActiveOtpExists;
+        }
+
+        var remainingLifetime = expiresAtUtc - timeProvider.GetUtcNow();
+        if (remainingLifetime <= AuthenticationOtpDefaults.EmailConfirmationDeliverySafetyThreshold)
+        {
+            return EmailConfirmationOtpSendStatus.InsufficientLifetime;
         }
 
         var otp = await twoFactorOtpService.GenerateOtpAsync(
@@ -26,7 +35,8 @@ public sealed class EmailConfirmationOtpSender(
             OtpIntent.EmailConfirmation,
             cancellationToken,
             characterLength: 6,
-            isAlphaNumeric: false);
+            isAlphaNumeric: false,
+            expiresAtUtc: expiresAtUtc);
 
         await commandSender.SendAsync(
             new SendNotificationCommand(
@@ -52,6 +62,6 @@ public sealed class EmailConfirmationOtpSender(
             },
             cancellationToken);
 
-        return true;
+        return EmailConfirmationOtpSendStatus.Sent;
     }
 }

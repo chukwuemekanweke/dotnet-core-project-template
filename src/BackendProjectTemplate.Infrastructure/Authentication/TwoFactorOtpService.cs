@@ -14,7 +14,8 @@ public sealed class TwoFactorOtpService(IJsonCache cache, TimeProvider timeProvi
         OtpIntent intent,
         CancellationToken cancellationToken,
         int characterLength = 8,
-        bool isAlphaNumeric = true)
+        bool isAlphaNumeric = true,
+        DateTimeOffset? expiresAtUtc = null)
     {
         if (characterLength <= 0)
         {
@@ -23,9 +24,16 @@ public sealed class TwoFactorOtpService(IJsonCache cache, TimeProvider timeProvi
 
         var now = timeProvider.GetUtcNow();
         var lifetime = ResolveLifetime(intent);
+        var resolvedExpiresAtUtc = expiresAtUtc ?? now.Add(lifetime);
+        var remainingLifetime = resolvedExpiresAtUtc - now;
+        if (remainingLifetime <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(expiresAtUtc), "OTP expiry must be in the future.");
+        }
+
         var generatedOtp = new TwoFactorOtp(
             GenerateCode(characterLength, isAlphaNumeric),
-            now.Add(lifetime));
+            resolvedExpiresAtUtc);
 
         await cache.SetAsync(
             BuildCacheKey(userId, intent),
@@ -33,7 +41,7 @@ public sealed class TwoFactorOtpService(IJsonCache cache, TimeProvider timeProvi
                 generatedOtp.Code,
                 generatedOtp.ExpiresAtUtc,
                 0),
-            lifetime,
+            remainingLifetime,
             cancellationToken);
 
         return generatedOtp;

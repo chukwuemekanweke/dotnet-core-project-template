@@ -18,10 +18,13 @@ public sealed class GoogleSignUpHandler(
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
     ICustomTelemetryContext customTelemetryContext,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider)
 {
     public async Task<GoogleSignUpResult> HandleAsync(GoogleSignUpCommand request, CancellationToken cancellationToken)
     {
+        var requestedAtUtc = timeProvider.GetUtcNow();
+        var expiresAtUtc = requestedAtUtc.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.GoogleSignUpStarted,
             ObservabilityEventProperties.Create(request.ActorContext));
@@ -111,7 +114,9 @@ public sealed class GoogleSignUpHandler(
         {
             StakeholderId = stakeholder.Id,
             TenantId = tenantId,
-            FlowId = request.ActorContext.FlowId
+            FlowId = request.ActorContext.FlowId,
+            RequestedAtUtc = requestedAtUtc,
+            ExpiresAtUtc = expiresAtUtc
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

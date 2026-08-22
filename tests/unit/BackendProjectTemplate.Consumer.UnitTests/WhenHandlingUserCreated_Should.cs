@@ -34,6 +34,8 @@ public sealed class WhenHandlingUserCreated_Should
         var firstName = ConsumerTestData.FirstName();
         var lastName = ConsumerTestData.LastName();
         var otpCode = ConsumerTestData.Otp();
+        var requestedAtUtc = timeProvider.GetUtcNow().AddSeconds(-10);
+        var expiresAtUtc = requestedAtUtc.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime);
         var user = AppUser.Create(email, firstName, lastName);
 
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
@@ -42,7 +44,7 @@ public sealed class WhenHandlingUserCreated_Should
         identityService.FindByIdAsync(user.Id).Returns(user);
         var otp = new TwoFactorOtp(
             otpCode,
-            timeProvider.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
+            expiresAtUtc);
         twoFactorOtpService.OtpExistsAsync(user.Id, OtpIntent.EmailConfirmation, Arg.Any<CancellationToken>())
             .Returns(false);
         twoFactorOtpService.GenerateOtpAsync(
@@ -50,7 +52,8 @@ public sealed class WhenHandlingUserCreated_Should
                 OtpIntent.EmailConfirmation,
                 Arg.Any<CancellationToken>(),
                 6,
-                false)
+                false,
+                expiresAtUtc)
             .Returns(otp);
         var otpSender = new EmailConfirmationOtpSender(twoFactorOtpService, commandSender, timeProvider);
 
@@ -68,7 +71,9 @@ public sealed class WhenHandlingUserCreated_Should
             new UserCreated
             {
                 StakeholderId = stakeholderId,
-                TenantId = tenantId
+                TenantId = tenantId,
+                RequestedAtUtc = requestedAtUtc,
+                ExpiresAtUtc = expiresAtUtc
             },
             CancellationToken.None);
 
@@ -77,7 +82,8 @@ public sealed class WhenHandlingUserCreated_Should
             OtpIntent.EmailConfirmation,
             Arg.Any<CancellationToken>(),
             6,
-            false);
+            false,
+            expiresAtUtc);
         await identityService.Received(1).FindByIdAsync(user.Id);
         await commandSender.Received(1).SendAsync(
             Arg.Is<SendNotificationCommand>(command => HasExpectedNotificationCommand(

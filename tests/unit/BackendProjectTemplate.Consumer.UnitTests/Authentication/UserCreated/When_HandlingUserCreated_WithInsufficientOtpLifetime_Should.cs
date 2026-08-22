@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Consumer.Authentication;
+using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -9,20 +10,20 @@ using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Authentication.UserCreated;
 
-public sealed class When_HandlingUserCreated_WithConfirmedEmail_Should
+public sealed class When_HandlingUserCreated_WithInsufficientOtpLifetime_Should
 {
     [Fact]
-    public async Task CaptureSkippedEventWithReason()
+    public async Task SkipGeneratingAndCaptureReason()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
         var twoFactorOtpService = Substitute.For<ITwoFactorOtpService>();
         var stakeholderRepository = Substitute.For<IStakeholderReadModelRepository>();
+        var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var messageContext = Substitute.For<IMessageContext>();
         var stakeholderId = Guid.CreateVersion7();
         var tenantId = Guid.CreateVersion7();
         var user = AppUser.Create(ConsumerTestData.Email());
-        user.MarkEmailVerified();
         var stakeholder = new StakeholderReadModel(
             stakeholderId,
             user.Id,
@@ -34,11 +35,13 @@ public sealed class When_HandlingUserCreated_WithConfirmedEmail_Should
             ConsumerTestData.LastName(),
             null,
             false);
+        var clock = new FixedTimeProvider(new DateTimeOffset(2026, 8, 22, 12, 4, 30, TimeSpan.Zero));
+        var requestedAtUtc = clock.GetUtcNow().AddMinutes(-4).AddSeconds(-30);
+        var expiresAtUtc = requestedAtUtc.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime);
         identityService.FindByIdAsync(user.Id).Returns(user);
         stakeholderRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(stakeholder);
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
-        var clock = TimeProvider.System;
 
         await new UserCreatedHandler(
             customTelemetryContext,
@@ -46,7 +49,7 @@ public sealed class When_HandlingUserCreated_WithConfirmedEmail_Should
             messageContext,
             identityService,
             stakeholderRepository,
-            new EmailConfirmationOtpSender(twoFactorOtpService, Substitute.For<ICommandSender>(), clock),
+            new EmailConfirmationOtpSender(twoFactorOtpService, commandSender, clock),
             Substitute.For<IUnitOfWork>(),
             clock,
             Substitute.For<ILogger<UserCreatedHandler>>(),
@@ -55,16 +58,30 @@ public sealed class When_HandlingUserCreated_WithConfirmedEmail_Should
             {
                 StakeholderId = stakeholderId,
                 TenantId = tenantId,
-                RequestedAtUtc = clock.GetUtcNow(),
-                ExpiresAtUtc = clock.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime)
+                RequestedAtUtc = requestedAtUtc,
+                ExpiresAtUtc = expiresAtUtc
             },
             CancellationToken.None);
 
-        await twoFactorOtpService.DidNotReceiveWithAnyArgs().OtpExistsAsync(default, default, default);
+        await twoFactorOtpService.DidNotReceiveWithAnyArgs().GenerateOtpAsync(
+            default,
+            default,
+            default,
+            default,
+            default,
+            default);
+        await commandSender.DidNotReceiveWithAnyArgs().SendAsync(
+            default(SendNotificationCommand)!,
+            default);
         customTelemetryContext.Received(1).AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSendSkipped,
             Arg.Is<Dictionary<string, string>>(properties =>
                 properties[Observability.PropertyNames.Common.StakeholderId] == stakeholderId.ToString() &&
-                properties[Observability.PropertyNames.Common.FailureReason] == ObservabilityFailureReasons.AlreadyConfirmed));
+                properties[Observability.PropertyNames.Common.FailureReason] == ObservabilityFailureReasons.InsufficientOtpLifetime));
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }

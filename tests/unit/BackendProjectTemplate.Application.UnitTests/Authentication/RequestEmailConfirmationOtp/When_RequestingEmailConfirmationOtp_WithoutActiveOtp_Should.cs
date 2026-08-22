@@ -44,7 +44,9 @@ public sealed class When_RequestingEmailConfirmationOtp_WithoutActiveOtp_Should
         await context.CommandSender.Received(1).SendAsync(
             Arg.Is<SendEmailConfirmationOtpCommand>(queued =>
                 queued.StakeholderId == stakeholder.Id &&
-                queued.TenantId == command.ActorContext.TenantId),
+                queued.TenantId == command.ActorContext.TenantId &&
+                queued.RequestedAt == context.Clock.GetUtcNow() &&
+                queued.ExpiresAtUtc == result.RetryAtUtc),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Microsoft.AspNetCore.Identity;
 using Shouldly;
@@ -40,6 +41,7 @@ public sealed class WhenSigningUpWithNewEmail_Should
             CancellationToken.None);
 
         result.Status.ShouldBe(SignUpStatus.Accepted);
+        result.RetryAtUtc.ShouldBe(context.Clock.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
         await context.IdentityService.Received(1).CreateAsync(
             Arg.Is<AppUser>(user =>
                 user.Email == email &&
@@ -54,7 +56,9 @@ public sealed class WhenSigningUpWithNewEmail_Should
             Arg.Any<CancellationToken>());
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<UserCreated>(message =>
-                message.StakeholderId != null),
+                message.StakeholderId != null &&
+                message.RequestedAtUtc == context.Clock.GetUtcNow() &&
+                message.ExpiresAtUtc == result.RetryAtUtc),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await context.Transaction.Received(1).CommitAsync(Arg.Any<CancellationToken>());

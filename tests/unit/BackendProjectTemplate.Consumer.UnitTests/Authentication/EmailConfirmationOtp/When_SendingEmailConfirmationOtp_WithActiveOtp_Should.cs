@@ -60,7 +60,9 @@ public sealed class When_SendingEmailConfirmationOtp_WithActiveOtp_Should
             new SendEmailConfirmationOtpCommand
             {
                 StakeholderId = stakeholderId,
-                TenantId = stakeholder.TenantId
+                TenantId = stakeholder.TenantId,
+                RequestedAt = clock.GetUtcNow(),
+                ExpiresAtUtc = clock.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime)
             },
             CancellationToken.None);
 

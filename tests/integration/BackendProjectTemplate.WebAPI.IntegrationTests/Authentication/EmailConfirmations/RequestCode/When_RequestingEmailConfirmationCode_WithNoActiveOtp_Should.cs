@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Authentication.EmailConfirmations.RequestCode;
 
@@ -63,6 +64,13 @@ public sealed class When_RequestingEmailConfirmationCode_WithNoActiveOtp_Should(
         var messages = await outboxRepository.ListAsync(new EmailConfirmationOtpOutboxSpecification());
         messages.Count.ShouldBe(1);
         messages[0].SentAtUtc.ShouldBeNull();
+        var command = JsonSerializer.Deserialize<SendEmailConfirmationOtpCommand>(
+            messages[0].Payload,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        command.ShouldNotBeNull();
+        command.ExpiresAtUtc.ShouldBe(response.RetryAtUtc);
+        command.ExpiresAtUtc.ShouldBe(
+            command.RequestedAt.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
     }
 
     private async Task CreateUserWithStakeholderAsync()

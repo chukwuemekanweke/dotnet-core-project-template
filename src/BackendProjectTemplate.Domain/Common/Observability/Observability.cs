@@ -23,6 +23,9 @@ public static class Observability
             public const string UploadId = "upload_id";
             public const string ContentType = "content_type";
             public const string ContentLength = "content_length";
+            public const string ExpiresAtUtc = "expires_at_utc";
+            public const string QueueDelayMilliseconds = "queue_delay_ms";
+            public const string RemainingLifetimeMilliseconds = "remaining_lifetime_ms";
         }
 
         public static class Notifications

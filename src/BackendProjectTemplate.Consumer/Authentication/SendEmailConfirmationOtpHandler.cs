@@ -59,13 +59,34 @@ public sealed class SendEmailConfirmationOtpHandler(
 
         if (user.EmailConfirmed)
         {
-            AddOtpSendSkippedEvent(stakeholder.StakeholderId, ObservabilityFailureReasons.AlreadyConfirmed);
+            AddOtpSendSkippedEvent(
+                stakeholder.StakeholderId,
+                message,
+                Clock.GetUtcNow(),
+                ObservabilityFailureReasons.AlreadyConfirmed);
             return;
         }
 
-        if (!await emailConfirmationOtpSender.SendAsync(stakeholder, cancellationToken))
+        var processedAtUtc = Clock.GetUtcNow();
+        var sendStatus = await emailConfirmationOtpSender.SendAsync(
+            stakeholder,
+            message.ExpiresAtUtc,
+            cancellationToken);
+        if (sendStatus is not EmailConfirmationOtpSendStatus.Sent)
         {
-            AddOtpSendSkippedEvent(stakeholder.StakeholderId, ObservabilityFailureReasons.ActiveOtpExists);
+            var failureReason = sendStatus == EmailConfirmationOtpSendStatus.ActiveOtpExists
+                ? ObservabilityFailureReasons.ActiveOtpExists
+                : ObservabilityFailureReasons.InsufficientOtpLifetime;
+            AddOtpSendSkippedEvent(stakeholder.StakeholderId, message, processedAtUtc, failureReason);
+
+            if (sendStatus == EmailConfirmationOtpSendStatus.InsufficientLifetime)
+            {
+                logger.LogWarning(
+                    "Skipping email confirmation OTP delivery for stakeholder {StakeholderId} because only {RemainingLifetimeMilliseconds}ms remains.",
+                    stakeholder.StakeholderId,
+                    (message.ExpiresAtUtc - processedAtUtc).TotalMilliseconds);
+            }
+
             return;
         }
 
@@ -74,7 +95,13 @@ public sealed class SendEmailConfirmationOtpHandler(
             stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSent,
-            ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholder.StakeholderId));
+            ObservabilityEventProperties.Create(
+                CurrentActorAccessor,
+                stakeholder.StakeholderId,
+                additionalProperties: EmailConfirmationOtpTelemetryProperties.Create(
+                    message.RequestedAt,
+                    message.ExpiresAtUtc,
+                    processedAtUtc)));
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(
@@ -83,7 +110,11 @@ public sealed class SendEmailConfirmationOtpHandler(
         yield break;
     }
 
-    private void AddOtpSendSkippedEvent(Guid stakeholderId, string reason)
+    private void AddOtpSendSkippedEvent(
+        Guid stakeholderId,
+        SendEmailConfirmationOtpCommand message,
+        DateTimeOffset processedAtUtc,
+        string reason)
     {
         CustomTelemetryContext.SetProperty(
             Observability.PropertyNames.Common.StakeholderId,
@@ -91,6 +122,13 @@ public sealed class SendEmailConfirmationOtpHandler(
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, reason);
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.EmailConfirmationOtpSendSkipped,
-            ObservabilityEventProperties.Create(CurrentActorAccessor, stakeholderId, reason));
+            ObservabilityEventProperties.Create(
+                CurrentActorAccessor,
+                stakeholderId,
+                reason,
+                EmailConfirmationOtpTelemetryProperties.Create(
+                    message.RequestedAt,
+                    message.ExpiresAtUtc,
+                    processedAtUtc)));
     }
 }
