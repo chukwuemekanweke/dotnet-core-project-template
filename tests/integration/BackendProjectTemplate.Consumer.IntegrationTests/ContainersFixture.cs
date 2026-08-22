@@ -27,18 +27,17 @@ public sealed class ContainersFixture : IAsyncLifetime
         {
             var databaseName = $"backend_template_consumer_tests_{Guid.CreateVersion7():N}";
 
-            Postgres = new PostgreSqlBuilder()
+            Postgres = new PostgreSqlBuilder("postgres:15.1")
                 .WithDatabase(databaseName)
                 .WithUsername("postgres")
                 .WithPassword("postgres")
                 .Build();
 
-            RabbitMq = new RabbitMqBuilder()
-                .WithImage("rabbitmq:3.13-management")
+            RabbitMq = new RabbitMqBuilder("rabbitmq:3.13-management")
                 .WithEnvironment("RABBITMQ_DEFAULT_VHOST", RabbitMqVirtualHost)
                 .Build();
 
-            Redis = new RedisBuilder().Build();
+            Redis = new RedisBuilder("redis:7.0").Build();
 
             await Task.WhenAll(Postgres.StartAsync(), RabbitMq.StartAsync(), Redis.StartAsync());
 
