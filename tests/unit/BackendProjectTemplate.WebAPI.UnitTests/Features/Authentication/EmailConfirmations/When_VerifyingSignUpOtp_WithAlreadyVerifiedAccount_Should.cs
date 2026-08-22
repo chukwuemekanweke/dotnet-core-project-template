@@ -1,7 +1,7 @@
-using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmations;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;
 
@@ -10,7 +10,7 @@ namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication.EmailC
 public sealed class When_VerifyingSignUpOtp_WithAlreadyVerifiedAccount_Should
 {
     [Fact]
-    public async Task ReturnSuccessMessage()
+    public async Task ReturnGenericFailureWithoutTokens()
     {
         var context = new AuthenticationControllerTestContext();
         var validator = Substitute.For<IValidator<SignUpOtpRequest>>();
@@ -27,13 +27,21 @@ public sealed class When_VerifyingSignUpOtp_WithAlreadyVerifiedAccount_Should
             context.CreateRequestEmailConfirmationOtpHandler(),
             validator,
             requestCodeValidator,
-            context.CurrentActor);
+            context.CurrentActor)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            }
+        };
 
         var result = await sut.Handle(request, CancellationToken.None);
 
-        var ok = result.Result.ShouldBeOfType<OkObjectResult>();
-        var payload = ok.Value.ShouldBeOfType<SignUpOtpResponse>();
-        payload.Message.ShouldContain("already verified", Case.Insensitive);
+        var problem = result.Result.ShouldBeOfType<ObjectResult>();
+        problem.StatusCode.ShouldBe(StatusCodes.Status400BadRequest);
+        var detail = problem.Value.ShouldBeOfType<ProblemDetails>().Detail;
+        detail.ShouldNotBeNull();
+        detail!.ShouldNotContain("already verified", Case.Insensitive);
     }
 }
 

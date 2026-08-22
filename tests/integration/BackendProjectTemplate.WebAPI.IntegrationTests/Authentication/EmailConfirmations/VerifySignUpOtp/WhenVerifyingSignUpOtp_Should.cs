@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -29,6 +30,7 @@ public sealed class WhenVerifyingSignUpOtp_Should(ContainersFixture fixture)
     private Guid _stakeholderTypeId;
     private bool _createdCountryForTest;
     private HttpResponseMessage? _response;
+    private SignUpOtpResponse? _payload;
 
     public async Task InitializeAsync()
     {
@@ -47,7 +49,7 @@ public sealed class WhenVerifyingSignUpOtp_Should(ContainersFixture fixture)
     }
 
     [Fact]
-    public async Task ActivateTheAccount()
+    public async Task ActivateTheAccountAndReturnSessionTokens()
     {
         await WhenVerifyingOtp();
         ThenTheAccountIsActivated();
@@ -57,12 +59,18 @@ public sealed class WhenVerifyingSignUpOtp_Should(ContainersFixture fixture)
             _response = await Client.PostAsJsonAsync(
                 EndpointUrl.EmailConfirmations.V1,
                 new SignUpOtpRequest(_email, _otp));
+            _payload = await _response.Content.ReadFromJsonAsync<SignUpOtpResponse>();
         }
 
         void ThenTheAccountIsActivated()
         {
             _response.ShouldNotBeNull();
             _response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            _response.Headers.CacheControl?.NoStore.ShouldBeTrue();
+            string.IsNullOrWhiteSpace(_payload?.AccessToken).ShouldBeFalse();
+            string.IsNullOrWhiteSpace(_payload?.RefreshToken).ShouldBeFalse();
+            _payload!.RefreshTokenExpiresAtUtc.ShouldBeLessThanOrEqualTo(
+                DateTimeOffset.UtcNow.Add(AuthenticationOtpDefaults.EmailConfirmationSessionLifetime));
         }
     }
 
