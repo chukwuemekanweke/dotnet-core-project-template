@@ -66,7 +66,8 @@ internal sealed class AuthenticationControllerTestContext
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
-        UnitOfWork);
+        UnitOfWork,
+        Clock);
 
     public SignInHandler CreateSignInHandler() => new(
         IdentityService,

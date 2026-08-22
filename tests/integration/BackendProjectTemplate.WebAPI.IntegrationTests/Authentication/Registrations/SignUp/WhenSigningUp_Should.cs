@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests;
 
@@ -84,6 +85,13 @@ public sealed class WhenSigningUp_Should(ContainersFixture fixture)
 
             outboxMessages.Count.ShouldBe(1);
             outboxMessages[0].SentAtUtc.ShouldBeNull();
+            var userCreated = JsonSerializer.Deserialize<UserCreated>(
+                outboxMessages[0].Payload,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            userCreated.ShouldNotBeNull();
+            userCreated.ExpiresAtUtc.ShouldBe(response.RetryAtUtc);
+            userCreated.ExpiresAtUtc.ShouldBe(
+                userCreated.RequestedAtUtc.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
         }
     }
 

@@ -14,16 +14,20 @@ public sealed class WhenGeneratingOtp_Should
         var clock = new FakeTimeProvider(new DateTimeOffset(2026, 4, 17, 0, 0, 0, TimeSpan.Zero));
         var service = new TwoFactorOtpService(cache, clock);
         var userId = Guid.CreateVersion7();
+        var expiresAtUtc = clock.GetUtcNow().AddSeconds(90);
 
         var otp = await service.GenerateOtpAsync(
             userId,
             OtpIntent.PasswordReset,
             CancellationToken.None,
             6,
-            false);
+            false,
+            expiresAtUtc);
 
         otp.Code.Length.ShouldBe(6);
         otp.Code.All(char.IsDigit).ShouldBeTrue();
+        otp.ExpiresAtUtc.ShouldBe(expiresAtUtc);
+        cache.LastTtl.ShouldBe(TimeSpan.FromSeconds(90));
         (await service.OtpExistsAsync(userId, OtpIntent.PasswordReset, CancellationToken.None)).ShouldBeTrue();
     }
 
@@ -36,6 +40,8 @@ public sealed class WhenGeneratingOtp_Should
     {
         private readonly Dictionary<string, object> _store = [];
 
+        public TimeSpan? LastTtl { get; private set; }
+
         public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken)
         {
             _store.TryGetValue(key, out var value);
@@ -45,6 +51,7 @@ public sealed class WhenGeneratingOtp_Should
         public Task SetAsync<T>(string key, T value, TimeSpan ttl, CancellationToken cancellationToken)
         {
             _store[key] = value!;
+            LastTtl = ttl;
             return Task.CompletedTask;
         }
 

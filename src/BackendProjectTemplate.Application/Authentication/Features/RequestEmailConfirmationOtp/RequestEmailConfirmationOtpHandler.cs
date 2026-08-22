@@ -18,18 +18,19 @@ public sealed class RequestEmailConfirmationOtpHandler(
         RequestEmailConfirmationOtpCommand request,
         CancellationToken cancellationToken)
     {
+        var requestedAtUtc = timeProvider.GetUtcNow();
+        var expiresAtUtc = requestedAtUtc.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime);
         var tenantId = request.ActorContext.TenantId
             ?? throw new InvalidOperationException("Tenant id is required to request an email confirmation OTP.");
-        var retryAtUtc = timeProvider.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime);
         var user = await identityService.FindByEmailAsync(request.Email.Trim().ToLowerInvariant());
         if (user is null)
         {
-            return new RequestEmailConfirmationOtpResult(RequestEmailConfirmationOtpStatus.UserNotFound, retryAtUtc);
+            return new RequestEmailConfirmationOtpResult(RequestEmailConfirmationOtpStatus.UserNotFound, expiresAtUtc);
         }
 
         if (user.EmailConfirmed)
         {
-            return new RequestEmailConfirmationOtpResult(RequestEmailConfirmationOtpStatus.AlreadyVerified, retryAtUtc);
+            return new RequestEmailConfirmationOtpResult(RequestEmailConfirmationOtpStatus.AlreadyVerified, expiresAtUtc);
         }
 
         var activeOtp = await twoFactorOtpService.GetActiveOtpAsync(
@@ -49,11 +50,13 @@ public sealed class RequestEmailConfirmationOtpHandler(
             {
                 StakeholderId = stakeholder.Id,
                 TenantId = tenantId,
-                FlowId = request.ActorContext.FlowId
+                FlowId = request.ActorContext.FlowId,
+                RequestedAt = requestedAtUtc,
+                ExpiresAtUtc = expiresAtUtc
             },
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new RequestEmailConfirmationOtpResult(RequestEmailConfirmationOtpStatus.Accepted, retryAtUtc);
+        return new RequestEmailConfirmationOtpResult(RequestEmailConfirmationOtpStatus.Accepted, expiresAtUtc);
     }
 }

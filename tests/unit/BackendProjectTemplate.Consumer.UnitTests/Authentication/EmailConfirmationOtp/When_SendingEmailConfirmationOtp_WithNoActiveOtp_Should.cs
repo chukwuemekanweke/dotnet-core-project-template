@@ -34,13 +34,16 @@ public sealed class When_SendingEmailConfirmationOtp_WithNoActiveOtp_Should
             null,
             false);
         var clock = new FixedTimeProvider(new DateTimeOffset(2026, 8, 16, 12, 0, 0, TimeSpan.Zero));
+        var requestedAtUtc = clock.GetUtcNow().AddSeconds(-10);
+        var expiresAtUtc = requestedAtUtc.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime);
         twoFactorOtpService.GenerateOtpAsync(
                 user.Id,
                 OtpIntent.EmailConfirmation,
                 Arg.Any<CancellationToken>(),
                 6,
-                false)
-            .Returns(new TwoFactorOtp("123456", clock.GetUtcNow().AddMinutes(10)));
+                false,
+                expiresAtUtc)
+            .Returns(new TwoFactorOtp("123456", expiresAtUtc));
         identityService.FindByIdAsync(user.Id).Returns(user);
         messageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         stakeholderRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
@@ -62,7 +65,9 @@ public sealed class When_SendingEmailConfirmationOtp_WithNoActiveOtp_Should
             new SendEmailConfirmationOtpCommand
             {
                 StakeholderId = stakeholderId,
-                TenantId = stakeholder.TenantId
+                TenantId = stakeholder.TenantId,
+                RequestedAt = requestedAtUtc,
+                ExpiresAtUtc = expiresAtUtc
             },
             CancellationToken.None);
 
@@ -71,7 +76,8 @@ public sealed class When_SendingEmailConfirmationOtp_WithNoActiveOtp_Should
             OtpIntent.EmailConfirmation,
             Arg.Any<CancellationToken>(),
             6,
-            false);
+            false,
+            expiresAtUtc);
         await commandSender.Received(1).SendAsync(
             Arg.Is<SendNotificationCommand>(command => command.StakeholderId == stakeholderId),
             Arg.Any<CancellationToken>());

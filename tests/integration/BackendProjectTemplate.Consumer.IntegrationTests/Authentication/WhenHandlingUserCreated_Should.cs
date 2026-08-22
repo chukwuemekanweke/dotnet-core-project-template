@@ -47,6 +47,7 @@ public sealed class WhenHandlingUserCreated_Should(ContainersFixture fixture)
 
         async Task WhenPublishingUserCreated()
         {
+            var requestedAtUtc = DateTimeOffset.UtcNow;
             var publisherConfig = new PublisherConfig
             {
                 ServiceName = "BackendProjectTemplate.Consumer.IntegrationTests.Publisher",
@@ -68,7 +69,9 @@ public sealed class WhenHandlingUserCreated_Should(ContainersFixture fixture)
                 new UserCreated
                 {
                     StakeholderId = _stakeholderId,
-                    TenantId = _tenantId
+                    TenantId = _tenantId,
+                    RequestedAtUtc = requestedAtUtc,
+                    ExpiresAtUtc = requestedAtUtc.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime)
                 },
                 CancellationToken.None,
                 new Dictionary<string, string>

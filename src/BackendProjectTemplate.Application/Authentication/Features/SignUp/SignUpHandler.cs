@@ -22,6 +22,8 @@ public sealed class SignUpHandler(
 {
     public async Task<SignUpResult> HandleAsync(SignUpCommand request, CancellationToken cancellationToken)
     {
+        var requestedAtUtc = timeProvider.GetUtcNow();
+        var expiresAtUtc = requestedAtUtc.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordSignUpStarted,
             ObservabilityEventProperties.Create(request.ActorContext));
@@ -76,7 +78,9 @@ public sealed class SignUpHandler(
         {
             StakeholderId = stakeholder.Id,
             TenantId = tenantId,
-            FlowId = request.ActorContext.FlowId
+            FlowId = request.ActorContext.FlowId,
+            RequestedAtUtc = requestedAtUtc,
+            ExpiresAtUtc = expiresAtUtc
         }, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -86,7 +90,7 @@ public sealed class SignUpHandler(
 
         return new SignUpResult(
             SignUpStatus.Accepted,
-            RetryAtUtc: timeProvider.GetUtcNow().Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
+            RetryAtUtc: expiresAtUtc);
     }
 }
 

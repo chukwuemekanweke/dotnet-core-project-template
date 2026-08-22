@@ -59,7 +59,8 @@ internal sealed class AuthenticationFlowTestContext
         StakeholderTypeRepository,
         StakeholderRepository,
         CustomTelemetryContext,
-        UnitOfWork);
+        UnitOfWork,
+        Clock);
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(
         IdentityService,
         TwoFactorOtpService,
