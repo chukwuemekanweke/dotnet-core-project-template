@@ -17,6 +17,7 @@ public sealed class GoogleSignUpHandler(
     IEventPublisher eventPublisher,
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
+    RegistrationCountryValidator registrationCountryValidator,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -28,6 +29,33 @@ public sealed class GoogleSignUpHandler(
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.GoogleSignUpStarted,
             ObservabilityEventProperties.Create(request.ActorContext));
+
+        var countryValidation = await registrationCountryValidator.ValidateAsync(
+            request.CountryId,
+            request.IpAddress,
+            cancellationToken);
+        if (countryValidation == RegistrationCountryValidationResult.CountryNotFound)
+        {
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.ValidationFailed);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.GoogleSignUpFailed,
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.ValidationFailed));
+            return new GoogleSignUpResult(
+                GoogleSignUpStatus.ValidationFailed,
+                ValidationErrors: new Dictionary<string, string[]>
+                {
+                    [nameof(GoogleSignUpCommand.CountryId)] = ["The selected country is invalid."]
+                });
+        }
+
+        if (countryValidation == RegistrationCountryValidationResult.Mismatch)
+        {
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.CountryMismatch);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.GoogleSignUpFailed,
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.CountryMismatch));
+            return new GoogleSignUpResult(GoogleSignUpStatus.CountryMismatch);
+        }
 
         var googleIdentity = await googleIdentityTokenService.ValidateAsync(request.IdToken, cancellationToken);
         if (googleIdentity is null)

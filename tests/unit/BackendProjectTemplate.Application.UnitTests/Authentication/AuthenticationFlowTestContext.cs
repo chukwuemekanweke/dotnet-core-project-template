@@ -1,3 +1,5 @@
+using BackendProjectTemplate.Application.Authentication;
+using BackendProjectTemplate.Application.Authentication.Features.ChangePassword;
 using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExistence;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
@@ -11,11 +13,14 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 
 namespace BackendProjectTemplate.Application.UnitTests.Authentication;
 
@@ -31,9 +36,13 @@ internal sealed class AuthenticationFlowTestContext
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public ICommandSender CommandSender { get; } = Substitute.For<ICommandSender>();
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
+    public IIpGeolocationService IpGeolocationService { get; } = Substitute.For<IIpGeolocationService>();
+    public IRepository<Country> CountryRepository { get; } = Substitute.For<IRepository<Country>>();
+    public IStakeholderReadModelRepository StakeholderReadModelRepository { get; } = Substitute.For<IStakeholderReadModelRepository>();
     public IRepository<StakeholderType> StakeholderTypeRepository { get; } = Substitute.For<IRepository<StakeholderType>>();
     public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
     public StakeholderResolver StakeholderResolver => new(StakeholderRepository);
+    public RegistrationCountryValidator RegistrationCountryValidator => new(CountryRepository, IpGeolocationService);
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public IUnitOfWorkTransaction Transaction { get; } = Substitute.For<IUnitOfWorkTransaction>();
 
@@ -41,6 +50,8 @@ internal sealed class AuthenticationFlowTestContext
     {
         UnitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Transaction));
+        CountryRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg"));
     }
 
     public SignUpHandler CreateSignUpHandler() => new(
@@ -48,6 +59,7 @@ internal sealed class AuthenticationFlowTestContext
         EventPublisher,
         StakeholderTypeRepository,
         StakeholderRepository,
+        RegistrationCountryValidator,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -58,6 +70,7 @@ internal sealed class AuthenticationFlowTestContext
         EventPublisher,
         StakeholderTypeRepository,
         StakeholderRepository,
+        RegistrationCountryValidator,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
@@ -118,6 +131,11 @@ internal sealed class AuthenticationFlowTestContext
         StakeholderResolver,
         CustomTelemetryContext,
         UnitOfWork);
+    public ChangePasswordHandler CreateChangePasswordHandler() => new(
+        IdentityService,
+        StakeholderReadModelRepository,
+        CustomTelemetryContext,
+        UnitOfWork);
     public LogoutSessionHandler CreateLogoutSessionHandler() => new(
         AccessTokenRevocationService,
         CustomTelemetryContext);
@@ -144,6 +162,7 @@ internal sealed class AuthenticationFlowTestContext
             countryId ?? Guid.CreateVersion7(),
             firstName ?? AuthenticationTestData.FirstName(),
             lastName ?? AuthenticationTestData.LastName(),
+            AuthenticationTestData.IpAddress(),
             TestActorContext());
     }
 
@@ -169,6 +188,7 @@ internal sealed class AuthenticationFlowTestContext
             countryId ?? Guid.CreateVersion7(),
             firstName ?? AuthenticationTestData.FirstName(),
             lastName ?? AuthenticationTestData.LastName(),
+            AuthenticationTestData.IpAddress(),
             TestActorContext());
 
     public static GoogleSignInCommand CreateGoogleSignInCommand(
@@ -210,6 +230,20 @@ internal sealed class AuthenticationFlowTestContext
             resolvedPassword,
             confirmPassword ?? resolvedPassword,
             TestActorContext());
+    }
+
+    public static ChangePasswordCommand CreateChangePasswordCommand(
+        string? currentPassword = null,
+        string? newPassword = null,
+        ActorContext? actorContext = null)
+    {
+        var resolvedNewPassword = newPassword ?? "N3wP@ssword!";
+
+        return new ChangePasswordCommand(
+            currentPassword ?? AuthenticationTestData.StrongPassword(),
+            resolvedNewPassword,
+            resolvedNewPassword,
+            actorContext ?? TestActorContext());
     }
 
     public static RefreshSessionCommand CreateRefreshSessionCommand(

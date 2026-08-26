@@ -7,4 +7,5 @@ public sealed record GoogleSignUpCommand(
     Guid CountryId,
     string FirstName,
     string LastName,
+    string IpAddress,
     ActorContext ActorContext);

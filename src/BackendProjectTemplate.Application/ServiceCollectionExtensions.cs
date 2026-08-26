@@ -1,3 +1,5 @@
+using BackendProjectTemplate.Application.Authentication;
+using BackendProjectTemplate.Application.Authentication.Features.ChangePassword;
 using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExistence;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
@@ -34,8 +36,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<StakeholderResolver>();
+        services.AddScoped<RegistrationCountryValidator>();
         services.AddScoped<FileUploadService>();
         services.AddScoped<CheckEmailExistenceHandler>();
+        services.AddScoped<ChangePasswordHandler>();
         services.AddScoped<GoogleSignUpHandler>();
         services.AddScoped<GoogleSignInHandler>();
         services.AddScoped<CompletePasswordResetHandler>();

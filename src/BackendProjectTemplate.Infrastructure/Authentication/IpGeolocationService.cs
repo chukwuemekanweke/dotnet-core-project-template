@@ -1,8 +1,11 @@
 using BackendProjectTemplate.Domain.Authentication.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 
-internal sealed class IpGeolocationService(IEnumerable<IIpGeolocationProvider> providers) : IIpGeolocationService
+internal sealed class IpGeolocationService(
+    IEnumerable<IIpGeolocationProvider> providers,
+    ILogger<IpGeolocationService> logger) : IIpGeolocationService
 {
     public async Task<IpGeolocation?> GetGeolocationAsync(string ipAddress, CancellationToken cancellationToken)
     {
@@ -13,10 +16,21 @@ internal sealed class IpGeolocationService(IEnumerable<IIpGeolocationProvider> p
 
         foreach (var provider in providers)
         {
-            var geolocation = await provider.GetGeolocationAsync(ipAddress, cancellationToken);
-            if (geolocation is not null)
+            try
             {
-                return geolocation;
+                var geolocation = await provider.GetGeolocationAsync(ipAddress, cancellationToken);
+                if (geolocation is not null)
+                {
+                    return geolocation;
+                }
+            }
+            catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                IpGeolocationLog.ProviderTimedOut(logger, exception, provider.GetType().Name);
+            }
+            catch (HttpRequestException exception)
+            {
+                IpGeolocationLog.ProviderTransportFailed(logger, exception, provider.GetType().Name);
             }
         }
 

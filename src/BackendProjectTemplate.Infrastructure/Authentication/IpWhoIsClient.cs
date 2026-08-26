@@ -1,10 +1,14 @@
 using BackendProjectTemplate.Domain.Authentication.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 
-internal sealed class IpWhoIsClient(IHttpClientFactory httpClientFactory, IOptions<IpWhoIsOptions> options) : IIpGeolocationProvider
+internal sealed class IpWhoIsClient(
+    IHttpClientFactory httpClientFactory,
+    IOptions<IpWhoIsOptions> options,
+    ILogger<IpWhoIsClient> logger) : IIpGeolocationProvider
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -22,6 +26,7 @@ internal sealed class IpWhoIsClient(IHttpClientFactory httpClientFactory, IOptio
         using var response = await _httpClient.GetAsync(BuildRequestUri(ipAddress), cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
+            IpGeolocationLog.ProviderReturnedFailure(logger, nameof(IpWhoIsClient), response.StatusCode);
             return null;
         }
 

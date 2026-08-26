@@ -76,6 +76,8 @@ public static class Observability
             public const string PasswordResetOtpSent = "PasswordResetOtpSent";
             public const string PasswordResetCompleted = "PasswordResetCompleted";
             public const string PasswordResetCompletionFailed = "PasswordResetCompletionFailed";
+            public const string PasswordChangeCompleted = "PasswordChangeCompleted";
+            public const string PasswordChangeFailed = "PasswordChangeFailed";
             public const string SignOutCompleted = "SignOutCompleted";
             public const string SessionRefreshCompleted = "SessionRefreshCompleted";
             public const string SessionRefreshPostProcessingCompleted = "SessionRefreshPostProcessingCompleted";

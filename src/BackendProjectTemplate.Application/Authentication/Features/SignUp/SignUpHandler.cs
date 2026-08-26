@@ -16,6 +16,7 @@ public sealed class SignUpHandler(
     IEventPublisher eventPublisher,
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
+    RegistrationCountryValidator registrationCountryValidator,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -27,6 +28,33 @@ public sealed class SignUpHandler(
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordSignUpStarted,
             ObservabilityEventProperties.Create(request.ActorContext));
+
+        var countryValidation = await registrationCountryValidator.ValidateAsync(
+            request.CountryId,
+            request.IpAddress,
+            cancellationToken);
+        if (countryValidation == RegistrationCountryValidationResult.CountryNotFound)
+        {
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.ValidationFailed);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.PasswordSignUpFailed,
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.ValidationFailed));
+            return new SignUpResult(
+                SignUpStatus.ValidationFailed,
+                new Dictionary<string, string[]>
+                {
+                    [nameof(SignUpCommand.CountryId)] = ["The selected country is invalid."]
+                });
+        }
+
+        if (countryValidation == RegistrationCountryValidationResult.Mismatch)
+        {
+            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.CountryMismatch);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.PasswordSignUpFailed,
+                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.CountryMismatch));
+            return new SignUpResult(SignUpStatus.CountryMismatch);
+        }
 
         if (await identityService.FindByEmailAsync(request.Email) is not null)
         {

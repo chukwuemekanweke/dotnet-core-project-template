@@ -42,6 +42,7 @@ public sealed class RegistrationsController(
             request.CountryId,
             request.FirstName,
             request.LastName,
+            HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
             ActorContext.FromAnonymousActor(currentActor));
 
         var result = await handler.HandleAsync(command, cancellationToken);
@@ -54,6 +55,10 @@ public sealed class RegistrationsController(
                 detail: "An account with this email address already exists."),
             SignUpStatus.ValidationFailed => BadRequest(new ValidationProblemDetails(
                 new Dictionary<string, string[]>(result.ValidationErrors ?? new Dictionary<string, string[]>()))),
+            SignUpStatus.CountryMismatch => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Country does not match request location",
+                detail: "The selected country does not match the country resolved from the request IP address."),
             _ => Accepted((string?)null, new SignUpResponse(
                 request.Email,
                 "The sign-up request has been accepted. The account verification OTP will be sent shortly.",
@@ -82,6 +87,7 @@ public sealed class RegistrationsController(
                 request.CountryId,
                 request.FirstName,
                 request.LastName,
+                HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                 ActorContext.FromAnonymousActor(currentActor)),
             cancellationToken);
 
@@ -101,6 +107,10 @@ public sealed class RegistrationsController(
                 detail: "This Google account is already linked to another user."),
             GoogleSignUpStatus.ValidationFailed => BadRequest(new ValidationProblemDetails(
                 new Dictionary<string, string[]>(result.ValidationErrors ?? new Dictionary<string, string[]>()))),
+            GoogleSignUpStatus.CountryMismatch => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Country does not match request location",
+                detail: "The selected country does not match the country resolved from the request IP address."),
             _ => Accepted((string?)null, new GoogleSignUpResponse(
                 result.Email ?? string.Empty,
                 "The Google sign-up request has been accepted and the email has been confirmed automatically."))

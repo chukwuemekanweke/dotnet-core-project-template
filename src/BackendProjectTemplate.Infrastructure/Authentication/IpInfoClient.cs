@@ -1,10 +1,14 @@
 using BackendProjectTemplate.Domain.Authentication.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 
-internal sealed class IpInfoClient(IHttpClientFactory httpClientFactory, IOptions<IpInfoOptions> options) : IIpGeolocationProvider
+internal sealed class IpInfoClient(
+    IHttpClientFactory httpClientFactory,
+    IOptions<IpInfoOptions> options,
+    ILogger<IpInfoClient> logger) : IIpGeolocationProvider
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -22,6 +26,7 @@ internal sealed class IpInfoClient(IHttpClientFactory httpClientFactory, IOption
         using var response = await _httpClient.GetAsync(BuildRequestUri(ipAddress), cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
+            IpGeolocationLog.ProviderReturnedFailure(logger, nameof(IpInfoClient), response.StatusCode);
             return null;
         }
 

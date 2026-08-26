@@ -1,9 +1,12 @@
 using BackendProjectTemplate.Domain.Authentication.Services;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 
-internal sealed class IpApiComClient(IHttpClientFactory httpClientFactory) : IIpGeolocationProvider
+internal sealed class IpApiComClient(
+    IHttpClientFactory httpClientFactory,
+    ILogger<IpApiComClient> logger) : IIpGeolocationProvider
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -20,6 +23,7 @@ internal sealed class IpApiComClient(IHttpClientFactory httpClientFactory) : IIp
         using var response = await _httpClient.GetAsync($"/json/{ipAddress}?fields=status,country,regionName,city", cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
+            IpGeolocationLog.ProviderReturnedFailure(logger, nameof(IpApiComClient), response.StatusCode);
             return null;
         }
 

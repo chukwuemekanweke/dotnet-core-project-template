@@ -9,5 +9,6 @@ public enum SignUpStatus
 {
     Accepted = 1,
     DuplicateEmail = 2,
-    ValidationFailed = 3
+    ValidationFailed = 3,
+    CountryMismatch = 4
 }
