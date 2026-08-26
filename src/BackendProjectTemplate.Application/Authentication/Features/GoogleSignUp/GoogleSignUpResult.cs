@@ -11,5 +11,6 @@ public enum GoogleSignUpStatus
     InvalidGoogleToken = 2,
     DuplicateEmail = 3,
     DuplicateGoogleAccount = 4,
-    ValidationFailed = 5
+    ValidationFailed = 5,
+    CountryMismatch = 6
 }

@@ -13,6 +13,7 @@ using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using FluentValidation;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +61,7 @@ builder.Services.AddPostgresWritePersistence(builder.Configuration);
 builder.Services.AddPostgresReadPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
 builder.Services.AddAuthenticationServices(builder.Configuration);
+builder.Services.AddIpGeolocationServices(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddRequestRateLimiting(builder.Configuration);
 builder.Services.AddRedisCaching(builder.Configuration);
@@ -72,6 +74,10 @@ builder.Services.AddBackendTelemetry(builder.Configuration);
 
 var app = builder.Build();
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors();

@@ -9,4 +9,5 @@ public sealed record SignUpCommand(
     Guid CountryId,
     string FirstName,
     string LastName,
+    string IpAddress,
     ActorContext ActorContext);

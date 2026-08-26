@@ -42,6 +42,9 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
         return await userManager.ResetPasswordAsync(user, resetToken, newPassword);
     }
 
+    public Task<IdentityResult> ChangePasswordAsync(AppUser user, string currentPassword, string newPassword) =>
+        userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
     public Task<bool> CheckPasswordAsync(AppUser user, string password) =>
         userManager.CheckPasswordAsync(user, password);
 

@@ -49,6 +49,12 @@ public static class EndpointUrl
         public static readonly string CompletionsV1 = $"{V1}/completions";
     }
 
+    public static class Passwords
+    {
+        public const string Route = $"api/{Versions.V1Route}/authentication/password";
+        public static readonly string V1 = ToV1(Route);
+    }
+
     public static class Countries
     {
         public const string Route = $"api/{Versions.V1Route}/reference-data/countries";
