@@ -43,7 +43,8 @@ public sealed class RegistrationsController(
             request.FirstName,
             request.LastName,
             HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
-            ActorContext.FromAnonymousActor(currentActor));
+            ActorContext.FromAnonymousActor(currentActor),
+            request.Language);
 
         var result = await handler.HandleAsync(command, cancellationToken);
 
@@ -88,7 +89,8 @@ public sealed class RegistrationsController(
                 request.FirstName,
                 request.LastName,
                 HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
-                ActorContext.FromAnonymousActor(currentActor)),
+                ActorContext.FromAnonymousActor(currentActor),
+                request.Language),
             cancellationToken);
 
         return result.Status switch

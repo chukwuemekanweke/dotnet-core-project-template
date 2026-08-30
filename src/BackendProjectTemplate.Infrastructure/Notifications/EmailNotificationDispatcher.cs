@@ -59,6 +59,7 @@ internal sealed class EmailNotificationDispatcher(
                 command.TenantId,
                 command.CountryId,
                 command.NotificationType,
+                command.Language,
                 NotificationContentObfuscator.Obfuscate(content.Content),
                 content.To,
                 JoinRecipients(content.Cc),
@@ -81,13 +82,13 @@ internal sealed class EmailNotificationDispatcher(
             }
 
             var template = await emailNotificationTemplateRepository.FirstOrDefaultAsync(
-                new EmailNotificationTemplateByNotificationTypeSpecification(command.NotificationType),
+                new EmailNotificationTemplateByNotificationTypeSpecification(command.NotificationType, command.Language),
                 cancellationToken);
 
             if (template is null)
             {
                 throw new NotificationConfigurationException(
-                    $"No email template is configured for notification type '{command.NotificationType}'.");
+                    $"No '{command.Language}' email template is configured for notification type '{command.NotificationType}'.");
             }
 
             var tenant = await tenantRepository.FirstOrDefaultAsync(
@@ -116,13 +117,14 @@ internal sealed class EmailNotificationDispatcher(
                 LoadNotificationTemplate(
                     notificationsOptions,
                     brandKey,
+                    template.Language,
                     template.TemplateFileName,
                     command.NotificationType),
                 content.Content,
                 "body",
                 command.NotificationType);
             var renderedHtmlBody = RenderTenantHtmlBody(
-                LoadBaseTemplate(notificationsOptions, brandKey, command.NotificationType),
+                LoadBaseTemplate(notificationsOptions, brandKey, template.Language, command.NotificationType),
                 renderedSubject,
                 renderedBody,
                 command.NotificationType);
@@ -159,6 +161,7 @@ internal sealed class EmailNotificationDispatcher(
     private string LoadNotificationTemplate(
         EmailNotificationsOptions notificationsOptions,
         string brandKey,
+        string language,
         string templateFileName,
         NotificationType notificationType)
     {
@@ -169,43 +172,50 @@ internal sealed class EmailNotificationDispatcher(
         }
 
         var relativePath = Path.Combine(notificationsOptions.NotificationTemplatesFolder, templateFileName);
-        return ReadTemplateFileWithFallback(notificationsOptions, brandKey, relativePath, "notification body", notificationType);
+        return ReadTemplateFile(notificationsOptions, brandKey, language, relativePath, "notification body", notificationType);
     }
 
     private string LoadBaseTemplate(
         EmailNotificationsOptions notificationsOptions,
         string brandKey,
+        string language,
         NotificationType notificationType) =>
-        ReadTemplateFileWithFallback(
+        ReadTemplateFile(
             notificationsOptions,
             brandKey,
+            language,
             notificationsOptions.BaseTemplateFileName,
             "base template",
             notificationType);
 
-    private string ReadTemplateFileWithFallback(
+    private string ReadTemplateFile(
         EmailNotificationsOptions notificationsOptions,
         string brandKey,
+        string language,
         string relativePath,
         string templateKind,
         NotificationType notificationType)
     {
         var templateSetsRootPath = ResolveTemplateSetsRootPath(notificationsOptions.TemplateSetsRootPath);
-        var brandKeyPath = Path.Combine(templateSetsRootPath, brandKey, relativePath);
+        var templatePath = Path.Combine(templateSetsRootPath, brandKey, language, relativePath);
 
-        if (File.Exists(brandKeyPath))
+        if (File.Exists(templatePath))
         {
-            return File.ReadAllText(brandKeyPath);
+            return File.ReadAllText(templatePath);
         }
 
-        var defaultBrandKeyPath = Path.Combine(templateSetsRootPath, notificationsOptions.DefaultBrandKey, relativePath);
-        if (File.Exists(defaultBrandKeyPath))
+        var defaultTemplatePath = Path.Combine(
+            templateSetsRootPath,
+            notificationsOptions.DefaultBrandKey,
+            language,
+            relativePath);
+        if (File.Exists(defaultTemplatePath))
         {
-            return File.ReadAllText(defaultBrandKeyPath);
+            return File.ReadAllText(defaultTemplatePath);
         }
 
         throw new NotificationConfigurationException(
-            $"No {templateKind} file was found for brand '{brandKey}' (or default brand '{notificationsOptions.DefaultBrandKey}') and notification type '{notificationType}'.");
+            $"No {templateKind} file was found for brand '{brandKey}' or default brand '{notificationsOptions.DefaultBrandKey}', language '{language}', and notification type '{notificationType}'.");
     }
 
     private string ResolveTemplateSetsRootPath(string configuredRootPath) =>

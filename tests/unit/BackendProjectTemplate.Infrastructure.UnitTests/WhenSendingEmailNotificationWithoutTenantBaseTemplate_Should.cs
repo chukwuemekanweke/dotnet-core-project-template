@@ -19,10 +19,10 @@ public sealed class WhenSendingEmailNotificationWithoutTenantBaseTemplate_Should
     {
         var tenantId = Guid.CreateVersion7();
         var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.CreateVersion7():N}");
-        var defaultTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "NotificationTypes");
+        var defaultTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "en", "NotificationTypes");
         Directory.CreateDirectory(defaultTemplateDirectory);
         await File.WriteAllTextAsync(
-            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "BaseTemplate.html"),
+            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "en", "BaseTemplate.html"),
             "<html><body>{{:BodyHtml:}}</body></html>");
         await File.WriteAllTextAsync(
             Path.Combine(defaultTemplateDirectory, "SignInSuccessful.html"),
@@ -67,7 +67,7 @@ public sealed class WhenSendingEmailNotificationWithoutTenantBaseTemplate_Should
         tenantRepository.FirstOrDefaultAsync(
                 Arg.Any<TenantByIdSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns((Tenant?)null);
+            .Returns(Tenant.Create(tenantId, "Moveaex", "moveaex"));
         transportProvider.ProviderKey.Returns("mailtrap");
         transportProvider.SendAsync(Arg.Any<EmailDeliveryMessage>(), Arg.Any<CancellationToken>())
             .Returns(new EmailTransportSendResult("mailtrap-message-id"));

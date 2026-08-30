@@ -135,7 +135,7 @@ public sealed class GoogleSignUpHandler(
                 $"Stakeholder type '{StakeholderDefaults.TypeKey}' is not configured for tenant '{tenantId}'.");
         }
 
-        var stakeholder = Stakeholder.Create(user.Id, tenantId, request.CountryId, stakeholderType.Id, request.FirstName, request.LastName);
+        var stakeholder = Stakeholder.Create(user.Id, tenantId, request.CountryId, stakeholderType.Id, request.FirstName, request.LastName, request.Language);
         await stakeholderRepository.AddAsync(stakeholder);
 
         await eventPublisher.PublishAsync(new UserCreated

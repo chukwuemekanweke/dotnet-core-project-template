@@ -18,6 +18,8 @@ public sealed class StakeholderConfiguration : IEntityTypeConfiguration<Stakehol
         builder.Property(stakeholder => stakeholder.FirstName).HasMaxLength(100).IsRequired();
         builder.Property(stakeholder => stakeholder.LastName).HasMaxLength(100).IsRequired();
         builder.Property(stakeholder => stakeholder.AvatarUrl).HasMaxLength(2048);
+        builder.Property(stakeholder => stakeholder.Theme).HasMaxLength(16).IsRequired();
+        builder.Property(stakeholder => stakeholder.Language).HasMaxLength(35).IsRequired();
         builder.Property(stakeholder => stakeholder.IsVerified).IsRequired();
 
         builder.HasIndex(stakeholder => stakeholder.AppUserId)

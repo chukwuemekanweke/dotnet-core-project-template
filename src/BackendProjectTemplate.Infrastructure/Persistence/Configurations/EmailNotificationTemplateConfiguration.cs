@@ -15,6 +15,10 @@ public sealed class EmailNotificationTemplateConfiguration : IEntityTypeConfigur
         builder.Property(template => template.NotificationType)
             .IsRequired();
 
+        builder.Property(template => template.Language)
+            .HasMaxLength(35)
+            .IsRequired();
+
         builder.Property(template => template.Description)
             .HasMaxLength(250)
             .IsRequired();
@@ -27,7 +31,7 @@ public sealed class EmailNotificationTemplateConfiguration : IEntityTypeConfigur
             .HasMaxLength(260)
             .IsRequired();
 
-        builder.HasIndex(template => template.NotificationType)
+        builder.HasIndex(template => new { template.NotificationType, template.Language })
             .IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE");
     }

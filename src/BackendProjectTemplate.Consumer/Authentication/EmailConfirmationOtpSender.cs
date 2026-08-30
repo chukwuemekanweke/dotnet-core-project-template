@@ -58,7 +58,8 @@ public sealed class EmailConfirmationOtpSender(
                         ["Product"] = "BackendProjectTemplate"
                     }))
             {
-                StakeholderId = stakeholder.StakeholderId
+                StakeholderId = stakeholder.StakeholderId,
+                Language = stakeholder.Language
             },
             cancellationToken);
 

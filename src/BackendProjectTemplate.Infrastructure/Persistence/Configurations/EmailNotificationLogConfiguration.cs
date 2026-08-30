@@ -27,6 +27,10 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
         builder.Property(log => log.NotificationType)
             .IsRequired();
 
+        builder.Property(log => log.Language)
+            .HasMaxLength(35)
+            .IsRequired();
+
         builder.Property(log => log.NotificationContent)
             .HasConversion(GetNotificationContentConverter())
             .Metadata.SetValueComparer(GetNotificationContentComparer());

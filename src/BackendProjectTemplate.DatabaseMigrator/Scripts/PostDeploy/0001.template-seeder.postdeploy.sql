@@ -543,22 +543,32 @@ WHERE NOT EXISTS (
     The template file name points to an HTML content fragment loaded from filesystem.
 */
 
-WITH template_values("NotificationType", "Description", "Subject", "TemplateFileName") AS (VALUES
-    (1, 'Account created notification', 'Welcome to {{:Product:}}', 'AccountCreated.html'),
-    (2, 'Email confirmation OTP notification', 'Please confirm your email', 'ConfirmEmail.html'),
-    (3, 'Reset password OTP notification', 'Reset your password', 'ResetPassword.html'),
-    (4, 'Password reset success notification', 'Your password has been reset', 'PasswordResetSuccessful.html'),
-    (5, 'Email confirmation follow-up notification', 'Reminder to confirm your email', 'EmailConfirmationFollowUp.html'),
-    (6, 'Sign-in successful notification', 'Successful sign-in', 'SignInSuccessful.html'),
-    (7, 'Account locked notification', 'Your account has been locked', 'AccountLocked.html'),
-    (8, 'Trial expired notification', 'Your {{:Product:}} trial has ended', 'TrialExpired.html'),
-    (9, 'Subscription cancelled notification', 'Help us improve {{:Product:}}', 'CancelledSubscription.html'),
-    (10, 'Subscription invoice notification', 'Your invoice from {{:Product:}}', 'Invoice.html')
+WITH template_values("NotificationType", "Language", "Description", "Subject", "TemplateFileName") AS (VALUES
+    (1, 'en', 'Account created notification', 'Welcome to {{:Product:}}', 'AccountCreated.html'),
+    (2, 'en', 'Email confirmation OTP notification', 'Please confirm your email', 'ConfirmEmail.html'),
+    (3, 'en', 'Reset password OTP notification', 'Reset your password', 'ResetPassword.html'),
+    (4, 'en', 'Password reset success notification', 'Your password has been reset', 'PasswordResetSuccessful.html'),
+    (5, 'en', 'Email confirmation follow-up notification', 'Reminder to confirm your email', 'EmailConfirmationFollowUp.html'),
+    (6, 'en', 'Sign-in successful notification', 'Successful sign-in', 'SignInSuccessful.html'),
+    (7, 'en', 'Account locked notification', 'Your account has been locked', 'AccountLocked.html'),
+    (8, 'en', 'Trial expired notification', 'Your {{:Product:}} trial has ended', 'TrialExpired.html'),
+    (9, 'en', 'Subscription cancelled notification', 'Help us improve {{:Product:}}', 'CancelledSubscription.html'),
+    (10, 'en', 'Subscription invoice notification', 'Your invoice from {{:Product:}}', 'Invoice.html'),
+    (1, 'fr', 'Notification de création de compte', 'Bienvenue sur {{:Product:}}', 'AccountCreated.html'),
+    (2, 'fr', 'Notification de confirmation de l’adresse e-mail', 'Confirmez votre adresse e-mail', 'ConfirmEmail.html'),
+    (3, 'fr', 'Notification de réinitialisation du mot de passe', 'Réinitialisez votre mot de passe', 'ResetPassword.html'),
+    (4, 'fr', 'Notification de réinitialisation réussie', 'Votre mot de passe a été réinitialisé', 'PasswordResetSuccessful.html'),
+    (5, 'fr', 'Rappel de confirmation de l’adresse e-mail', 'Rappel : confirmez votre adresse e-mail', 'EmailConfirmationFollowUp.html'),
+    (6, 'fr', 'Notification de connexion réussie', 'Connexion réussie', 'SignInSuccessful.html'),
+    (7, 'fr', 'Notification de verrouillage du compte', 'Votre compte a été verrouillé', 'AccountLocked.html'),
+    (8, 'fr', 'Notification de fin d’essai', 'Votre essai {{:Product:}} est terminé', 'TrialExpired.html'),
+    (9, 'fr', 'Notification d’annulation d’abonnement', 'Aidez-nous à améliorer {{:Product:}}', 'CancelledSubscription.html'),
+    (10, 'fr', 'Notification de facture', 'Votre facture {{:Product:}}', 'Invoice.html')
 ),
 templates_existing AS (
-    SELECT t."NotificationType"
+    SELECT t."NotificationType", t."Language"
     FROM notifications."EmailNotificationTemplates" t
-    INNER JOIN template_values v ON t."NotificationType" = v."NotificationType"
+    INNER JOIN template_values v ON t."NotificationType" = v."NotificationType" AND t."Language" = v."Language"
 ),
 templates_updated AS (
     UPDATE notifications."EmailNotificationTemplates" t
@@ -569,11 +579,12 @@ templates_updated AS (
         "UpdatedAtUtc" = NOW()
     FROM template_values v
     WHERE t."NotificationType" = v."NotificationType"
+      AND t."Language" = v."Language"
       AND (t."Description" IS DISTINCT FROM v."Description"
            OR t."Subject" IS DISTINCT FROM v."Subject"
            OR t."TemplateFileName" IS DISTINCT FROM v."TemplateFileName")
 )
-INSERT INTO notifications."EmailNotificationTemplates" ("Id", "NotificationType", "Description", "Subject", "TemplateFileName", "CreatedAtUtc", "UpdatedAtUtc", "IsDeleted")
-SELECT gen_random_uuid(), v."NotificationType", v."Description", v."Subject", v."TemplateFileName", NOW(), NOW(), FALSE
+INSERT INTO notifications."EmailNotificationTemplates" ("Id", "NotificationType", "Language", "Description", "Subject", "TemplateFileName", "CreatedAtUtc", "UpdatedAtUtc", "IsDeleted")
+SELECT gen_random_uuid(), v."NotificationType", v."Language", v."Description", v."Subject", v."TemplateFileName", NOW(), NOW(), FALSE
 FROM template_values v
-WHERE NOT EXISTS (SELECT 1 FROM templates_existing e WHERE e."NotificationType" = v."NotificationType");
+WHERE NOT EXISTS (SELECT 1 FROM templates_existing e WHERE e."NotificationType" = v."NotificationType" AND e."Language" = v."Language");

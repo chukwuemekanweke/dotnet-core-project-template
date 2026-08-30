@@ -30,5 +30,9 @@ public sealed class StakeholderReadModelRepository(AppReadDbContext dbContext) :
             stakeholder.FirstName,
             stakeholder.LastName,
             stakeholder.AvatarUrl,
-            stakeholder.IsVerified);
+            stakeholder.IsVerified)
+        {
+            Theme = stakeholder.Theme,
+            Language = stakeholder.Language
+        };
 }

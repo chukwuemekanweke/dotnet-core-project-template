@@ -70,10 +70,10 @@ public sealed class WhenSendingEmailNotificationFails_Should
         var exception = await Should.ThrowAsync<NotificationConfigurationException>(() =>
             sut.SendAsync(command, CancellationToken.None));
 
-        exception.Message.ShouldBe("No email template is configured for notification type 'AccountLocked'.");
+        exception.Message.ShouldBe("No 'en' email template is configured for notification type 'AccountLocked'.");
         logRepository.Received(1).Update(Arg.Is<EmailNotificationLog>(log =>
             log.SentAtUtc == null &&
-            log.FailureReason == "No email template is configured for notification type 'AccountLocked'."));
+            log.FailureReason == "No 'en' email template is configured for notification type 'AccountLocked'."));
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

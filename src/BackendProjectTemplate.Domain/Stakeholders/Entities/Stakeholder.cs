@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Entities;
+using BackendProjectTemplate.Domain.Common.Localization;
 
 namespace BackendProjectTemplate.Domain.Stakeholders.Entities;
 
@@ -19,7 +20,8 @@ public sealed class Stakeholder : Entity, IAggregateRoot
         Guid countryId,
         Guid stakeholderTypeId,
         string firstName,
-        string lastName)
+        string lastName,
+        string language)
     {
         AppUserId = appUserId;
         TenantId = tenantId;
@@ -27,6 +29,8 @@ public sealed class Stakeholder : Entity, IAggregateRoot
         StakeholderTypeId = stakeholderTypeId;
         FirstName = NormalizeName(firstName, nameof(firstName), MaxFirstNameLength);
         LastName = NormalizeName(lastName, nameof(lastName), MaxLastNameLength);
+        Theme = StakeholderThemes.Default;
+        Language = SupportedLanguages.Normalize(language);
         IsVerified = false;
     }
 
@@ -37,6 +41,8 @@ public sealed class Stakeholder : Entity, IAggregateRoot
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
     public string? AvatarUrl { get; private set; }
+    public string Theme { get; private set; } = StakeholderThemes.Default;
+    public string Language { get; private set; } = SupportedLanguages.Default;
     public bool IsVerified { get; private set; }
     public AppUser AppUser { get; private set; } = null!;
     public StakeholderType StakeholderType { get; private set; } = null!;
@@ -47,8 +53,15 @@ public sealed class Stakeholder : Entity, IAggregateRoot
         Guid countryId,
         Guid stakeholderTypeId,
         string firstName,
-        string lastName) =>
-        new(appUserId, tenantId, countryId, stakeholderTypeId, firstName, lastName);
+        string lastName,
+        string language = SupportedLanguages.Default) =>
+        new(appUserId, tenantId, countryId, stakeholderTypeId, firstName, lastName, language);
+
+    public void UpdatePreferences(string theme, string language)
+    {
+        Theme = StakeholderThemes.Normalize(theme);
+        Language = SupportedLanguages.Normalize(language);
+    }
 
     public void UpdateProfile(string firstName, string lastName)
     {
