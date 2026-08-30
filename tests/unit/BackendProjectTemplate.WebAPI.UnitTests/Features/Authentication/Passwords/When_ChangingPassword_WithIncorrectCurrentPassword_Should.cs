@@ -49,5 +49,6 @@ public sealed class When_ChangingPassword_WithIncorrectCurrentPassword_Should
 
         var problem = result.ShouldBeOfType<ObjectResult>();
         problem.StatusCode.ShouldBe(StatusCodes.Status400BadRequest);
+        problem.Value.ShouldBeOfType<ProblemDetails>().Detail.ShouldBe("Current password is incorrect");
     }
 }
