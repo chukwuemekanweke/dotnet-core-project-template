@@ -49,7 +49,7 @@ public sealed class PasswordsController(
             ChangePasswordStatus.IncorrectCurrentPassword => Problem(
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Current password is incorrect",
-                detail: "The supplied current password is incorrect."),
+                detail: "Current password is incorrect"),
             _ => BadRequest(new ValidationProblemDetails(
                 new Dictionary<string, string[]>(
                     result.ValidationErrors ?? new Dictionary<string, string[]>())))
