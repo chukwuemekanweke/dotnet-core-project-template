@@ -19,14 +19,15 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_Should
     {
         var tenantId = Guid.CreateVersion7();
         var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.CreateVersion7():N}");
-        var tenantTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", "NotificationTypes");
+        const string language = "fr";
+        var tenantTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", language, "NotificationTypes");
         Directory.CreateDirectory(tenantTemplateDirectory);
         await File.WriteAllTextAsync(
-            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", "BaseTemplate.html"),
+            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", language, "BaseTemplate.html"),
             "<html><body><header>{{:Subject:}}</header>{{:BodyHtml:}}<footer>Tenant Footer</footer></body></html>");
         await File.WriteAllTextAsync(
             Path.Combine(tenantTemplateDirectory, "SignInSuccessful.html"),
-            "A sign-in to your account was successful.\nIP Address: {{:IpAddress:}}\nUser Agent: {{:UserAgent:}}");
+            "Une connexion à votre compte a réussi.\nAdresse IP : {{:IpAddress:}}\nAgent utilisateur : {{:UserAgent:}}");
 
         var providerRepository = Substitute.For<IReadRepository<Provider>>();
         var templateRepository = Substitute.For<IReadRepository<EmailNotificationTemplate>>();
@@ -56,14 +57,17 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_Should
                 {
                     ["IpAddress"] = "127.0.0.1",
                     ["UserAgent"] = "Test Agent"
-                }));
+                }))
+        {
+            Language = language
+        };
 
         providerRepository.FirstOrDefaultAsync(Arg.Any<ActiveProviderByTypeSpecification>(), Arg.Any<CancellationToken>())
             .Returns(Provider.Create(ProviderType.Email, "Mailtrap", "mailtrap", true));
         templateRepository.FirstOrDefaultAsync(
                 Arg.Any<EmailNotificationTemplateByNotificationTypeSpecification>(),
                 Arg.Any<CancellationToken>())
-            .Returns(EmailNotificationTemplate.Create(NotificationType.SignInSuccessful, "Sign-in successful notification", "Successful sign-in from {{:IpAddress:}}", "SignInSuccessful.html"));
+            .Returns(EmailNotificationTemplate.Create(NotificationType.SignInSuccessful, language, "Notification de connexion réussie", "Connexion réussie depuis {{:IpAddress:}}", "SignInSuccessful.html"));
         tenantRepository.FirstOrDefaultAsync(
                 Arg.Any<TenantByIdSpecification>(),
                 Arg.Any<CancellationToken>())
@@ -88,9 +92,13 @@ public sealed class WhenSendingEmailNotificationWithConfiguredTemplate_Should
 
         await transportProvider.Received(1).SendAsync(
             Arg.Is<EmailDeliveryMessage>(message =>
-                message.Subject == "Successful sign-in from 127.0.0.1" &&
+                message.Subject == "Connexion réussie depuis 127.0.0.1" &&
                 message.To == ((EmailNotificationContent)command.NotificationContent).To &&
-                message.HtmlBody == "<html><body><header>Successful sign-in from 127.0.0.1</header><p>A sign-in to your account was successful.</p><p>IP Address: 127.0.0.1</p><p>User Agent: Test Agent</p><footer>Tenant Footer</footer></body></html>"),
+                message.HtmlBody == "<html><body><header>Connexion r&#233;ussie depuis 127.0.0.1</header><p>Une connexion &#224; votre compte a r&#233;ussi.</p><p>Adresse IP : 127.0.0.1</p><p>Agent utilisateur : Test Agent</p><footer>Tenant Footer</footer></body></html>"),
+            Arg.Any<CancellationToken>());
+
+        await emailNotificationLogRepository.Received(1).AddAsync(
+            Arg.Is<EmailNotificationLog>(log => log.Language == language),
             Arg.Any<CancellationToken>());
     }
 }

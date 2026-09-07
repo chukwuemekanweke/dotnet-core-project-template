@@ -49,10 +49,10 @@ public sealed class WhenSendingEmailNotificationWithExistingUnsentLog_Should
             null,
             now);
         var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.CreateVersion7():N}");
-        var tenantTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "NotificationTypes");
+        var tenantTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "en", "NotificationTypes");
         Directory.CreateDirectory(tenantTemplateDirectory);
         await File.WriteAllTextAsync(
-            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "BaseTemplate.html"),
+            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "default", "en", "BaseTemplate.html"),
             "<html><body>{{:BodyHtml:}}</body></html>");
         await File.WriteAllTextAsync(
             Path.Combine(tenantTemplateDirectory, "SignInSuccessful.html"),

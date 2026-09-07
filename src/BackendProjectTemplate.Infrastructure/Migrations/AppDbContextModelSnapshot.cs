@@ -17,7 +17,7 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -746,6 +746,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)");
+
                     b.Property<Guid>("MessageId")
                         .HasColumnType("uuid");
 
@@ -819,6 +824,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)");
+
                     b.Property<int>("NotificationType")
                         .HasColumnType("integer");
 
@@ -841,7 +851,7 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NotificationType")
+                    b.HasIndex("NotificationType", "Language")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = FALSE");
 
@@ -1684,6 +1694,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<bool>("IsVerified")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(35)
+                        .HasColumnType("character varying(35)");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1694,6 +1709,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");

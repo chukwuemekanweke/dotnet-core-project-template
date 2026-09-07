@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Domain.Common.Entities;
+using BackendProjectTemplate.Domain.Common.Localization;
 
 namespace BackendProjectTemplate.Domain.Notifications.Entities;
 
@@ -16,6 +17,7 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         Guid tenantId,
         Guid countryId,
         NotificationType notificationType,
+        string language,
         Dictionary<string, string> notificationContent,
         string to,
         string? cc,
@@ -26,6 +28,7 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         TenantId = tenantId;
         CountryId = countryId;
         NotificationType = notificationType;
+        Language = language.Trim().ToLowerInvariant();
         NotificationContent = new Dictionary<string, string>(notificationContent);
         To = to.Trim();
         Cc = string.IsNullOrWhiteSpace(cc) ? null : cc.Trim();
@@ -37,6 +40,7 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
     public Guid TenantId { get; private set; }
     public Guid CountryId { get; private set; }
     public NotificationType NotificationType { get; private set; }
+    public string Language { get; private set; } = SupportedLanguages.Default;
     public Dictionary<string, string> NotificationContent { get; private set; } = [];
     public string To { get; private set; } = string.Empty;
     public string? Cc { get; private set; }
@@ -63,11 +67,26 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
             tenantId,
             countryId,
             notificationType,
+            SupportedLanguages.Default,
             notificationContent,
             to,
             cc,
             bcc,
             enqueuedAtUtc);
+
+    public static EmailNotificationLog Create(
+        Guid messageId,
+        Guid tenantId,
+        Guid countryId,
+        NotificationType notificationType,
+        string language,
+        Dictionary<string, string> notificationContent,
+        string to,
+        string? cc,
+        string? bcc,
+        DateTimeOffset enqueuedAtUtc) =>
+        new(messageId, tenantId, countryId, notificationType, language, notificationContent, to, cc, bcc, enqueuedAtUtc);
+
     public void MarkSent(string providerMessageId, DateTimeOffset utcNow)
     {
         ProviderMessageId = NormalizeProviderMessageId(providerMessageId);

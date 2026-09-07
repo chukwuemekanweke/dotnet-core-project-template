@@ -6,8 +6,10 @@ namespace BackendProjectTemplate.Domain.Notifications.Specifications;
 
 public sealed class EmailNotificationTemplateByNotificationTypeSpecification : Specification<EmailNotificationTemplate>
 {
-    public EmailNotificationTemplateByNotificationTypeSpecification(NotificationType notificationType)
+    public EmailNotificationTemplateByNotificationTypeSpecification(
+        NotificationType notificationType,
+        string language = "en")
     {
-        Where(template => template.NotificationType == notificationType);
+        Where(template => template.NotificationType == notificationType && template.Language == language);
     }
 }

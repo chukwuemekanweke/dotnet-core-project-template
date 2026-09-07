@@ -16,6 +16,7 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Localization;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
@@ -163,7 +164,8 @@ internal sealed class AuthenticationFlowTestContext
             firstName ?? AuthenticationTestData.FirstName(),
             lastName ?? AuthenticationTestData.LastName(),
             AuthenticationTestData.IpAddress(),
-            TestActorContext());
+            TestActorContext(),
+            SupportedLanguages.English);
     }
 
     public static SignInCommand CreateSignInCommand(
@@ -189,7 +191,8 @@ internal sealed class AuthenticationFlowTestContext
             firstName ?? AuthenticationTestData.FirstName(),
             lastName ?? AuthenticationTestData.LastName(),
             AuthenticationTestData.IpAddress(),
-            TestActorContext());
+            TestActorContext(),
+            SupportedLanguages.English);
 
     public static GoogleSignInCommand CreateGoogleSignInCommand(
         string? idToken = null,

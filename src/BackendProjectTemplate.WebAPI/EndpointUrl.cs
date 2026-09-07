@@ -61,6 +61,12 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
     }
 
+    public static class Languages
+    {
+        public const string Route = $"api/{Versions.V1Route}/reference-data/languages";
+        public static readonly string V1 = ToV1(Route);
+    }
+
     public static class Stakeholders
     {
         public const string Route = $"api/{Versions.V1Route}/stakeholders";

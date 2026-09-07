@@ -87,7 +87,8 @@ public sealed class UserSignInSuccessfulHandler(
                         ["UserAgent"] = message.UserAgent
                     }))
             {
-                StakeholderId = stakeholder.StakeholderId
+                StakeholderId = stakeholder.StakeholderId,
+                Language = stakeholder.Language
             },
             cancellationToken);
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());

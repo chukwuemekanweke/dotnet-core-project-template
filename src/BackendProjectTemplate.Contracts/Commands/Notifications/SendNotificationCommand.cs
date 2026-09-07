@@ -20,4 +20,5 @@ public sealed record SendNotificationCommand : BaseCommand
     public NotificationType NotificationType { get; }
     public NotificationMedium NotificationMedium { get; }
     public NotificationContent NotificationContent { get; }
+    public string Language { get; init; } = "en";
 }

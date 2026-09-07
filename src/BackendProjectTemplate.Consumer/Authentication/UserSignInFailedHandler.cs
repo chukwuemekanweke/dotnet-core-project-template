@@ -82,7 +82,8 @@ public sealed class UserSignInFailedHandler(
                             ["LockedUntilUtc"] = DateTimeFormatter.FormatHumanReadableUtc(lockedUntilUtc, Clock.GetUtcNow())
                         }))
                 {
-                    StakeholderId = stakeholder.StakeholderId
+                    StakeholderId = stakeholder.StakeholderId,
+                    Language = stakeholder.Language
                 },
                 cancellationToken);
         }

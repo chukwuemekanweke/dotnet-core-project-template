@@ -21,10 +21,10 @@ public sealed class WhenSendingEmailNotificationWithMissingReplacementKey_Should
     {
         var tenantId = Guid.CreateVersion7();
         var templateRoot = Path.Combine(Path.GetTempPath(), $"email-templates-{Guid.CreateVersion7():N}");
-        var tenantTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", "NotificationTypes");
+        var tenantTemplateDirectory = Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", "en", "NotificationTypes");
         Directory.CreateDirectory(tenantTemplateDirectory);
         await File.WriteAllTextAsync(
-            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", "BaseTemplate.html"),
+            Path.Combine(templateRoot, "EmailTemplates", "TemplateSets", "moveaex", "en", "BaseTemplate.html"),
             "<html><body>{{:BodyHtml:}}</body></html>");
         await File.WriteAllTextAsync(
             Path.Combine(tenantTemplateDirectory, "AccountLocked.html"),

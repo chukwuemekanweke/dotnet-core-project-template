@@ -61,7 +61,8 @@ public sealed class WhenSigningUp_Should(ContainersFixture fixture)
                 Password,
                 _countryId,
                 WebApiIntegrationTestData.FirstName(),
-                WebApiIntegrationTestData.LastName());
+                WebApiIntegrationTestData.LastName(),
+                "fr");
         }
 
         async Task WhenSigningUp()
@@ -92,6 +93,11 @@ public sealed class WhenSigningUp_Should(ContainersFixture fixture)
             userCreated.ExpiresAtUtc.ShouldBe(response.RetryAtUtc);
             userCreated.ExpiresAtUtc.ShouldBe(
                 userCreated.RequestedAtUtc.Add(AuthenticationOtpDefaults.EmailConfirmationLifetime));
+
+            var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
+            var stakeholder = await stakeholderRepository.GetByIdAsync(userCreated.StakeholderId!.Value);
+            stakeholder.ShouldNotBeNull();
+            stakeholder.Language.ShouldBe("fr");
         }
     }
 

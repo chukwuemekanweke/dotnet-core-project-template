@@ -10,4 +10,5 @@ public sealed record SignUpCommand(
     string FirstName,
     string LastName,
     string IpAddress,
-    ActorContext ActorContext);
+    ActorContext ActorContext,
+    string Language);

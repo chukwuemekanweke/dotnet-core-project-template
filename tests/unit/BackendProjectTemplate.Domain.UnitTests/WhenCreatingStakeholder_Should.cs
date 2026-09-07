@@ -23,6 +23,8 @@ public sealed class WhenCreatingStakeholder_Should
         stakeholder.StakeholderTypeId.ShouldBe(stakeholderTypeId);
         stakeholder.FirstName.ShouldBe(firstName);
         stakeholder.LastName.ShouldBe(lastName);
+        stakeholder.Theme.ShouldBe("system");
+        stakeholder.Language.ShouldBe("en");
         stakeholder.IsVerified.ShouldBeFalse();
         stakeholder.CreatedAtUtc.ShouldBe(default);
         stakeholder.UpdatedAtUtc.ShouldBe(default);

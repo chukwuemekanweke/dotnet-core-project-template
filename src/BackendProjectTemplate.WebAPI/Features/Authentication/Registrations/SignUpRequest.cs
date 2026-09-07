@@ -1,3 +1,5 @@
+using BackendProjectTemplate.Domain.Common.Localization;
+
 namespace BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 
 public sealed record SignUpRequest(
@@ -6,4 +8,5 @@ public sealed record SignUpRequest(
     string ConfirmPassword,
     Guid CountryId,
     string FirstName,
-    string LastName);
+    string LastName,
+    string Language = SupportedLanguages.English);

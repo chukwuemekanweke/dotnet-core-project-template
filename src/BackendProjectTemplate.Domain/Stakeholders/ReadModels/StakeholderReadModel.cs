@@ -10,4 +10,8 @@ public sealed record StakeholderReadModel(
     string FirstName,
     string LastName,
     string? AvatarUrl,
-    bool IsVerified);
+    bool IsVerified)
+{
+    public string Theme { get; init; } = StakeholderThemes.Default;
+    public string Language { get; init; } = Common.Localization.SupportedLanguages.Default;
+}

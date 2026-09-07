@@ -8,4 +8,5 @@ public sealed record GoogleSignUpCommand(
     string FirstName,
     string LastName,
     string IpAddress,
-    ActorContext ActorContext);
+    ActorContext ActorContext,
+    string Language);
