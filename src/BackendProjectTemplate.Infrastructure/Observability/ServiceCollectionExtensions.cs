@@ -56,6 +56,11 @@ public static class ServiceCollectionExtensions
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
                 .AddPrometheusExporter();
+
+            if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+            {
+                metrics.AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+            }
         });
 
         services.AddLogging(logging =>

@@ -6,5 +6,32 @@ export MAILTRAP_TOKEN=""
 export MAILTRAP_WEBHOOK_SIGNING_SECRET=""
 export MAILTRAP_FROM_ADDRESS=""
 export MAILTRAP_FROM_NAME="BackendProjectTemplate"
+export DATABASE_URL="postgresql://<username>:<password>@<neon-host>/<database>?sslmode=require&channel_binding=require"
+export DATABASE_URL_POOLED="postgresql://<username>:<password>@<neon-pooler-host>/<database>?sslmode=require&channel_binding=require"
+export OTEL_EXPORTER_OTLP_ENDPOINT="https://otlp-gateway-<zone>.grafana.net/otlp"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic%20<base64-credentials>"
+export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+export PYROSCOPE_SERVER_ADDRESS="https://profiles-prod-<region>.grafana.net"
+export PYROSCOPE_BASIC_AUTH_USER="<profiles-instance-id>"
+export PYROSCOPE_BASIC_AUTH_PASSWORD="<access-policy-token>"
+export RABBITMQ_HOSTNAME="<cloud-rabbitmq-host>"
+export RABBITMQ_PORT="5672"
+export RABBITMQ_USERNAME="<cloud-rabbitmq-username>"
+export RABBITMQ_PASSWORD="<cloud-rabbitmq-password>"
+export RABBITMQ_VIRTUAL_HOST="/"
+export REDIS_CONNECTION_STRING="<cloud-redis-host>:<port>,password=<password>,ssl=True,abortConnect=False"
 
-docker compose up -d --build --force-recreate
+infrastructure_mode="${1:-Cloud}"
+
+case "${infrastructure_mode}" in
+  Cloud)
+    docker compose -f docker-compose.yml up -d --build --force-recreate
+    ;;
+  Local)
+    docker compose -f docker-compose.yml --profile local -f docker-compose.local.yml up -d --build --force-recreate
+    ;;
+  *)
+    echo "Infrastructure mode must be Cloud or Local." >&2
+    exit 1
+    ;;
+esac

@@ -17,9 +17,9 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - `tests/unit/BackendProjectTemplate.WebAPI.UnitTests`: unit tests for WebAPI-specific helpers
 - `tests/unit/BackendProjectTemplate.Consumer.UnitTests`: unit tests for consumer worker behavior
 - `tests/unit/BackendProjectTemplate.Jobs.UnitTests`: unit tests for scheduled jobs worker behavior
-- `tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests`: WebAPI integration tests using SQL Server and Redis testcontainers
-- `tests/integration/BackendProjectTemplate.Consumer.IntegrationTests`: consumer host integration tests using SQL Server and Redis testcontainers
-- `tests/integration/BackendProjectTemplate.Jobs.IntegrationTests`: jobs host integration tests using SQL Server and Redis testcontainers
+- `tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests`: WebAPI integration tests using PostgreSQL and Redis testcontainers
+- `tests/integration/BackendProjectTemplate.Consumer.IntegrationTests`: consumer host integration tests using PostgreSQL, RabbitMQ, and Redis testcontainers
+- `tests/integration/BackendProjectTemplate.Jobs.IntegrationTests`: jobs host integration tests using PostgreSQL, RabbitMQ, and Redis testcontainers
 
 ## Architecture Notes
 
@@ -213,21 +213,46 @@ The migrator health endpoints are:
 
 `/health/readiness` returns healthy while the migrator is available to execute the deployment work. `/health/liveness` only returns healthy after pre-deploy SQL, EF migrations, seed data, and post-deploy SQL have all completed successfully.
 
-Start the local stack:
+Start the development stack with Neon and Grafana Cloud (the default):
 
 ```powershell
+Copy-Item .env.example .env
+# Fill in .env with your credentials, then:
 docker compose up --build
 ```
 
-If you want Docker Compose to start with the required environment variables, create your own local helper script first.
+The default Compose mode starts only the application services. PostgreSQL, Redis, RabbitMQ, RabbitScout, Prometheus, Tempo, Loki, Pyroscope, the OpenTelemetry Collector, and Grafana use their cloud variants and are not started locally. `DATABASE_URL` is used for migrations and writes, while `DATABASE_URL_POOLED` is used for reads. Both Neon `postgresql://` URLs and Npgsql connection strings are supported. `REDIS_CONNECTION_STRING` and the `RABBITMQ_*` variables configure the cloud Redis and RabbitMQ connections.
+
+Grafana Cloud receives logs, metrics, and traces through its OTLP gateway. Copy `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` from the OpenTelemetry card in your Grafana Cloud stack. Profiles use the URL and credentials shown in the stack's Profiles details.
+
+To use local PostgreSQL, Redis, RabbitMQ, and the Grafana observability stack instead, add the `local` profile and the checked-in local override:
+
+```powershell
+docker compose --profile local -f docker-compose.yml -f docker-compose.local.yml up --build
+```
+
+The override selects all local infrastructure addresses and does not require the Neon, cloud Redis, cloud RabbitMQ, or Grafana Cloud variables. Omit `--profile local` and `docker-compose.local.yml` to return to the cloud-default mode.
+
+The PowerShell helper exposes the same choice through one parameter. It defaults to `Cloud`:
+
+```powershell
+# Neon + cloud Redis + cloud RabbitMQ + Grafana Cloud
+.\docker-compose.local.ps1
+
+# Local PostgreSQL + Redis + RabbitMQ + Grafana stack
+.\docker-compose.local.ps1 -InfrastructureMode Local
+```
+
+Create the ignored helper by copying `docker-compose.env.example.ps1` to `docker-compose.local.ps1`, then fill in the cloud credentials. The single local override replaces all cloud infrastructure when `InfrastructureMode` is `Local`.
+
+If you prefer an environment-exporting helper script, create your own ignored local script first.
 
 For Bash:
 
 1. Create `docker-compose.local.sh`.
 2. Copy the contents of `docker-compose.env.example.sh` into `docker-compose.local.sh`.
-3. Replace the placeholder values with your own local values.
-4. Add your Docker Compose command at the end of the file.
-5. Run your local script.
+3. Replace the placeholder values with your cloud values.
+4. Run it with `Cloud` or `Local`; it defaults to `Cloud`.
 
 Example:
 
@@ -236,27 +261,22 @@ cp docker-compose.env.example.sh docker-compose.local.sh
 chmod +x docker-compose.local.sh
 ```
 
-Your `docker-compose.local.sh` should look like this:
+Use the Bash helper in cloud or local mode:
 
 ```bash
-#!/usr/bin/env bash
+# Cloud infrastructure (default)
+./docker-compose.local.sh
+./docker-compose.local.sh Cloud
 
-export GITHUB_USERNAME=""
-export GITHUB_PAT=""
-export MAILTRAP_TOKEN=""
-export MAILTRAP_WEBHOOK_SIGNING_SECRET=""
-export MAILTRAP_FROM_ADDRESS=""
-export MAILTRAP_FROM_NAME="BackendProjectTemplate"
-
-docker compose up -d --build --force-recreate
+# Local PostgreSQL, Redis, RabbitMQ, and Grafana stack
+./docker-compose.local.sh Local
 ```
 
 For PowerShell, follow the same pattern with `docker-compose.local.ps1`:
 
-1. Create `docker-compose.local.ps1`.
-2. Copy the equivalent environment variable assignments into it.
-3. Set your local values.
-4. Add the Docker Compose command at the end of the script.
+1. Copy `docker-compose.env.example.ps1` to `docker-compose.local.ps1`.
+2. Fill in its environment variable assignments.
+3. Select all cloud or all local infrastructure through `InfrastructureMode`.
 
 Run the local script instead of calling `docker compose` directly when you need those exported variables.
 
@@ -268,28 +288,20 @@ Useful endpoints:
 - Health: `http://localhost:8080/health`
 - RabbitMQ: `amqp://localhost:5672`
 - RabbitMQ Management: `http://localhost:15672`
-- Grafana: `http://localhost:3000`
-- Prometheus: `http://localhost:9090`
-- Tempo: `http://localhost:3200`
-- Pyroscope: `http://localhost:4040`
+- Grafana, Prometheus, Tempo, and Pyroscope: local URLs are available only when the `local` profile is enabled
 
 The `consumer` and `jobs` containers expose internal `/health/readiness` and `/health/liveness` endpoints for orchestration. In `docker compose`, both services wait for the database migrator to complete successfully before starting.
 
 ## Profiling
 
-The local observability stack includes Grafana Pyroscope for continuous profiling.
+Both observability modes include Grafana Pyroscope continuous profiling.
 
-- Grafana provisions a `Pyroscope` data source automatically.
-- The `webapi`, `consumer`, and `jobs` containers are built with the native .NET Pyroscope profiler and push profiles directly to `http://pyroscope:4040`.
+- In cloud mode, the `webapi`, `consumer`, and `jobs` containers push profiles to `PYROSCOPE_SERVER_ADDRESS` using the configured basic-auth credentials.
+- In local mode, Grafana provisions a `Pyroscope` data source automatically and the containers push profiles to `http://pyroscope:4040`.
 - The current profiling setup is container-only. Grafana's .NET profiler currently supports Linux on `amd64`, so `dotnet run` on Windows/macOS is not profiled by this configuration.
 
-After `docker compose up --build`, open Grafana at `http://localhost:3000` and use Profiles Drilldown or Explore with the `Pyroscope` data source to inspect:
+Open Grafana Cloud, or local Grafana at `http://localhost:3000` when the `local` profile is enabled, and use Profiles Drilldown or Explore to inspect:
 
 - `backendprojecttemplate.webapi`
 - `backendprojecttemplate.consumer`
 - `backendprojecttemplate.jobs`
-
-Default SQL Server credentials in the template:
-
-- user: `sa`
-- password: `Your_strong_Password123!`

@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Npgsql;
@@ -47,6 +48,7 @@ public sealed class JobsReadinessHealthCheck(
     }
 
     private string GetRequiredConnectionString(string name) =>
-        configuration.GetConnectionString(name)
-        ?? throw new InvalidOperationException($"Connection string '{name}' is required.");
+        PostgresConnectionString.Normalize(
+            configuration.GetConnectionString(name)
+            ?? throw new InvalidOperationException($"Connection string '{name}' is required."));
 }

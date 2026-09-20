@@ -33,6 +33,12 @@ public static class ServiceCollectionExtensions
                 metrics
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
+
+                var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
+                if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+                {
+                    metrics.AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+                }
             });
 
         var serviceName = configuration["OpenTelemetry:ServiceName"] ?? "BackendProjectTemplate.Jobs";
