@@ -26,7 +26,7 @@ public sealed class When_RefreshingSession_WithValidRefreshToken_Should
         user.MarkEmailVerified();
         user.SecurityStamp = "stamp";
         var stakeholder = context.CreateStakeholder(user.Id);
-        var session = AuthenticationSession.Create(user.Id, stakeholder.Id, stakeholder.TenantId,
+        var session = AuthenticationSession.Create(stakeholder.Id,
             Guid.CreateVersion7(), "Unit Test", null, null, null, context.Clock.GetUtcNow(), context.Clock.GetUtcNow().AddDays(30));
         var storedRefreshToken = AuthenticationRefreshToken.Create(user.Id, session.Id, "HASH", user.SecurityStamp, context.Clock.GetUtcNow().AddDays(30));
         context.SessionService.FindAsync(session.Id, Arg.Any<CancellationToken>()).Returns(session);

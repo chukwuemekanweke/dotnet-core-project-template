@@ -9,8 +9,8 @@ public sealed class When_RevokingSession_WithRepeatedRequest_Should
     {
         var now = new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.Zero);
         var firstIpId = Guid.CreateVersion7();
-        var session = AuthenticationSession.Create(Guid.CreateVersion7(), Guid.CreateVersion7(),
-            Guid.CreateVersion7(), firstIpId, "Browser", null, null, null, now, now.AddDays(7));
+        var session = AuthenticationSession.Create(Guid.CreateVersion7(),
+            firstIpId, "Browser", null, null, null, now, now.AddDays(7));
 
         session.Revoke(now.AddHours(1));
         session.Revoke(now.AddHours(2));

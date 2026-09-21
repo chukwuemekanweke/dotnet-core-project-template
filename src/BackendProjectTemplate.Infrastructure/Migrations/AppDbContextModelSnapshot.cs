@@ -182,9 +182,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("AppUserId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("BrowserName")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -232,9 +229,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<Guid>("StakeholderId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -249,8 +243,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AppUserId");
-
                     b.HasIndex("ExpiresAtUtc");
 
                     b.HasIndex("FirstIpAddressId");
@@ -260,8 +252,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.HasIndex("LastIpAddressId");
 
                     b.HasIndex("StakeholderId");
-
-                    b.HasIndex("TenantId");
 
                     b.ToTable("Sessions", "authentication");
                 });
@@ -2085,12 +2075,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.AuthenticationSession", b =>
                 {
-                    b.HasOne("BackendProjectTemplate.Domain.Authentication.Entities.AppUser", "AppUser")
-                        .WithMany()
-                        .HasForeignKey("AppUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("BackendProjectTemplate.Domain.Authentication.Entities.IpAddress", "FirstIpAddress")
                         .WithMany()
                         .HasForeignKey("FirstIpAddressId")
@@ -2103,11 +2087,17 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("AppUser");
+                    b.HasOne("BackendProjectTemplate.Domain.Stakeholders.Entities.Stakeholder", "Stakeholder")
+                        .WithMany()
+                        .HasForeignKey("StakeholderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("FirstIpAddress");
 
                     b.Navigation("LastIpAddress");
+
+                    b.Navigation("Stakeholder");
                 });
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.IpAddressLocation", b =>

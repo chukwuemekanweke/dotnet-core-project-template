@@ -7,9 +7,8 @@ public sealed class ListSessionsHandler(IAuthenticationSessionService sessionSer
     public async Task<IReadOnlyList<ActiveSessionResult>> HandleAsync(
         ListSessionsQuery query, CancellationToken cancellationToken)
     {
-        var sessions = await sessionService.ListActiveAsync(query.AppUserId, cancellationToken);
-        return sessions.Where(session => session.StakeholderId == query.StakeholderId &&
-                session.TenantId == query.TenantId)
+        var sessions = await sessionService.ListActiveAsync(query.StakeholderId, cancellationToken);
+        return sessions
             .OrderByDescending(session => session.Id == query.CurrentSessionId)
             .ThenByDescending(session => session.LastActiveAtUtc)
             .Select(session => new ActiveSessionResult(session.Id, session.DeviceName,

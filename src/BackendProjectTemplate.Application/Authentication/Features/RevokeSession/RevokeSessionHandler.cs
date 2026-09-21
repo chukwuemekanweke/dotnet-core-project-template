@@ -8,13 +8,12 @@ public sealed class RevokeSessionHandler(IAuthenticationSessionService sessionSe
     public async Task<bool> HandleAsync(RevokeSessionCommand command, CancellationToken cancellationToken)
     {
         var session = await sessionService.FindAsync(command.SessionId, cancellationToken);
-        if (session is null || session.AppUserId != command.AppUserId ||
-            session.StakeholderId != command.StakeholderId || session.TenantId != command.TenantId)
+        if (session is null || session.StakeholderId != command.StakeholderId)
         {
             return false;
         }
 
-        if (!await sessionService.RevokeAsync(command.SessionId, command.AppUserId, cancellationToken))
+        if (!await sessionService.RevokeAsync(command.SessionId, command.StakeholderId, cancellationToken))
         {
             return false;
         }

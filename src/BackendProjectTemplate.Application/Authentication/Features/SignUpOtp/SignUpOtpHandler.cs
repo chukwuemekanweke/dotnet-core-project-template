@@ -88,7 +88,7 @@ public sealed class SignUpOtpHandler(
             throw new InvalidOperationException("Failed to update the user after OTP verification.");
         }
 
-        var session = await sessionService.CreateAsync(user, stakeholder, request.IpAddress,
+        var session = await sessionService.CreateAsync(stakeholder, request.IpAddress,
             request.UserAgent, refreshTokenService.GetExpiry(AuthenticationOtpDefaults.EmailConfirmationSessionLifetime), cancellationToken);
         var accessToken = accessTokenService.Generate(user, stakeholder.Id, session.Id);
         var refreshToken = await refreshTokenService.IssueAsync(

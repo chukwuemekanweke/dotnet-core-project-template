@@ -31,8 +31,7 @@ public sealed class RefreshSessionHandler(
         var session = currentRefreshToken.AuthenticationSessionId.HasValue
             ? await sessionService.FindAsync(currentRefreshToken.AuthenticationSessionId.Value, cancellationToken)
             : null;
-        if (session is null || session.AppUserId != currentRefreshToken.AppUserId ||
-            !session.IsActive(timeProvider.GetUtcNow()))
+        if (session is null || !session.IsActive(timeProvider.GetUtcNow()))
         {
             return new RefreshSessionResult(RefreshSessionStatus.InvalidRefreshToken, null);
         }
@@ -43,6 +42,12 @@ public sealed class RefreshSessionHandler(
             refreshTokenService.Revoke(currentRefreshToken, timeProvider.GetUtcNow());
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
+            return new RefreshSessionResult(RefreshSessionStatus.InvalidRefreshToken, null);
+        }
+
+        var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
+        if (session.StakeholderId != currentStakeholder.Id)
+        {
             return new RefreshSessionResult(RefreshSessionStatus.InvalidRefreshToken, null);
         }
 
@@ -67,11 +72,6 @@ public sealed class RefreshSessionHandler(
             return new RefreshSessionResult(RefreshSessionStatus.EmailNotVerified, null);
         }
 
-        var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
-        if (session.StakeholderId != currentStakeholder.Id || session.TenantId != currentStakeholder.TenantId)
-        {
-            return new RefreshSessionResult(RefreshSessionStatus.InvalidRefreshToken, null);
-        }
         var accessToken = accessTokenService.Generate(user, currentStakeholder.Id, session.Id);
         var refreshToken = await refreshTokenService.RotateAsync(currentRefreshToken, user, cancellationToken);
         await sessionService.TouchAsync(session, request.IpAddress, request.UserAgent, cancellationToken);

@@ -28,7 +28,7 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_Should
             Guid.CreateVersion7(),
             firstName,
             lastName);
-        var session = AuthenticationSession.Create(user.Id, stakeholder.Id, stakeholder.TenantId,
+        var session = AuthenticationSession.Create(stakeholder.Id,
             Guid.CreateVersion7(), "Unit Test", null, null, null, now, now.AddDays(30));
         var storedRefreshToken = AuthenticationRefreshToken.Create(user.Id, session.Id, "HASH", securityStamp, now.AddDays(30));
         var expectedAccessToken = new AccessToken("access-token", now.AddHours(1));

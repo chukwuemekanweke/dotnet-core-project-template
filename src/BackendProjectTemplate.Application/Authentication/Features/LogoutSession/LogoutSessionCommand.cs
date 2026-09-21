@@ -6,6 +6,5 @@ public sealed record LogoutSessionCommand(
     string TokenId,
     DateTimeOffset ExpiresAtUtc,
     Guid SessionId,
-    Guid AppUserId,
-    Guid? StakeholderId,
+    Guid StakeholderId,
     ActorContext ActorContext);

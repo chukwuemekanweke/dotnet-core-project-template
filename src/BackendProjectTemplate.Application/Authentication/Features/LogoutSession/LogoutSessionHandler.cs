@@ -14,12 +14,12 @@ public sealed class LogoutSessionHandler(
     public async Task<LogoutSessionResult> HandleAsync(LogoutSessionCommand request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.TokenId) || request.SessionId == Guid.Empty ||
-            request.AppUserId == Guid.Empty)
+            request.StakeholderId == Guid.Empty)
         {
             return new LogoutSessionResult(LogoutSessionStatus.InvalidToken);
         }
 
-        if (!await sessionService.RevokeAsync(request.SessionId, request.AppUserId, cancellationToken))
+        if (!await sessionService.RevokeAsync(request.SessionId, request.StakeholderId, cancellationToken))
         {
             return new LogoutSessionResult(LogoutSessionStatus.InvalidToken);
         }
@@ -27,12 +27,9 @@ public sealed class LogoutSessionHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await accessTokenRevocationService.RevokeAsync(request.TokenId, request.ExpiresAtUtc, cancellationToken);
 
-        if (request.StakeholderId.HasValue)
-        {
-            customTelemetryContext.AddCustomEvent(
-                Observability.EventNames.Authentication.SignOutCompleted,
-                ObservabilityEventProperties.Create(request.ActorContext, request.StakeholderId.Value));
-        }
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Authentication.SignOutCompleted,
+            ObservabilityEventProperties.Create(request.ActorContext, request.StakeholderId));
 
         return new LogoutSessionResult(LogoutSessionStatus.Success);
     }

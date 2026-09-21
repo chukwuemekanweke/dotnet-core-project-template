@@ -7,8 +7,7 @@ public sealed class RevokeOtherSessionsHandler(IAuthenticationSessionService ses
 {
     public async Task HandleAsync(RevokeOtherSessionsCommand command, CancellationToken cancellationToken)
     {
-        await sessionService.RevokeOthersAsync(command.CurrentSessionId, command.AppUserId,
-            command.StakeholderId, command.TenantId, cancellationToken);
+        await sessionService.RevokeOthersAsync(command.CurrentSessionId, command.StakeholderId, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

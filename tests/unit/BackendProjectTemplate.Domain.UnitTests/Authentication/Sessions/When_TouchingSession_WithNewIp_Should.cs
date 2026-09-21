@@ -10,8 +10,8 @@ public sealed class When_TouchingSession_WithNewIp_Should
         var now = new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.Zero);
         var firstIpId = Guid.CreateVersion7();
         var nextIpId = Guid.CreateVersion7();
-        var session = AuthenticationSession.Create(Guid.CreateVersion7(), Guid.CreateVersion7(),
-            Guid.CreateVersion7(), firstIpId, "Old browser", null, null, null, now, now.AddDays(7));
+        var session = AuthenticationSession.Create(Guid.CreateVersion7(),
+            firstIpId, "Old browser", null, null, null, now, now.AddDays(7));
 
         session.Touch(now.AddHours(1), nextIpId, "New browser", "Phone", "Android", "Chrome");
 

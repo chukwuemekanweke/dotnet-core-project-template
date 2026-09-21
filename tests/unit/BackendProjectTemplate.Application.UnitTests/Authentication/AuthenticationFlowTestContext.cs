@@ -51,11 +51,10 @@ internal sealed class AuthenticationFlowTestContext
     public AuthenticationFlowTestContext()
     {
         RefreshTokenService.GetExpiry(Arg.Any<TimeSpan?>()).Returns(Clock.GetUtcNow().AddDays(30));
-        SessionService.CreateAsync(Arg.Any<AppUser>(), Arg.Any<Stakeholder>(), Arg.Any<string>(),
+        SessionService.CreateAsync(Arg.Any<Stakeholder>(), Arg.Any<string>(),
                 Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
-            .Returns(call => AuthenticationSession.Create(((AppUser)call[0]).Id,
-                ((Stakeholder)call[1]).Id, ((Stakeholder)call[1]).TenantId, Guid.CreateVersion7(),
-                (string)call[3], null, null, null, Clock.GetUtcNow(), (DateTimeOffset)call[4]));
+            .Returns(call => AuthenticationSession.Create(((Stakeholder)call[0]).Id, Guid.CreateVersion7(),
+                (string)call[2], null, null, null, Clock.GetUtcNow(), (DateTimeOffset)call[3]));
         UnitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Transaction));
         CountryRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())

@@ -12,7 +12,7 @@ public sealed class WhenRefreshingSessionWithExpiredSession_Should
         var context = new AuthenticationFlowTestContext();
         var now = context.Clock.GetUtcNow();
         var user = AppUser.Create(AuthenticationTestData.Email());
-        var session = AuthenticationSession.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(),
+        var session = AuthenticationSession.Create(Guid.CreateVersion7(),
             Guid.CreateVersion7(), "Browser", null, null, null, now.AddDays(-2), now.AddDays(-1));
         var refreshToken = AuthenticationRefreshToken.Create(user.Id, session.Id, "HASH", "stamp", now.AddDays(1));
         context.RefreshTokenService.FindByTokenAsync("refresh-token", Arg.Any<CancellationToken>()).Returns(refreshToken);

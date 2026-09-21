@@ -62,12 +62,13 @@ public sealed class UserSignInFailedHandler(
         if (message.FailureReason == UserSignInFailureReasons.InvalidCredentials &&
             await identityService.IsLockedOutAsync(user))
         {
-            await sessionService.RevokeAllAsync(user.Id, cancellationToken);
             if (stakeholder is null)
             {
                 throw new CannotProcessMessageNonTransientException(
                     $"Unable to process UserSignInFailed because no stakeholder could be found for stakeholder '{message.StakeholderId}'.");
             }
+
+            await sessionService.RevokeAllAsync(stakeholder.StakeholderId, cancellationToken);
 
             var lockedUntilUtc = await identityService.GetLockoutEndUtcAsync(user)
                 ?? throw new InvalidOperationException($"User {user.Id} is locked out but has no lockout end time.");

@@ -28,15 +28,13 @@ public sealed class ActiveSessionAuthorizationHandler(
         }
 
         if (!Guid.TryParse(context.User.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ??
-                context.User.FindFirst(ClaimTypes.Sid)?.Value, out var sessionId) ||
-            !Guid.TryParse(context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ??
-                context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var appUserId))
+                context.User.FindFirst(ClaimTypes.Sid)?.Value, out var sessionId))
         {
             return;
         }
 
         var session = await sessionService.FindAsync(sessionId, CancellationToken.None);
-        if (session is null || session.AppUserId != appUserId || !session.IsActive(timeProvider.GetUtcNow()) ||
+        if (session is null || !session.IsActive(timeProvider.GetUtcNow()) ||
             context.User.FindFirst(CustomClaimTypes.StakeholderId)?.Value != session.StakeholderId.ToString())
         {
             return;

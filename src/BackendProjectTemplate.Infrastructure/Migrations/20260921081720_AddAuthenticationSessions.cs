@@ -23,9 +23,7 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    AppUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     StakeholderId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     LastActiveAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     ExpiresAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     RevokedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -61,10 +59,10 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Sessions_Users_AppUserId",
-                        column: x => x.AppUserId,
-                        principalSchema: "authentication",
-                        principalTable: "Users",
+                        name: "FK_Sessions_Stakeholders_StakeholderId",
+                        column: x => x.StakeholderId,
+                        principalSchema: "stakeholders",
+                        principalTable: "Stakeholders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -74,12 +72,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                 schema: "authentication",
                 table: "RefreshTokens",
                 column: "AuthenticationSessionId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Sessions_AppUserId",
-                schema: "authentication",
-                table: "Sessions",
-                column: "AppUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sessions_ExpiresAtUtc",
@@ -110,12 +102,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                 schema: "authentication",
                 table: "Sessions",
                 column: "StakeholderId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Sessions_TenantId",
-                schema: "authentication",
-                table: "Sessions",
-                column: "TenantId");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_RefreshTokens_Sessions_AuthenticationSessionId",

@@ -55,9 +55,9 @@ public sealed class CompletePasswordResetHandler(
                 resetResult.ToValidationDictionary());
         }
 
-        await sessionService.RevokeAllAsync(user.Id, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
         var stakeholderId = await stakeholderResolver.GetRequiredIdAsync(user.Id, cancellationToken);
+        await sessionService.RevokeAllAsync(stakeholderId, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetCompleted,

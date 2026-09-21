@@ -16,22 +16,22 @@ public sealed class WhenCompletingPasswordResetWithValidOtp_Should
         var user = context.CreateUser();
         var otp = AuthenticationTestData.Otp();
         var password = AuthenticationTestData.StrongPassword();
-        var stakeholderId = Guid.CreateVersion7();
 
         context.IdentityService.FindByEmailAsync(user.Email!).Returns(user);
         context.TwoFactorOtpService.ValidateOtpAsync(user.Id, otp, OtpIntent.PasswordReset, Arg.Any<CancellationToken>())
             .Returns(true);
         context.IdentityService.ResetPasswordAsync(user, password).Returns(IdentityResult.Success);
+        var stakeholder = Stakeholder.Create(
+            user.Id,
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            AuthenticationTestData.FirstName(),
+            AuthenticationTestData.LastName());
         context.StakeholderRepository.FirstOrDefaultAsync(
                 Arg.Any<ISpecification<Stakeholder>>(),
                 Arg.Any<CancellationToken>())
-            .Returns(Stakeholder.Create(
-                user.Id,
-                Guid.CreateVersion7(),
-                Guid.CreateVersion7(),
-                Guid.CreateVersion7(),
-                AuthenticationTestData.FirstName(),
-                AuthenticationTestData.LastName()));
+            .Returns(stakeholder);
 
         var result = await context.CreateCompletePasswordResetHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateCompletePasswordResetCommand(
@@ -43,7 +43,7 @@ public sealed class WhenCompletingPasswordResetWithValidOtp_Should
 
         result.Status.ShouldBe(CompletePasswordResetStatus.Success);
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await context.SessionService.Received(1).RevokeAllAsync(user.Id, Arg.Any<CancellationToken>());
+        await context.SessionService.Received(1).RevokeAllAsync(stakeholder.Id, Arg.Any<CancellationToken>());
     }
 }
 

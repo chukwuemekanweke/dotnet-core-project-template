@@ -18,7 +18,7 @@ public sealed class WhenAuthorizingActiveSessionWithRevokedSession_Should
         var now = new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.Zero);
         var userId = Guid.CreateVersion7();
         var stakeholderId = Guid.CreateVersion7();
-        var session = AuthenticationSession.Create(userId, stakeholderId, Guid.CreateVersion7(),
+        var session = AuthenticationSession.Create(stakeholderId,
             Guid.CreateVersion7(), "Browser", null, null, null, now, now.AddDays(1));
         session.Revoke(now);
         var sessions = Substitute.For<IAuthenticationSessionService>();

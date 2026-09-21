@@ -13,7 +13,7 @@ public sealed class When_GettingSessions_WithAuthenticatedUser_Should
         var userId = Guid.CreateVersion7();
         var stakeholderId = Guid.CreateVersion7();
         var sessionId = Guid.CreateVersion7();
-        context.SessionService.ListActiveAsync(userId, Arg.Any<CancellationToken>())
+        context.SessionService.ListActiveAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(Array.Empty<AuthenticationSession>());
         var controller = context.CreateSessionsController(
             AuthenticationControllerTestContext.CreateSessionPrincipal(userId, stakeholderId, sessionId));
@@ -21,6 +21,6 @@ public sealed class When_GettingSessions_WithAuthenticatedUser_Should
         var result = await controller.GetSessions(CancellationToken.None);
 
         result.Result.ShouldBeOfType<OkObjectResult>();
-        await context.SessionService.Received(1).ListActiveAsync(userId, Arg.Any<CancellationToken>());
+        await context.SessionService.Received(1).ListActiveAsync(stakeholderId, Arg.Any<CancellationToken>());
     }
 }

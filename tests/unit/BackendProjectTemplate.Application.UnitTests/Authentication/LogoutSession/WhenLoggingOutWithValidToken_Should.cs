@@ -15,17 +15,16 @@ public sealed class WhenLoggingOutWithValidToken_Should
         var stakeholderId = Guid.CreateVersion7();
         var expiresAtUtc = context.Clock.GetUtcNow().AddMinutes(5);
         var sessionId = Guid.CreateVersion7();
-        var appUserId = Guid.CreateVersion7();
-        context.SessionService.RevokeAsync(sessionId, appUserId, Arg.Any<CancellationToken>()).Returns(true);
+        context.SessionService.RevokeAsync(sessionId, stakeholderId, Arg.Any<CancellationToken>()).Returns(true);
 
         var result = await context.CreateLogoutSessionHandler().HandleAsync(
-            new LogoutSessionCommand(tokenId, expiresAtUtc, sessionId, appUserId, stakeholderId,
+            new LogoutSessionCommand(tokenId, expiresAtUtc, sessionId, stakeholderId,
                 new ActorContext(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7().ToString("N"), Guid.CreateVersion7().ToString("N"))),
             CancellationToken.None);
 
         result.Status.ShouldBe(LogoutSessionStatus.Success);
         await context.AccessTokenRevocationService.Received(1).RevokeAsync(tokenId, expiresAtUtc, Arg.Any<CancellationToken>());
-        await context.SessionService.Received(1).RevokeAsync(sessionId, appUserId, Arg.Any<CancellationToken>());
+        await context.SessionService.Received(1).RevokeAsync(sessionId, stakeholderId, Arg.Any<CancellationToken>());
     }
 }
 

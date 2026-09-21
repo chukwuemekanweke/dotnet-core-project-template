@@ -12,12 +12,12 @@ public sealed class AuthenticationSessionService(
     IUserAgentParserService userAgentParser,
     TimeProvider timeProvider) : IAuthenticationSessionService
 {
-    public async Task<AuthenticationSession> CreateAsync(AppUser user, Stakeholder stakeholder,
+    public async Task<AuthenticationSession> CreateAsync(Stakeholder stakeholder,
         string ipAddress, string userAgent, DateTimeOffset expiresAtUtc, CancellationToken cancellationToken)
     {
         var ip = await ipAddressResolver.ResolveAsync(ipAddress, cancellationToken);
         var device = userAgentParser.Parse(userAgent);
-        var session = AuthenticationSession.Create(user.Id, stakeholder.Id, stakeholder.TenantId,
+        var session = AuthenticationSession.Create(stakeholder.Id,
             ip.IpAddressId, userAgent, device.DeviceName, device.DevicePlatform, device.BrowserName,
             timeProvider.GetUtcNow(), expiresAtUtc);
         await repository.AddAsync(session, cancellationToken);
@@ -27,23 +27,23 @@ public sealed class AuthenticationSessionService(
     public Task<AuthenticationSession?> FindAsync(Guid sessionId, CancellationToken cancellationToken) =>
         repository.GetByIdAsync(sessionId, cancellationToken);
 
-    public Task<IReadOnlyList<AuthenticationSession>> ListActiveAsync(Guid appUserId, CancellationToken cancellationToken) =>
-        repository.ListAsync(new ActiveSessionsForUserSpecification(appUserId, timeProvider.GetUtcNow()), cancellationToken);
+    public Task<IReadOnlyList<AuthenticationSession>> ListActiveAsync(Guid stakeholderId, CancellationToken cancellationToken) =>
+        repository.ListAsync(new ActiveSessionsForStakeholderSpecification(stakeholderId, timeProvider.GetUtcNow()), cancellationToken);
 
-    public async Task<bool> RevokeAsync(Guid sessionId, Guid appUserId, CancellationToken cancellationToken)
+    public async Task<bool> RevokeAsync(Guid sessionId, Guid stakeholderId, CancellationToken cancellationToken)
     {
         var session = await FindAsync(sessionId, cancellationToken);
-        if (session is null || session.AppUserId != appUserId) return false;
+        if (session is null || session.StakeholderId != stakeholderId) return false;
         session.Revoke(timeProvider.GetUtcNow());
         repository.Update(session);
         return true;
     }
 
-    public async Task RevokeOthersAsync(Guid currentSessionId, Guid appUserId, Guid stakeholderId, Guid tenantId, CancellationToken cancellationToken)
+    public async Task RevokeOthersAsync(Guid currentSessionId, Guid stakeholderId, CancellationToken cancellationToken)
     {
-        foreach (var session in await ListActiveAsync(appUserId, cancellationToken))
+        foreach (var session in await ListActiveAsync(stakeholderId, cancellationToken))
         {
-            if (session.Id != currentSessionId && session.StakeholderId == stakeholderId && session.TenantId == tenantId)
+            if (session.Id != currentSessionId)
             {
                 session.Revoke(timeProvider.GetUtcNow());
                 repository.Update(session);
@@ -51,9 +51,9 @@ public sealed class AuthenticationSessionService(
         }
     }
 
-    public async Task RevokeAllAsync(Guid appUserId, CancellationToken cancellationToken)
+    public async Task RevokeAllAsync(Guid stakeholderId, CancellationToken cancellationToken)
     {
-        foreach (var session in await ListActiveAsync(appUserId, cancellationToken))
+        foreach (var session in await ListActiveAsync(stakeholderId, cancellationToken))
         {
             session.Revoke(timeProvider.GetUtcNow());
             repository.Update(session);

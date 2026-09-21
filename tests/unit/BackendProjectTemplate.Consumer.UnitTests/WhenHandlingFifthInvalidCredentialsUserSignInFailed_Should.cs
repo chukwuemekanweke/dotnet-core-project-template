@@ -72,7 +72,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
                 ((EmailNotificationContent)command.NotificationContent).Content["LockedUntilUtc"] == DateTimeFormatter.FormatHumanReadableUtc(lockedUntilUtc, timeProvider.GetUtcNow())),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await sessionService.Received(1).RevokeAllAsync(user.Id, Arg.Any<CancellationToken>());
+        await sessionService.Received(1).RevokeAllAsync(stakeholderId, Arg.Any<CancellationToken>());
     }
 
     private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider

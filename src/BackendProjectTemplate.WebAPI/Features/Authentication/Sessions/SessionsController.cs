@@ -45,12 +45,11 @@ public sealed class SessionsController(
     [ProducesResponseType<IReadOnlyList<ActiveSessionResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<ActiveSessionResponse>>> GetSessions(CancellationToken cancellationToken)
     {
-        if (!TryGetSessionIdentity(out var appUserId, out var stakeholderId, out var currentSessionId) ||
-            currentActor.TenantId is not Guid tenantId)
+        if (!TryGetSessionIdentity(out var stakeholderId, out var currentSessionId))
             return Unauthorized();
 
         var sessions = await listSessionsHandler.HandleAsync(
-            new ListSessionsQuery(appUserId, stakeholderId, tenantId, currentSessionId), cancellationToken);
+            new ListSessionsQuery(stakeholderId, currentSessionId), cancellationToken);
         var result = sessions.Select(session => new ActiveSessionResponse(session.SessionId,
             session.DeviceName, session.DevicePlatform, session.BrowserName, session.UserAgent,
             session.FirstIpAddress, session.LastIpAddress, session.CreatedAtUtc,
@@ -64,12 +63,11 @@ public sealed class SessionsController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteOtherSessions(CancellationToken cancellationToken)
     {
-        if (!TryGetSessionIdentity(out var appUserId, out var stakeholderId, out var currentSessionId) ||
-            currentActor.TenantId is not Guid tenantId)
+        if (!TryGetSessionIdentity(out var stakeholderId, out var currentSessionId))
             return Unauthorized();
 
         await revokeOtherSessionsHandler.HandleAsync(
-            new RevokeOtherSessionsCommand(currentSessionId, appUserId, stakeholderId, tenantId), cancellationToken);
+            new RevokeOtherSessionsCommand(currentSessionId, stakeholderId), cancellationToken);
         return NoContent();
     }
 
@@ -80,26 +78,23 @@ public sealed class SessionsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteSession(Guid sessionId, CancellationToken cancellationToken)
     {
-        if (!TryGetSessionIdentity(out var appUserId, out var stakeholderId, out _) ||
-            currentActor.TenantId is not Guid tenantId)
+        if (!TryGetSessionIdentity(out var stakeholderId, out _))
             return Unauthorized();
 
         var revoked = await revokeSessionHandler.HandleAsync(
-            new RevokeSessionCommand(sessionId, appUserId, stakeholderId, tenantId), cancellationToken);
+            new RevokeSessionCommand(sessionId, stakeholderId), cancellationToken);
         if (!revoked)
             return NotFound();
 
         return NoContent();
     }
 
-    private bool TryGetSessionIdentity(out Guid appUserId, out Guid stakeholderId, out Guid sessionId)
+    private bool TryGetSessionIdentity(out Guid stakeholderId, out Guid sessionId)
     {
-        var hasUser = Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ??
-            User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out appUserId);
         var hasStakeholder = Guid.TryParse(User.FindFirst(CustomClaimTypes.StakeholderId)?.Value, out stakeholderId);
         var hasSession = Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ??
             User.FindFirst(ClaimTypes.Sid)?.Value, out sessionId);
-        return hasUser && hasStakeholder && hasSession;
+        return hasStakeholder && hasSession;
     }
 
     [HttpPost]
@@ -300,22 +295,14 @@ public sealed class SessionsController(
             return Unauthorized();
         }
 
-        Guid? stakeholderId = null;
-        var stakeholderClaim = User.FindFirst(CustomClaimTypes.StakeholderId)?.Value
-            ?? jwt.Claims.FirstOrDefault(claim => claim.Type == CustomClaimTypes.StakeholderId)?.Value;
-        if (Guid.TryParse(stakeholderClaim, out var parsedStakeholderId))
-        {
-            stakeholderId = parsedStakeholderId;
-        }
-
-        if (!TryGetSessionIdentity(out var appUserId, out _, out var sessionId))
+        if (!TryGetSessionIdentity(out var stakeholderId, out var sessionId))
         {
             return Unauthorized();
         }
 
         var result = await logoutSessionHandler.HandleAsync(
-            new LogoutSessionCommand(tokenId, expiresAtUtc.Value, sessionId, appUserId,
-                stakeholderId, ActorContext.FromCurrentActor(currentActor)),
+            new LogoutSessionCommand(tokenId, expiresAtUtc.Value, sessionId, stakeholderId,
+                ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
 
         return result.Status switch

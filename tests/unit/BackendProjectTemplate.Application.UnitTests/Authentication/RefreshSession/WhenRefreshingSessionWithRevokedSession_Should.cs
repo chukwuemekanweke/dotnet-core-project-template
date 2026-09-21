@@ -12,7 +12,7 @@ public sealed class WhenRefreshingSessionWithRevokedSession_Should
         var context = new AuthenticationFlowTestContext();
         var now = context.Clock.GetUtcNow();
         var user = AppUser.Create(AuthenticationTestData.Email());
-        var session = AuthenticationSession.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(),
+        var session = AuthenticationSession.Create(Guid.CreateVersion7(),
             Guid.CreateVersion7(), "Browser", null, null, null, now, now.AddDays(1));
         session.Revoke(now);
         var refreshToken = AuthenticationRefreshToken.Create(user.Id, session.Id, "HASH", "stamp", now.AddDays(1));

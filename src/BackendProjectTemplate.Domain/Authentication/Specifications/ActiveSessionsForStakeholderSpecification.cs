@@ -3,11 +3,11 @@ using BackendProjectTemplate.Domain.Common.Persistence;
 
 namespace BackendProjectTemplate.Domain.Authentication.Specifications;
 
-public sealed class ActiveSessionsForUserSpecification : Specification<AuthenticationSession>
+public sealed class ActiveSessionsForStakeholderSpecification : Specification<AuthenticationSession>
 {
-    public ActiveSessionsForUserSpecification(Guid appUserId, DateTimeOffset now)
+    public ActiveSessionsForStakeholderSpecification(Guid stakeholderId, DateTimeOffset now)
     {
-        Where(session => session.AppUserId == appUserId && session.RevokedAtUtc == null && session.ExpiresAtUtc > now);
+        Where(session => session.StakeholderId == stakeholderId && session.RevokedAtUtc == null && session.ExpiresAtUtc > now);
         AddInclude(session => session.FirstIpAddress);
         AddInclude(session => session.LastIpAddress);
         EnableTracking();

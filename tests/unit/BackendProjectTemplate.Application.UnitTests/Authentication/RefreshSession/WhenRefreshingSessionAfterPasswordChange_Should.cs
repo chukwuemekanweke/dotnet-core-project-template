@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests;
@@ -15,7 +16,9 @@ public sealed class WhenRefreshingSessionAfterPasswordChange_Should
         user.MarkEmailVerified();
         user.SecurityStamp = "current-stamp";
 
-        var session = AuthenticationSession.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(),
+        var stakeholder = Stakeholder.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(),
+            Guid.CreateVersion7(), AuthenticationTestData.FirstName(), AuthenticationTestData.LastName());
+        var session = AuthenticationSession.Create(stakeholder.Id,
             Guid.CreateVersion7(), "Unit Test", null, null, null, now, now.AddDays(30));
         var storedRefreshToken = AuthenticationRefreshToken.Create(user.Id, session.Id, "HASH", "previous-stamp", now.AddDays(30));
 
@@ -25,6 +28,8 @@ public sealed class WhenRefreshingSessionAfterPasswordChange_Should
             .Returns(storedRefreshToken);
         context.IdentityService.FindByIdAsync(user.Id).Returns(user);
         context.IdentityService.GetSecurityStampAsync(user).Returns("current-stamp");
+        context.StakeholderRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Stakeholder>>(), Arg.Any<CancellationToken>())
+            .Returns(stakeholder);
 
         var result = await context.CreateRefreshSessionHandler().HandleAsync(
             AuthenticationFlowTestContext.CreateRefreshSessionCommand("refresh-token"),
