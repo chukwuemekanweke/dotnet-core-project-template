@@ -2,6 +2,7 @@ using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -43,6 +44,7 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
             currentActorAccessor,
             messageContext,
             identityService,
+            Substitute.For<IAuthenticationSessionService>(),
             stakeholderReadModelRepository,
             commandSender,
             unitOfWork,

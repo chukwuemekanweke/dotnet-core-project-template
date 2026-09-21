@@ -13,6 +13,7 @@ public sealed class WhenGeneratingAccessToken_Should
     public void IncludeStakeholderIdClaim()
     {
         var stakeholderId = Guid.CreateVersion7();
+        var sessionId = Guid.CreateVersion7();
         var user = AppUser.Create(InfrastructureTestData.Email());
         var sut = new JwtTokenGenerator(
             Options.Create(new JwtOptions
@@ -22,10 +23,11 @@ public sealed class WhenGeneratingAccessToken_Should
             }),
             new FakeTimeProvider());
 
-        var token = sut.Generate(user, stakeholderId);
+        var token = sut.Generate(user, stakeholderId, sessionId);
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token.Value);
 
         jwt.Claims.Single(claim => claim.Type == CustomClaimTypes.StakeholderId).Value.ShouldBe(stakeholderId.ToString());
+        jwt.Claims.Single(claim => claim.Type == JwtRegisteredClaimNames.Sid).Value.ShouldBe(sessionId.ToString());
     }
 
     private sealed class FakeTimeProvider : TimeProvider

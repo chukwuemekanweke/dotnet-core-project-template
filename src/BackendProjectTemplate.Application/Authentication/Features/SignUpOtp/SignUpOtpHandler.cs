@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -13,6 +14,7 @@ public sealed class SignUpOtpHandler(
     ITwoFactorOtpService twoFactorOtpService,
     IAccessTokenService accessTokenService,
     IRefreshTokenService refreshTokenService,
+    IAuthenticationSessionService sessionService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
@@ -86,10 +88,13 @@ public sealed class SignUpOtpHandler(
             throw new InvalidOperationException("Failed to update the user after OTP verification.");
         }
 
-        var accessToken = accessTokenService.Generate(user, stakeholder.Id);
+        var session = await sessionService.CreateAsync(user, stakeholder, request.IpAddress,
+            request.UserAgent, refreshTokenService.GetExpiry(AuthenticationOtpDefaults.EmailConfirmationSessionLifetime), cancellationToken);
+        var accessToken = accessTokenService.Generate(user, stakeholder.Id, session.Id);
         var refreshToken = await refreshTokenService.IssueAsync(
             user,
-            AuthenticationOtpDefaults.EmailConfirmationSessionLifetime,
+            session.Id,
+            session.ExpiresAtUtc,
             cancellationToken);
 
         await eventPublisher.PublishAsync(new UserEmailConfirmed

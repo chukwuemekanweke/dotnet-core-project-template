@@ -20,13 +20,17 @@ public sealed class WhenRefreshingSessionWithLockedAccount_Should
         user.MarkEmailVerified();
         user.SecurityStamp = securityStamp;
 
+        var session = AuthenticationSession.Create(user.Id, Guid.CreateVersion7(), Guid.CreateVersion7(),
+            Guid.CreateVersion7(), "Unit Test", null, null, null, now, now.AddDays(30));
         var storedRefreshToken = AuthenticationRefreshToken.Create(
             user.Id,
+            session.Id,
             "HASH",
             securityStamp,
             now.AddDays(30));
 
         var context = new AuthenticationFlowTestContext();
+        context.SessionService.FindAsync(session.Id, Arg.Any<CancellationToken>()).Returns(session);
         context.RefreshTokenService.FindByTokenAsync("refresh-token", Arg.Any<CancellationToken>())
             .Returns(storedRefreshToken);
         context.IdentityService.FindByIdAsync(user.Id).Returns(user);

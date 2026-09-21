@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Formatting;
@@ -17,6 +18,7 @@ public sealed class UserSignInFailedHandler(
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
     IAuthenticationIdentityService identityService,
+    IAuthenticationSessionService sessionService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
@@ -60,6 +62,7 @@ public sealed class UserSignInFailedHandler(
         if (message.FailureReason == UserSignInFailureReasons.InvalidCredentials &&
             await identityService.IsLockedOutAsync(user))
         {
+            await sessionService.RevokeAllAsync(user.Id, cancellationToken);
             if (stakeholder is null)
             {
                 throw new CannotProcessMessageNonTransientException(

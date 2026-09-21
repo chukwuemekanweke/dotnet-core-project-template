@@ -9,6 +9,7 @@ using BackendProjectTemplate.WebAPI.Features.Authentication.EmailConfirmations;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -68,6 +69,10 @@ public sealed class WhenVerifyingSignUpOtp_Should(ContainersFixture fixture)
             _response.StatusCode.ShouldBe(HttpStatusCode.OK);
             _response.Headers.CacheControl?.NoStore.ShouldBeTrue();
             string.IsNullOrWhiteSpace(_payload?.AccessToken).ShouldBeFalse();
+            new JwtSecurityTokenHandler()
+                .ReadJwtToken(_payload!.AccessToken).Claims
+                .Any(claim => claim.Type == JwtRegisteredClaimNames.Sid)
+                .ShouldBeTrue();
             string.IsNullOrWhiteSpace(_payload?.RefreshToken).ShouldBeFalse();
             _payload!.RefreshTokenExpiresAtUtc.ShouldBeLessThanOrEqualTo(
                 DateTimeOffset.UtcNow.Add(AuthenticationOtpDefaults.EmailConfirmationSessionLifetime));

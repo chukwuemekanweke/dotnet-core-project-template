@@ -12,7 +12,7 @@ public sealed class JwtTokenGenerator(IOptions<JwtOptions> options, TimeProvider
 {
     private readonly JwtOptions _options = options.Value;
 
-    public AccessToken Generate(AppUser user, Guid stakeholderId)
+    public AccessToken Generate(AppUser user, Guid stakeholderId, Guid sessionId)
     {
         var now = timeProvider.GetUtcNow();
         var expiresAtUtc = now.AddMinutes(_options.LifetimeMinutes);
@@ -23,6 +23,7 @@ public sealed class JwtTokenGenerator(IOptions<JwtOptions> options, TimeProvider
         {
             new Claim(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString("N")),
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sid, sessionId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email ?? user.UserName ?? string.Empty),
             new Claim(CustomClaimTypes.StakeholderId, stakeholderId.ToString())
         };

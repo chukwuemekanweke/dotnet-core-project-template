@@ -25,8 +25,11 @@ public sealed class When_RefreshingSession_WithValidRefreshToken_Should
         var user = context.CreateUser();
         user.MarkEmailVerified();
         user.SecurityStamp = "stamp";
-        var storedRefreshToken = AuthenticationRefreshToken.Create(user.Id, "HASH", user.SecurityStamp, context.Clock.GetUtcNow().AddDays(30));
         var stakeholder = context.CreateStakeholder(user.Id);
+        var session = AuthenticationSession.Create(user.Id, stakeholder.Id, stakeholder.TenantId,
+            Guid.CreateVersion7(), "Unit Test", null, null, null, context.Clock.GetUtcNow(), context.Clock.GetUtcNow().AddDays(30));
+        var storedRefreshToken = AuthenticationRefreshToken.Create(user.Id, session.Id, "HASH", user.SecurityStamp, context.Clock.GetUtcNow().AddDays(30));
+        context.SessionService.FindAsync(session.Id, Arg.Any<CancellationToken>()).Returns(session);
 
         refreshValidator.ValidateAsync(request, Arg.Any<CancellationToken>()).Returns(new ValidationResult());
         context.RefreshTokenService.FindByTokenAsync(request.RefreshToken, Arg.Any<CancellationToken>())
@@ -37,7 +40,7 @@ public sealed class When_RefreshingSession_WithValidRefreshToken_Should
                 Arg.Any<ISpecification<Stakeholder>>(),
                 Arg.Any<CancellationToken>())
             .Returns(stakeholder);
-        context.AccessTokenService.Generate(user, stakeholder.Id)
+        context.AccessTokenService.Generate(user, stakeholder.Id, session.Id)
             .Returns(new AccessToken("new-access-token", context.Clock.GetUtcNow().AddMinutes(15)));
         context.RefreshTokenService.RotateAsync(storedRefreshToken, user, Arg.Any<CancellationToken>())
             .Returns(new RefreshToken("new-refresh-token", context.Clock.GetUtcNow().AddDays(7)));
@@ -51,7 +54,10 @@ public sealed class When_RefreshingSession_WithValidRefreshToken_Should
             googleValidator,
             refreshValidator,
             context.Clock,
-            context.CurrentActor)
+            context.CurrentActor,
+            context.CreateListSessionsHandler(),
+            context.CreateRevokeSessionHandler(),
+            context.CreateRevokeOtherSessionsHandler())
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

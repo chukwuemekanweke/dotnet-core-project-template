@@ -58,6 +58,8 @@ public static class ServiceCollectionExtensions
         services.Configure<GoogleAuthenticationOptions>(configuration.GetSection(GoogleAuthenticationOptions.SectionName));
         services.Configure<RefreshTokenOptions>(configuration.GetSection(RefreshTokenOptions.SectionName));
         services.AddSingleton<IUserAgentParserService, UserAgentParserService>();
+        services.AddScoped<IIpAddressResolver, IpAddressResolver>();
+        services.AddScoped<IAuthenticationSessionService, AuthenticationSessionService>();
 
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
         services.AddSingleton<IAccessTokenRevocationService, AccessTokenRevocationService>();
@@ -123,7 +125,7 @@ public static class ServiceCollectionExtensions
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddSingleton<IConfigureOptions<JwtBearerOptions>, ConfigureJwtBearerOptions>();
-        services.AddSingleton<IAuthorizationHandler, ActiveSessionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, ActiveSessionAuthorizationHandler>();
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

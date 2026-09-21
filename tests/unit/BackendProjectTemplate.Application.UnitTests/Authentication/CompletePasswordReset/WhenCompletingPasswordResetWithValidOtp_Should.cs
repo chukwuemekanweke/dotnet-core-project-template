@@ -43,6 +43,7 @@ public sealed class WhenCompletingPasswordResetWithValidOtp_Should
 
         result.Status.ShouldBe(CompletePasswordResetStatus.Success);
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.SessionService.Received(1).RevokeAllAsync(user.Id, Arg.Any<CancellationToken>());
     }
 }
 

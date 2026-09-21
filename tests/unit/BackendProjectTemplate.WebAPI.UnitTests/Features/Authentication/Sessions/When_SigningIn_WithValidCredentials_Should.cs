@@ -32,9 +32,9 @@ public sealed class When_SigningIn_WithValidCredentials_Should
                 Arg.Any<ISpecification<Stakeholder>>(),
                 Arg.Any<CancellationToken>())
             .Returns(stakeholder);
-        context.AccessTokenService.Generate(user, stakeholder.Id)
+        context.AccessTokenService.Generate(user, stakeholder.Id, Arg.Any<Guid>())
             .Returns(new AccessToken("access-token", context.Clock.GetUtcNow().AddMinutes(15)));
-        context.RefreshTokenService.IssueAsync(user, Arg.Any<CancellationToken>())
+        context.RefreshTokenService.IssueAsync(user, Arg.Any<Guid>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(new RefreshToken("refresh-token", context.Clock.GetUtcNow().AddDays(7)));
 
         var sut = new SessionsController(
@@ -46,7 +46,10 @@ public sealed class When_SigningIn_WithValidCredentials_Should
             googleValidator,
             refreshValidator,
             context.Clock,
-            context.CurrentActor)
+            context.CurrentActor,
+            context.CreateListSessionsHandler(),
+            context.CreateRevokeSessionHandler(),
+            context.CreateRevokeOtherSessionsHandler())
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

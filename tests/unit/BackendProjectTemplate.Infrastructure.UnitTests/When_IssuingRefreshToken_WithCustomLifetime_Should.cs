@@ -25,11 +25,13 @@ public sealed class When_IssuingRefreshToken_WithCustomLifetime_Should
             Options.Create(new RefreshTokenOptions()),
             new FakeTimeProvider(now));
 
-        var result = await service.IssueAsync(user, lifetime, CancellationToken.None);
+        var sessionId = Guid.CreateVersion7();
+        var result = await service.IssueAsync(user, sessionId, lifetime, CancellationToken.None);
 
         result.ExpiresAtUtc.ShouldBe(now.Add(lifetime));
         await repository.Received(1).AddAsync(Arg.Is<AuthenticationRefreshToken>(token =>
             token.AppUserId == user.Id
+            && token.AuthenticationSessionId == sessionId
             && token.ExpiresAtUtc == now.Add(lifetime)));
     }
 

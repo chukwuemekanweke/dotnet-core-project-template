@@ -10,6 +10,7 @@ using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -89,6 +90,11 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_Should(Containers
             string.IsNullOrWhiteSpace(refreshPayload?.RefreshToken).ShouldBeFalse();
             refreshPayload!.AccessToken.ShouldNotBe(signInPayload!.AccessToken);
             refreshPayload.RefreshToken.ShouldNotBe(signInPayload.RefreshToken);
+            var originalSid = new JwtSecurityTokenHandler().ReadJwtToken(signInPayload.AccessToken)
+                .Claims.Single(claim => claim.Type == JwtRegisteredClaimNames.Sid).Value;
+            var refreshedSid = new JwtSecurityTokenHandler().ReadJwtToken(refreshPayload.AccessToken)
+                .Claims.Single(claim => claim.Type == JwtRegisteredClaimNames.Sid).Value;
+            refreshedSid.ShouldBe(originalSid);
         }
     }
 

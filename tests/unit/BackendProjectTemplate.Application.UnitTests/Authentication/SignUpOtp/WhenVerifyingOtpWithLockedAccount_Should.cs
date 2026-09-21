@@ -27,10 +27,11 @@ public sealed class WhenVerifyingOtpWithLockedAccount_Should
             string.Empty,
             default,
             CancellationToken.None);
-        context.AccessTokenService.DidNotReceiveWithAnyArgs().Generate(default!, default);
+        context.AccessTokenService.DidNotReceiveWithAnyArgs().Generate(default!, default, default);
         await context.RefreshTokenService.DidNotReceiveWithAnyArgs().IssueAsync(
             default!,
-            default(TimeSpan),
+            default(Guid),
+            default(DateTimeOffset),
             CancellationToken.None);
     }
 }

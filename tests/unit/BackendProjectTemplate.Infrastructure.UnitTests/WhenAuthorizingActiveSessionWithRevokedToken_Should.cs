@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +17,8 @@ public sealed class WhenAuthorizingActiveSessionWithRevokedToken_Should
         var tokenId = Guid.CreateVersion7().ToString("N");
         var revocationService = Substitute.For<IAccessTokenRevocationService>();
         revocationService.IsRevokedAsync(tokenId, Arg.Any<CancellationToken>()).Returns(true);
-        var sut = new ActiveSessionAuthorizationHandler(revocationService);
+        var sut = new ActiveSessionAuthorizationHandler(revocationService,
+            Substitute.For<IAuthenticationSessionService>(), TimeProvider.System);
         var user = new ClaimsPrincipal(
             new ClaimsIdentity(
             [

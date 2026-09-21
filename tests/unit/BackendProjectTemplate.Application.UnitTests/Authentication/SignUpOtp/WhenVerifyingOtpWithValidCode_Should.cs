@@ -33,10 +33,11 @@ public sealed class WhenVerifyingOtpWithValidCode_Should
                 Arg.Any<CancellationToken>())
             .Returns(true);
         context.IdentityService.UpdateAsync(Arg.Is<AppUser>(candidate => candidate.EmailConfirmed)).Returns(IdentityResult.Success);
-        context.AccessTokenService.Generate(user, stakeholder.Id).Returns(accessToken);
+        context.AccessTokenService.Generate(user, stakeholder.Id, Arg.Any<Guid>()).Returns(accessToken);
         context.RefreshTokenService.IssueAsync(
                 user,
-                AuthenticationOtpDefaults.EmailConfirmationSessionLifetime,
+                Arg.Any<Guid>(),
+                Arg.Any<DateTimeOffset>(),
                 Arg.Any<CancellationToken>())
             .Returns(refreshToken);
         context.StakeholderRepository.FirstOrDefaultAsync(
