@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Infrastructure.Observability;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -9,6 +10,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddJobsOpenTelemetry(this IServiceCollection services, IConfiguration configuration)
     {
+        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
+        var otlpProtocol = configuration["OTEL_EXPORTER_OTLP_PROTOCOL"];
+
         services
             .AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService("BackendProjectTemplate.Jobs"))
@@ -22,10 +26,9 @@ public static class ServiceCollectionExtensions
                     .AddEntityFrameworkCoreInstrumentation()
                     .AddRedisInstrumentation();
 
-                var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
                 if (!string.IsNullOrWhiteSpace(otlpEndpoint))
                 {
-                    tracing.AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+                    tracing.AddOtlpExporter(options => options.Endpoint = OtlpEndpointResolver.Resolve(otlpEndpoint, otlpProtocol, "traces"));
                 }
             })
             .WithMetrics(metrics =>
@@ -33,10 +36,14 @@ public static class ServiceCollectionExtensions
                 metrics
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
+
+                if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+                {
+                    metrics.AddOtlpExporter(options => options.Endpoint = OtlpEndpointResolver.Resolve(otlpEndpoint, otlpProtocol, "metrics"));
+                }
             });
 
         var serviceName = configuration["OpenTelemetry:ServiceName"] ?? "BackendProjectTemplate.Jobs";
-        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
         if (!string.IsNullOrWhiteSpace(otlpEndpoint))
         {
             services.AddLogging(logging =>
@@ -47,7 +54,8 @@ public static class ServiceCollectionExtensions
                     options.IncludeScopes = false;
                     options.ParseStateValues = true;
                     options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName));
-                    options.AddOtlpExporter(exporterOptions => exporterOptions.Endpoint = new Uri(otlpEndpoint));
+                    options.AddOtlpExporter(exporterOptions =>
+                        exporterOptions.Endpoint = OtlpEndpointResolver.Resolve(otlpEndpoint, otlpProtocol, "logs"));
                 });
             });
         }

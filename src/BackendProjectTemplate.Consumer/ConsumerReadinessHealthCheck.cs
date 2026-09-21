@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Npgsql;
 using RabbitMQ.Client;
@@ -66,8 +67,9 @@ public sealed class ConsumerReadinessHealthCheck(
     }
 
     private string GetRequiredConnectionString(string name) =>
-        configuration.GetConnectionString(name)
-        ?? throw new InvalidOperationException($"Connection string '{name}' is required.");
+        PostgresConnectionString.Normalize(
+            configuration.GetConnectionString(name)
+            ?? throw new InvalidOperationException($"Connection string '{name}' is required."));
 
     private string GetRequiredConfigurationValue(string key) =>
         configuration[key]

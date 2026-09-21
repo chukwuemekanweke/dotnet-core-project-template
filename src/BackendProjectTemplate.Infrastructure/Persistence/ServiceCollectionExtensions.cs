@@ -56,6 +56,7 @@ public static class ServiceCollectionExtensions
         GetRequiredConnectionString(configuration, "PostgresRead");
 
     private static string GetRequiredConnectionString(IConfiguration configuration, string name) =>
-        configuration.GetConnectionString(name)
-        ?? throw new InvalidOperationException($"Connection string '{name}' is required.");
+        PostgresConnectionString.Normalize(
+            configuration.GetConnectionString(name)
+            ?? throw new InvalidOperationException($"Connection string '{name}' is required."));
 }

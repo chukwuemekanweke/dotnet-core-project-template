@@ -12,7 +12,7 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
             ?? throw new InvalidOperationException(
                 "Environment variable 'ConnectionStrings__PostgresWrite' is required for design-time AppDbContext creation.");
 
-        optionsBuilder.UseNpgsql(connectionString);
+        optionsBuilder.UseNpgsql(PostgresConnectionString.Normalize(connectionString));
 
         return new AppDbContext(optionsBuilder.Options);
     }
