@@ -225,6 +225,12 @@ The default Compose mode starts only the application services. PostgreSQL, Redis
 
 Grafana Cloud receives logs, metrics, and traces through its OTLP gateway. Copy `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` from the OpenTelemetry card in your Grafana Cloud stack. Profiles use the URL and credentials shown in the stack's Profiles details.
 
+Cloud dependency links for the default mode:
+
+- PostgreSQL: [Neon Console](https://console.neon.tech/)
+- Redis: [Redis Cloud Console](https://cloud.redis.io/)
+- RabbitMQ: [CloudAMQP API](https://api.cloudamqp.com/) and the [configured broker host](https://yak.lmq.cloudamqp.com/)
+
 To use local PostgreSQL, Redis, RabbitMQ, and the Grafana observability stack instead, add the `local` profile and the checked-in local override:
 
 ```powershell
