@@ -8,6 +8,21 @@ receivers:
 
 processors:
   batch:
+  tail_sampling:
+    decision_wait: 5s
+    policies:
+      - name: errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: slow-traces
+        type: latency
+        latency:
+          threshold_ms: ${env:OTEL_TAIL_SAMPLING_LATENCY_MS}
+      - name: normal-traffic
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: ${env:OTEL_TAIL_SAMPLING_PERCENTAGE}
 
 exporters:
   otlp/tempo:
@@ -25,6 +40,7 @@ service:
       receivers:
         - otlp
       processors:
+        - tail_sampling
         - batch
       exporters:
         - otlp/tempo

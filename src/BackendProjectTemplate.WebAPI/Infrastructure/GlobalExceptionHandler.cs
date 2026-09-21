@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace BackendProjectTemplate.WebAPI.Infrastructure;
 
@@ -23,6 +24,9 @@ public sealed class GlobalExceptionHandler(
         }
 
         logger.LogError(exception, "Unhandled exception while processing {Path}", httpContext.Request.Path);
+
+        Activity.Current?.SetStatus(ActivityStatusCode.Error, exception.Message);
+        Activity.Current?.AddException(exception);
 
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
         var problemDetails = new ProblemDetails
