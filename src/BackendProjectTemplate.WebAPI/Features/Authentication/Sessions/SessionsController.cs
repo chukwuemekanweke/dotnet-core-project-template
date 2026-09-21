@@ -89,14 +89,6 @@ public sealed class SessionsController(
         return NoContent();
     }
 
-    private bool TryGetSessionIdentity(out Guid stakeholderId, out Guid sessionId)
-    {
-        var hasStakeholder = Guid.TryParse(User.FindFirst(CustomClaimTypes.StakeholderId)?.Value, out stakeholderId);
-        var hasSession = Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ??
-            User.FindFirst(ClaimTypes.Sid)?.Value, out sessionId);
-        return hasStakeholder && hasSession;
-    }
-
     [HttpPost]
     [EnableRateLimiting(RateLimitingPolicyNames.SignInPolicy)]
     [ProducesResponseType<SignInResponse>(StatusCodes.Status200OK)]
@@ -318,5 +310,13 @@ public sealed class SessionsController(
         return authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
             ? authorizationHeader["Bearer ".Length..].Trim()
             : null;
+    }
+
+    private bool TryGetSessionIdentity(out Guid stakeholderId, out Guid sessionId)
+    {
+        var hasStakeholder = Guid.TryParse(User.FindFirst(CustomClaimTypes.StakeholderId)?.Value, out stakeholderId);
+        var hasSession = Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ??
+            User.FindFirst(ClaimTypes.Sid)?.Value, out sessionId);
+        return hasStakeholder && hasSession;
     }
 }
