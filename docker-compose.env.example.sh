@@ -11,6 +11,9 @@ export DATABASE_URL_POOLED="postgresql://<username>:<password>@<neon-pooler-host
 export OTEL_EXPORTER_OTLP_ENDPOINT="https://otlp-gateway-<zone>.grafana.net/otlp"
 export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic%20<base64-credentials>"
 export OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+# Local OTel Collector tail sampling (local profile only; unused in cloud mode).
+# export OTEL_TAIL_SAMPLING_LATENCY_MS="1000"
+# export OTEL_TAIL_SAMPLING_PERCENTAGE="10"
 export PYROSCOPE_SERVER_ADDRESS="https://profiles-prod-<region>.grafana.net"
 export PYROSCOPE_BASIC_AUTH_USER="<profiles-instance-id>"
 export PYROSCOPE_BASIC_AUTH_PASSWORD="<access-policy-token>"
