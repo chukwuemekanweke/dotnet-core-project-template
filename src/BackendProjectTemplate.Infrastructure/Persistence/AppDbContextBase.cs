@@ -39,6 +39,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<FileUploadSession> FileUploadSessions => Set<FileUploadSession>();
     public DbSet<StakeholderType> StakeholderTypes => Set<StakeholderType>();
     public DbSet<AuthenticationRefreshToken> AuthenticationRefreshTokens => Set<AuthenticationRefreshToken>();
+    public DbSet<AuthenticationSession> AuthenticationSessions => Set<AuthenticationSession>();
     public DbSet<IpAddress> IpAddresses => Set<IpAddress>();
     public DbSet<IpAddressLocation> IpAddressLocations => Set<IpAddressLocation>();
     public DbSet<LoginActivity> LoginActivities => Set<LoginActivity>();

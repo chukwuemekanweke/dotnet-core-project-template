@@ -16,29 +16,32 @@ public sealed class RefreshTokenService(
 {
     private readonly RefreshTokenOptions _options = options.Value;
 
-    public async Task<RefreshToken> IssueAsync(AppUser user, CancellationToken cancellationToken)
+    public DateTimeOffset GetExpiry(TimeSpan? lifetime = null) =>
+        timeProvider.GetUtcNow().Add(lifetime ?? TimeSpan.FromDays(_options.LifetimeDays));
+
+    public async Task<RefreshToken> IssueAsync(AppUser user, Guid sessionId, CancellationToken cancellationToken)
     {
-        var expiresAtUtc = timeProvider.GetUtcNow().AddDays(_options.LifetimeDays);
-        return await IssueAsync(user, expiresAtUtc, cancellationToken);
+        return await IssueAsync(user, sessionId, GetExpiry(), cancellationToken);
     }
 
     public async Task<RefreshToken> IssueAsync(
         AppUser user,
+        Guid sessionId,
         TimeSpan lifetime,
         CancellationToken cancellationToken)
     {
-        var expiresAtUtc = timeProvider.GetUtcNow().Add(lifetime);
-        return await IssueAsync(user, expiresAtUtc, cancellationToken);
+        return await IssueAsync(user, sessionId, GetExpiry(lifetime), cancellationToken);
     }
 
-    private async Task<RefreshToken> IssueAsync(
+    public async Task<RefreshToken> IssueAsync(
         AppUser user,
+        Guid sessionId,
         DateTimeOffset expiresAtUtc,
         CancellationToken cancellationToken)
     {
         var rawToken = GenerateRawToken();
         var securityStamp = await GetRequiredSecurityStampAsync(user, cancellationToken);
-        var refreshToken = AuthenticationRefreshToken.Create(user.Id, ComputeHash(rawToken), securityStamp, expiresAtUtc);
+        var refreshToken = AuthenticationRefreshToken.Create(user.Id, sessionId, ComputeHash(rawToken), securityStamp, expiresAtUtc);
 
         await refreshTokenRepository.AddAsync(refreshToken);
 
@@ -56,7 +59,8 @@ public sealed class RefreshTokenService(
         Revoke(currentRefreshToken, utcNow);
         refreshTokenRepository.Update(currentRefreshToken);
 
-        return await IssueAsync(user, currentRefreshToken.ExpiresAtUtc, cancellationToken);
+        return await IssueAsync(user, currentRefreshToken.AuthenticationSessionId
+            ?? throw new InvalidOperationException("Refresh token has no session."), currentRefreshToken.ExpiresAtUtc, cancellationToken);
     }
 
     public void Revoke(AuthenticationRefreshToken refreshToken, DateTimeOffset utcNow)

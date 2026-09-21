@@ -1,7 +1,10 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
+using BackendProjectTemplate.Application.Authentication.Features.ListSessions;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
+using BackendProjectTemplate.Application.Authentication.Features.RevokeOtherSessions;
+using BackendProjectTemplate.Application.Authentication.Features.RevokeSession;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -14,6 +17,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 
@@ -30,8 +34,61 @@ public sealed class SessionsController(
     IValidator<GoogleSignInRequest> googleSignInValidator,
     IValidator<RefreshSessionRequest> refreshSessionValidator,
     TimeProvider timeProvider,
-    ICurrentActor currentActor) : ControllerBase
+    ICurrentActor currentActor,
+    ListSessionsHandler listSessionsHandler,
+    RevokeSessionHandler revokeSessionHandler,
+    RevokeOtherSessionsHandler revokeOtherSessionsHandler) : ControllerBase
 {
+    [HttpGet]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
+        Policy = AuthorizationPolicyNames.RequireActiveSession)]
+    [ProducesResponseType<IReadOnlyList<ActiveSessionResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<ActiveSessionResponse>>> GetSessions(CancellationToken cancellationToken)
+    {
+        if (!TryGetSessionIdentity(out var stakeholderId, out var currentSessionId))
+            return Unauthorized();
+
+        var sessions = await listSessionsHandler.HandleAsync(
+            new ListSessionsQuery(stakeholderId, currentSessionId), cancellationToken);
+        var result = sessions.Select(session => new ActiveSessionResponse(session.SessionId,
+            session.DeviceName, session.DevicePlatform, session.BrowserName, session.UserAgent,
+            session.FirstIpAddress, session.LastIpAddress, session.CreatedAtUtc,
+            session.LastActiveAtUtc, session.ExpiresAtUtc, session.IsCurrent)).ToArray();
+        return Ok(result);
+    }
+
+    [HttpDelete("others")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
+        Policy = AuthorizationPolicyNames.RequireActiveSession)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteOtherSessions(CancellationToken cancellationToken)
+    {
+        if (!TryGetSessionIdentity(out var stakeholderId, out var currentSessionId))
+            return Unauthorized();
+
+        await revokeOtherSessionsHandler.HandleAsync(
+            new RevokeOtherSessionsCommand(currentSessionId, stakeholderId), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("{sessionId:guid}")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
+        Policy = AuthorizationPolicyNames.RequireActiveSession)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteSession(Guid sessionId, CancellationToken cancellationToken)
+    {
+        if (!TryGetSessionIdentity(out var stakeholderId, out _))
+            return Unauthorized();
+
+        var revoked = await revokeSessionHandler.HandleAsync(
+            new RevokeSessionCommand(sessionId, stakeholderId), cancellationToken);
+        if (!revoked)
+            return NotFound();
+
+        return NoContent();
+    }
+
     [HttpPost]
     [EnableRateLimiting(RateLimitingPolicyNames.SignInPolicy)]
     [ProducesResponseType<SignInResponse>(StatusCodes.Status200OK)]
@@ -230,16 +287,14 @@ public sealed class SessionsController(
             return Unauthorized();
         }
 
-        Guid? stakeholderId = null;
-        var stakeholderClaim = User.FindFirst(CustomClaimTypes.StakeholderId)?.Value
-            ?? jwt.Claims.FirstOrDefault(claim => claim.Type == CustomClaimTypes.StakeholderId)?.Value;
-        if (Guid.TryParse(stakeholderClaim, out var parsedStakeholderId))
+        if (!TryGetSessionIdentity(out var stakeholderId, out var sessionId))
         {
-            stakeholderId = parsedStakeholderId;
+            return Unauthorized();
         }
 
         var result = await logoutSessionHandler.HandleAsync(
-            new LogoutSessionCommand(tokenId, expiresAtUtc.Value, stakeholderId, ActorContext.FromCurrentActor(currentActor)),
+            new LogoutSessionCommand(tokenId, expiresAtUtc.Value, sessionId, stakeholderId,
+                ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
 
         return result.Status switch
@@ -255,5 +310,13 @@ public sealed class SessionsController(
         return authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
             ? authorizationHeader["Bearer ".Length..].Trim()
             : null;
+    }
+
+    private bool TryGetSessionIdentity(out Guid stakeholderId, out Guid sessionId)
+    {
+        var hasStakeholder = Guid.TryParse(User.FindFirst(CustomClaimTypes.StakeholderId)?.Value, out stakeholderId);
+        var hasSession = Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ??
+            User.FindFirst(ClaimTypes.Sid)?.Value, out sessionId);
+        return hasStakeholder && hasSession;
     }
 }

@@ -48,10 +48,11 @@ public sealed class WhenVerifyingOtpWithConcurrentConfirmation_Should
 
         result.Status.ShouldBe(SignUpOtpStatus.AlreadyVerified);
         result.Tokens.ShouldBeNull();
-        context.AccessTokenService.DidNotReceiveWithAnyArgs().Generate(default!, default);
+        context.AccessTokenService.DidNotReceiveWithAnyArgs().Generate(default!, default, default);
         await context.RefreshTokenService.DidNotReceiveWithAnyArgs().IssueAsync(
             default!,
-            default(TimeSpan),
+            default(Guid),
+            default(DateTimeOffset),
             CancellationToken.None);
     }
 }

@@ -2,6 +2,7 @@ using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Formatting;
@@ -46,7 +47,8 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(stakeholderId, Guid.CreateVersion7(), email, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
 
-        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, stakeholderReadModelRepository, commandSender, unitOfWork, timeProvider, logger, messageInboxRepository).HandleAsync(
+        var sessionService = Substitute.For<IAuthenticationSessionService>();
+        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, sessionService, stakeholderReadModelRepository, commandSender, unitOfWork, timeProvider, logger, messageInboxRepository).HandleAsync(
             new UserSignInFailed(
                 email,
                 ipAddress,
@@ -70,6 +72,7 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
                 ((EmailNotificationContent)command.NotificationContent).Content["LockedUntilUtc"] == DateTimeFormatter.FormatHumanReadableUtc(lockedUntilUtc, timeProvider.GetUtcNow())),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await sessionService.Received(1).RevokeAllAsync(stakeholderId, Arg.Any<CancellationToken>());
     }
 
     private sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider

@@ -5,10 +5,13 @@ using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExist
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
+using BackendProjectTemplate.Application.Authentication.Features.ListSessions;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.RequestEmailConfirmationOtp;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
+using BackendProjectTemplate.Application.Authentication.Features.RevokeOtherSessions;
+using BackendProjectTemplate.Application.Authentication.Features.RevokeSession;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
@@ -22,6 +25,12 @@ using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
+using FluentValidation;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Authentication;
 
@@ -31,6 +40,7 @@ internal sealed class AuthenticationControllerTestContext
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
     public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
+    public IAuthenticationSessionService SessionService { get; } = Substitute.For<IAuthenticationSessionService>();
     public IAccessTokenRevocationService AccessTokenRevocationService { get; } = Substitute.For<IAccessTokenRevocationService>();
     public ITwoFactorOtpService TwoFactorOtpService { get; } = Substitute.For<ITwoFactorOtpService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
@@ -50,6 +60,11 @@ internal sealed class AuthenticationControllerTestContext
 
     public AuthenticationControllerTestContext()
     {
+        RefreshTokenService.GetExpiry(Arg.Any<TimeSpan?>()).Returns(Clock.GetUtcNow().AddDays(30));
+        SessionService.CreateAsync(Arg.Any<Stakeholder>(), Arg.Any<string>(),
+                Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(call => AuthenticationSession.Create(((Stakeholder)call[0]).Id, Guid.CreateVersion7(),
+                (string)call[2], null, null, null, Clock.GetUtcNow(), (DateTimeOffset)call[3]));
         CurrentActor.TenantId.Returns(Guid.CreateVersion7());
         CurrentActor.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
         CurrentActor.FlowId.Returns(Guid.CreateVersion7().ToString("N"));
@@ -86,6 +101,7 @@ internal sealed class AuthenticationControllerTestContext
         IdentityService,
         AccessTokenService,
         RefreshTokenService,
+        SessionService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
@@ -97,6 +113,7 @@ internal sealed class AuthenticationControllerTestContext
         GoogleIdentityTokenService,
         AccessTokenService,
         RefreshTokenService,
+        SessionService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
@@ -107,6 +124,7 @@ internal sealed class AuthenticationControllerTestContext
         IdentityService,
         AccessTokenService,
         RefreshTokenService,
+        SessionService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
@@ -115,7 +133,38 @@ internal sealed class AuthenticationControllerTestContext
 
     public LogoutSessionHandler CreateLogoutSessionHandler() => new(
         AccessTokenRevocationService,
-        CustomTelemetryContext);
+        CustomTelemetryContext,
+        SessionService,
+        UnitOfWork);
+
+    public SessionsController CreateSessionsController(ClaimsPrincipal user) => new(
+        CreateSignInHandler(),
+        CreateGoogleSignInHandler(),
+        CreateLogoutSessionHandler(),
+        CreateRefreshSessionHandler(),
+        Substitute.For<IValidator<SignInRequest>>(),
+        Substitute.For<IValidator<GoogleSignInRequest>>(),
+        Substitute.For<IValidator<RefreshSessionRequest>>(),
+        Clock,
+        CurrentActor,
+        CreateListSessionsHandler(),
+        CreateRevokeSessionHandler(),
+        CreateRevokeOtherSessionsHandler())
+    {
+        ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = user } }
+    };
+
+    public ListSessionsHandler CreateListSessionsHandler() => new(SessionService);
+    public RevokeSessionHandler CreateRevokeSessionHandler() => new(SessionService, UnitOfWork);
+    public RevokeOtherSessionsHandler CreateRevokeOtherSessionsHandler() => new(SessionService, UnitOfWork);
+
+    public static ClaimsPrincipal CreateSessionPrincipal(Guid userId, Guid stakeholderId, Guid sessionId) =>
+        new(new ClaimsIdentity(
+        [
+            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new Claim(CustomClaimTypes.StakeholderId, stakeholderId.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sid, sessionId.ToString())
+        ], "Bearer"));
 
     public RequestPasswordResetHandler CreateRequestPasswordResetHandler() => new(
         IdentityService,
@@ -129,7 +178,8 @@ internal sealed class AuthenticationControllerTestContext
         TwoFactorOtpService,
         StakeholderResolver,
         CustomTelemetryContext,
-        UnitOfWork);
+        UnitOfWork,
+        SessionService);
 
     public ChangePasswordHandler CreateChangePasswordHandler() => new(
         IdentityService,
@@ -142,6 +192,7 @@ internal sealed class AuthenticationControllerTestContext
         TwoFactorOtpService,
         AccessTokenService,
         RefreshTokenService,
+        SessionService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,

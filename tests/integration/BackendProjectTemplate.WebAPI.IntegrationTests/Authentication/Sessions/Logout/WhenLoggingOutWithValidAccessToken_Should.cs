@@ -32,6 +32,7 @@ public sealed class WhenLoggingOutWithValidAccessToken_Should(ContainersFixture 
     private HttpResponseMessage? _signInResponse;
     private HttpResponseMessage? _logoutResponse;
     private HttpResponseMessage? _logoutAfterRevocationResponse;
+    private HttpResponseMessage? _refreshAfterLogoutResponse;
 
     public async Task InitializeAsync()
     {
@@ -47,6 +48,7 @@ public sealed class WhenLoggingOutWithValidAccessToken_Should(ContainersFixture 
         _signInResponse?.Dispose();
         _logoutResponse?.Dispose();
         _logoutAfterRevocationResponse?.Dispose();
+        _refreshAfterLogoutResponse?.Dispose();
         await DeleteAuthenticationRecordsAsync();
         await DisposeClientAsync();
     }
@@ -59,6 +61,8 @@ public sealed class WhenLoggingOutWithValidAccessToken_Should(ContainersFixture 
         await WhenSigningIn();
         await WhenLoggingOut();
         await WhenLoggingOutAgainWithTheSameToken();
+        _refreshAfterLogoutResponse = await Client.PostAsJsonAsync(EndpointUrl.Sessions.RefreshV1,
+            new RefreshSessionRequest(signInPayload!.RefreshToken));
         await ThenTheTokenIsRejectedAfterLogout();
 
         async Task WhenSigningIn()
@@ -93,6 +97,8 @@ public sealed class WhenLoggingOutWithValidAccessToken_Should(ContainersFixture 
                 HttpStatusCode.NoContent,
                 $"Logout failed. Body: {logoutBody}. WWW-Authenticate: {logoutAuthenticateHeader}");
             _logoutAfterRevocationResponse.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            _refreshAfterLogoutResponse.ShouldNotBeNull();
+            _refreshAfterLogoutResponse.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         }
     }
 

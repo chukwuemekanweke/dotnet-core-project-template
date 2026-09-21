@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -10,7 +11,8 @@ public sealed class CompletePasswordResetHandler(
     ITwoFactorOtpService twoFactorOtpService,
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IAuthenticationSessionService sessionService)
 {
     public async Task<CompletePasswordResetResult> HandleAsync(
         CompletePasswordResetCommand request,
@@ -53,8 +55,9 @@ public sealed class CompletePasswordResetHandler(
                 resetResult.ToValidationDictionary());
         }
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
         var stakeholderId = await stakeholderResolver.GetRequiredIdAsync(user.Id, cancellationToken);
+        await sessionService.RevokeAllAsync(stakeholderId, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordResetCompleted,

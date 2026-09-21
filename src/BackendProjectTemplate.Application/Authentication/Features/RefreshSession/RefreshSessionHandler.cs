@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -12,6 +13,7 @@ public sealed class RefreshSessionHandler(
     IAuthenticationIdentityService identityService,
     IAccessTokenService accessTokenService,
     IRefreshTokenService refreshTokenService,
+    IAuthenticationSessionService sessionService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
@@ -26,12 +28,26 @@ public sealed class RefreshSessionHandler(
             return new RefreshSessionResult(RefreshSessionStatus.InvalidRefreshToken, null);
         }
 
+        var session = currentRefreshToken.AuthenticationSessionId.HasValue
+            ? await sessionService.FindAsync(currentRefreshToken.AuthenticationSessionId.Value, cancellationToken)
+            : null;
+        if (session is null || !session.IsActive(timeProvider.GetUtcNow()))
+        {
+            return new RefreshSessionResult(RefreshSessionStatus.InvalidRefreshToken, null);
+        }
+
         var user = await identityService.FindByIdAsync(currentRefreshToken.AppUserId);
         if (user is null)
         {
             refreshTokenService.Revoke(currentRefreshToken, timeProvider.GetUtcNow());
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
+            return new RefreshSessionResult(RefreshSessionStatus.InvalidRefreshToken, null);
+        }
+
+        var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
+        if (session.StakeholderId != currentStakeholder.Id)
+        {
             return new RefreshSessionResult(RefreshSessionStatus.InvalidRefreshToken, null);
         }
 
@@ -56,9 +72,9 @@ public sealed class RefreshSessionHandler(
             return new RefreshSessionResult(RefreshSessionStatus.EmailNotVerified, null);
         }
 
-        var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
-        var accessToken = accessTokenService.Generate(user, currentStakeholder.Id);
+        var accessToken = accessTokenService.Generate(user, currentStakeholder.Id, session.Id);
         var refreshToken = await refreshTokenService.RotateAsync(currentRefreshToken, user, cancellationToken);
+        await sessionService.TouchAsync(session, request.IpAddress, request.UserAgent, cancellationToken);
 
         await PublishTokenRefreshedAsync(
             stakeholderId: currentStakeholder.Id,

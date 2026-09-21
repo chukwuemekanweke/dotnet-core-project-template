@@ -42,7 +42,10 @@ public sealed class When_SigningIn_WithLockedAccount_Should
             googleValidator,
             refreshValidator,
             context.Clock,
-            context.CurrentActor)
+            context.CurrentActor,
+            context.CreateListSessionsHandler(),
+            context.CreateRevokeSessionHandler(),
+            context.CreateRevokeOtherSessionsHandler())
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

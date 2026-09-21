@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication.Constants;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -14,6 +15,7 @@ public sealed class GoogleSignInHandler(
     IGoogleIdentityTokenService googleIdentityTokenService,
     IAccessTokenService accessTokenService,
     IRefreshTokenService refreshTokenService,
+    IAuthenticationSessionService sessionService,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
@@ -84,8 +86,10 @@ public sealed class GoogleSignInHandler(
         }
 
         var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
-        var accessToken = accessTokenService.Generate(user, currentStakeholder.Id);
-        var refreshToken = await refreshTokenService.IssueAsync(user, cancellationToken);
+        var session = await sessionService.CreateAsync(currentStakeholder, request.IpAddress,
+            request.UserAgent, refreshTokenService.GetExpiry(), cancellationToken);
+        var accessToken = accessTokenService.Generate(user, currentStakeholder.Id, session.Id);
+        var refreshToken = await refreshTokenService.IssueAsync(user, session.Id, session.ExpiresAtUtc, cancellationToken);
 
         await PublishSuccessfulAsync(
             stakeholderId: currentStakeholder.Id,

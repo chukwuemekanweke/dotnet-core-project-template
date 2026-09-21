@@ -4,10 +4,13 @@ using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExist
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
+using BackendProjectTemplate.Application.Authentication.Features.ListSessions;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.RequestEmailConfirmationOtp;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
+using BackendProjectTemplate.Application.Authentication.Features.RevokeOtherSessions;
+using BackendProjectTemplate.Application.Authentication.Features.RevokeSession;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
@@ -47,7 +50,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GoogleSignInHandler>();
         services.AddScoped<CompletePasswordResetHandler>();
         services.AddScoped<LogoutSessionHandler>();
+        services.AddScoped<ListSessionsHandler>();
         services.AddScoped<RefreshSessionHandler>();
+        services.AddScoped<RevokeOtherSessionsHandler>();
+        services.AddScoped<RevokeSessionHandler>();
         services.AddScoped<SignUpHandler>();
         services.AddScoped<SignUpOtpHandler>();
         services.AddScoped<SignInHandler>();

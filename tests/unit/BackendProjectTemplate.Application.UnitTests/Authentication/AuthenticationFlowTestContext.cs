@@ -31,6 +31,7 @@ internal sealed class AuthenticationFlowTestContext
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
     public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
+    public IAuthenticationSessionService SessionService { get; } = Substitute.For<IAuthenticationSessionService>();
     public IAccessTokenRevocationService AccessTokenRevocationService { get; } = Substitute.For<IAccessTokenRevocationService>();
     public ITwoFactorOtpService TwoFactorOtpService { get; } = Substitute.For<ITwoFactorOtpService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
@@ -49,6 +50,11 @@ internal sealed class AuthenticationFlowTestContext
 
     public AuthenticationFlowTestContext()
     {
+        RefreshTokenService.GetExpiry(Arg.Any<TimeSpan?>()).Returns(Clock.GetUtcNow().AddDays(30));
+        SessionService.CreateAsync(Arg.Any<Stakeholder>(), Arg.Any<string>(),
+                Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(call => AuthenticationSession.Create(((Stakeholder)call[0]).Id, Guid.CreateVersion7(),
+                (string)call[2], null, null, null, Clock.GetUtcNow(), (DateTimeOffset)call[3]));
         UnitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Transaction));
         CountryRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
@@ -80,6 +86,7 @@ internal sealed class AuthenticationFlowTestContext
         TwoFactorOtpService,
         AccessTokenService,
         RefreshTokenService,
+        SessionService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
@@ -96,6 +103,7 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         AccessTokenService,
         RefreshTokenService,
+        SessionService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
@@ -106,6 +114,7 @@ internal sealed class AuthenticationFlowTestContext
         GoogleIdentityTokenService,
         AccessTokenService,
         RefreshTokenService,
+        SessionService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
@@ -115,6 +124,7 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         AccessTokenService,
         RefreshTokenService,
+        SessionService,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
@@ -131,7 +141,8 @@ internal sealed class AuthenticationFlowTestContext
         TwoFactorOtpService,
         StakeholderResolver,
         CustomTelemetryContext,
-        UnitOfWork);
+        UnitOfWork,
+        SessionService);
     public ChangePasswordHandler CreateChangePasswordHandler() => new(
         IdentityService,
         StakeholderReadModelRepository,
@@ -139,7 +150,9 @@ internal sealed class AuthenticationFlowTestContext
         UnitOfWork);
     public LogoutSessionHandler CreateLogoutSessionHandler() => new(
         AccessTokenRevocationService,
-        CustomTelemetryContext);
+        CustomTelemetryContext,
+        SessionService,
+        UnitOfWork);
 
     private static ActorContext TestActorContext() => new(
         Guid.CreateVersion7(),

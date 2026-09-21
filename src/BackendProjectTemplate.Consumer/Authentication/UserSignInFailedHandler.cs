@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Formatting;
@@ -17,6 +18,7 @@ public sealed class UserSignInFailedHandler(
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
     IAuthenticationIdentityService identityService,
+    IAuthenticationSessionService sessionService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
     IUnitOfWork unitOfWork,
@@ -65,6 +67,8 @@ public sealed class UserSignInFailedHandler(
                 throw new CannotProcessMessageNonTransientException(
                     $"Unable to process UserSignInFailed because no stakeholder could be found for stakeholder '{message.StakeholderId}'.");
             }
+
+            await sessionService.RevokeAllAsync(stakeholder.StakeholderId, cancellationToken);
 
             var lockedUntilUtc = await identityService.GetLockoutEndUtcAsync(user)
                 ?? throw new InvalidOperationException($"User {user.Id} is locked out but has no lockout end time.");

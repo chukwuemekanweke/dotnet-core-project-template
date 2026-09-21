@@ -1,10 +1,15 @@
+using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 
-public sealed class ActiveSessionAuthorizationHandler(IAccessTokenRevocationService accessTokenRevocationService)
+public sealed class ActiveSessionAuthorizationHandler(
+    IAccessTokenRevocationService accessTokenRevocationService,
+    IAuthenticationSessionService sessionService,
+    TimeProvider timeProvider)
     : AuthorizationHandler<ActiveSessionRequirement>
 {
     protected override async Task HandleRequirementAsync(
@@ -18,6 +23,19 @@ public sealed class ActiveSessionAuthorizationHandler(IAccessTokenRevocationServ
         }
 
         if (await accessTokenRevocationService.IsRevokedAsync(tokenId, CancellationToken.None))
+        {
+            return;
+        }
+
+        if (!Guid.TryParse(context.User.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ??
+                context.User.FindFirst(ClaimTypes.Sid)?.Value, out var sessionId))
+        {
+            return;
+        }
+
+        var session = await sessionService.FindAsync(sessionId, CancellationToken.None);
+        if (session is null || !session.IsActive(timeProvider.GetUtcNow()) ||
+            context.User.FindFirst(CustomClaimTypes.StakeholderId)?.Value != session.StakeholderId.ToString())
         {
             return;
         }

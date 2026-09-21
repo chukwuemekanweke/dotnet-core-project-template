@@ -5,5 +5,6 @@ using BackendProjectTemplate.Domain.Common.Auditing;
 public sealed record LogoutSessionCommand(
     string TokenId,
     DateTimeOffset ExpiresAtUtc,
-    Guid? StakeholderId,
+    Guid SessionId,
+    Guid StakeholderId,
     ActorContext ActorContext);

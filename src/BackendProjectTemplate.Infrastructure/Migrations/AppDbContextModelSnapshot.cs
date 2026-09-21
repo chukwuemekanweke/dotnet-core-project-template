@@ -121,6 +121,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<Guid>("AppUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AuthenticationSessionId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -165,10 +168,92 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasIndex("AppUserId");
 
+                    b.HasIndex("AuthenticationSessionId");
+
                     b.HasIndex("TokenHash")
                         .IsUnique();
 
                     b.ToTable("RefreshTokens", "authentication");
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.AuthenticationSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BrowserName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("DeviceName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("DevicePlatform")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FirstIpAddressId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("LastActiveAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LastIpAddressId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("StakeholderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("UserAgent")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("FirstIpAddressId");
+
+                    b.HasIndex("LastActiveAtUtc");
+
+                    b.HasIndex("LastIpAddressId");
+
+                    b.HasIndex("StakeholderId");
+
+                    b.ToTable("Sessions", "authentication");
                 });
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.IpAddress", b =>
@@ -1978,7 +2063,41 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("BackendProjectTemplate.Domain.Authentication.Entities.AuthenticationSession", "AuthenticationSession")
+                        .WithMany()
+                        .HasForeignKey("AuthenticationSessionId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.Navigation("AppUser");
+
+                    b.Navigation("AuthenticationSession");
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.AuthenticationSession", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Authentication.Entities.IpAddress", "FirstIpAddress")
+                        .WithMany()
+                        .HasForeignKey("FirstIpAddressId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Authentication.Entities.IpAddress", "LastIpAddress")
+                        .WithMany()
+                        .HasForeignKey("LastIpAddressId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Stakeholders.Entities.Stakeholder", "Stakeholder")
+                        .WithMany()
+                        .HasForeignKey("StakeholderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FirstIpAddress");
+
+                    b.Navigation("LastIpAddress");
+
+                    b.Navigation("Stakeholder");
                 });
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.IpAddressLocation", b =>
