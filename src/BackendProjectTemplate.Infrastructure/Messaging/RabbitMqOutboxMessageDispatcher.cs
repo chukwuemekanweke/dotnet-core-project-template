@@ -38,16 +38,25 @@ public sealed class RabbitMqOutboxMessageDispatcher(
         activity?.SetTag(DomainObservability.PropertyNames.Common.MessageType, message.Type);
         activity?.SetTag(DomainObservability.PropertyNames.Common.MessageId, message.MessageId.ToString());
 
-        switch (message.Kind)
+        try
         {
-            case OutboxMessageKind.Event:
-                await PublishEventAsync(message, messageType, payload, cancellationToken);
-                break;
-            case OutboxMessageKind.Command:
-                await SendCommandAsync(message, messageType, payload, cancellationToken);
-                break;
-            default:
-                throw new InvalidOperationException($"Unsupported outbox message kind '{message.Kind}'.");
+            switch (message.Kind)
+            {
+                case OutboxMessageKind.Event:
+                    await PublishEventAsync(message, messageType, payload, cancellationToken);
+                    break;
+                case OutboxMessageKind.Command:
+                    await SendCommandAsync(message, messageType, payload, cancellationToken);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported outbox message kind '{message.Kind}'.");
+            }
+        }
+        catch (Exception exception)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+            activity?.AddException(exception);
+            throw;
         }
     }
 

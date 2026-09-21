@@ -272,6 +272,9 @@ services:
     image: otel/opentelemetry-collector-contrib:latest
     command:
       - --config=/etc/otel-collector/config.yml
+    environment:
+      OTEL_TAIL_SAMPLING_LATENCY_MS: ${OTEL_TAIL_SAMPLING_LATENCY_MS:-1000}
+      OTEL_TAIL_SAMPLING_PERCENTAGE: ${OTEL_TAIL_SAMPLING_PERCENTAGE:-10}
     volumes:
       - ./observability/otel-collector/otel-collector.yml:/etc/otel-collector/config.yml:ro
     depends_on:

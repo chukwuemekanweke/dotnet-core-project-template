@@ -33,6 +33,20 @@ public abstract class BaseMessageHandler<TMessage>(
     {
         using var activity = ActivitySource.StartActivity($"{typeof(TMessage).Name}_process", ActivityKind.Consumer);
 
+        try
+        {
+            await HandleAsyncCore(message, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+            activity?.AddException(exception);
+            throw;
+        }
+    }
+
+    private async Task HandleAsyncCore(TMessage message, CancellationToken cancellationToken)
+    {
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.MessageType, typeof(TMessage).Name);
         var messageId = GetMessageId(message);
         var messageType = GetMessageType();

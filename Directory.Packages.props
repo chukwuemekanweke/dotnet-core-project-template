@@ -41,6 +41,7 @@
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.4.22" />
     <PackageVersion Include="StackExchange.Redis" Version="2.8.31" />
+    <PackageVersion Include="Testcontainers" Version="4.14.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.14.0" />
     <PackageVersion Include="Testcontainers.RabbitMq" Version="4.14.0" />
     <PackageVersion Include="Testcontainers.Redis" Version="4.14.0" />

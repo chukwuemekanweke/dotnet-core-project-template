@@ -239,6 +239,8 @@ docker compose --profile local -f docker-compose.yml -f docker-compose.local.yml
 
 The override selects all local infrastructure addresses and does not require the Neon, cloud Redis, cloud RabbitMQ, or Grafana Cloud variables. Omit `--profile local` and `docker-compose.local.yml` to return to the cloud-default mode.
 
+In local mode, the OpenTelemetry Collector tail-samples traces before they reach Tempo (errors and slow traces are always kept, normal traffic is sampled at `OTEL_TAIL_SAMPLING_PERCENTAGE`). Cloud mode exports directly to Grafana Cloud, where Adaptive Traces handles retention instead. See `docs/observability/tail-sampling.md`.
+
 The PowerShell helper exposes the same choice through one parameter. It defaults to `Cloud`:
 
 ```powershell
