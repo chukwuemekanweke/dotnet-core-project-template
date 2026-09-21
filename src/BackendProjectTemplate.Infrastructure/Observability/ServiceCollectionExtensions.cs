@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Domain.Common.Observability;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -22,6 +21,7 @@ public static class ServiceCollectionExtensions
         var serviceName = configuration["OpenTelemetry:ServiceName"]
             ?? throw new InvalidOperationException("Configuration value 'OpenTelemetry:ServiceName' is required.");
         var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
+        var otlpProtocol = configuration["OTEL_EXPORTER_OTLP_PROTOCOL"];
 
         var telemetry = services
             .AddOpenTelemetry()
@@ -45,7 +45,7 @@ public static class ServiceCollectionExtensions
 
             if (!string.IsNullOrWhiteSpace(otlpEndpoint))
             {
-                tracing.AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+                tracing.AddOtlpExporter(options => options.Endpoint = OtlpEndpointResolver.Resolve(otlpEndpoint, otlpProtocol, "traces"));
             }
         });
 
@@ -59,7 +59,7 @@ public static class ServiceCollectionExtensions
 
             if (!string.IsNullOrWhiteSpace(otlpEndpoint))
             {
-                metrics.AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+                metrics.AddOtlpExporter(options => options.Endpoint = OtlpEndpointResolver.Resolve(otlpEndpoint, otlpProtocol, "metrics"));
             }
         });
 
@@ -74,7 +74,8 @@ public static class ServiceCollectionExtensions
 
                 if (!string.IsNullOrWhiteSpace(otlpEndpoint))
                 {
-                    options.AddOtlpExporter(exporterOptions => exporterOptions.Endpoint = new Uri(otlpEndpoint));
+                    options.AddOtlpExporter(exporterOptions =>
+                        exporterOptions.Endpoint = OtlpEndpointResolver.Resolve(otlpEndpoint, otlpProtocol, "logs"));
                 }
             });
         });

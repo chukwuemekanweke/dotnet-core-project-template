@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Infrastructure.Persistence;
 using Npgsql;
 
 namespace BackendProjectTemplate.Jobs.OutboxProcessing;
@@ -18,7 +19,7 @@ public sealed class OutboxNotificationListener(
         {
             try
             {
-                await using var connection = new NpgsqlConnection(connectionString);
+                await using var connection = new NpgsqlConnection(PostgresConnectionString.Normalize(connectionString));
                 connection.Notification += HandleNotification;
 
                 await connection.OpenAsync(stoppingToken);

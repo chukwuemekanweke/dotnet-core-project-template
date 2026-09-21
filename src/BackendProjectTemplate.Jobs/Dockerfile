@@ -4,7 +4,7 @@
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 USER $APP_UID
 WORKDIR /app
@@ -38,10 +38,12 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./BackendProjectTemplate.Jobs.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-FROM pyroscope/pyroscope-dotnet:0.14.2-glibc AS pyroscope
+FROM grafana/pyroscope-dotnet:0.15.0-glibc AS pyroscope
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
+ENV PYROSCOPE_PROFILING_LOG_DIR=/tmp/pyroscope \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 WORKDIR /app
 COPY --from=pyroscope /Pyroscope.Profiler.Native.so /dotnet/Pyroscope.Profiler.Native.so
 COPY --from=pyroscope /Pyroscope.Linux.ApiWrapper.x64.so /dotnet/Pyroscope.Linux.ApiWrapper.x64.so
