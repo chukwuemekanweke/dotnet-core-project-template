@@ -5,3 +5,12 @@
 [mcp_servers.okf]
 command = "okf"
 args = ["mcp", "-dir", ".okf/knowledge", "-repo", "."]
+
+[mcp_servers.okf.tools.okf_load_bundle]
+approval_mode = "approve"
+
+[mcp_servers.okf.tools.okf_search]
+approval_mode = "approve"
+
+[mcp_servers.okf.tools.okf_get_concept]
+approval_mode = "approve"
