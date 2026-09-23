@@ -1,7 +1,7 @@
 ---
 type: domain
 title: Authentication Domain
-description: Sign-up/sign-in, sessions and refresh tokens, Google sign-in, password reset, session revocation, and the ASP.NET Core Identity base
+description: Sign-up/sign-in, sessions and refresh tokens, login activity history, Google sign-in, password reset, session revocation, and the ASP.NET Core Identity base
 resource: okf://knowledge/domains/authentication
 tags:
     - context
@@ -14,12 +14,16 @@ code_refs:
     - src/BackendProjectTemplate.Application/Authentication/**
     - src/BackendProjectTemplate.Domain/Authentication/**
     - src/BackendProjectTemplate.Infrastructure/Authentication/**
+    - src/BackendProjectTemplate.Infrastructure/Persistence/LoginActivityReadModelRepository.cs
     - src/BackendProjectTemplate.WebAPI/Features/Authentication/**
+    - src/BackendProjectTemplate.WebAPI/Features/Stakeholders/LoginActivity/**
     - src/BackendProjectTemplate.Consumer/Authentication/**
     - src/BackendProjectTemplate.Jobs/Authentication/**
     - src/BackendProjectTemplate.Contracts/Commands/Authentication/**
     - tests/unit/BackendProjectTemplate.Application.UnitTests/Authentication/**
+    - tests/unit/BackendProjectTemplate.WebAPI.UnitTests/Features/Stakeholders/LoginActivity/**
     - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Authentication/**
+    - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Stakeholders/LoginActivity/**
 sources:
     - kind: file
       path: src/BackendProjectTemplate.Domain/Authentication/Entities/AuthenticationSession.cs
@@ -31,7 +35,7 @@ status: stable
 ## Scope
 
 Sign-up (with email OTP confirmation), sign-in (including Google sign-in), session lifecycle (list/refresh/logout/revoke-other/revoke-single sessions), password change/reset, email-existence checks,
-login-activity and IP-address-location enrichment, and active-session/device management.
+login-activity recording/history and IP-address-location enrichment, and active-session/device management.
 
 ## Foundation
 

@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication;
 using BackendProjectTemplate.Application.Authentication.Features.ChangePassword;
 using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExistence;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
+using BackendProjectTemplate.Application.Authentication.Features.GetLoginActivityHistory;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.ListSessions;
@@ -48,6 +49,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ChangePasswordHandler>();
         services.AddScoped<GoogleSignUpHandler>();
         services.AddScoped<GoogleSignInHandler>();
+        services.AddScoped<GetLoginActivityHistoryHandler>();
         services.AddScoped<CompletePasswordResetHandler>();
         services.AddScoped<LogoutSessionHandler>();
         services.AddScoped<ListSessionsHandler>();
