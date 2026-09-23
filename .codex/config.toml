@@ -1,0 +1,7 @@
+# Project-local Codex configuration for this repository.
+# Wires Codex to the same repository-local OKF knowledge base used by Claude Code (see .mcp.json).
+# Do not point this at docs/ — .okf/knowledge is agent knowledge, docs/ is human documentation.
+
+[mcp_servers.okf]
+command = "okf"
+args = ["mcp", "-dir", ".okf/knowledge", "-repo", "."]
