@@ -5,6 +5,7 @@ using BackendProjectTemplate.Application.Authentication.Features.CompletePasswor
 using BackendProjectTemplate.Application.Authentication.Features.GetLoginActivityHistory;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
+using BackendProjectTemplate.Application.Authentication.Features.LinkGoogleAccount;
 using BackendProjectTemplate.Application.Authentication.Features.ListSessions;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
@@ -15,6 +16,7 @@ using BackendProjectTemplate.Application.Authentication.Features.RevokeSession;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
+using BackendProjectTemplate.Application.Authentication.Features.StartGoogleAuthenticationFlow;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Application.Common.FileUploads;
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
@@ -44,11 +46,15 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<StakeholderResolver>();
         services.AddScoped<RegistrationCountryValidator>();
+        services.AddScoped<AuthenticationSessionIssuer>();
+        services.AddScoped<PasswordCredentialVerifier>();
         services.AddScoped<FileUploadService>();
         services.AddScoped<CheckEmailExistenceHandler>();
         services.AddScoped<ChangePasswordHandler>();
         services.AddScoped<GoogleSignUpHandler>();
         services.AddScoped<GoogleSignInHandler>();
+        services.AddScoped<LinkGoogleAccountHandler>();
+        services.AddScoped<StartGoogleAuthenticationFlowHandler>();
         services.AddScoped<GetLoginActivityHistoryHandler>();
         services.AddScoped<CompletePasswordResetHandler>();
         services.AddScoped<LogoutSessionHandler>();

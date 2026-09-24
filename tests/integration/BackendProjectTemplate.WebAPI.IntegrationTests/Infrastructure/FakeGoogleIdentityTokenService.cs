@@ -9,7 +9,10 @@ public sealed class FakeGoogleIdentityTokenService : IGoogleIdentityTokenService
     public void Register(string idToken, GoogleIdentityTokenPayload payload) =>
         _tokens[idToken] = payload;
 
-    public Task<GoogleIdentityTokenPayload?> ValidateAsync(string idToken, CancellationToken cancellationToken)
+    public Task<GoogleIdentityTokenPayload?> ValidateAsync(
+        string idToken,
+        string expectedNonce,
+        CancellationToken cancellationToken)
     {
         _tokens.TryGetValue(idToken, out var payload);
         return Task.FromResult(payload);

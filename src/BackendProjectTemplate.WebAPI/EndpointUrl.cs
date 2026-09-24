@@ -42,6 +42,18 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
     }
 
+    public static class GoogleAuthenticationFlows
+    {
+        public const string Route = $"api/{Versions.V1Route}/authentication/google/flows";
+        public static readonly string V1 = ToV1(Route);
+    }
+
+    public static class GoogleLinks
+    {
+        public const string Route = $"api/{Versions.V1Route}/authentication/google-links";
+        public static readonly string V1 = ToV1(Route);
+    }
+
     public static class PasswordResets
     {
         public const string Route = $"api/{Versions.V1Route}/authentication/password-resets";

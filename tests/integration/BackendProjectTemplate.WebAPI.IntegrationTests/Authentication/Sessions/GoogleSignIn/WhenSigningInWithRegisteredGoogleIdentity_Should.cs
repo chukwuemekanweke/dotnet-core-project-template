@@ -6,6 +6,7 @@ using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.WebAPI.Features.Authentication.GoogleFlows;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,9 +59,11 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_Should(ContainersF
 
         async Task WhenSigningInWithGoogle()
         {
+            using var flowResponse = await Client.PostAsync(EndpointUrl.GoogleAuthenticationFlows.V1, null);
+            var flow = await flowResponse.Content.ReadFromJsonAsync<GoogleAuthenticationFlowResponse>();
             _response = await Client.PostAsJsonAsync(
                 EndpointUrl.Sessions.GoogleV1,
-                new GoogleSignInRequest(_idToken));
+                new GoogleSignInRequest(flow!.FlowToken, _idToken));
 
             payload = await _response.Content.ReadFromJsonAsync<GoogleSignInResponse>();
         }

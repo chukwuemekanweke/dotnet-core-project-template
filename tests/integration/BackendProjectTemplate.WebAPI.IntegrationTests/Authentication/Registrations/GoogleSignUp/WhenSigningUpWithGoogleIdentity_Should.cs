@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -5,7 +6,9 @@ using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.WebAPI.Features.Authentication.GoogleFlows;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
+using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -23,6 +26,7 @@ public sealed class WhenSigningUpWithGoogleIdentity_Should(ContainersFixture fix
     private Guid _countryId;
     private bool _createdCountryForTest;
     private string _idToken = string.Empty;
+    private string _flowToken = string.Empty;
     private GoogleSignUpRequest _request = default!;
     private HttpResponseMessage? _response;
 
@@ -45,6 +49,7 @@ public sealed class WhenSigningUpWithGoogleIdentity_Should(ContainersFixture fix
     [Fact]
     public async Task ReturnAcceptedAndConfirmEmail()
     {
+        GoogleSignUpResponse? payload = null;
         await GivenAValidGoogleIdentity();
         await WhenSigningUpWithGoogle();
         await ThenTheRequestIsAcceptedAndTheEmailIsConfirmed();
@@ -55,10 +60,22 @@ public sealed class WhenSigningUpWithGoogleIdentity_Should(ContainersFixture fix
             _idToken = $"google-sign-up-{Guid.CreateVersion7():N}";
             GoogleIdentityTokenService.Register(
                 _idToken,
-                new GoogleIdentityTokenPayload(Guid.CreateVersion7().ToString("N"), _email, "Google User"));
+                new GoogleIdentityTokenPayload(
+                    Guid.CreateVersion7().ToString("N"),
+                    _email,
+                    "Google User",
+                    HostedDomain: "example.com"));
+
+            using var flowResponse = await Client.PostAsync(EndpointUrl.GoogleAuthenticationFlows.V1, null);
+            var flow = await flowResponse.Content.ReadFromJsonAsync<GoogleAuthenticationFlowResponse>();
+            _flowToken = flow!.FlowToken;
+            using var continuationResponse = await Client.PostAsJsonAsync(
+                EndpointUrl.Sessions.GoogleV1,
+                new GoogleSignInRequest(_flowToken, _idToken));
+            continuationResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
 
             _request = new GoogleSignUpRequest(
-                _idToken,
+                _flowToken,
                 _countryId,
                 WebApiIntegrationTestData.FirstName(),
                 WebApiIntegrationTestData.LastName());
@@ -69,12 +86,17 @@ public sealed class WhenSigningUpWithGoogleIdentity_Should(ContainersFixture fix
         async Task WhenSigningUpWithGoogle()
         {
             _response = await Client.PostAsJsonAsync(EndpointUrl.GoogleRegistrations.V1, _request);
+            payload = await _response.Content.ReadFromJsonAsync<GoogleSignUpResponse>();
         }
 
         async Task ThenTheRequestIsAcceptedAndTheEmailIsConfirmed()
         {
             _response.ShouldNotBeNull();
-            _response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+            _response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            payload.ShouldNotBeNull();
+            payload.Outcome.ShouldBe("authenticated");
+            string.IsNullOrWhiteSpace(payload.AccessToken).ShouldBeFalse();
+            string.IsNullOrWhiteSpace(payload.RefreshToken).ShouldBeFalse();
 
             using var scope = CreateScope();
             var userRepository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();

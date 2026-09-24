@@ -1,7 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Constants;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
-using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -13,9 +12,8 @@ namespace BackendProjectTemplate.Application.Authentication.Features.GoogleSignI
 public sealed class GoogleSignInHandler(
     IAuthenticationIdentityService identityService,
     IGoogleIdentityTokenService googleIdentityTokenService,
-    IAccessTokenService accessTokenService,
-    IRefreshTokenService refreshTokenService,
-    IAuthenticationSessionService sessionService,
+    IGoogleAuthenticationFlowService googleAuthenticationFlowService,
+    AuthenticationSessionIssuer sessionIssuer,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
@@ -28,33 +26,65 @@ public sealed class GoogleSignInHandler(
             Observability.EventNames.Authentication.GoogleSignInStarted,
             ObservabilityEventProperties.Create(request.ActorContext));
 
-        var googleIdentity = await googleIdentityTokenService.ValidateAsync(request.IdToken, cancellationToken);
+        var flowResult = await googleAuthenticationFlowService.TakeAsync(request.FlowToken, cancellationToken);
+        if (flowResult.Status != GoogleAuthenticationFlowStatus.Success)
+        {
+            return new GoogleSignInResult(MapFlowStatus(flowResult.Status), null);
+        }
+
+        var flow = flowResult.Flow!;
+        if (flow.State != GoogleAuthenticationFlowState.Initiated
+            || (flow.TenantId != Guid.Empty && request.ActorContext.TenantId != flow.TenantId))
+        {
+            await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
+            return new GoogleSignInResult(GoogleSignInStatus.GoogleFlowInvalid, null);
+        }
+
+        var googleIdentity = await googleIdentityTokenService.ValidateAsync(
+            request.IdToken,
+            flow.Nonce,
+            cancellationToken);
         if (googleIdentity is null)
         {
+            await googleAuthenticationFlowService.RestoreAsync(flow, cancellationToken);
             customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.InvalidGoogleToken);
-            return new GoogleSignInResult(GoogleSignInStatus.InvalidGoogleToken, null);
+            return new GoogleSignInResult(GoogleSignInStatus.InvalidGoogleCredential, null);
         }
 
         var user = await identityService.FindByLoginAsync(ExternalLoginProviders.Google, googleIdentity.Subject);
         if (user is null)
         {
-            await PublishFailedAsync(
-                stakeholderId: null,
-                emailAddress: googleIdentity.Email,
-                ipAddress: request.IpAddress,
-                userAgent: request.UserAgent,
-                failureReason: UserSignInFailureReasons.UserNotFound,
-                request.ActorContext,
-                cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            var continuationState = await identityService.FindByEmailAsync(googleIdentity.Email) is null
+                ? GoogleAuthenticationFlowState.RegistrationRequired
+                : GoogleAuthenticationFlowState.LinkRequired;
+            var continuation = flow with
+            {
+                State = continuationState,
+                Subject = googleIdentity.Subject,
+                Email = googleIdentity.Email,
+                EmailVerified = googleIdentity.EmailVerified,
+                HostedDomain = googleIdentity.HostedDomain
+            };
+            await googleAuthenticationFlowService.RestoreAsync(continuation, cancellationToken);
 
-            return new GoogleSignInResult(GoogleSignInStatus.AccountNotRegistered, null);
+            return new GoogleSignInResult(
+                continuationState == GoogleAuthenticationFlowState.LinkRequired
+                    ? GoogleSignInStatus.LinkRequired
+                    : GoogleSignInStatus.RegistrationRequired,
+                null);
+        }
+
+        var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
+        if (flow.TenantId != Guid.Empty && stakeholder.TenantId != flow.TenantId)
+        {
+            await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
+            return new GoogleSignInResult(GoogleSignInStatus.GoogleFlowInvalid, null);
         }
 
         if (await identityService.IsLockedOutAsync(user))
         {
+            await googleAuthenticationFlowService.RestoreAsync(flow, cancellationToken);
             var lockedUntilUtc = await identityService.GetLockoutEndUtcAsync(user);
-            var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
 
             await PublishFailedAsync(
                 stakeholderId: stakeholder.Id,
@@ -71,7 +101,6 @@ public sealed class GoogleSignInHandler(
 
         if (!user.EmailConfirmed)
         {
-            var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
             await PublishFailedAsync(
                 stakeholderId: stakeholder.Id,
                 emailAddress: user.Email ?? googleIdentity.Email,
@@ -82,25 +111,35 @@ public sealed class GoogleSignInHandler(
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return new GoogleSignInResult(GoogleSignInStatus.EmailNotVerified, null);
+            await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
+            return new GoogleSignInResult(GoogleSignInStatus.EmailVerificationRequired, null);
         }
 
-        var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
-        var session = await sessionService.CreateAsync(currentStakeholder, request.IpAddress,
-            request.UserAgent, refreshTokenService.GetExpiry(), cancellationToken);
-        var accessToken = accessTokenService.Generate(user, currentStakeholder.Id, session.Id);
-        var refreshToken = await refreshTokenService.IssueAsync(user, session.Id, session.ExpiresAtUtc, cancellationToken);
+        var tokens = await sessionIssuer.IssueAsync(
+            user,
+            stakeholder,
+            request.IpAddress,
+            request.UserAgent,
+            cancellationToken);
 
         await PublishSuccessfulAsync(
-            stakeholderId: currentStakeholder.Id,
+            stakeholderId: stakeholder.Id,
             ipAddress: request.IpAddress,
             userAgent: request.UserAgent,
             request.ActorContext,
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
 
-        return new GoogleSignInResult(GoogleSignInStatus.Success, new AuthenticationTokens(accessToken, refreshToken));
+        return new GoogleSignInResult(GoogleSignInStatus.Success, tokens);
     }
+
+    private static GoogleSignInStatus MapFlowStatus(GoogleAuthenticationFlowStatus status) => status switch
+    {
+        GoogleAuthenticationFlowStatus.Expired => GoogleSignInStatus.GoogleFlowExpired,
+        GoogleAuthenticationFlowStatus.Consumed => GoogleSignInStatus.GoogleFlowConsumed,
+        _ => GoogleSignInStatus.GoogleFlowInvalid
+    };
 
     private async Task PublishSuccessfulAsync(
         Guid stakeholderId,

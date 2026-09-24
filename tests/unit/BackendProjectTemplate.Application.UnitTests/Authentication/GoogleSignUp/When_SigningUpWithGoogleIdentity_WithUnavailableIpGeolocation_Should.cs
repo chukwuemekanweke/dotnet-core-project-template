@@ -24,8 +24,7 @@ public sealed class When_SigningUpWithGoogleIdentity_WithUnavailableIpGeolocatio
             StakeholderDefaults.TypeKey);
         context.IpGeolocationService.GetGeolocationAsync(command.IpAddress, Arg.Any<CancellationToken>())
             .Returns((IpGeolocation?)null);
-        context.GoogleIdentityTokenService.ValidateAsync(command.IdToken, Arg.Any<CancellationToken>())
-            .Returns(new GoogleIdentityTokenPayload(subject, email, "Google User"));
+        context.SetGoogleFlow(command.FlowToken, GoogleAuthenticationFlowState.RegistrationRequired, email, subject);
         context.IdentityService.FindByEmailAsync(email).Returns((AppUser?)null);
         context.IdentityService.CreateAsync(Arg.Any<AppUser>()).Returns(IdentityResult.Success);
         context.IdentityService.AddLoginAsync(Arg.Any<AppUser>(), "Google", subject, "Google")
@@ -37,7 +36,7 @@ public sealed class When_SigningUpWithGoogleIdentity_WithUnavailableIpGeolocatio
 
         var result = await context.CreateGoogleSignUpHandler().HandleAsync(command, CancellationToken.None);
 
-        result.Status.ShouldBe(GoogleSignUpStatus.Accepted);
+        result.Status.ShouldBe(GoogleSignUpStatus.Success);
         await context.IdentityService.Received(1).CreateAsync(Arg.Any<AppUser>());
     }
 }

@@ -7,7 +7,7 @@ public sealed class GoogleSignUpValidator : AbstractValidator<GoogleSignUpReques
 {
     public GoogleSignUpValidator()
     {
-        RuleFor(request => request.IdToken)
+        RuleFor(request => request.FlowToken)
             .NotEmpty();
 
         RuleFor(request => request.CountryId)

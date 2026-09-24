@@ -36,6 +36,9 @@ services:
       ConnectionStrings__PostgresWrite: ${DATABASE_URL:-}
       ConnectionStrings__PostgresRead: ${DATABASE_URL_POOLED:-${DATABASE_URL:-}}
       ConnectionStrings__Redis: ${REDIS_CONNECTION_STRING:-}
+      Authentication__Google__Enabled: ${GOOGLE_AUTHENTICATION_ENABLED:-false}
+      Authentication__Google__ClientIds__0: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__FlowLifetime: 00:10:00
       ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-}
       ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-}
       ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-}

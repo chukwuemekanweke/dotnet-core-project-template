@@ -12,11 +12,11 @@ internal static class IdentityResultExtensions
     private static string GetPropertyName(IdentityError error) =>
         error.Code switch
         {
-            nameof(IdentityErrorDescriber.DuplicateEmail) => nameof(GoogleSignUpCommand.IdToken),
-            nameof(IdentityErrorDescriber.DuplicateUserName) => nameof(GoogleSignUpCommand.IdToken),
-            nameof(IdentityErrorDescriber.InvalidEmail) => nameof(GoogleSignUpCommand.IdToken),
-            nameof(IdentityErrorDescriber.InvalidUserName) => nameof(GoogleSignUpCommand.IdToken),
-            nameof(IdentityErrorDescriber.LoginAlreadyAssociated) => nameof(GoogleSignUpCommand.IdToken),
+            nameof(IdentityErrorDescriber.DuplicateEmail) => nameof(GoogleSignUpCommand.FlowToken),
+            nameof(IdentityErrorDescriber.DuplicateUserName) => nameof(GoogleSignUpCommand.FlowToken),
+            nameof(IdentityErrorDescriber.InvalidEmail) => nameof(GoogleSignUpCommand.FlowToken),
+            nameof(IdentityErrorDescriber.InvalidUserName) => nameof(GoogleSignUpCommand.FlowToken),
+            nameof(IdentityErrorDescriber.LoginAlreadyAssociated) => nameof(GoogleSignUpCommand.FlowToken),
             _ => string.Empty
         };
 }

@@ -4,6 +4,7 @@ using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExist
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
+using BackendProjectTemplate.Application.Authentication.Features.LinkGoogleAccount;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.RequestEmailConfirmationOtp;
@@ -22,6 +23,7 @@ using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using Microsoft.AspNetCore.Identity;
 
 namespace BackendProjectTemplate.Application.UnitTests.Authentication;
 
@@ -30,6 +32,7 @@ internal sealed class AuthenticationFlowTestContext
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 4, 0, 0, 0, TimeSpan.Zero));
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
     public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
+    public IGoogleAuthenticationFlowService GoogleAuthenticationFlowService { get; } = Substitute.For<IGoogleAuthenticationFlowService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
     public IAuthenticationSessionService SessionService { get; } = Substitute.For<IAuthenticationSessionService>();
     public IAccessTokenRevocationService AccessTokenRevocationService { get; } = Substitute.For<IAccessTokenRevocationService>();
@@ -45,6 +48,8 @@ internal sealed class AuthenticationFlowTestContext
     public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
     public StakeholderResolver StakeholderResolver => new(StakeholderRepository);
     public RegistrationCountryValidator RegistrationCountryValidator => new(CountryRepository, IpGeolocationService);
+    public AuthenticationSessionIssuer SessionIssuer => new(AccessTokenService, RefreshTokenService, SessionService);
+    public PasswordCredentialVerifier PasswordCredentialVerifier => new(IdentityService);
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public IUnitOfWorkTransaction Transaction { get; } = Substitute.For<IUnitOfWorkTransaction>();
 
@@ -57,6 +62,11 @@ internal sealed class AuthenticationFlowTestContext
                 (string)call[2], null, null, null, Clock.GetUtcNow(), (DateTimeOffset)call[3]));
         UnitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Transaction));
+        IdentityService.CreateAsync(Arg.Any<AppUser>()).Returns(IdentityResult.Success);
+        IdentityService.AddLoginAsync(Arg.Any<AppUser>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(IdentityResult.Success);
+        IdentityService.AccessFailedAsync(Arg.Any<AppUser>()).Returns(IdentityResult.Success);
+        IdentityService.ResetAccessFailedCountAsync(Arg.Any<AppUser>()).Returns(IdentityResult.Success);
         CountryRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg"));
     }
@@ -71,16 +81,20 @@ internal sealed class AuthenticationFlowTestContext
         UnitOfWork,
         Clock);
     public CheckEmailExistenceHandler CreateCheckEmailExistenceHandler() => new(IdentityService);
-    public GoogleSignUpHandler CreateGoogleSignUpHandler() => new(
-        IdentityService,
-        GoogleIdentityTokenService,
-        EventPublisher,
-        StakeholderTypeRepository,
-        StakeholderRepository,
-        RegistrationCountryValidator,
-        CustomTelemetryContext,
-        UnitOfWork,
-        Clock);
+    public GoogleSignUpHandler CreateGoogleSignUpHandler()
+    {
+        return new GoogleSignUpHandler(
+            IdentityService,
+            GoogleAuthenticationFlowService,
+            SessionIssuer,
+            EventPublisher,
+            StakeholderTypeRepository,
+            StakeholderRepository,
+            RegistrationCountryValidator,
+            CustomTelemetryContext,
+            UnitOfWork,
+            Clock);
+    }
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(
         IdentityService,
         TwoFactorOtpService,
@@ -101,25 +115,60 @@ internal sealed class AuthenticationFlowTestContext
         Clock);
     public SignInHandler CreateSignInHandler() => new(
         IdentityService,
-        AccessTokenService,
-        RefreshTokenService,
-        SessionService,
+        PasswordCredentialVerifier,
+        SessionIssuer,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
         UnitOfWork,
         Clock);
-    public GoogleSignInHandler CreateGoogleSignInHandler() => new(
+    public GoogleSignInHandler CreateGoogleSignInHandler()
+    {
+        return new GoogleSignInHandler(
+            IdentityService,
+            GoogleIdentityTokenService,
+            GoogleAuthenticationFlowService,
+            SessionIssuer,
+            EventPublisher,
+            StakeholderResolver,
+            CustomTelemetryContext,
+            UnitOfWork,
+            Clock);
+    }
+
+    public LinkGoogleAccountHandler CreateLinkGoogleAccountHandler() => new(
         IdentityService,
-        GoogleIdentityTokenService,
-        AccessTokenService,
-        RefreshTokenService,
-        SessionService,
-        EventPublisher,
+        GoogleAuthenticationFlowService,
+        PasswordCredentialVerifier,
+        SessionIssuer,
         StakeholderResolver,
-        CustomTelemetryContext,
+        EventPublisher,
         UnitOfWork,
         Clock);
+
+    public void SetGoogleFlow(
+        string token,
+        GoogleAuthenticationFlowState state,
+        string email,
+        string subject,
+        Guid? tenantId = null,
+        bool emailVerified = true,
+        string? hostedDomain = "gmail.com")
+    {
+        GoogleAuthenticationFlowService.TakeAsync(token, Arg.Any<CancellationToken>())
+            .Returns(new GoogleAuthenticationFlowResult(
+                GoogleAuthenticationFlowStatus.Success,
+                new GoogleAuthenticationFlow(
+                    token,
+                    "nonce",
+                    tenantId ?? Guid.Empty,
+                    state,
+                    Clock.GetUtcNow().AddMinutes(10),
+                    subject,
+                    email,
+                    emailVerified,
+                    hostedDomain)));
+    }
     public RefreshSessionHandler CreateRefreshSessionHandler() => new(
         IdentityService,
         AccessTokenService,

@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Contracts.Events;
-using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -11,9 +10,8 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignIn;
 
 public sealed class SignInHandler(
     IAuthenticationIdentityService identityService,
-    IAccessTokenService accessTokenService,
-    IRefreshTokenService refreshTokenService,
-    IAuthenticationSessionService sessionService,
+    PasswordCredentialVerifier passwordCredentialVerifier,
+    AuthenticationSessionIssuer sessionIssuer,
     IEventPublisher eventPublisher,
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
@@ -77,27 +75,35 @@ public sealed class SignInHandler(
             return new SignInResult(SignInStatus.EmailNotVerified, null);
         }
 
-        if (!await identityService.CheckPasswordAsync(user, request.Password))
+        var passwordStatus = await passwordCredentialVerifier.VerifyAsync(user, request.Password);
+        if (passwordStatus != PasswordCredentialVerificationStatus.Success)
         {
             var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
+            var failureReason = passwordStatus == PasswordCredentialVerificationStatus.Locked
+                ? UserSignInFailureReasons.LockedOut
+                : UserSignInFailureReasons.InvalidCredentials;
             await PublishFailedAsync(
                 stakeholderId: stakeholder.Id,
                 emailAddress: user.Email ?? request.Email,
                 ipAddress: request.IpAddress,
                 userAgent: request.UserAgent,
-                failureReason: UserSignInFailureReasons.InvalidCredentials,
+                failureReason,
                 request.ActorContext,
                 cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return new SignInResult(SignInStatus.InvalidCredentials, null);
+            return passwordStatus == PasswordCredentialVerificationStatus.Locked
+                ? new SignInResult(SignInStatus.AccountLocked, null, await identityService.GetLockoutEndUtcAsync(user))
+                : new SignInResult(SignInStatus.InvalidCredentials, null);
         }
 
         var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
-        var session = await sessionService.CreateAsync(currentStakeholder, request.IpAddress,
-            request.UserAgent, refreshTokenService.GetExpiry(), cancellationToken);
-        var accessToken = accessTokenService.Generate(user, currentStakeholder.Id, session.Id);
-        var refreshToken = await refreshTokenService.IssueAsync(user, session.Id, session.ExpiresAtUtc, cancellationToken);
+        var tokens = await sessionIssuer.IssueAsync(
+            user,
+            currentStakeholder,
+            request.IpAddress,
+            request.UserAgent,
+            cancellationToken);
 
         await PublishSuccessfulAsync(
             stakeholderId: currentStakeholder.Id,
@@ -107,7 +113,7 @@ public sealed class SignInHandler(
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new SignInResult(SignInStatus.Success, new AuthenticationTokens(accessToken, refreshToken));
+        return new SignInResult(SignInStatus.Success, tokens);
     }
 
     private async Task PublishSuccessfulAsync(

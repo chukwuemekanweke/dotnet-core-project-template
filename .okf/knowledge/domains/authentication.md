@@ -43,6 +43,27 @@ ASP.NET Core Identity is the authentication base (see [[dotnet-style]]) — do n
 Sessions and refresh tokens are modeled as first-class domain entities (`AuthenticationSession`, `AuthenticationRefreshToken`) alongside Identity rather than replacing Identity's user/credential
 model.
 
+## Google authentication continuation
+
+Google authentication is a single entry point backed by a 5-10 minute Redis `IJsonCache` flow.
+The flow binds the Google ID token to a cryptographically random nonce and stores the validated
+`sub`, email, `email_verified`, hosted domain, tenant, continuation state and expiry server-side.
+Flow data is atomically taken before use and terminal flows retain a short consumed marker for replay detection.
+
+`GoogleSignInHandler` returns one of three primary outcomes: a normal `AuthenticationSession` and
+tokens for an existing `Google` external login, `link_required` for a matching password account, or
+`registration_required` for a new account. Matching email never links automatically.
+`LinkGoogleAccountHandler` requires the existing password and uses Identity
+failed-access/reset/lockout APIs before `AddLoginAsync`. Google registration consumes only validated
+flow identity; Gmail and Workspace (`hd`) email is authoritative, while external-mailbox Google
+accounts continue through normal email confirmation.
+Because `AppUser` and active `Stakeholder` are one-to-one, authentication resolves a stakeholder by
+`AppUserId`; Google flows then validate the resolved stakeholder's tenant explicitly instead of using
+tenant identity as an additional stakeholder lookup key.
+For that non-authoritative-email registration path, the `email_verification_required` 403 Problem
+Details response includes the server-side flow `email` and the confirmation expiry as `retryAtUtc`;
+clients must use this continuation metadata instead of asking the user to re-enter the Google email.
+
 ## Cross-cutting
 
 - Sign-up, email confirmation, and access-token refresh publish `Contracts` events (`UserCreated`, `UserEmailConfirmed`, `UserAccessTokenRefreshed`, `UserSignInSuccessful`, `UserSignInFailed`) through

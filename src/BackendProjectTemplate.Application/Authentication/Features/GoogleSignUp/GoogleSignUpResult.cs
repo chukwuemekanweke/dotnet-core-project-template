@@ -1,16 +1,23 @@
 namespace BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 
+using BackendProjectTemplate.Domain.Common.Authentication;
+
 public sealed record GoogleSignUpResult(
     GoogleSignUpStatus Status,
     string? Email = null,
-    IReadOnlyDictionary<string, string[]>? ValidationErrors = null);
+    IReadOnlyDictionary<string, string[]>? ValidationErrors = null,
+    AuthenticationTokens? Tokens = null,
+    DateTimeOffset? RetryAtUtc = null);
 
 public enum GoogleSignUpStatus
 {
-    Accepted = 1,
-    InvalidGoogleToken = 2,
+    Success = 1,
+    EmailVerificationRequired = 2,
     DuplicateEmail = 3,
     DuplicateGoogleAccount = 4,
     ValidationFailed = 5,
-    CountryMismatch = 6
+    CountryMismatch = 6,
+    GoogleFlowInvalid = 7,
+    GoogleFlowExpired = 8,
+    GoogleFlowConsumed = 9
 }

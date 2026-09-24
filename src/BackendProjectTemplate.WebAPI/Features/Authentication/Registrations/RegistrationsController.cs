@@ -68,9 +68,10 @@ public sealed class RegistrationsController(
     }
 
     [HttpPost("google")]
-    [ProducesResponseType<GoogleSignUpResponse>(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<GoogleSignUpResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<GoogleSignUpResponse>> HandleGoogle(
         [FromBody] GoogleSignUpRequest request,
@@ -84,21 +85,18 @@ public sealed class RegistrationsController(
 
         var result = await googleSignUpHandler.HandleAsync(
             new GoogleSignUpCommand(
-                request.IdToken,
+                request.FlowToken,
                 request.CountryId,
                 request.FirstName,
                 request.LastName,
                 HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                 ActorContext.FromAnonymousActor(currentActor),
-                request.Language),
+                request.Language,
+                HttpContext?.Request.Headers.UserAgent.ToString() ?? string.Empty),
             cancellationToken);
 
         return result.Status switch
         {
-            GoogleSignUpStatus.InvalidGoogleToken => Problem(
-                statusCode: StatusCodes.Status401Unauthorized,
-                title: "Invalid Google token",
-                detail: "The supplied Google identity token is invalid or expired."),
             GoogleSignUpStatus.DuplicateEmail => Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "Email already exists",
@@ -113,9 +111,33 @@ public sealed class RegistrationsController(
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Country does not match request location",
                 detail: "The selected country does not match the country resolved from the request IP address."),
-            _ => Accepted((string?)null, new GoogleSignUpResponse(
+            GoogleSignUpStatus.GoogleFlowInvalid => AuthenticationProblemDetails.Create(
+                StatusCodes.Status400BadRequest, AuthenticationErrorCodes.GoogleFlowInvalid,
+                "Invalid Google flow", "The Google authentication flow is invalid."),
+            GoogleSignUpStatus.GoogleFlowExpired => AuthenticationProblemDetails.Create(
+                StatusCodes.Status410Gone, AuthenticationErrorCodes.GoogleFlowExpired,
+                "Google flow expired", "The Google authentication flow has expired."),
+            GoogleSignUpStatus.GoogleFlowConsumed => AuthenticationProblemDetails.Create(
+                StatusCodes.Status409Conflict, AuthenticationErrorCodes.GoogleFlowConsumed,
+                "Google flow consumed", "The Google authentication flow has already been used."),
+            GoogleSignUpStatus.EmailVerificationRequired => AuthenticationProblemDetails.Create(
+                StatusCodes.Status403Forbidden, AuthenticationErrorCodes.EmailVerificationRequired,
+                "Email verification required", "Confirm the account email before signing in.",
+                new Dictionary<string, object?>
+                {
+                    ["email"] = result.Email
+                        ?? throw new InvalidOperationException("Email is required for the email-verification continuation."),
+                    ["retryAtUtc"] = result.RetryAtUtc
+                        ?? throw new InvalidOperationException("Retry time is required for the email-verification continuation.")
+                }),
+            _ => Ok(new GoogleSignUpResponse(
+                "authenticated",
                 result.Email ?? string.Empty,
-                "The Google sign-up request has been accepted and the email has been confirmed automatically."))
+                result.Tokens!.AccessToken.Value,
+                result.Tokens.AccessToken.ExpiresAtUtc,
+                result.Tokens.RefreshToken.Value,
+                result.Tokens.RefreshToken.ExpiresAtUtc,
+                "Bearer"))
         };
     }
 }

@@ -55,6 +55,11 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        var googleOptions = configuration
+            .GetSection(GoogleAuthenticationOptions.SectionName)
+            .Get<GoogleAuthenticationOptions>() ?? new GoogleAuthenticationOptions();
+        googleOptions.Validate();
+
         services.Configure<GoogleAuthenticationOptions>(configuration.GetSection(GoogleAuthenticationOptions.SectionName));
         services.Configure<RefreshTokenOptions>(configuration.GetSection(RefreshTokenOptions.SectionName));
         services.AddSingleton<IUserAgentParserService, UserAgentParserService>();
@@ -65,6 +70,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAccessTokenRevocationService, AccessTokenRevocationService>();
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
         services.AddScoped<IGoogleIdentityTokenService, GoogleIdentityTokenService>();
+        services.AddScoped<IGoogleAuthenticationFlowService, GoogleAuthenticationFlowService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<ITwoFactorOtpService, TwoFactorOtpService>();
 

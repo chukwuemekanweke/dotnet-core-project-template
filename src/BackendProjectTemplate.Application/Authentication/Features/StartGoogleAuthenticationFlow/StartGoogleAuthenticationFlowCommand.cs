@@ -1,0 +1,5 @@
+using BackendProjectTemplate.Domain.Common.Auditing;
+
+namespace BackendProjectTemplate.Application.Authentication.Features.StartGoogleAuthenticationFlow;
+
+public sealed record StartGoogleAuthenticationFlowCommand(ActorContext ActorContext);

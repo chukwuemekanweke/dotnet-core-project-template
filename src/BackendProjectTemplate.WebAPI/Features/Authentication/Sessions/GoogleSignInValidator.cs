@@ -6,6 +6,9 @@ public sealed class GoogleSignInValidator : AbstractValidator<GoogleSignInReques
 {
     public GoogleSignInValidator()
     {
+        RuleFor(request => request.FlowToken)
+            .NotEmpty();
+
         RuleFor(request => request.IdToken)
             .NotEmpty();
     }

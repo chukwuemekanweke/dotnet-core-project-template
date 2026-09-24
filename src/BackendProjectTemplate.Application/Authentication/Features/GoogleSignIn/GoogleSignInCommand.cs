@@ -6,4 +6,5 @@ public sealed record GoogleSignInCommand(
     string IdToken,
     string IpAddress,
     string UserAgent,
-    ActorContext ActorContext);
+    ActorContext ActorContext,
+    string FlowToken = "");

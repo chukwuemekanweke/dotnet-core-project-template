@@ -29,4 +29,15 @@ public sealed class DistributedJsonCache(IDistributedCache distributedCache) : I
 
     public Task RemoveAsync(string key, CancellationToken cancellationToken = default) =>
         distributedCache.RemoveAsync(key, cancellationToken);
+
+    public async Task<T?> GetAndRemoveAsync<T>(string key, CancellationToken cancellationToken = default)
+    {
+        var value = await GetAsync<T>(key, cancellationToken);
+        if (value is not null)
+        {
+            await RemoveAsync(key, cancellationToken);
+        }
+
+        return value;
+    }
 }
