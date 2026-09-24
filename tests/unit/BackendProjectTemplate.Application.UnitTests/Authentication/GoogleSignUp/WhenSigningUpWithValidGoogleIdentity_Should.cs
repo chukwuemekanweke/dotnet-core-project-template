@@ -24,8 +24,7 @@ public sealed class WhenSigningUpWithValidGoogleIdentity_Should
         var tenantId = Guid.CreateVersion7();
         var stakeholderType = StakeholderType.Create(tenantId, StakeholderDefaults.TypeName, StakeholderDefaults.TypeKey);
 
-        context.GoogleIdentityTokenService.ValidateAsync("google-id-token", Arg.Any<CancellationToken>())
-            .Returns(new GoogleIdentityTokenPayload(subject, email, "Google User"));
+        context.SetGoogleFlow("google-id-token", GoogleAuthenticationFlowState.RegistrationRequired, email, subject);
         context.IdentityService.FindByEmailAsync(email).Returns((AppUser?)null);
         context.IdentityService.CreateAsync(Arg.Any<AppUser>())
             .Returns(IdentityResult.Success);
@@ -48,7 +47,7 @@ public sealed class WhenSigningUpWithValidGoogleIdentity_Should
                 lastName: lastName),
             CancellationToken.None);
 
-        result.Status.ShouldBe(GoogleSignUpStatus.Accepted);
+        result.Status.ShouldBe(GoogleSignUpStatus.Success);
         result.Email.ShouldBe(email);
         await context.IdentityService.Received(1).CreateAsync(
             Arg.Is<AppUser>(user =>

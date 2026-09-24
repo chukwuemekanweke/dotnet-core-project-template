@@ -3,10 +3,11 @@ namespace BackendProjectTemplate.Application.Authentication.Features.GoogleSignU
 using BackendProjectTemplate.Domain.Common.Auditing;
 
 public sealed record GoogleSignUpCommand(
-    string IdToken,
+    string FlowToken,
     Guid CountryId,
     string FirstName,
     string LastName,
     string IpAddress,
     ActorContext ActorContext,
-    string Language);
+    string Language,
+    string UserAgent = "");

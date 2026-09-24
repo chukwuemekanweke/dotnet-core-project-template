@@ -10,8 +10,12 @@ public sealed record GoogleSignInResult(
 public enum GoogleSignInStatus
 {
     Success = 1,
-    InvalidGoogleToken = 2,
-    AccountNotRegistered = 3,
-    EmailNotVerified = 4,
-    AccountLocked = 5
+    LinkRequired = 2,
+    RegistrationRequired = 3,
+    InvalidGoogleCredential = 4,
+    GoogleFlowInvalid = 5,
+    GoogleFlowExpired = 6,
+    GoogleFlowConsumed = 7,
+    EmailVerificationRequired = 8,
+    AccountLocked = 9
 }

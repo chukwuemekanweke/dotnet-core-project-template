@@ -28,6 +28,7 @@ using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -39,6 +40,7 @@ internal sealed class AuthenticationControllerTestContext
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 21, 12, 0, 0, TimeSpan.Zero));
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
     public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
+    public IGoogleAuthenticationFlowService GoogleAuthenticationFlowService { get; } = Substitute.For<IGoogleAuthenticationFlowService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
     public IAuthenticationSessionService SessionService { get; } = Substitute.For<IAuthenticationSessionService>();
     public IAccessTokenRevocationService AccessTokenRevocationService { get; } = Substitute.For<IAccessTokenRevocationService>();
@@ -57,6 +59,8 @@ internal sealed class AuthenticationControllerTestContext
     public IUnitOfWorkTransaction Transaction { get; } = Substitute.For<IUnitOfWorkTransaction>();
     public StakeholderResolver StakeholderResolver => new(StakeholderRepository);
     public RegistrationCountryValidator RegistrationCountryValidator => new(CountryRepository, IpGeolocationService);
+    public AuthenticationSessionIssuer SessionIssuer => new(AccessTokenService, RefreshTokenService, SessionService);
+    public PasswordCredentialVerifier PasswordCredentialVerifier => new(IdentityService);
 
     public AuthenticationControllerTestContext()
     {
@@ -70,6 +74,8 @@ internal sealed class AuthenticationControllerTestContext
         CurrentActor.FlowId.Returns(Guid.CreateVersion7().ToString("N"));
         UnitOfWork.BeginTransactionAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Transaction));
+        IdentityService.AccessFailedAsync(Arg.Any<AppUser>()).Returns(IdentityResult.Success);
+        IdentityService.ResetAccessFailedCountAsync(Arg.Any<AppUser>()).Returns(IdentityResult.Success);
         CountryRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg"));
     }
@@ -88,7 +94,8 @@ internal sealed class AuthenticationControllerTestContext
 
     public GoogleSignUpHandler CreateGoogleSignUpHandler() => new(
         IdentityService,
-        GoogleIdentityTokenService,
+        GoogleAuthenticationFlowService,
+        SessionIssuer,
         EventPublisher,
         StakeholderTypeRepository,
         StakeholderRepository,
@@ -99,9 +106,8 @@ internal sealed class AuthenticationControllerTestContext
 
     public SignInHandler CreateSignInHandler() => new(
         IdentityService,
-        AccessTokenService,
-        RefreshTokenService,
-        SessionService,
+        PasswordCredentialVerifier,
+        SessionIssuer,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,
@@ -111,9 +117,8 @@ internal sealed class AuthenticationControllerTestContext
     public GoogleSignInHandler CreateGoogleSignInHandler() => new(
         IdentityService,
         GoogleIdentityTokenService,
-        AccessTokenService,
-        RefreshTokenService,
-        SessionService,
+        GoogleAuthenticationFlowService,
+        SessionIssuer,
         EventPublisher,
         StakeholderResolver,
         CustomTelemetryContext,

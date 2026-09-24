@@ -57,6 +57,12 @@ public sealed class WhenValidatingOtpWithCorrectCode_Should
             _store.Remove(key);
             return Task.CompletedTask;
         }
+
+        public Task<T?> GetAndRemoveAsync<T>(string key, CancellationToken cancellationToken)
+        {
+            var value = _store.Remove(key, out var removed) ? (T?)removed : default;
+            return Task.FromResult(value);
+        }
     }
 }
 

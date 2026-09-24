@@ -36,8 +36,9 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_Should
         var expectedToken = new AccessToken(token, now.AddHours(1));
         var expectedRefreshToken = new RefreshToken("refresh-token", now.AddDays(30));
 
-        context.GoogleIdentityTokenService.ValidateAsync("google-id-token", Arg.Any<CancellationToken>())
+        context.GoogleIdentityTokenService.ValidateAsync("google-id-token", "nonce", Arg.Any<CancellationToken>())
             .Returns(new GoogleIdentityTokenPayload(subject, email, "Google User"));
+        context.SetGoogleFlow("google-flow", GoogleAuthenticationFlowState.Initiated, email, subject);
         context.IdentityService.FindByLoginAsync("Google", subject).Returns(user);
         context.StakeholderRepository.FirstOrDefaultAsync(
                 Arg.Any<ISpecification<Stakeholder>>(),
@@ -50,7 +51,7 @@ public sealed class WhenSigningInWithRegisteredGoogleIdentity_Should
             AuthenticationFlowTestContext.CreateGoogleSignInCommand(
                 idToken: "google-id-token",
                 ipAddress: ipAddress,
-                userAgent: userAgent),
+                userAgent: userAgent) with { FlowToken = "google-flow" },
             CancellationToken.None);
 
         result.Status.ShouldBe(GoogleSignInStatus.Success);

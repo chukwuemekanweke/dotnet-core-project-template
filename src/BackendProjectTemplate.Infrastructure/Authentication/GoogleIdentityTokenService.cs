@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Cryptography;
 
 namespace BackendProjectTemplate.Infrastructure.Authentication;
 
@@ -25,9 +26,17 @@ public sealed class GoogleIdentityTokenService(
             RequireHttps = true
         });
 
-    public async Task<GoogleIdentityTokenPayload?> ValidateAsync(string idToken, CancellationToken cancellationToken)
+    public async Task<GoogleIdentityTokenPayload?> ValidateAsync(
+        string idToken,
+        string expectedNonce,
+        CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(idToken))
+        if (string.IsNullOrWhiteSpace(idToken) || string.IsNullOrWhiteSpace(expectedNonce))
+        {
+            return null;
+        }
+
+        if (!options.Value.Enabled)
         {
             return null;
         }
@@ -70,8 +79,14 @@ public sealed class GoogleIdentityTokenService(
             var subject = principal.FindFirst("sub")?.Value?.Trim();
             var emailVerified = bool.TryParse(principal.FindFirst("email_verified")?.Value, out var parsedEmailVerified)
                 && parsedEmailVerified;
+            var nonce = principal.FindFirst("nonce")?.Value;
 
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(subject) || !emailVerified)
+            if (string.IsNullOrWhiteSpace(email)
+                || string.IsNullOrWhiteSpace(subject)
+                || !emailVerified
+                || !CryptographicOperations.FixedTimeEquals(
+                    System.Text.Encoding.UTF8.GetBytes(nonce ?? string.Empty),
+                    System.Text.Encoding.UTF8.GetBytes(expectedNonce)))
             {
                 return null;
             }
@@ -79,7 +94,9 @@ public sealed class GoogleIdentityTokenService(
             return new GoogleIdentityTokenPayload(
                 subject,
                 email,
-                principal.FindFirst("name")?.Value?.Trim());
+                principal.FindFirst("name")?.Value?.Trim(),
+                emailVerified,
+                principal.FindFirst("hd")?.Value?.Trim());
         }
         catch (SecurityTokenException)
         {

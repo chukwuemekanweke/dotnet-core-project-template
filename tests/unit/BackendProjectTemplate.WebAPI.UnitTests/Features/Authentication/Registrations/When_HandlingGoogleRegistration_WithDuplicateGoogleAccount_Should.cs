@@ -19,10 +19,22 @@ public sealed class When_HandlingGoogleRegistration_WithDuplicateGoogleAccount_S
         var validator = Substitute.For<IValidator<SignUpRequest>>();
         var googleValidator = Substitute.For<IValidator<GoogleSignUpRequest>>();
         var request = new GoogleSignUpRequest("google-token", Guid.CreateVersion7(), "Jane", "Doe");
+        var tenantId = context.CurrentActor.TenantId!.Value;
 
         googleValidator.ValidateAsync(request, Arg.Any<CancellationToken>()).Returns(new ValidationResult());
-        context.GoogleIdentityTokenService.ValidateAsync(request.IdToken, Arg.Any<CancellationToken>())
-            .Returns(new GoogleIdentityTokenPayload(Guid.CreateVersion7().ToString("N"), "jane@example.com", "Jane Doe"));
+        context.GoogleAuthenticationFlowService.TakeAsync(request.FlowToken, Arg.Any<CancellationToken>())
+            .Returns(new GoogleAuthenticationFlowResult(
+                GoogleAuthenticationFlowStatus.Success,
+                new GoogleAuthenticationFlow(
+                    request.FlowToken,
+                    "nonce",
+                    tenantId,
+                    GoogleAuthenticationFlowState.RegistrationRequired,
+                    context.Clock.GetUtcNow().AddMinutes(10),
+                    Guid.CreateVersion7().ToString("N"),
+                    "jane@example.com",
+                    true,
+                    "gmail.com")));
         context.IdentityService.FindByEmailAsync("jane@example.com").Returns((AppUser?)null);
         context.IdentityService.CreateAsync(Arg.Any<AppUser>()).Returns(IdentityResult.Success);
         context.IdentityService.AddLoginAsync(

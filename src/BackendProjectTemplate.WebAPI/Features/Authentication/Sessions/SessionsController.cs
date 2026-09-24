@@ -162,39 +162,44 @@ public sealed class SessionsController(
                 request.IdToken,
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                 Request.Headers.UserAgent.ToString(),
-                ActorContext.FromAnonymousActor(currentActor)),
+                ActorContext.FromAnonymousActor(currentActor),
+                request.FlowToken),
             cancellationToken);
 
         return result.Status switch
         {
             GoogleSignInStatus.Success => Ok(new GoogleSignInResponse(
+                "authenticated",
                 result.Tokens!.AccessToken.Value,
                 result.Tokens.AccessToken.ExpiresAtUtc,
                 result.Tokens.RefreshToken.Value,
                 result.Tokens.RefreshToken.ExpiresAtUtc,
                 "Bearer")),
-            GoogleSignInStatus.InvalidGoogleToken => Problem(
-                statusCode: StatusCodes.Status401Unauthorized,
-                title: "Invalid Google token",
-                detail: "The supplied Google identity token is invalid or expired."),
-            GoogleSignInStatus.AccountNotRegistered => Problem(
-                statusCode: StatusCodes.Status401Unauthorized,
-                title: "Google account not registered",
-                detail: "No account is linked to the supplied Google identity."),
-            GoogleSignInStatus.EmailNotVerified => Problem(
-                statusCode: StatusCodes.Status403Forbidden,
-                title: "Email not verified",
-                detail: "The linked account email must be verified before attempting to sign in."),
-            GoogleSignInStatus.AccountLocked => Problem(
-                statusCode: StatusCodes.Status423Locked,
-                title: "Account locked",
-                detail: result.LockedUntilUtc.HasValue
+            GoogleSignInStatus.LinkRequired => Ok(new GoogleSignInResponse("link_required")),
+            GoogleSignInStatus.RegistrationRequired => Ok(new GoogleSignInResponse("registration_required")),
+            GoogleSignInStatus.InvalidGoogleCredential => AuthenticationProblemDetails.Create(
+                StatusCodes.Status401Unauthorized, AuthenticationErrorCodes.InvalidGoogleCredential,
+                "Invalid Google credential", "The supplied Google identity token is invalid or expired."),
+            GoogleSignInStatus.GoogleFlowInvalid => AuthenticationProblemDetails.Create(
+                StatusCodes.Status400BadRequest, AuthenticationErrorCodes.GoogleFlowInvalid,
+                "Invalid Google flow", "The Google authentication flow is invalid."),
+            GoogleSignInStatus.GoogleFlowExpired => AuthenticationProblemDetails.Create(
+                StatusCodes.Status410Gone, AuthenticationErrorCodes.GoogleFlowExpired,
+                "Google flow expired", "The Google authentication flow has expired."),
+            GoogleSignInStatus.GoogleFlowConsumed => AuthenticationProblemDetails.Create(
+                StatusCodes.Status409Conflict, AuthenticationErrorCodes.GoogleFlowConsumed,
+                "Google flow consumed", "The Google authentication flow has already been used."),
+            GoogleSignInStatus.EmailVerificationRequired => AuthenticationProblemDetails.Create(
+                StatusCodes.Status403Forbidden, AuthenticationErrorCodes.EmailVerificationRequired,
+                "Email verification required", "The linked account email must be verified before signing in."),
+            GoogleSignInStatus.AccountLocked => AuthenticationProblemDetails.Create(
+                StatusCodes.Status423Locked, AuthenticationErrorCodes.AccountLocked, "Account locked",
+                result.LockedUntilUtc.HasValue
                     ? $"The account is locked until {DateTimeFormatter.FormatHumanReadableUtc(result.LockedUntilUtc.Value, timeProvider.GetUtcNow())}."
                     : "The account is currently locked."),
-            _ => Problem(
-                statusCode: StatusCodes.Status401Unauthorized,
-                title: "Google sign-in failed",
-                detail: "The Google sign-in request could not be completed.")
+            _ => AuthenticationProblemDetails.Create(
+                StatusCodes.Status401Unauthorized, AuthenticationErrorCodes.InvalidGoogleCredential,
+                "Google sign-in failed", "The Google sign-in request could not be completed.")
         };
     }
 

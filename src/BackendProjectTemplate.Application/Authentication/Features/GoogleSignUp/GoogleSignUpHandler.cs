@@ -13,7 +13,8 @@ namespace BackendProjectTemplate.Application.Authentication.Features.GoogleSignU
 
 public sealed class GoogleSignUpHandler(
     IAuthenticationIdentityService identityService,
-    IGoogleIdentityTokenService googleIdentityTokenService,
+    IGoogleAuthenticationFlowService googleAuthenticationFlowService,
+    AuthenticationSessionIssuer sessionIssuer,
     IEventPublisher eventPublisher,
     IRepository<StakeholderType> stakeholderTypeRepository,
     IRepository<Stakeholder> stakeholderRepository,
@@ -30,12 +31,29 @@ public sealed class GoogleSignUpHandler(
             Observability.EventNames.Authentication.GoogleSignUpStarted,
             ObservabilityEventProperties.Create(request.ActorContext));
 
+        var flowResult = await googleAuthenticationFlowService.TakeAsync(request.FlowToken, cancellationToken);
+        if (flowResult.Status != GoogleAuthenticationFlowStatus.Success)
+        {
+            return new GoogleSignUpResult(MapFlowStatus(flowResult.Status));
+        }
+
+        var flow = flowResult.Flow!;
+        if (flow.State != GoogleAuthenticationFlowState.RegistrationRequired
+            || (flow.TenantId != Guid.Empty && request.ActorContext.TenantId != flow.TenantId)
+            || string.IsNullOrWhiteSpace(flow.Subject)
+            || string.IsNullOrWhiteSpace(flow.Email))
+        {
+            await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
+            return new GoogleSignUpResult(GoogleSignUpStatus.GoogleFlowInvalid);
+        }
+
         var countryValidation = await registrationCountryValidator.ValidateAsync(
             request.CountryId,
             request.IpAddress,
             cancellationToken);
         if (countryValidation == RegistrationCountryValidationResult.CountryNotFound)
         {
+            await googleAuthenticationFlowService.RestoreAsync(flow, cancellationToken);
             customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.ValidationFailed);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.GoogleSignUpFailed,
@@ -50,6 +68,7 @@ public sealed class GoogleSignUpHandler(
 
         if (countryValidation == RegistrationCountryValidationResult.Mismatch)
         {
+            await googleAuthenticationFlowService.RestoreAsync(flow, cancellationToken);
             customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.CountryMismatch);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.GoogleSignUpFailed,
@@ -57,18 +76,9 @@ public sealed class GoogleSignUpHandler(
             return new GoogleSignUpResult(GoogleSignUpStatus.CountryMismatch);
         }
 
-        var googleIdentity = await googleIdentityTokenService.ValidateAsync(request.IdToken, cancellationToken);
-        if (googleIdentity is null)
+        if (await identityService.FindByEmailAsync(flow.Email) is not null)
         {
-            customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.InvalidGoogleToken);
-            customTelemetryContext.AddCustomEvent(
-                Observability.EventNames.Authentication.GoogleSignUpFailed,
-                ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.InvalidGoogleToken));
-            return new GoogleSignUpResult(GoogleSignUpStatus.InvalidGoogleToken);
-        }
-
-        if (await identityService.FindByEmailAsync(googleIdentity.Email) is not null)
-        {
+            await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
             customTelemetryContext.SetProperty(Observability.PropertyNames.Common.FailureReason, ObservabilityFailureReasons.DuplicateEmail);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.GoogleSignUpFailed,
@@ -76,8 +86,18 @@ public sealed class GoogleSignUpHandler(
             return new GoogleSignUpResult(GoogleSignUpStatus.DuplicateEmail);
         }
 
-        var user = AppUser.Create(googleIdentity.Email);
-        user.MarkEmailVerified();
+        var googleIdentity = new GoogleIdentityTokenPayload(
+            flow.Subject,
+            flow.Email,
+            DisplayName: null,
+            flow.EmailVerified,
+            flow.HostedDomain);
+        var authoritativeEmail = GoogleEmailAuthority.IsAuthoritative(googleIdentity);
+        var user = AppUser.Create(flow.Email);
+        if (authoritativeEmail)
+        {
+            user.MarkEmailVerified();
+        }
 
         var tenantId = request.ActorContext.TenantId
             ?? throw new InvalidOperationException("Tenant id is required to sign up.");
@@ -93,6 +113,7 @@ public sealed class GoogleSignUpHandler(
                 customTelemetryContext.AddCustomEvent(
                     Observability.EventNames.Authentication.GoogleSignUpFailed,
                     ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.DuplicateEmail));
+                await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
                 return new GoogleSignUpResult(GoogleSignUpStatus.DuplicateEmail);
             }
 
@@ -100,13 +121,14 @@ public sealed class GoogleSignUpHandler(
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.GoogleSignUpFailed,
                 ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.ValidationFailed));
+            await googleAuthenticationFlowService.RestoreAsync(flow, cancellationToken);
             return new GoogleSignUpResult(GoogleSignUpStatus.ValidationFailed, ValidationErrors: createResult.ToValidationDictionary());
         }
 
         var addLoginResult = await identityService.AddLoginAsync(
             user,
             ExternalLoginProviders.Google,
-            googleIdentity.Subject,
+            flow.Subject,
             ExternalLoginProviders.Google);
         if (!addLoginResult.Succeeded)
         {
@@ -116,6 +138,7 @@ public sealed class GoogleSignUpHandler(
                 customTelemetryContext.AddCustomEvent(
                     Observability.EventNames.Authentication.GoogleSignUpFailed,
                     ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.DuplicateGoogleAccount));
+                await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
                 return new GoogleSignUpResult(GoogleSignUpStatus.DuplicateGoogleAccount);
             }
 
@@ -123,6 +146,7 @@ public sealed class GoogleSignUpHandler(
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.GoogleSignUpFailed,
                 ObservabilityEventProperties.Create(request.ActorContext, failureReason: ObservabilityFailureReasons.ValidationFailed));
+            await googleAuthenticationFlowService.RestoreAsync(flow, cancellationToken);
             return new GoogleSignUpResult(GoogleSignUpStatus.ValidationFailed, ValidationErrors: addLoginResult.ToValidationDictionary());
         }
 
@@ -146,15 +170,40 @@ public sealed class GoogleSignUpHandler(
             RequestedAtUtc = requestedAtUtc,
             ExpiresAtUtc = expiresAtUtc
         }, cancellationToken);
+
+        AuthenticationTokens? tokens = null;
+        if (authoritativeEmail)
+        {
+            tokens = await sessionIssuer.IssueAsync(
+                user,
+                stakeholder,
+                request.IpAddress,
+                request.UserAgent,
+                cancellationToken);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.GoogleSignUpCompleted,
             ObservabilityEventProperties.Create(request.ActorContext, stakeholder.Id));
 
-        return new GoogleSignUpResult(GoogleSignUpStatus.Accepted, googleIdentity.Email);
+        return authoritativeEmail
+            ? new GoogleSignUpResult(GoogleSignUpStatus.Success, flow.Email, Tokens: tokens)
+            : new GoogleSignUpResult(
+                GoogleSignUpStatus.EmailVerificationRequired,
+                flow.Email,
+                RetryAtUtc: expiresAtUtc);
     }
+
+    private static GoogleSignUpStatus MapFlowStatus(GoogleAuthenticationFlowStatus status) => status switch
+    {
+        GoogleAuthenticationFlowStatus.Expired => GoogleSignUpStatus.GoogleFlowExpired,
+        GoogleAuthenticationFlowStatus.Consumed => GoogleSignUpStatus.GoogleFlowConsumed,
+        _ => GoogleSignUpStatus.GoogleFlowInvalid
+    };
 }
 
 
