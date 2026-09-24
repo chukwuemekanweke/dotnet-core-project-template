@@ -2,8 +2,8 @@ namespace BackendProjectTemplate.Domain.Common.Caching;
 
 public interface IJsonCache
 {
-    Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default);
-    Task SetAsync<T>(string key, T value, TimeSpan ttl, CancellationToken cancellationToken = default);
-    Task RemoveAsync(string key, CancellationToken cancellationToken = default);
-    Task<T?> GetAndRemoveAsync<T>(string key, CancellationToken cancellationToken = default);
+    Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken);
+    Task SetAsync<T>(string key, T value, TimeSpan ttl, CancellationToken cancellationToken);
+    Task RemoveAsync(string key, CancellationToken cancellationToken);
+    Task<T?> GetAndRemoveAsync<T>(string key, CancellationToken cancellationToken);
 }

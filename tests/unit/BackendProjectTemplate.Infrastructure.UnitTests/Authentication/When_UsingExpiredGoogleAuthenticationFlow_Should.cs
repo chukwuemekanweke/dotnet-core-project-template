@@ -53,7 +53,7 @@ public sealed class When_UsingExpiredGoogleAuthenticationFlow_Should
             return Task.CompletedTask;
         }
 
-        public Task<T?> GetAndRemoveAsync<T>(string key, CancellationToken cancellationToken = default)
+        public Task<T?> GetAndRemoveAsync<T>(string key, CancellationToken cancellationToken)
         {
             var value = _values.Remove(key, out var removed) ? (T?)removed : default;
             return Task.FromResult(value);

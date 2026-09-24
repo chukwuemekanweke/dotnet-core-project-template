@@ -8,13 +8,13 @@ public sealed class DistributedJsonCache(IDistributedCache distributedCache) : I
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
-    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
+    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken)
     {
         var payload = await distributedCache.GetStringAsync(key, cancellationToken);
         return payload is null ? default : JsonSerializer.Deserialize<T>(payload, SerializerOptions);
     }
 
-    public Task SetAsync<T>(string key, T value, TimeSpan ttl, CancellationToken cancellationToken = default)
+    public Task SetAsync<T>(string key, T value, TimeSpan ttl, CancellationToken cancellationToken)
     {
         var payload = JsonSerializer.Serialize(value, SerializerOptions);
         return distributedCache.SetStringAsync(
@@ -27,10 +27,10 @@ public sealed class DistributedJsonCache(IDistributedCache distributedCache) : I
             cancellationToken);
     }
 
-    public Task RemoveAsync(string key, CancellationToken cancellationToken = default) =>
+    public Task RemoveAsync(string key, CancellationToken cancellationToken) =>
         distributedCache.RemoveAsync(key, cancellationToken);
 
-    public async Task<T?> GetAndRemoveAsync<T>(string key, CancellationToken cancellationToken = default)
+    public async Task<T?> GetAndRemoveAsync<T>(string key, CancellationToken cancellationToken)
     {
         var value = await GetAsync<T>(key, cancellationToken);
         if (value is not null)
