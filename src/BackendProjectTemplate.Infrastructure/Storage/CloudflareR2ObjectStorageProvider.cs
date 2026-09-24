@@ -177,9 +177,7 @@ internal sealed class CloudflareR2ObjectStorageProvider(
     }
 
     private static string BuildPublicUrl(CloudflareR2Options configuredOptions, string objectKey) =>
-        !string.IsNullOrWhiteSpace(configuredOptions.PublicBaseUrl)
-            ? $"{configuredOptions.PublicBaseUrl.TrimEnd('/')}/{objectKey}"
-            : $"{configuredOptions.Endpoint.TrimEnd('/')}/{configuredOptions.PublicBucketName.Trim()}/{objectKey}";
+        $"{configuredOptions.PublicBaseUrl.TrimEnd('/')}/{objectKey}";
 
     private static string UseConfiguredEndpointScheme(string uploadUrl, string endpoint)
     {
@@ -199,10 +197,11 @@ internal sealed class CloudflareR2ObjectStorageProvider(
             string.IsNullOrWhiteSpace(configuredOptions.PublicBucketName) ||
             string.IsNullOrWhiteSpace(configuredOptions.PrivateBucketName) ||
             string.IsNullOrWhiteSpace(configuredOptions.AccessKeyId) ||
-            string.IsNullOrWhiteSpace(configuredOptions.SecretAccessKey))
+            string.IsNullOrWhiteSpace(configuredOptions.SecretAccessKey) ||
+            string.IsNullOrWhiteSpace(configuredOptions.PublicBaseUrl))
         {
             throw new InvalidOperationException(
-                "Cloudflare R2 configuration is incomplete. Ensure Endpoint, ApplicationFolder, PublicBucketName, PrivateBucketName, AccessKeyId, and SecretAccessKey are provided.");
+                "Cloudflare R2 configuration is incomplete. Ensure Endpoint, ApplicationFolder, PublicBucketName, PrivateBucketName, AccessKeyId, SecretAccessKey, and PublicBaseUrl are provided.");
         }
     }
 
