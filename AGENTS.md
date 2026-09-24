@@ -39,6 +39,13 @@ you at a specific document.
 Never run `dotnet build` and `dotnet test` concurrently — parallel execution can leave `testhost`
 processes holding DLL locks and cause transient build failures.
 
+## Git output
+
+- Commit messages must use Conventional Commit format.
+- Keep the commit subject concise.
+- Add at most one short explanatory body sentence when the subject alone is insufficient.
+- For pull-request work, retrieve the applicable OKF workflow before drafting.
+
 ## Always
 
 - Never commit or print secrets, credentials, connection strings, or API keys.
