@@ -29,6 +29,11 @@ status: stable
 
 - Application/Domain depend on `IObjectStorageService`/`IObjectStorageProvider` (Domain-defined), never on Cloudflare R2 SDK types directly. `CloudflareR2ObjectStorageProvider` (built via
   `ICloudflareR2ClientFactory`) is the real implementation; `NoopObjectStorageProvider` is used where object storage is not configured (e.g. some test/dev paths).
+- Runtime provider selection is data-driven through the active `FileStorage` row in `infrastructure.Providers`. The Cloudflare implementation and seed data use the exact key
+  `cloudflare_r2`; the template seed activates it and deactivates `noop`. Docker Compose forwards the seven `CLOUDFLARE_R2_*` launcher variables into the corresponding
+  `ObjectStorage__CloudflareR2__*` .NET configuration keys for WebAPI, Consumer, and Jobs.
+- `PublicBaseUrl` is required. URLs returned for objects uploaded or promoted to the public bucket are always built from this public development/custom-domain base URL, never from the
+  private S3 API endpoint and bucket name.
 - Uploads use a presigned-URL flow: the client requests a presigned upload (`ObjectStoragePresignedUploadRequest`/`Result`), uploads directly to R2, then the app promotes the object from a
   quarantine/staging visibility to its final visibility (`ObjectStoragePromotionRequest`, `ObjectStorageVisibility`) once validated. This is the pattern the `AvatarUploads` and `Common/FileUploads`
   features implement — a `FileUploadSession` entity tracks the lifecycle.

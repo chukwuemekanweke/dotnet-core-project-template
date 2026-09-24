@@ -1,31 +1,50 @@
 ---
 type: workflow
-title: Pull Request and Documentation Voice Conventions
-description: PR template usage, title format, and the plain human writing voice expected in PR descriptions and documentation
+title: Pull Request Workflow
+description: Mandatory evidence-based workflow for complete branch PR titles and descriptions
 resource: okf://knowledge/workflows/pull-requests
-tags:
-    - context
-    - workflow
-    - pull-requests
-    - writing-voice
-governance: context
+tags: [constraint, workflow, pull-requests, git]
+governance: constraint
 code_refs:
-    - .github/pull_request_template.md
+  - .github/pull_request_template.md
 sources:
-    - kind: file
-      path: AGENTS.md
+  - kind: file
+    path: AGENTS.md
 generated:
-    at: "2026-09-23T00:00:00Z"
-    by: human
+  at: "2026-09-24T00:00:00Z"
+  by: human
 status: stable
 ---
-## Pull requests
 
-- Use `.github/pull_request_template.md` as the structure for any generated PR title/description. Return the description as Markdown, ready to paste directly into GitHub.
-- When summarizing a branch, review all commits on it and reflect the full scope of work — don't describe only the latest commit.
-- Prefer a title like `feat(scope): summary of the change` that states the main change and affected area.
+## Mandatory workflow
 
-## Writing voice (PR descriptions and docs)
+When asked for a PR description, PR content, PR summary, PR title, or equivalent:
 
-Write like a maintainer explaining the change to another engineer: direct, concrete, grounded in what actually changed. Avoid generic filler, marketing language, exaggerated claims, repetitive
-summaries, and anything that reads as automated/generated. Keep the important technical tradeoffs; don't inflate a simple change into elaborate prose.
+1. Determine the branch being described.
+2. Determine the base branch, normally `main`, unless repository state or the
+   user's instruction establishes another base.
+3. Find the merge base between the branch and base.
+4. Inspect every commit introduced by the branch.
+5. Inspect the complete branch diff from the merge base through the branch tip.
+6. Read `.github/pull_request_template.md` and use it as the required PR
+   description structure.
+7. Complete the template from repository evidence and return ready-to-paste
+   Markdown.
+
+The description must cover the branch's full scope. Do not summarize only the
+latest commit, staged or unstaged changes, files changed in the current session,
+or any other partial working-tree view.
+
+## Evidence and writing rules
+
+- Do not invent tests, implementation details, risks, screenshots, dependencies,
+  configuration changes, or behavioral changes.
+- If a template section does not apply, say so concisely instead of manufacturing
+  content.
+- Write directly and naturally, as one engineer explaining the change to
+  another. Avoid marketing language, generic filler, exaggerated claims,
+  repetitive summaries, and wording that sounds generated.
+- Preserve technical implementation details and trade-offs when they materially
+  help reviewers.
+- Prefer a concise Conventional Commit-style PR title that states the main change
+  and affected scope, such as `feat(scope): summary`.

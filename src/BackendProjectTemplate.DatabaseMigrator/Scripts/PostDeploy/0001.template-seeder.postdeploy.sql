@@ -305,8 +305,8 @@ WHERE "ProviderType" = 1
 
 WITH provider_values("ProviderType", "ProviderName", "ProviderKey", "IsActive") AS (VALUES
     (1, 'Mailtrap', 'mailtrap', TRUE),
-    (2, 'Noop (Stub)', 'noop', TRUE),
-    (2, 'Cloudflare R2', 'cloudflare-r2', FALSE)
+    (2, 'Noop (Stub)', 'noop', FALSE),
+    (2, 'Cloudflare R2', 'cloudflare_r2', TRUE)
 ),
 providers_existing AS (
     SELECT t."ProviderType", t."ProviderKey"

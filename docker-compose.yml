@@ -36,6 +36,13 @@ services:
       ConnectionStrings__PostgresWrite: ${DATABASE_URL:-}
       ConnectionStrings__PostgresRead: ${DATABASE_URL_POOLED:-${DATABASE_URL:-}}
       ConnectionStrings__Redis: ${REDIS_CONNECTION_STRING:-}
+      ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-}
+      ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-}
+      ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__PrivateBucketName: ${CLOUDFLARE_R2_PRIVATE_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__AccessKeyId: ${CLOUDFLARE_R2_ACCESS_KEY_ID:-}
+      ObjectStorage__CloudflareR2__SecretAccessKey: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}
+      ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-}
       Jwt__Issuer: BackendProjectTemplate
       Jwt__Audience: BackendProjectTemplate.Clients
       Jwt__SigningKey: super-secret-template-signing-key-change-me
@@ -87,6 +94,13 @@ services:
       ConnectionStrings__PostgresWrite: ${DATABASE_URL:-}
       ConnectionStrings__PostgresRead: ${DATABASE_URL_POOLED:-${DATABASE_URL:-}}
       ConnectionStrings__Redis: ${REDIS_CONNECTION_STRING:-}
+      ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-}
+      ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-}
+      ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__PrivateBucketName: ${CLOUDFLARE_R2_PRIVATE_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__AccessKeyId: ${CLOUDFLARE_R2_ACCESS_KEY_ID:-}
+      ObjectStorage__CloudflareR2__SecretAccessKey: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}
+      ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-}
       Messaging__RabbitMq__ServiceName: BackendProjectTemplate.Consumer
       Messaging__RabbitMq__HostName: ${RABBITMQ_HOSTNAME:-}
       Messaging__RabbitMq__Port: ${RABBITMQ_PORT:-5672}
@@ -142,6 +156,13 @@ services:
       ConnectionStrings__PostgresWrite: ${DATABASE_URL:-}
       ConnectionStrings__PostgresRead: ${DATABASE_URL_POOLED:-${DATABASE_URL:-}}
       ConnectionStrings__Redis: ${REDIS_CONNECTION_STRING:-}
+      ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-}
+      ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-}
+      ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__PrivateBucketName: ${CLOUDFLARE_R2_PRIVATE_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__AccessKeyId: ${CLOUDFLARE_R2_ACCESS_KEY_ID:-}
+      ObjectStorage__CloudflareR2__SecretAccessKey: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY:-}
+      ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-}
       Messaging__RabbitMq__ServiceName: BackendProjectTemplate.Jobs
       Messaging__RabbitMq__HostName: ${RABBITMQ_HOSTNAME:-}
       Messaging__RabbitMq__Port: ${RABBITMQ_PORT:-5672}
