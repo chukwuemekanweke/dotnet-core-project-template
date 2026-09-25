@@ -29,10 +29,7 @@ public sealed class DisableTwoFactorHandler(
             return DisableTwoFactorResult.Failed;
         if (!(await identityService.ResetAuthenticatorKeyAsync(actor.User)).Succeeded)
             return DisableTwoFactorResult.Failed;
-        if (!(await identityService.UpdateSecurityStampAsync(actor.User)).Succeeded)
-            return DisableTwoFactorResult.Failed;
-
-        await sessionService.RevokeAllAsync(actor.StakeholderId, cancellationToken);
+        await sessionService.RevokeOthersAsync(command.CurrentSessionId, actor.StakeholderId, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         telemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.TwoFactorDisabled,

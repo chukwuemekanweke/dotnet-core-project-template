@@ -6,4 +6,5 @@ namespace BackendProjectTemplate.Application.Authentication.Features.DisableTwoF
 public sealed record DisableTwoFactorCommand(
     TwoFactorVerificationMethod VerificationMethod,
     string Code,
+    Guid CurrentSessionId,
     ActorContext ActorContext);

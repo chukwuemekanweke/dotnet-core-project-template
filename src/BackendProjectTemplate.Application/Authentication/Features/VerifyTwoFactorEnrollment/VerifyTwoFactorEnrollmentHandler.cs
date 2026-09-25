@@ -34,10 +34,7 @@ public sealed class VerifyTwoFactorEnrollmentHandler(
             options.Value.RecoveryCodeCount))?.ToArray();
         if (codes is null || codes.Length == 0)
             return new VerifyTwoFactorEnrollmentResult(VerifyTwoFactorEnrollmentStatus.Failed);
-        if (!(await identityService.UpdateSecurityStampAsync(actor.User)).Succeeded)
-            return new VerifyTwoFactorEnrollmentResult(VerifyTwoFactorEnrollmentStatus.Failed);
-
-        await sessionService.RevokeAllAsync(actor.StakeholderId, cancellationToken);
+        await sessionService.RevokeOthersAsync(command.CurrentSessionId, actor.StakeholderId, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         telemetryContext.AddCustomEvent(

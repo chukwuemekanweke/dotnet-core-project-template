@@ -6,4 +6,5 @@ namespace BackendProjectTemplate.Application.Authentication.Features.RegenerateT
 public sealed record RegenerateTwoFactorRecoveryCodesCommand(
     TwoFactorVerificationMethod VerificationMethod,
     string Code,
+    Guid CurrentSessionId,
     ActorContext ActorContext);

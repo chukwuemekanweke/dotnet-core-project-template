@@ -11,6 +11,8 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace BackendProjectTemplate.WebAPI.Features.Authentication.Security;
 
@@ -69,9 +71,14 @@ public sealed class TwoFactorController(
         var validation = await enrollmentValidator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
             return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+        if (!TryGetCurrentSessionId(out var currentSessionId))
+            return Unauthorized();
 
         var result = await enrollmentHandler.HandleAsync(
-            new VerifyTwoFactorEnrollmentCommand(request.Code, ActorContext.FromCurrentActor(currentActor)),
+            new VerifyTwoFactorEnrollmentCommand(
+                request.Code,
+                currentSessionId,
+                ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
         return result.Status switch
         {
@@ -92,10 +99,13 @@ public sealed class TwoFactorController(
         var validation = await proofValidator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
             return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+        if (!TryGetCurrentSessionId(out var currentSessionId))
+            return Unauthorized();
         var result = await recoveryCodesHandler.HandleAsync(
             new RegenerateTwoFactorRecoveryCodesCommand(
                 ParseMethod(request.VerificationMethod),
                 request.Code,
+                currentSessionId,
                 ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
         return result.Status switch
@@ -117,10 +127,13 @@ public sealed class TwoFactorController(
         var validation = await proofValidator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
             return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+        if (!TryGetCurrentSessionId(out var currentSessionId))
+            return Unauthorized();
         var result = await disableHandler.HandleAsync(
             new DisableTwoFactorCommand(
                 ParseMethod(request.VerificationMethod),
                 request.Code,
+                currentSessionId,
                 ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
         return result switch
@@ -138,4 +151,8 @@ public sealed class TwoFactorController(
         method == "authenticator"
             ? TwoFactorVerificationMethod.Authenticator
             : TwoFactorVerificationMethod.RecoveryCode;
+
+    private bool TryGetCurrentSessionId(out Guid sessionId) =>
+        Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ??
+            User.FindFirst(ClaimTypes.Sid)?.Value, out sessionId);
 }

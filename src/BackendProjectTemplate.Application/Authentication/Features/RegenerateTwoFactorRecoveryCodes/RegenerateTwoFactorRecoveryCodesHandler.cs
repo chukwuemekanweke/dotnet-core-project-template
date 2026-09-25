@@ -33,10 +33,7 @@ public sealed class RegenerateTwoFactorRecoveryCodesHandler(
         if (codes is null || codes.Length == 0)
             return new RegenerateTwoFactorRecoveryCodesResult(RegenerateTwoFactorRecoveryCodesStatus.Failed);
 
-        var stamp = await identityService.UpdateSecurityStampAsync(actor.User);
-        if (!stamp.Succeeded)
-            return new RegenerateTwoFactorRecoveryCodesResult(RegenerateTwoFactorRecoveryCodesStatus.Failed);
-        await sessionService.RevokeAllAsync(actor.StakeholderId, cancellationToken);
+        await sessionService.RevokeOthersAsync(command.CurrentSessionId, actor.StakeholderId, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         telemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.TwoFactorRecoveryCodesRegenerated,

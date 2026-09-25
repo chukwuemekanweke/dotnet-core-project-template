@@ -18,6 +18,7 @@ public sealed class WhenVerifyingTwoFactorEnrollment_Should
         var context = new AuthenticationFlowTestContext();
         var user = context.CreateUser();
         var stakeholderId = Guid.CreateVersion7();
+        var sessionId = Guid.CreateVersion7();
         var tenantId = Guid.CreateVersion7();
         var actorContext = new ActorContext(stakeholderId, tenantId, "correlation", "flow");
         context.StakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
@@ -28,7 +29,6 @@ public sealed class WhenVerifyingTwoFactorEnrollment_Should
         context.IdentityService.SetTwoFactorEnabledAsync(user, true).Returns(IdentityResult.Success);
         context.IdentityService.GenerateNewTwoFactorRecoveryCodesAsync(user, 10)
             .Returns(["recovery-one", "recovery-two"]);
-        context.IdentityService.UpdateSecurityStampAsync(user).Returns(IdentityResult.Success);
         var handler = new VerifyTwoFactorEnrollmentHandler(
             new TwoFactorActorResolver(context.StakeholderReadModelRepository, context.IdentityService),
             context.IdentityService,
@@ -38,10 +38,13 @@ public sealed class WhenVerifyingTwoFactorEnrollment_Should
             context.UnitOfWork);
 
         var result = await handler.HandleAsync(
-            new VerifyTwoFactorEnrollmentCommand("123456", actorContext), CancellationToken.None);
+            new VerifyTwoFactorEnrollmentCommand("123456", sessionId, actorContext), CancellationToken.None);
 
         result.Status.ShouldBe(VerifyTwoFactorEnrollmentStatus.Success);
         result.RecoveryCodes.ShouldBe(["recovery-one", "recovery-two"]);
+        await context.SessionService.Received(1)
+            .RevokeOthersAsync(sessionId, stakeholderId, Arg.Any<CancellationToken>());
+        await context.IdentityService.DidNotReceiveWithAnyArgs().UpdateSecurityStampAsync(default!);
     }
 
     [Fact]
@@ -50,6 +53,7 @@ public sealed class WhenVerifyingTwoFactorEnrollment_Should
         var context = new AuthenticationFlowTestContext();
         var user = context.CreateUser();
         var stakeholderId = Guid.CreateVersion7();
+        var sessionId = Guid.CreateVersion7();
         var tenantId = Guid.CreateVersion7();
         var actorContext = new ActorContext(stakeholderId, tenantId, "correlation", "flow");
         context.StakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
@@ -65,7 +69,7 @@ public sealed class WhenVerifyingTwoFactorEnrollment_Should
             context.UnitOfWork);
 
         var result = await handler.HandleAsync(
-            new VerifyTwoFactorEnrollmentCommand("000000", actorContext), CancellationToken.None);
+            new VerifyTwoFactorEnrollmentCommand("000000", sessionId, actorContext), CancellationToken.None);
 
         result.Status.ShouldBe(VerifyTwoFactorEnrollmentStatus.InvalidCode);
         await context.IdentityService.DidNotReceiveWithAnyArgs().SetTwoFactorEnabledAsync(default!, default);

@@ -64,11 +64,12 @@ calls `AuthenticationSessionIssuer` and publishes normal sign-in success. Invali
 Identity failed access and consume one challenge attempt.
 
 MFA management uses the active-session policy. Setup reads/creates Identity's authenticator key without
-replacing an in-progress key. Enrollment, recovery-code regeneration, and disable update the security
-stamp and revoke active application sessions; disable also resets the authenticator key. Recovery
-codes are returned only when generated and are never copied into application persistence or cache.
-Refresh-token rotation remains the existing transparent session flow and never requests MFA again;
-its security-stamp check rejects credentials invalidated by MFA security changes.
+replacing an in-progress key. Enrollment, recovery-code regeneration, and disable preserve the
+initiating session and its refresh-token lifecycle while revoking every other active application
+session; disable also resets the authenticator key. The initiating session id comes from the
+authorized access token rather than the request body. Recovery codes are returned only when generated
+and are never copied into application persistence or cache. Refresh-token rotation remains the
+existing transparent session flow and never requests MFA again.
 
 ## Google authentication continuation
 
