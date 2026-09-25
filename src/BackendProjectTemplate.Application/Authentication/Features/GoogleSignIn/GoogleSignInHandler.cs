@@ -18,7 +18,8 @@ public sealed class GoogleSignInHandler(
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ITwoFactorChallengeService twoFactorChallengeService)
 {
     public async Task<GoogleSignInResult> HandleAsync(GoogleSignInCommand request, CancellationToken cancellationToken)
     {
@@ -113,6 +114,24 @@ public sealed class GoogleSignInHandler(
 
             await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
             return new GoogleSignInResult(GoogleSignInStatus.EmailVerificationRequired, null);
+        }
+
+        if (await identityService.GetTwoFactorEnabledAsync(user))
+        {
+            var challenge = await twoFactorChallengeService.StartAsync(
+                user.Id,
+                stakeholder.Id,
+                stakeholder.TenantId,
+                AuthenticationMethod.Google,
+                request.ActorContext,
+                request.IpAddress,
+                request.UserAgent,
+                cancellationToken);
+            await googleAuthenticationFlowService.ConsumeAsync(flow, cancellationToken);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.TwoFactorChallengeRequired,
+                ObservabilityEventProperties.Create(request.ActorContext, stakeholder.Id));
+            return new GoogleSignInResult(GoogleSignInStatus.RequiresTwoFactor, null, Challenge: challenge);
         }
 
         var tokens = await sessionIssuer.IssueAsync(

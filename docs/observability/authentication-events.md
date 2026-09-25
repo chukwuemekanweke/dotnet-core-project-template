@@ -9,6 +9,7 @@ It is intentionally scoped to the flows that already exist in source code today:
 - email confirmation
 - password sign-in
 - Google sign-in
+- authenticator MFA challenge, verification, enrollment, disable, and recovery-code regeneration
 - sign-in failure processing
 - password reset request
 - password reset OTP delivery
@@ -50,6 +51,12 @@ Examples:
 - `PasswordSignUpCompleted`
 - `GoogleSignInStarted`
 - `GoogleSignInCompleted`
+- `TwoFactorChallengeRequired`
+- `TwoFactorVerificationCompleted`
+- `TwoFactorVerificationFailed`
+- `TwoFactorEnrollmentCompleted`
+- `TwoFactorDisabled`
+- `TwoFactorRecoveryCodesRegenerated`
 
 Do not encode redundant state like `outcome`, `source`, `auth_method`, `provider`, or `endpoint` as custom-event properties when the event name already expresses that meaning.
 

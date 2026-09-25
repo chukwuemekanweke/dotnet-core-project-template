@@ -62,7 +62,7 @@ public sealed class WhenLoggingOutWithValidAccessToken_Should(ContainersFixture 
         await WhenLoggingOut();
         await WhenLoggingOutAgainWithTheSameToken();
         _refreshAfterLogoutResponse = await Client.PostAsJsonAsync(EndpointUrl.Sessions.RefreshV1,
-            new RefreshSessionRequest(signInPayload!.RefreshToken));
+            new RefreshSessionRequest(signInPayload!.RefreshToken!));
         await ThenTheTokenIsRejectedAfterLogout();
 
         async Task WhenSigningIn()

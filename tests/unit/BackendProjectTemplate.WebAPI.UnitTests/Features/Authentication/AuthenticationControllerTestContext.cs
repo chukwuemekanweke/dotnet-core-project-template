@@ -41,6 +41,7 @@ internal sealed class AuthenticationControllerTestContext
     public IAuthenticationIdentityService IdentityService { get; } = Substitute.For<IAuthenticationIdentityService>();
     public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
     public IGoogleAuthenticationFlowService GoogleAuthenticationFlowService { get; } = Substitute.For<IGoogleAuthenticationFlowService>();
+    public ITwoFactorChallengeService TwoFactorChallengeService { get; } = Substitute.For<ITwoFactorChallengeService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
     public IAuthenticationSessionService SessionService { get; } = Substitute.For<IAuthenticationSessionService>();
     public IAccessTokenRevocationService AccessTokenRevocationService { get; } = Substitute.For<IAccessTokenRevocationService>();
@@ -112,7 +113,8 @@ internal sealed class AuthenticationControllerTestContext
         StakeholderResolver,
         CustomTelemetryContext,
         UnitOfWork,
-        Clock);
+        Clock,
+        TwoFactorChallengeService);
 
     public GoogleSignInHandler CreateGoogleSignInHandler() => new(
         IdentityService,
@@ -123,7 +125,8 @@ internal sealed class AuthenticationControllerTestContext
         StakeholderResolver,
         CustomTelemetryContext,
         UnitOfWork,
-        Clock);
+        Clock,
+        TwoFactorChallengeService);
 
     public RefreshSessionHandler CreateRefreshSessionHandler() => new(
         IdentityService,

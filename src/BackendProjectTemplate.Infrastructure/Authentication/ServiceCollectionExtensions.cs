@@ -59,8 +59,13 @@ public static class ServiceCollectionExtensions
             .GetSection(GoogleAuthenticationOptions.SectionName)
             .Get<GoogleAuthenticationOptions>() ?? new GoogleAuthenticationOptions();
         googleOptions.Validate();
+        var twoFactorOptions = configuration
+            .GetSection(TwoFactorAuthenticationOptions.SectionName)
+            .Get<TwoFactorAuthenticationOptions>() ?? new TwoFactorAuthenticationOptions();
+        twoFactorOptions.Validate();
 
         services.Configure<GoogleAuthenticationOptions>(configuration.GetSection(GoogleAuthenticationOptions.SectionName));
+        services.Configure<TwoFactorAuthenticationOptions>(configuration.GetSection(TwoFactorAuthenticationOptions.SectionName));
         services.Configure<RefreshTokenOptions>(configuration.GetSection(RefreshTokenOptions.SectionName));
         services.AddSingleton<IUserAgentParserService, UserAgentParserService>();
         services.AddScoped<IIpAddressResolver, IpAddressResolver>();
@@ -71,6 +76,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
         services.AddScoped<IGoogleIdentityTokenService, GoogleIdentityTokenService>();
         services.AddScoped<IGoogleAuthenticationFlowService, GoogleAuthenticationFlowService>();
+        services.AddScoped<ITwoFactorChallengeService, TwoFactorChallengeService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<ITwoFactorOtpService, TwoFactorOtpService>();
 

@@ -15,11 +15,11 @@ public sealed class When_GettingSessions_WithTwoLogins_Should(ContainersFixture 
     {
         var first = await SignInAsync();
         var second = await SignInAsync();
-        UseAccessToken(second.AccessToken);
+        UseAccessToken(second.AccessToken!);
 
         var response = Track(await HttpClient.GetAsync(EndpointUrl.Sessions.V1));
         var sessions = await response.Content.ReadFromJsonAsync<ActiveSessionResponse[]>();
-        var sid = new JwtSecurityTokenHandler().ReadJwtToken(second.AccessToken).Claims
+        var sid = new JwtSecurityTokenHandler().ReadJwtToken(second.AccessToken!).Claims
             .Single(claim => claim.Type == JwtRegisteredClaimNames.Sid).Value;
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);

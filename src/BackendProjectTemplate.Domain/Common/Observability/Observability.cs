@@ -81,6 +81,12 @@ public static class Observability
             public const string SignOutCompleted = "SignOutCompleted";
             public const string SessionRefreshCompleted = "SessionRefreshCompleted";
             public const string SessionRefreshPostProcessingCompleted = "SessionRefreshPostProcessingCompleted";
+            public const string TwoFactorChallengeRequired = "TwoFactorChallengeRequired";
+            public const string TwoFactorVerificationCompleted = "TwoFactorVerificationCompleted";
+            public const string TwoFactorVerificationFailed = "TwoFactorVerificationFailed";
+            public const string TwoFactorEnrollmentCompleted = "TwoFactorEnrollmentCompleted";
+            public const string TwoFactorDisabled = "TwoFactorDisabled";
+            public const string TwoFactorRecoveryCodesRegenerated = "TwoFactorRecoveryCodesRegenerated";
             public const string ProfileUpdateCompleted = "ProfileUpdateCompleted";
             public const string ProfileUpdateFailed = "ProfileUpdateFailed";
             public const string AvatarUploadCompleted = "AvatarUploadCompleted";

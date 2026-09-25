@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using BackendProjectTemplate.Application.Authentication.Constants;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.LinkGoogleAccount;
 using BackendProjectTemplate.Domain.Common.Auditing;
@@ -44,7 +45,7 @@ public sealed class GoogleLinksController(
         return result.Status switch
         {
             LinkGoogleAccountStatus.Success => Ok(new GoogleSignInResponse(
-                "authenticated",
+                AuthenticationOutcomes.Authenticated,
                 result.Tokens!.AccessToken.Value,
                 result.Tokens.AccessToken.ExpiresAtUtc,
                 result.Tokens.RefreshToken.Value,

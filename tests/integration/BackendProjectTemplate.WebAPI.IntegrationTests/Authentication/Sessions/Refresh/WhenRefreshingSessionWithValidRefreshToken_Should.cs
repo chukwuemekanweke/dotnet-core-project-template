@@ -73,7 +73,7 @@ public sealed class WhenRefreshingSessionWithValidRefreshToken_Should(Containers
         {
             _refreshResponse = await Client.PostAsJsonAsync(
                 EndpointUrl.Sessions.RefreshV1,
-                new RefreshSessionRequest(signInPayload!.RefreshToken));
+                new RefreshSessionRequest(signInPayload!.RefreshToken!));
 
             refreshPayload = await _refreshResponse.Content.ReadFromJsonAsync<RefreshSessionResponse>();
         }

@@ -16,6 +16,7 @@ public sealed class RateLimitingOptions
     public FixedWindowPolicyOptions EmailOperationsPolicy { get; init; } = new(5, 5, 0);
 
     public FixedWindowPolicyOptions PasswordResetPolicy { get; init; } = new(5, 15, 0);
+    public FixedWindowPolicyOptions TwoFactorVerificationPolicy { get; init; } = new(5, 5, 0);
 
     public sealed record FixedWindowPolicyOptions(
         int PermitLimit,
