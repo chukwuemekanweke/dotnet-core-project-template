@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         Validate(options.SignUpPolicy, nameof(RateLimitingOptions.SignUpPolicy));
         Validate(options.EmailOperationsPolicy, nameof(RateLimitingOptions.EmailOperationsPolicy));
         Validate(options.PasswordResetPolicy, nameof(RateLimitingOptions.PasswordResetPolicy));
+        Validate(options.TwoFactorVerificationPolicy, nameof(RateLimitingOptions.TwoFactorVerificationPolicy));
 
         services.Configure<RateLimitingOptions>(configuration.GetSection(RateLimitingOptions.SectionName));
         services.AddRateLimiter(rateLimiterOptions =>
@@ -43,6 +44,10 @@ public static class ServiceCollectionExtensions
             rateLimiterOptions.AddPolicy(
                 RateLimitingPolicyNames.PasswordResetPolicy,
                 context => CreateFixedWindowPartition(options.PasswordResetPolicy, ResolveClientIpPartitionKey(context)));
+
+            rateLimiterOptions.AddPolicy(
+                RateLimitingPolicyNames.TwoFactorVerificationPolicy,
+                context => CreateFixedWindowPartition(options.TwoFactorVerificationPolicy, ResolveClientIpPartitionKey(context)));
 
             rateLimiterOptions.OnRejected = async (context, cancellationToken) =>
             {

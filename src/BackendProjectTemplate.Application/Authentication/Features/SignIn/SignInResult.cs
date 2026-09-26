@@ -5,12 +5,14 @@ namespace BackendProjectTemplate.Application.Authentication.Features.SignIn;
 public sealed record SignInResult(
     SignInStatus Status,
     AuthenticationTokens? Tokens,
-    DateTimeOffset? LockedUntilUtc = null);
+    DateTimeOffset? LockedUntilUtc = null,
+    TwoFactorChallenge? Challenge = null);
 
 public enum SignInStatus
 {
     Success = 1,
     InvalidCredentials = 2,
     EmailNotVerified = 3,
-    AccountLocked = 4
+    AccountLocked = 4,
+    RequiresTwoFactor = 5
 }

@@ -6,4 +6,6 @@ public sealed record GoogleSignInResponse(
     DateTimeOffset? ExpiresAtUtc = null,
     string? RefreshToken = null,
     DateTimeOffset? RefreshTokenExpiresAtUtc = null,
-    string? TokenType = null);
+    string? TokenType = null,
+    string? Challenge = null,
+    DateTimeOffset? ChallengeExpiresAtUtc = null);

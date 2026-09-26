@@ -9,6 +9,15 @@ public interface IAuthenticationIdentityService
     Task<AppUser?> FindByEmailAsync(string email);
     Task<AppUser?> FindByLoginAsync(string loginProvider, string providerKey);
     Task<string> GetSecurityStampAsync(AppUser user);
+    Task<bool> GetTwoFactorEnabledAsync(AppUser user);
+    Task<string?> GetAuthenticatorKeyAsync(AppUser user);
+    Task<IdentityResult> ResetAuthenticatorKeyAsync(AppUser user);
+    Task<bool> VerifyAuthenticatorTokenAsync(AppUser user, string token);
+    Task<IdentityResult> SetTwoFactorEnabledAsync(AppUser user, bool enabled);
+    Task<IEnumerable<string>?> GenerateNewTwoFactorRecoveryCodesAsync(AppUser user, int number);
+    Task<int> CountRecoveryCodesAsync(AppUser user);
+    Task<IdentityResult> RedeemTwoFactorRecoveryCodeAsync(AppUser user, string code);
+    Task<IdentityResult> UpdateSecurityStampAsync(AppUser user);
     Task<bool> IsLockedOutAsync(AppUser user);
     Task<DateTimeOffset?> GetLockoutEndUtcAsync(AppUser user);
     Task<IdentityResult> CreateAsync(AppUser user);

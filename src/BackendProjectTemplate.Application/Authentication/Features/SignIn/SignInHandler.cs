@@ -16,7 +16,8 @@ public sealed class SignInHandler(
     StakeholderResolver stakeholderResolver,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ITwoFactorChallengeService twoFactorChallengeService)
 {
     public async Task<SignInResult> HandleAsync(SignInCommand request, CancellationToken cancellationToken)
     {
@@ -98,6 +99,23 @@ public sealed class SignInHandler(
         }
 
         var currentStakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
+        if (await identityService.GetTwoFactorEnabledAsync(user))
+        {
+            var challenge = await twoFactorChallengeService.StartAsync(
+                user.Id,
+                currentStakeholder.Id,
+                currentStakeholder.TenantId,
+                AuthenticationMethod.Password,
+                request.ActorContext,
+                request.IpAddress,
+                request.UserAgent,
+                cancellationToken);
+            customTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Authentication.TwoFactorChallengeRequired,
+                ObservabilityEventProperties.Create(request.ActorContext, currentStakeholder.Id));
+            return new SignInResult(SignInStatus.RequiresTwoFactor, null, Challenge: challenge);
+        }
+
         var tokens = await sessionIssuer.IssueAsync(
             user,
             currentStakeholder,

@@ -14,13 +14,13 @@ public sealed class When_DeletingOtherSessions_WithTwoLogins_Should(ContainersFi
     {
         var first = await SignInAsync();
         var current = await SignInAsync();
-        UseAccessToken(current.AccessToken);
+        UseAccessToken(current.AccessToken!);
 
         var deleted = Track(await HttpClient.DeleteAsync($"{EndpointUrl.Sessions.V1}/others"));
         var rejected = Track(await HttpClient.PostAsJsonAsync(EndpointUrl.Sessions.RefreshV1,
-            new RefreshSessionRequest(first.RefreshToken)));
+            new RefreshSessionRequest(first.RefreshToken!)));
         var active = Track(await HttpClient.PostAsJsonAsync(EndpointUrl.Sessions.RefreshV1,
-            new RefreshSessionRequest(current.RefreshToken)));
+            new RefreshSessionRequest(current.RefreshToken!)));
 
         deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         rejected.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);

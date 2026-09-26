@@ -5,7 +5,8 @@ namespace BackendProjectTemplate.Application.Authentication.Features.GoogleSignI
 public sealed record GoogleSignInResult(
     GoogleSignInStatus Status,
     AuthenticationTokens? Tokens,
-    DateTimeOffset? LockedUntilUtc = null);
+    DateTimeOffset? LockedUntilUtc = null,
+    TwoFactorChallenge? Challenge = null);
 
 public enum GoogleSignInStatus
 {
@@ -17,5 +18,6 @@ public enum GoogleSignInStatus
     GoogleFlowExpired = 6,
     GoogleFlowConsumed = 7,
     EmailVerificationRequired = 8,
-    AccountLocked = 9
+    AccountLocked = 9,
+    RequiresTwoFactor = 10
 }

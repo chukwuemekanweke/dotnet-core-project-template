@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using BackendProjectTemplate.Application.Authentication.Constants;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Domain.Common.Auditing;
@@ -131,7 +132,7 @@ public sealed class RegistrationsController(
                         ?? throw new InvalidOperationException("Retry time is required for the email-verification continuation.")
                 }),
             _ => Ok(new GoogleSignUpResponse(
-                "authenticated",
+                AuthenticationOutcomes.Authenticated,
                 result.Email ?? string.Empty,
                 result.Tokens!.AccessToken.Value,
                 result.Tokens.AccessToken.ExpiresAtUtc,

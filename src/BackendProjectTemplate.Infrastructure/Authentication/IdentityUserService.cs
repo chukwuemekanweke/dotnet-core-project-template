@@ -18,6 +18,33 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
     public Task<string> GetSecurityStampAsync(AppUser user) =>
         userManager.GetSecurityStampAsync(user);
 
+    public Task<bool> GetTwoFactorEnabledAsync(AppUser user) =>
+        userManager.GetTwoFactorEnabledAsync(user);
+
+    public Task<string?> GetAuthenticatorKeyAsync(AppUser user) =>
+        userManager.GetAuthenticatorKeyAsync(user);
+
+    public Task<IdentityResult> ResetAuthenticatorKeyAsync(AppUser user) =>
+        userManager.ResetAuthenticatorKeyAsync(user);
+
+    public Task<bool> VerifyAuthenticatorTokenAsync(AppUser user, string token) =>
+        userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider, token);
+
+    public Task<IdentityResult> SetTwoFactorEnabledAsync(AppUser user, bool enabled) =>
+        userManager.SetTwoFactorEnabledAsync(user, enabled);
+
+    public Task<IEnumerable<string>?> GenerateNewTwoFactorRecoveryCodesAsync(AppUser user, int number) =>
+        userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, number);
+
+    public Task<int> CountRecoveryCodesAsync(AppUser user) =>
+        userManager.CountRecoveryCodesAsync(user);
+
+    public Task<IdentityResult> RedeemTwoFactorRecoveryCodeAsync(AppUser user, string code) =>
+        userManager.RedeemTwoFactorRecoveryCodeAsync(user, NormalizeRecoveryCode(code));
+
+    public Task<IdentityResult> UpdateSecurityStampAsync(AppUser user) =>
+        userManager.UpdateSecurityStampAsync(user);
+
     public Task<bool> IsLockedOutAsync(AppUser user) =>
         userManager.IsLockedOutAsync(user);
 
@@ -56,4 +83,16 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
 
     public Task<IdentityResult> UpdateAsync(AppUser user) =>
         userManager.UpdateAsync(user);
+
+    private static string NormalizeRecoveryCode(string code)
+    {
+        var compactCode = code
+            .Replace("-", string.Empty, StringComparison.Ordinal)
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .ToUpperInvariant();
+
+        return compactCode.Length == 10
+            ? compactCode.Insert(5, "-")
+            : code.Trim();
+    }
 }

@@ -1,4 +1,6 @@
 using Asp.Versioning;
+using BackendProjectTemplate.Application.Authentication.Constants;
+using BackendProjectTemplate.Application.Authentication.Features.CompleteTwoFactorChallenge;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.ListSessions;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
@@ -118,11 +120,16 @@ public sealed class SessionsController(
         return result.Status switch
         {
             SignInStatus.Success => Ok(new SignInResponse(
+                AuthenticationOutcomes.Authenticated,
                 result.Tokens!.AccessToken.Value,
                 result.Tokens.AccessToken.ExpiresAtUtc,
                 result.Tokens.RefreshToken.Value,
                 result.Tokens.RefreshToken.ExpiresAtUtc,
                 "Bearer")),
+            SignInStatus.RequiresTwoFactor => Ok(new SignInResponse(
+                AuthenticationOutcomes.TwoFactorRequired,
+                Challenge: result.Challenge!.Token,
+                ChallengeExpiresAtUtc: result.Challenge.ExpiresAtUtc)),
             SignInStatus.EmailNotVerified => Problem(
                 statusCode: StatusCodes.Status403Forbidden,
                 title: "Email not verified",
@@ -169,14 +176,18 @@ public sealed class SessionsController(
         return result.Status switch
         {
             GoogleSignInStatus.Success => Ok(new GoogleSignInResponse(
-                "authenticated",
+                AuthenticationOutcomes.Authenticated,
                 result.Tokens!.AccessToken.Value,
                 result.Tokens.AccessToken.ExpiresAtUtc,
                 result.Tokens.RefreshToken.Value,
                 result.Tokens.RefreshToken.ExpiresAtUtc,
                 "Bearer")),
-            GoogleSignInStatus.LinkRequired => Ok(new GoogleSignInResponse("link_required")),
-            GoogleSignInStatus.RegistrationRequired => Ok(new GoogleSignInResponse("registration_required")),
+            GoogleSignInStatus.RequiresTwoFactor => Ok(new GoogleSignInResponse(
+                AuthenticationOutcomes.TwoFactorRequired,
+                Challenge: result.Challenge!.Token,
+                ChallengeExpiresAtUtc: result.Challenge.ExpiresAtUtc)),
+            GoogleSignInStatus.LinkRequired => Ok(new GoogleSignInResponse(AuthenticationOutcomes.LinkRequired)),
+            GoogleSignInStatus.RegistrationRequired => Ok(new GoogleSignInResponse(AuthenticationOutcomes.RegistrationRequired)),
             GoogleSignInStatus.InvalidGoogleCredential => AuthenticationProblemDetails.Create(
                 StatusCodes.Status401Unauthorized, AuthenticationErrorCodes.InvalidGoogleCredential,
                 "Invalid Google credential", "The supplied Google identity token is invalid or expired."),
@@ -200,6 +211,67 @@ public sealed class SessionsController(
             _ => AuthenticationProblemDetails.Create(
                 StatusCodes.Status401Unauthorized, AuthenticationErrorCodes.InvalidGoogleCredential,
                 "Google sign-in failed", "The Google sign-in request could not be completed.")
+        };
+    }
+
+    [HttpPost("two-factor")]
+    [EnableRateLimiting(RateLimitingPolicyNames.TwoFactorVerificationPolicy)]
+    [ProducesResponseType<CompleteTwoFactorChallengeResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status410Gone)]
+    [ProducesResponseType(StatusCodes.Status423Locked)]
+    public async Task<ActionResult<CompleteTwoFactorChallengeResponse>> CompleteTwoFactor(
+        [FromBody] CompleteTwoFactorChallengeRequest request,
+        [FromServices] CompleteTwoFactorChallengeHandler twoFactorHandler,
+        [FromServices] IValidator<CompleteTwoFactorChallengeRequest> twoFactorValidator,
+        CancellationToken cancellationToken)
+    {
+        var validation = await twoFactorValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+            return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+
+        var method = request.VerificationMethod == "authenticator"
+            ? TwoFactorVerificationMethod.Authenticator
+            : TwoFactorVerificationMethod.RecoveryCode;
+        var result = await twoFactorHandler.HandleAsync(
+            new CompleteTwoFactorChallengeCommand(request.Challenge, method, request.Code),
+            cancellationToken);
+
+        return result.Status switch
+        {
+            CompleteTwoFactorChallengeStatus.Success => Ok(new CompleteTwoFactorChallengeResponse(
+                AuthenticationOutcomes.Authenticated,
+                result.Tokens!.AccessToken.Value,
+                result.Tokens.AccessToken.ExpiresAtUtc,
+                result.Tokens.RefreshToken.Value,
+                result.Tokens.RefreshToken.ExpiresAtUtc,
+                "Bearer")),
+            CompleteTwoFactorChallengeStatus.InvalidCode => AuthenticationProblemDetails.Create(
+                StatusCodes.Status401Unauthorized, AuthenticationErrorCodes.InvalidTwoFactorCode,
+                "Invalid two-factor code", "The supplied two-factor code is invalid."),
+            CompleteTwoFactorChallengeStatus.ExpiredChallenge => AuthenticationProblemDetails.Create(
+                StatusCodes.Status410Gone, AuthenticationErrorCodes.TwoFactorChallengeExpired,
+                "Two-factor challenge expired", "The two-factor challenge has expired."),
+            CompleteTwoFactorChallengeStatus.ConsumedChallenge => AuthenticationProblemDetails.Create(
+                StatusCodes.Status409Conflict, AuthenticationErrorCodes.TwoFactorChallengeConsumed,
+                "Two-factor challenge consumed", "The two-factor challenge has already been used."),
+            CompleteTwoFactorChallengeStatus.ExhaustedChallenge => AuthenticationProblemDetails.Create(
+                StatusCodes.Status410Gone, AuthenticationErrorCodes.TwoFactorChallengeExhausted,
+                "Two-factor challenge exhausted", "The two-factor challenge has no attempts remaining."),
+            CompleteTwoFactorChallengeStatus.AccountLocked => AuthenticationProblemDetails.Create(
+                StatusCodes.Status423Locked, AuthenticationErrorCodes.AccountLocked, "Account locked",
+                result.LockedUntilUtc.HasValue
+                    ? $"The account is locked until {DateTimeFormatter.FormatHumanReadableUtc(result.LockedUntilUtc.Value, timeProvider.GetUtcNow())}."
+                    : "The account is currently locked."),
+            CompleteTwoFactorChallengeStatus.EmailNotVerified => AuthenticationProblemDetails.Create(
+                StatusCodes.Status403Forbidden, AuthenticationErrorCodes.EmailVerificationRequired,
+                "Email verification required", "The account email must be verified before signing in."),
+            _ => AuthenticationProblemDetails.Create(
+                StatusCodes.Status400BadRequest, AuthenticationErrorCodes.TwoFactorChallengeInvalid,
+                "Invalid two-factor challenge", "The two-factor challenge is invalid.")
         };
     }
 
