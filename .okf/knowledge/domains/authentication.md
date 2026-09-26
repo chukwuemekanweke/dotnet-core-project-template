@@ -68,7 +68,9 @@ replacing an in-progress key. Enrollment, recovery-code regeneration, and disabl
 initiating session and its refresh-token lifecycle while revoking every other active application
 session; disable also resets the authenticator key. The initiating session id comes from the
 authorized access token rather than the request body. Recovery codes are returned only when generated
-and are never copied into application persistence or cache. Refresh-token rotation remains the
+and are never copied into application persistence or cache. Recovery-code input accepts Identity's
+canonical `XXXXX-XXXXX` form as well as compact, spaced, or case-varied equivalents; invalid MFA
+proofs return the stable `invalid_two_factor_code` problem code. Refresh-token rotation remains the
 existing transparent session flow and never requests MFA again.
 
 ## Google authentication continuation

@@ -83,7 +83,7 @@ public sealed class TwoFactorController(
         return result.Status switch
         {
             VerifyTwoFactorEnrollmentStatus.Success => Ok(new RecoveryCodesResponse(result.RecoveryCodes!)),
-            VerifyTwoFactorEnrollmentStatus.InvalidCode => Unauthorized(),
+            VerifyTwoFactorEnrollmentStatus.InvalidCode => InvalidTwoFactorCode(),
             VerifyTwoFactorEnrollmentStatus.AlreadyEnabled => Conflict(),
             VerifyTwoFactorEnrollmentStatus.NotAuthenticated => Unauthorized(),
             _ => Problem(statusCode: StatusCodes.Status500InternalServerError,
@@ -111,7 +111,7 @@ public sealed class TwoFactorController(
         return result.Status switch
         {
             RegenerateTwoFactorRecoveryCodesStatus.Success => Ok(new RecoveryCodesResponse(result.RecoveryCodes!)),
-            RegenerateTwoFactorRecoveryCodesStatus.InvalidProof => Unauthorized(),
+            RegenerateTwoFactorRecoveryCodesStatus.InvalidProof => InvalidTwoFactorCode(),
             RegenerateTwoFactorRecoveryCodesStatus.NotEnabled => Conflict(),
             RegenerateTwoFactorRecoveryCodesStatus.NotAuthenticated => Unauthorized(),
             _ => Problem(statusCode: StatusCodes.Status500InternalServerError,
@@ -139,7 +139,7 @@ public sealed class TwoFactorController(
         return result switch
         {
             DisableTwoFactorResult.Success => NoContent(),
-            DisableTwoFactorResult.InvalidProof => Unauthorized(),
+            DisableTwoFactorResult.InvalidProof => InvalidTwoFactorCode(),
             DisableTwoFactorResult.NotEnabled => Conflict(),
             DisableTwoFactorResult.NotAuthenticated => Unauthorized(),
             _ => Problem(statusCode: StatusCodes.Status500InternalServerError,
@@ -151,6 +151,13 @@ public sealed class TwoFactorController(
         method == "authenticator"
             ? TwoFactorVerificationMethod.Authenticator
             : TwoFactorVerificationMethod.RecoveryCode;
+
+    private static ObjectResult InvalidTwoFactorCode() =>
+        AuthenticationProblemDetails.Create(
+            StatusCodes.Status401Unauthorized,
+            AuthenticationErrorCodes.InvalidTwoFactorCode,
+            "Invalid two-factor code",
+            "The supplied two-factor code is invalid.");
 
     private bool TryGetCurrentSessionId(out Guid sessionId) =>
         Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ??

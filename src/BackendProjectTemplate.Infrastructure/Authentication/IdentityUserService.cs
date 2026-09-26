@@ -40,7 +40,7 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
         userManager.CountRecoveryCodesAsync(user);
 
     public Task<IdentityResult> RedeemTwoFactorRecoveryCodeAsync(AppUser user, string code) =>
-        userManager.RedeemTwoFactorRecoveryCodeAsync(user, code);
+        userManager.RedeemTwoFactorRecoveryCodeAsync(user, NormalizeRecoveryCode(code));
 
     public Task<IdentityResult> UpdateSecurityStampAsync(AppUser user) =>
         userManager.UpdateSecurityStampAsync(user);
@@ -83,4 +83,16 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
 
     public Task<IdentityResult> UpdateAsync(AppUser user) =>
         userManager.UpdateAsync(user);
+
+    private static string NormalizeRecoveryCode(string code)
+    {
+        var compactCode = code
+            .Replace("-", string.Empty, StringComparison.Ordinal)
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .ToUpperInvariant();
+
+        return compactCode.Length == 10
+            ? compactCode.Insert(5, "-")
+            : code.Trim();
+    }
 }
