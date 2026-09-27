@@ -3,4 +3,4 @@ namespace BackendProjectTemplate.Application.Authentication.Features.ListSession
 public sealed record ActiveSessionResult(Guid SessionId, string? DeviceName, string? DevicePlatform,
     string? BrowserName, string UserAgent, string FirstIpAddress, string LastIpAddress,
     DateTimeOffset CreatedAtUtc, DateTimeOffset LastActiveAtUtc, DateTimeOffset ExpiresAtUtc,
-    bool IsCurrent);
+    bool IsCurrent, string? City, string? State, string? Country);

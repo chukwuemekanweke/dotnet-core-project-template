@@ -4,6 +4,7 @@ public sealed record GetLoginActivityHistoryResponse(
     Guid Id,
     string ActivityType,
     DateTimeOffset OccurredAtUtc,
+    string IpAddress,
     string? DeviceName,
     string? DevicePlatform,
     string? BrowserName,

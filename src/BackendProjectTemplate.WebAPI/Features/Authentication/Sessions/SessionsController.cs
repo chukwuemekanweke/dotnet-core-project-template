@@ -55,7 +55,8 @@ public sealed class SessionsController(
         var result = sessions.Select(session => new ActiveSessionResponse(session.SessionId,
             session.DeviceName, session.DevicePlatform, session.BrowserName, session.UserAgent,
             session.FirstIpAddress, session.LastIpAddress, session.CreatedAtUtc,
-            session.LastActiveAtUtc, session.ExpiresAtUtc, session.IsCurrent)).ToArray();
+            session.LastActiveAtUtc, session.ExpiresAtUtc, session.IsCurrent,
+            session.City, session.State, session.Country)).ToArray();
         return Ok(result);
     }
 

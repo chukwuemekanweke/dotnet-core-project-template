@@ -18,7 +18,7 @@ public sealed class When_GettingLoginActivityHistory_WithFinalPage_Should
             .Returns(new LoginActivityHistoryCursorPage(
                 [new LoginActivityHistoryReadModel(
                     Guid.CreateVersion7(), LoginActivityType.InitialLogin, DateTimeOffset.UtcNow,
-                    null, null, null, "Lagos", "Lagos", "Nigeria")],
+                    "203.0.113.10", null, null, null, "Lagos", "Lagos", "Nigeria")],
                 false));
 
         var result = await context.CreateHandler().HandleAsync(

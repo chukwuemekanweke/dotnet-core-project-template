@@ -6,6 +6,7 @@ public sealed record LoginActivityHistoryReadModel(
     Guid LoginActivityId,
     LoginActivityType ActivityType,
     DateTimeOffset OccurredAtUtc,
+    string IpAddress,
     string? DeviceName,
     string? DevicePlatform,
     string? BrowserName,

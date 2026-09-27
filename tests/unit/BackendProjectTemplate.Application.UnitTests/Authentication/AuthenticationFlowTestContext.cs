@@ -6,6 +6,7 @@ using BackendProjectTemplate.Application.Authentication.Features.CompleteTwoFact
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.LinkGoogleAccount;
+using BackendProjectTemplate.Application.Authentication.Features.ListSessions;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
 using BackendProjectTemplate.Application.Authentication.Features.RequestEmailConfirmationOtp;
@@ -15,6 +16,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Authentication.ReadModels;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -37,6 +39,7 @@ internal sealed class AuthenticationFlowTestContext
     public ITwoFactorChallengeService TwoFactorChallengeService { get; } = Substitute.For<ITwoFactorChallengeService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
     public IAuthenticationSessionService SessionService { get; } = Substitute.For<IAuthenticationSessionService>();
+    public IActiveSessionReadModelRepository ActiveSessionReadModelRepository { get; } = Substitute.For<IActiveSessionReadModelRepository>();
     public IAccessTokenRevocationService AccessTokenRevocationService { get; } = Substitute.For<IAccessTokenRevocationService>();
     public ITwoFactorOtpService TwoFactorOtpService { get; } = Substitute.For<ITwoFactorOtpService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
@@ -215,6 +218,8 @@ internal sealed class AuthenticationFlowTestContext
         CustomTelemetryContext,
         SessionService,
         UnitOfWork);
+
+    public ListSessionsHandler CreateListSessionsHandler() => new(ActiveSessionReadModelRepository, Clock);
 
     private static ActorContext TestActorContext() => new(
         Guid.CreateVersion7(),

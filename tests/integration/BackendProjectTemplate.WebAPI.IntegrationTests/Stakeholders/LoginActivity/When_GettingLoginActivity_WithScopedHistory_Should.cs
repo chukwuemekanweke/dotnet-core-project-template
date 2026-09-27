@@ -34,6 +34,8 @@ public sealed class When_GettingLoginActivity_WithScopedHistory_Should(Container
     private Guid _stakeholderTypeId;
     private Guid _newestActivityId;
     private Guid _secondActivityId;
+    private string _locatedIpAddressValue = string.Empty;
+    private string _unresolvedIpAddressValue = string.Empty;
     private bool _createdCountryForTest;
     private HttpResponseMessage? _response;
 
@@ -66,17 +68,19 @@ public sealed class When_GettingLoginActivity_WithScopedHistory_Should(Container
 
         payload.ShouldNotBeNull();
         payload.Activities.Select(activity => activity.Id).ShouldBe([_newestActivityId, _secondActivityId]);
-        payload.Activities[0].ActivityType.ShouldBe(nameof(LoginActivityType.InitialLogin));
+        payload.Activities.ShouldAllBe(activity =>
+            activity.ActivityType == nameof(LoginActivityType.InitialLogin));
         payload.Activities[0].DeviceName.ShouldBe("Desktop");
         payload.Activities[0].DevicePlatform.ShouldBe("Windows");
         payload.Activities[0].BrowserName.ShouldBe("Chrome");
+        payload.Activities[0].IpAddress.ShouldBe(_locatedIpAddressValue);
         payload.Activities[0].City.ShouldBe("Lagos");
         payload.Activities[0].State.ShouldBe("Lagos");
         payload.Activities[0].Country.ShouldBe("Nigeria");
         payload.Activities[1].City.ShouldBeNull();
+        payload.Activities[1].IpAddress.ShouldBe(_unresolvedIpAddressValue);
         payload.NextCursor.ShouldNotBeNull();
         json.ShouldNotContain("userAgent", Case.Insensitive);
-        json.ShouldNotContain("ipAddress", Case.Insensitive);
         json.ShouldNotContain("198.51.100", Case.Insensitive);
     }
 
@@ -85,9 +89,11 @@ public sealed class When_GettingLoginActivity_WithScopedHistory_Should(Container
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
-        var locatedIpAddress = IpAddress.Create($"2001:db8::{uniqueSuffix}");
+        _locatedIpAddressValue = $"2001:db8::{uniqueSuffix[..4]}:{uniqueSuffix[4..]}";
+        _unresolvedIpAddressValue = $"2001:db8:1::{uniqueSuffix[..4]}:{uniqueSuffix[4..]}";
+        var locatedIpAddress = IpAddress.Create(_locatedIpAddressValue);
         locatedIpAddress.ApplyLocationResolution("Lagos", "Lagos", "Nigeria", DateTimeOffset.UtcNow.AddMinutes(-10));
-        var unresolvedIpAddress = IpAddress.Create($"2001:db8:1::{uniqueSuffix}");
+        var unresolvedIpAddress = IpAddress.Create(_unresolvedIpAddressValue);
 
         await dbContext.IpAddresses.AddRangeAsync(locatedIpAddress, unresolvedIpAddress);
         await dbContext.SaveChangesAsync();
@@ -99,10 +105,13 @@ public sealed class When_GettingLoginActivity_WithScopedHistory_Should(Container
         var newest = LoginActivityEntity.CreateInitialLogin(
             _stakeholderId, _tenantId, locatedIpAddress.Id, locationId,
             "integration-test-agent-sensitive", "Desktop", "Windows", "Chrome", baseline.AddMinutes(3));
-        var second = LoginActivityEntity.CreateTokenRefresh(
+        var refresh = LoginActivityEntity.CreateTokenRefresh(
+            _stakeholderId, _tenantId, locatedIpAddress.Id, locationId,
+            "integration-test-agent-sensitive", "Desktop", "Windows", "Chrome", baseline.AddMinutes(2.5));
+        var second = LoginActivityEntity.CreateInitialLogin(
             _stakeholderId, _tenantId, unresolvedIpAddress.Id, null,
             "integration-test-agent-sensitive", "Phone", "Android", "Chrome", baseline.AddMinutes(2));
-        var third = LoginActivityEntity.CreateTokenRefresh(
+        var third = LoginActivityEntity.CreateInitialLogin(
             _stakeholderId, _tenantId, locatedIpAddress.Id, locationId,
             "integration-test-agent-sensitive", "Desktop", "Windows", "Chrome", baseline.AddMinutes(1));
         var otherStakeholder = LoginActivityEntity.CreateInitialLogin(
@@ -112,12 +121,14 @@ public sealed class When_GettingLoginActivity_WithScopedHistory_Should(Container
             _stakeholderId, Guid.CreateVersion7(), locatedIpAddress.Id, locationId,
             "must-not-leak", null, null, null, baseline.AddMinutes(4));
 
-        await dbContext.LoginActivities.AddRangeAsync(newest, second, third, otherStakeholder, otherTenant);
+        await dbContext.LoginActivities.AddRangeAsync(
+            newest, refresh, second, third, otherStakeholder, otherTenant);
         await dbContext.SaveChangesAsync();
 
         _newestActivityId = newest.Id;
         _secondActivityId = second.Id;
-        _loginActivityIds.AddRange([newest.Id, second.Id, third.Id, otherStakeholder.Id, otherTenant.Id]);
+        _loginActivityIds.AddRange(
+            [newest.Id, refresh.Id, second.Id, third.Id, otherStakeholder.Id, otherTenant.Id]);
     }
 
     private async Task AuthenticateAsync()

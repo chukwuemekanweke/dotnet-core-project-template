@@ -28,6 +28,9 @@ public sealed class When_GettingSessions_WithTwoLogins_Should(ContainersFixture 
         sessions[0].IsCurrent.ShouldBeTrue();
         sessions[0].SessionId.ToString().ShouldBe(sid);
         sessions[1].IsCurrent.ShouldBeFalse();
+        sessions[0].City.ShouldBeNull();
+        sessions[0].State.ShouldBeNull();
+        sessions[0].Country.ShouldBeNull();
         first.AccessToken.ShouldNotBe(second.AccessToken);
     }
 }
