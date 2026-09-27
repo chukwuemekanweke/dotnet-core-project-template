@@ -17,6 +17,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using BackendProjectTemplate.Domain.Authentication.ReadModels;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -44,6 +45,7 @@ internal sealed class AuthenticationControllerTestContext
     public ITwoFactorChallengeService TwoFactorChallengeService { get; } = Substitute.For<ITwoFactorChallengeService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
     public IAuthenticationSessionService SessionService { get; } = Substitute.For<IAuthenticationSessionService>();
+    public IActiveSessionReadModelRepository ActiveSessionReadModelRepository { get; } = Substitute.For<IActiveSessionReadModelRepository>();
     public IAccessTokenRevocationService AccessTokenRevocationService { get; } = Substitute.For<IAccessTokenRevocationService>();
     public ITwoFactorOtpService TwoFactorOtpService { get; } = Substitute.For<ITwoFactorOtpService>();
     public IAccessTokenService AccessTokenService { get; } = Substitute.For<IAccessTokenService>();
@@ -162,7 +164,7 @@ internal sealed class AuthenticationControllerTestContext
         ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = user } }
     };
 
-    public ListSessionsHandler CreateListSessionsHandler() => new(SessionService);
+    public ListSessionsHandler CreateListSessionsHandler() => new(ActiveSessionReadModelRepository, Clock);
     public RevokeSessionHandler CreateRevokeSessionHandler() => new(SessionService, UnitOfWork);
     public RevokeOtherSessionsHandler CreateRevokeOtherSessionsHandler() => new(SessionService, UnitOfWork);
 

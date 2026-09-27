@@ -15,6 +15,7 @@ code_refs:
     - src/BackendProjectTemplate.Domain/Authentication/**
     - src/BackendProjectTemplate.Infrastructure/Authentication/**
     - src/BackendProjectTemplate.Infrastructure/Persistence/LoginActivityReadModelRepository.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/ActiveSessionReadModelRepository.cs
     - src/BackendProjectTemplate.WebAPI/Features/Authentication/**
     - src/BackendProjectTemplate.WebAPI/Features/Stakeholders/LoginActivity/**
     - src/BackendProjectTemplate.Consumer/Authentication/**
@@ -95,6 +96,29 @@ tenant identity as an additional stakeholder lookup key.
 For that non-authoritative-email registration path, the `email_verification_required` 403 Problem
 Details response includes the server-side flow `email` and the confirmation expiry as `retryAtUtc`;
 clients must use this continuation metadata instead of asking the user to re-enter the Google email.
+
+## Active-session and login-activity location display
+
+Both `GET /sessions` (active sessions) and login-activity history expose the relevant IP address plus
+coarse `City`/`State`/`Country` fields, but neither endpoint calls a geolocation provider itself.
+Location is resolved centrally per unique IP value and periodically refreshed when stale by
+`Jobs.Authentication.IpAddressLocationEnrichmentProcessor` (batched, via
+`IIpGeolocationService`/`IIpGeolocationProvider`), and persisted on the shared `IpAddress`/
+`IpAddressLocation` aggregate (`IsCurrentLocation` marks the live row; see [[persistence]]). Both
+read endpoints are dedicated `AppReadDbContext`-backed read-model repositories
+(`ILoginActivityReadModelRepository`/`LoginActivityReadModelRepository`,
+`IActiveSessionReadModelRepository`/`ActiveSessionReadModelRepository`) that LEFT JOIN against that
+shared location data in a single query — never re-resolving or re-calling a provider per request, and
+never per-row (no N+1). `ActiveSessionReadModelRepository` joins on `AuthenticationSession.LastIpAddressId`
+filtered to `IsCurrentLocation`, so a session's displayed location always reflects the current
+resolution for its last-seen IP. `IAuthenticationSessionService.ListActiveAsync` (the aggregate/
+specification-backed listing used by session revocation) is untouched by this and stays separate from
+the read-model path used for display.
+An IP that fails to resolve (private/loopback/local, or an unresponsive provider) degrades to
+`null` City/State/Country on the affected sessions/activities; it never fails the request.
+The user-facing login-activity history returns successful initial sign-ins only. Token-refresh
+activity may remain persisted for internal audit and telemetry purposes, but the read-model query
+filters it before ordering and cursor pagination.
 
 ## Cross-cutting
 

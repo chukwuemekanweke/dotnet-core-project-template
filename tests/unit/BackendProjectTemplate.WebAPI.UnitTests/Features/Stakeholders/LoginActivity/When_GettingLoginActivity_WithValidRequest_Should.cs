@@ -25,7 +25,7 @@ public sealed class When_GettingLoginActivity_WithValidRequest_Should
             .Returns(new LoginActivityHistoryCursorPage(
                 [new LoginActivityHistoryReadModel(
                     Guid.CreateVersion7(), LoginActivityType.InitialLogin, DateTimeOffset.UtcNow,
-                    "Desktop", "Windows", "Chrome", "Lagos", "Lagos", "Nigeria")],
+                    "203.0.113.10", "Desktop", "Windows", "Chrome", "Lagos", "Lagos", "Nigeria")],
                 false));
 
         var result = await context.CreateController().Handle(
@@ -33,7 +33,9 @@ public sealed class When_GettingLoginActivity_WithValidRequest_Should
             CancellationToken.None);
 
         var ok = result.Result.ShouldBeOfType<OkObjectResult>();
-        ok.Value.ShouldBeOfType<LoginActivityHistoryResponse>().Activities.Count.ShouldBe(1);
+        var response = ok.Value.ShouldBeOfType<LoginActivityHistoryResponse>();
+        response.Activities.Count.ShouldBe(1);
+        response.Activities[0].IpAddress.ShouldBe("203.0.113.10");
         capturedRequest.ShouldNotBeNull();
         capturedRequest.StakeholderId.ShouldBe(stakeholderId);
         capturedRequest.TenantId.ShouldBe(tenantId);

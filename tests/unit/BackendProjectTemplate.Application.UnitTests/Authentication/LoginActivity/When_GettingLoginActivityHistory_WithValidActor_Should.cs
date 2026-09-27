@@ -24,6 +24,7 @@ public sealed class When_GettingLoginActivityHistory_WithValidActor_Should
                     Guid.CreateVersion7(),
                     LoginActivityType.InitialLogin,
                     occurredAtUtc,
+                    "203.0.113.10",
                     "Desktop",
                     "Windows",
                     "Chrome",
@@ -43,6 +44,7 @@ public sealed class When_GettingLoginActivityHistory_WithValidActor_Should
         result.Activities.Count.ShouldBe(1);
         result.Activities[0].ActivityType.ShouldBe(nameof(LoginActivityType.InitialLogin));
         result.Activities[0].OccurredAtUtc.ShouldBe(occurredAtUtc);
+        result.Activities[0].IpAddress.ShouldBe("203.0.113.10");
         result.Activities[0].City.ShouldBeNull();
         result.NextCursor.ShouldBeNull();
         capturedRequest.ShouldNotBeNull();

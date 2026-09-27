@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.ReadModels;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,16 +12,20 @@ public sealed class LoginActivityReadModelRepository(AppReadDbContext dbContext)
     {
         var query =
             from loginActivity in dbContext.LoginActivities.AsNoTracking()
+            join ipAddress in dbContext.IpAddresses.AsNoTracking()
+                on loginActivity.IpAddressId equals ipAddress.Id
             join ipAddressLocation in dbContext.IpAddressLocations.AsNoTracking()
                 on loginActivity.IpAddressLocationId equals ipAddressLocation.Id into locations
             from ipAddressLocation in locations.DefaultIfEmpty()
             where loginActivity.TenantId == request.TenantId &&
-                loginActivity.StakeholderId == request.StakeholderId
+                loginActivity.StakeholderId == request.StakeholderId &&
+                loginActivity.ActivityType == LoginActivityType.InitialLogin
             select new
             {
                 loginActivity.Id,
                 loginActivity.ActivityType,
                 loginActivity.OccurredAtUtc,
+                IpAddress = ipAddress.Value,
                 loginActivity.DeviceName,
                 loginActivity.DevicePlatform,
                 loginActivity.BrowserName,
@@ -47,6 +52,7 @@ public sealed class LoginActivityReadModelRepository(AppReadDbContext dbContext)
                 activity.Id,
                 activity.ActivityType,
                 activity.OccurredAtUtc,
+                activity.IpAddress,
                 activity.DeviceName,
                 activity.DevicePlatform,
                 activity.BrowserName,

@@ -35,6 +35,7 @@ public sealed class GetLoginActivityHistoryHandler(ILoginActivityReadModelReposi
                 activity.LoginActivityId,
                 activity.ActivityType.ToString(),
                 activity.OccurredAtUtc,
+                activity.IpAddress,
                 activity.DeviceName,
                 activity.DevicePlatform,
                 activity.BrowserName,

@@ -25,8 +25,8 @@ public sealed class When_GettingLoginActivityHistory_WithCursorAndMoreResults_Sh
                 Arg.Any<CancellationToken>())
             .Returns(new LoginActivityHistoryCursorPage(
                 [
-                    new LoginActivityHistoryReadModel(newestId, LoginActivityType.TokenRefresh, newestTime, null, null, null, null, null, null),
-                    new LoginActivityHistoryReadModel(oldestId, LoginActivityType.InitialLogin, oldestTime, null, null, null, null, null, null)
+                    new LoginActivityHistoryReadModel(newestId, LoginActivityType.InitialLogin, newestTime, "203.0.113.10", null, null, null, null, null, null),
+                    new LoginActivityHistoryReadModel(oldestId, LoginActivityType.InitialLogin, oldestTime, "203.0.113.11", null, null, null, null, null, null)
                 ],
                 true));
 
