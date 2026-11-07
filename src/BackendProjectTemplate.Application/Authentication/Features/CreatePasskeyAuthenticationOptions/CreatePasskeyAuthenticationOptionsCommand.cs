@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.Application.Authentication.Features.CreatePasskeyAuthenticationOptions;
+
+public sealed record CreatePasskeyAuthenticationOptionsCommand(Guid TenantId);

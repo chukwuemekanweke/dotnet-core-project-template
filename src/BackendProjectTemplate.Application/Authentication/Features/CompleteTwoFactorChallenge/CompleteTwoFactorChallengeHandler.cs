@@ -27,7 +27,7 @@ public sealed class CompleteTwoFactorChallengeHandler(
 
         var challenge = taken.Challenge!;
         var user = await identityService.FindByIdAsync(challenge.AppUserId);
-        if (user is null || !await identityService.GetTwoFactorEnabledAsync(user))
+        if (user is null || user.IsDeleted || !await identityService.GetTwoFactorEnabledAsync(user))
             return new CompleteTwoFactorChallengeResult(CompleteTwoFactorChallengeStatus.InvalidChallenge);
 
         var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);
@@ -88,9 +88,13 @@ public sealed class CompleteTwoFactorChallengeHandler(
             OccuredAt = timeProvider.GetUtcNow()
         }, cancellationToken);
         customTelemetryContext.AddCustomEvent(
-            challenge.AuthenticationMethod == AuthenticationMethod.Password
-                ? Observability.EventNames.Authentication.PasswordSignInCompleted
-                : Observability.EventNames.Authentication.GoogleSignInCompleted,
+            challenge.AuthenticationMethod switch
+            {
+                AuthenticationMethod.Password => Observability.EventNames.Authentication.PasswordSignInCompleted,
+                AuthenticationMethod.Google => Observability.EventNames.Authentication.GoogleSignInCompleted,
+                AuthenticationMethod.Passkey => Observability.EventNames.Authentication.PasskeySignInCompleted,
+                _ => Observability.EventNames.Authentication.UnknownSignInCompleted
+            },
             ObservabilityEventProperties.Create(challenge.ActorContext, stakeholder.Id));
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.TwoFactorVerificationCompleted,

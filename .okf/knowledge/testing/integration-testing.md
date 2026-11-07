@@ -41,4 +41,9 @@ endpoint/handler/background-service covering the most meaningful end-to-end path
 
 - Testcontainers back integration dependencies; shared container setup lives in the project fixture, per-test data setup/cleanup lives in the test class.
 - WebAPI auth integration tests delete the authentication records for the email used by the scenario.
+- Passkey workflow tests replace the framework `IPasskeyHandler<AppUser>` boundary while retaining
+  real PostgreSQL and Redis containers. They verify credential and session persistence plus
+  one-time challenge consumption/replay; native WebAuthn cryptography remains covered by the
+  framework and eventual browser interoperability checks with an established authenticator, never
+  by a custom test authenticator.
 - Consumer and Jobs integration tests currently validate health endpoints and don't create application records, so cleanup there is normally limited to response/host disposal.

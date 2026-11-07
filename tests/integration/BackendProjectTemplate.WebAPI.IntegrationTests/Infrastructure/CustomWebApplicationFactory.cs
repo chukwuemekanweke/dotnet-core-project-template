@@ -14,7 +14,8 @@ public sealed class CustomWebApplicationFactory(
     string postgresConnectionString,
     string redisConnectionString,
     bool useFakePaymentProviderServices = true,
-    IReadOnlyDictionary<string, string?>? configurationOverrides = null) : WebApplicationFactory<Program>
+    IReadOnlyDictionary<string, string?>? configurationOverrides = null,
+    Action<IServiceCollection>? configureServices = null) : WebApplicationFactory<Program>
 {
     public FakeGoogleIdentityTokenService GoogleIdentityTokenService { get; } = new();
 
@@ -107,6 +108,8 @@ public sealed class CustomWebApplicationFactory(
             {
                 options.ConnectionMultiplexerFactory = () => Task.FromResult(lazyMultiplexer.Value);
             });
+
+            configureServices?.Invoke(services);
         });
     }
 }
