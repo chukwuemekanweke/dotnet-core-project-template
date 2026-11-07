@@ -174,6 +174,8 @@ public sealed class PasskeysController(
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
         Policy = AuthorizationPolicyNames.RequireActiveSession)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Rename(
         string credentialId,
         [FromBody] RenamePasskeyRequest request,
@@ -187,20 +189,34 @@ public sealed class PasskeysController(
         var result = await renameHandler.HandleAsync(
             new RenamePasskeyCommand(appUserId, stakeholderId, tenantId, credentialId, request.Name),
             cancellationToken);
-        return result == PasskeyOperationStatus.Success ? NoContent() : NotFound();
+        return result switch
+        {
+            PasskeyOperationStatus.Success => NoContent(),
+            PasskeyOperationStatus.NotFound => NotFound(),
+            _ => Problem(statusCode: StatusCodes.Status500InternalServerError,
+                title: "Unable to rename passkey")
+        };
     }
 
     [HttpDelete("{credentialId}")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
         Policy = AuthorizationPolicyNames.RequireActiveSession)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Remove(string credentialId, CancellationToken cancellationToken)
     {
         if (!TryGetAuthenticatedIdentity(out var appUserId, out var stakeholderId, out var tenantId))
             return Unauthorized();
         var result = await removeHandler.HandleAsync(
             new RemovePasskeyCommand(appUserId, stakeholderId, tenantId, credentialId), cancellationToken);
-        return result == PasskeyOperationStatus.Success ? NoContent() : NotFound();
+        return result switch
+        {
+            PasskeyOperationStatus.Success => NoContent(),
+            PasskeyOperationStatus.NotFound => NotFound(),
+            _ => Problem(statusCode: StatusCodes.Status500InternalServerError,
+                title: "Unable to remove passkey")
+        };
     }
 
     private bool TryGetAuthenticatedIdentity(out Guid appUserId, out Guid stakeholderId, out Guid tenantId)

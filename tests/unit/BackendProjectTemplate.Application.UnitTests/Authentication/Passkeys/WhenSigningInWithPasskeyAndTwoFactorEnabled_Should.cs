@@ -5,6 +5,7 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using Microsoft.AspNetCore.Identity;
 using Shouldly;
 
 namespace BackendProjectTemplate.Application.UnitTests;
@@ -25,9 +26,9 @@ public sealed class WhenSigningInWithPasskeyAndTwoFactorEnabled_Should
         var challenge = new TwoFactorChallenge("mfa", user.Id, stakeholder.Id, stakeholder.TenantId,
             AuthenticationMethod.Passkey, actor, command.IpAddress, command.UserAgent,
             context.Clock.GetUtcNow().AddMinutes(5), 5);
-        context.PasskeyService.CompleteAuthenticationAsync(
+        context.PasskeyService.VerifyAuthenticationAsync(
                 stakeholder.TenantId, command.FlowToken, command.CredentialJson, Arg.Any<CancellationToken>())
-            .Returns(new PasskeyAuthenticationResult(PasskeyOperationStatus.Success, user));
+            .Returns(new PasskeyAuthenticationResult(PasskeyOperationStatus.Success, user, context.CreatePasskeyInfo()));
         context.StakeholderRepository.FirstOrDefaultAsync(
             Arg.Any<ISpecification<Stakeholder>>(), Arg.Any<CancellationToken>()).Returns(stakeholder);
         context.IdentityService.GetTwoFactorEnabledAsync(user).Returns(true);
@@ -42,6 +43,8 @@ public sealed class WhenSigningInWithPasskeyAndTwoFactorEnabled_Should
         result.Status.ShouldBe(CompletePasskeySignInStatus.RequiresTwoFactor);
         result.Challenge.ShouldBe(challenge);
         result.Tokens.ShouldBeNull();
+        await context.PasskeyService.Received(1)
+            .UpdateAuthenticationStateAsync(user, Arg.Any<UserPasskeyInfo>());
         await context.SessionService.DidNotReceiveWithAnyArgs()
             .CreateAsync(default!, default!, default!, default, default);
         await context.EventPublisher.DidNotReceiveWithAnyArgs()

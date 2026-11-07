@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Domain.Authentication.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace BackendProjectTemplate.Domain.Common.Authentication;
 
@@ -18,11 +19,12 @@ public interface IPasskeyService
         string credentialJson,
         CancellationToken cancellationToken);
     Task<PasskeyOptions> CreateAuthenticationOptionsAsync(Guid tenantId, CancellationToken cancellationToken);
-    Task<PasskeyAuthenticationResult> CompleteAuthenticationAsync(
+    Task<PasskeyAuthenticationResult> VerifyAuthenticationAsync(
         Guid tenantId,
         string flowToken,
         string credentialJson,
         CancellationToken cancellationToken);
+    Task<PasskeyOperationStatus> UpdateAuthenticationStateAsync(AppUser user, UserPasskeyInfo passkey);
     Task<IReadOnlyList<PasskeyCredential>> ListAsync(AppUser user);
     Task<PasskeyOperationStatus> RenameAsync(AppUser user, string credentialId, string name);
     Task<PasskeyOperationStatus> RemoveAsync(AppUser user, string credentialId);

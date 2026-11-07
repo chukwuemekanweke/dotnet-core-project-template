@@ -100,7 +100,7 @@ public sealed class PasskeyService(
         return new PasskeyOptions(flow.Token, result.RequestOptionsJson, flow.ExpiresAtUtc);
     }
 
-    public async Task<PasskeyAuthenticationResult> CompleteAuthenticationAsync(
+    public async Task<PasskeyAuthenticationResult> VerifyAuthenticationAsync(
         Guid tenantId,
         string flowToken,
         string credentialJson,
@@ -121,11 +121,13 @@ public sealed class PasskeyService(
         if (!result.Succeeded || result.User is null || result.Passkey is null)
             return new PasskeyAuthenticationResult(PasskeyOperationStatus.InvalidCredential);
 
-        var persisted = await userManager.AddOrUpdatePasskeyAsync(result.User, result.Passkey);
-        return persisted.Succeeded
-            ? new PasskeyAuthenticationResult(PasskeyOperationStatus.Success, result.User)
-            : new PasskeyAuthenticationResult(PasskeyOperationStatus.Failed);
+        return new PasskeyAuthenticationResult(PasskeyOperationStatus.Success, result.User, result.Passkey);
     }
+
+    public async Task<PasskeyOperationStatus> UpdateAuthenticationStateAsync(AppUser user, UserPasskeyInfo passkey) =>
+        (await userManager.AddOrUpdatePasskeyAsync(user, passkey)).Succeeded
+            ? PasskeyOperationStatus.Success
+            : PasskeyOperationStatus.Failed;
 
     public async Task<IReadOnlyList<PasskeyCredential>> ListAsync(AppUser user) =>
         (await userManager.GetPasskeysAsync(user)).Select(Map).OrderByDescending(passkey => passkey.CreatedAtUtc).ToArray();

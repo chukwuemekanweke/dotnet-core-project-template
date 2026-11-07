@@ -27,7 +27,7 @@ public sealed class CompleteTwoFactorChallengeHandler(
 
         var challenge = taken.Challenge!;
         var user = await identityService.FindByIdAsync(challenge.AppUserId);
-        if (user is null || !await identityService.GetTwoFactorEnabledAsync(user))
+        if (user is null || user.IsDeleted || !await identityService.GetTwoFactorEnabledAsync(user))
             return new CompleteTwoFactorChallengeResult(CompleteTwoFactorChallengeStatus.InvalidChallenge);
 
         var stakeholder = await stakeholderResolver.GetRequiredAsync(user.Id, cancellationToken);

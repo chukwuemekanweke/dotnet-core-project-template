@@ -22,9 +22,9 @@ public sealed class WhenSigningInWithPasskeyFromAnotherTenant_Should
         var command = new CompletePasskeySignInCommand(
             requestedTenantId, "flow-token", "{}", "127.0.0.1", "browser",
             new ActorContext(null, requestedTenantId, "correlation", "flow"));
-        context.PasskeyService.CompleteAuthenticationAsync(
+        context.PasskeyService.VerifyAuthenticationAsync(
                 requestedTenantId, command.FlowToken, command.CredentialJson, Arg.Any<CancellationToken>())
-            .Returns(new PasskeyAuthenticationResult(PasskeyOperationStatus.Success, user));
+            .Returns(new PasskeyAuthenticationResult(PasskeyOperationStatus.Success, user, context.CreatePasskeyInfo()));
         context.StakeholderRepository.FirstOrDefaultAsync(
             Arg.Any<ISpecification<Stakeholder>>(), Arg.Any<CancellationToken>()).Returns(stakeholder);
 
@@ -32,6 +32,8 @@ public sealed class WhenSigningInWithPasskeyFromAnotherTenant_Should
             .HandleAsync(command, CancellationToken.None);
 
         result.Status.ShouldBe(CompletePasskeySignInStatus.TenantMismatch);
+        await context.PasskeyService.DidNotReceiveWithAnyArgs()
+            .UpdateAuthenticationStateAsync(default!, default!);
         await context.SessionService.DidNotReceiveWithAnyArgs()
             .CreateAsync(default!, default!, default!, default, default);
     }

@@ -137,12 +137,17 @@ filters it before ordering and cursor pagination.
 - Password, Google, and passkey primary authentication all resolve the same `AppUser` and `Stakeholder` and issue credentials only through `AuthenticationSessionIssuer`.
 - Successful primary authentication publishes `UserSignInSuccessful`; failed account eligibility checks publish `UserSignInFailed`. The Consumer remains responsible for login-activity post-processing.
 - TOTP MFA is an independent second factor. Primary methods start `ITwoFactorChallengeService` with their `AuthenticationMethod`; `CompleteTwoFactorChallengeHandler` is the only continuation that issues the session after MFA succeeds.
-- Account eligibility is consistent across primary methods: reject deleted, locked, unverified, and cross-tenant accounts before session issuance.
+- Account eligibility is consistent across primary methods: reject deleted, locked, unverified, and
+  cross-tenant accounts before session issuance. MFA completion re-resolves the user and stakeholder
+  and repeats deletion, tenant, lockout, and email-verification checks before issuing a session.
 
 ## Native passkeys
 
 - `PasskeyService` wraps .NET 10 `IPasskeyHandler<AppUser>` for WebAuthn options and cryptographic validation. Never implement WebAuthn cryptography or store private keys.
-- `UserManager<AppUser>` owns credential lookup and persistence. Successful assertions must persist the returned `UserPasskeyInfo` so signature counters and backup flags are updated.
+- `UserManager<AppUser>` owns credential lookup and persistence. Assertion verification returns the
+  updated `UserPasskeyInfo` without persisting it; the application verifies stakeholder tenant
+  ownership and soft-deletion state, then persists the returned state before continuing to MFA or
+  session issuance so counters and backup flags remain current without cross-tenant mutation.
 - Identity store schema version 3 is enabled. Passkeys are stored in `authentication.UserPasskeys`; the credential ID is the primary key and native `IdentityPasskeyData` is stored as PostgreSQL `jsonb`.
 - Passkey registration and assertion state is server-side in Redis through `IJsonCache`.
   Flow tokens are random, short-lived, tenant-bound, and consumed atomically with `GetAndRemoveAsync`;

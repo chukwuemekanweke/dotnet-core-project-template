@@ -25,9 +25,9 @@ public sealed class CompletePasskeySignInHandler(
         telemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasskeySignInStarted,
             ObservabilityEventProperties.Create(command.ActorContext));
-        var assertion = await passkeyService.CompleteAuthenticationAsync(
+        var assertion = await passkeyService.VerifyAuthenticationAsync(
             command.TenantId, command.FlowToken, command.CredentialJson, cancellationToken);
-        if (assertion.Status != PasskeyOperationStatus.Success || assertion.User is null)
+        if (assertion.Status != PasskeyOperationStatus.Success || assertion.User is null || assertion.Passkey is null)
         {
             telemetryContext.AddCustomEvent(
                 Observability.EventNames.Authentication.PasskeySignInFailed,
@@ -41,6 +41,9 @@ public sealed class CompletePasskeySignInHandler(
             return new CompletePasskeySignInResult(CompletePasskeySignInStatus.TenantMismatch);
         if (user.IsDeleted)
             return new CompletePasskeySignInResult(CompletePasskeySignInStatus.InvalidCredential);
+        var stateUpdate = await passkeyService.UpdateAuthenticationStateAsync(user, assertion.Passkey);
+        if (stateUpdate != PasskeyOperationStatus.Success)
+            return new CompletePasskeySignInResult(Map(stateUpdate));
         if (await identityService.IsLockedOutAsync(user))
         {
             await PublishFailedAsync(user, stakeholder.Id, command, UserSignInFailureReasons.LockedOut, cancellationToken);

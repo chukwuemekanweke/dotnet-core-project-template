@@ -75,6 +75,8 @@ internal sealed class AuthenticationFlowTestContext
             .Returns(IdentityResult.Success);
         IdentityService.AccessFailedAsync(Arg.Any<AppUser>()).Returns(IdentityResult.Success);
         IdentityService.ResetAccessFailedCountAsync(Arg.Any<AppUser>()).Returns(IdentityResult.Success);
+        PasskeyService.UpdateAuthenticationStateAsync(Arg.Any<AppUser>(), Arg.Any<UserPasskeyInfo>())
+            .Returns(PasskeyOperationStatus.Success);
         CountryRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg"));
     }
@@ -361,6 +363,18 @@ internal sealed class AuthenticationFlowTestContext
             email ?? AuthenticationTestData.Email(),
             firstName ?? AuthenticationTestData.FirstName(),
             lastName ?? AuthenticationTestData.LastName());
+
+    public UserPasskeyInfo CreatePasskeyInfo() => new(
+        [1],
+        [2],
+        Clock.GetUtcNow(),
+        1,
+        ["internal"],
+        true,
+        false,
+        false,
+        [3],
+        [4]);
 
     internal sealed class FakeTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
