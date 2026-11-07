@@ -9,12 +9,14 @@ public abstract class WebApiIntegrationTestBase
 
     protected WebApiIntegrationTestBase(
         ContainersFixture fixture,
-        IReadOnlyDictionary<string, string?>? configurationOverrides = null)
+        IReadOnlyDictionary<string, string?>? configurationOverrides = null,
+        Action<IServiceCollection>? configureServices = null)
     {
         _factory = new CustomWebApplicationFactory(
             fixture.PostgresConnectionString,
             fixture.RedisConnectionString,
-            configurationOverrides: configurationOverrides);
+            configurationOverrides: configurationOverrides,
+            configureServices: configureServices);
     }
 
     protected HttpClient Client { get; private set; } = default!;
