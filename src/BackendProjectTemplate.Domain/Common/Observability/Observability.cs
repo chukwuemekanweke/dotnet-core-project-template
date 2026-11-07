@@ -72,6 +72,7 @@ public static class Observability
             public const string PasskeySignInStarted = "PasskeySignInStarted";
             public const string PasskeySignInCompleted = "PasskeySignInCompleted";
             public const string PasskeySignInFailed = "PasskeySignInFailed";
+            public const string UnknownSignInCompleted = "UnknownSignInCompleted";
             public const string PasskeyRegistrationCompleted = "PasskeyRegistrationCompleted";
             public const string PasskeyRemoved = "PasskeyRemoved";
             public const string SignInPostProcessingCompleted = "SignInPostProcessingCompleted";
