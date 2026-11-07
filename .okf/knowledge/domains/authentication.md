@@ -1,19 +1,25 @@
 ---
 type: domain
 title: Authentication Domain
-description: Sign-up/sign-in, TOTP MFA and recovery codes, sessions and refresh tokens, Google sign-in, password reset, session revocation, and the ASP.NET Core Identity base
+description: Sign-up/sign-in, passkeys, TOTP MFA, sessions, Google sign-in, password reset, revocation, and the ASP.NET Core Identity base
 resource: okf://knowledge/domains/authentication
 tags:
     - context
     - domain
     - authentication
     - identity
+    - passkeys
+    - webauthn
+    - mfa
+    - redis
     - sessions
 governance: context
 code_refs:
     - src/BackendProjectTemplate.Application/Authentication/**
     - src/BackendProjectTemplate.Domain/Authentication/**
+    - src/BackendProjectTemplate.Domain/Common/Authentication/**
     - src/BackendProjectTemplate.Infrastructure/Authentication/**
+    - src/BackendProjectTemplate.Infrastructure/Persistence/AppDbContextBase.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/LoginActivityReadModelRepository.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/ActiveSessionReadModelRepository.cs
     - src/BackendProjectTemplate.WebAPI/Features/Authentication/**
@@ -28,6 +34,8 @@ code_refs:
 sources:
     - kind: file
       path: src/BackendProjectTemplate.Domain/Authentication/Entities/AuthenticationSession.cs
+    - kind: file
+      path: src/BackendProjectTemplate.Infrastructure/Authentication/PasskeyService.cs
 generated:
     at: "2026-09-23T00:00:00Z"
     by: human
@@ -35,14 +43,18 @@ status: stable
 ---
 ## Scope
 
-Sign-up (with email OTP confirmation), sign-in (including Google sign-in), session lifecycle (list/refresh/logout/revoke-other/revoke-single sessions), password change/reset, email-existence checks,
-authenticator-app MFA and recovery codes, login-activity recording/history and IP-address-location enrichment, and active-session/device management.
+Sign-up (with email OTP confirmation), sign-in (including Google and passkey sign-in), session
+lifecycle (list/refresh/logout/revoke-other/revoke-single sessions), password change/reset,
+email-existence checks, authenticator-app MFA and recovery codes, passkey management,
+login-activity recording/history and IP-address-location enrichment, and active-session/device management.
 
 ## Foundation
 
-ASP.NET Core Identity is the authentication base (see [[dotnet-style]]) — do not reintroduce custom password hashing, token issuance, or credential-check flows when Identity already covers the need.
-Sessions and refresh tokens are modeled as first-class domain entities (`AuthenticationSession`, `AuthenticationRefreshToken`) alongside Identity rather than replacing Identity's user/credential
-model.
+ASP.NET Core Identity is the authentication base (see [[dotnet-style]]) — do not reintroduce custom
+password hashing, token issuance, credential checks, or WebAuthn cryptography when Identity already
+covers the need. Sessions and refresh tokens are modeled as first-class domain entities
+(`AuthenticationSession`, `AuthenticationRefreshToken`) alongside Identity rather than replacing
+Identity's user/credential model.
 
 ## Authenticator MFA boundary
 
@@ -50,12 +62,12 @@ ASP.NET Core Identity owns the authenticator key, TOTP verification, two-factor 
 hashed single-use recovery codes. The application does not maintain a parallel MFA user store or
 implement TOTP cryptography.
 
-Password and Google first factors converge on a five-minute, five-attempt `TwoFactorChallenge`
-stored server-side through Redis-backed `IJsonCache`. The client receives only a cryptographically
-random opaque token. A challenge captures the user, stakeholder, tenant, original password/Google
-method, actor context, expiry, and original IP/user-agent needed for final session creation. Cache
-take-and-remove plus terminal markers detects subsequent replay. The preceding Google flow is
-consumed after the MFA challenge assumes continuation ownership.
+Password, Google, and passkey first factors converge on a five-minute, five-attempt
+`TwoFactorChallenge` stored server-side through Redis-backed `IJsonCache`. The client receives only a
+cryptographically random opaque token. A challenge captures the user, stakeholder, tenant, original
+authentication method, actor context, expiry, and original IP/user-agent needed for final session
+creation. Cache take-and-remove plus terminal markers detects subsequent replay. A preceding Google
+flow is consumed after the MFA challenge assumes continuation ownership.
 
 For MFA-enabled users, first-factor success does not create an `AuthenticationSession`, issue tokens,
 or publish `UserSignInSuccessful`; it returns `two_factor_required`.
@@ -119,6 +131,32 @@ An IP that fails to resolve (private/loopback/local, or an unresponsive provider
 The user-facing login-activity history returns successful initial sign-ins only. Token-refresh
 activity may remain persisted for internal audit and telemetry purposes, but the read-model query
 filters it before ordering and cursor pagination.
+
+## Shared authentication architecture
+
+- Password, Google, and passkey primary authentication all resolve the same `AppUser` and `Stakeholder` and issue credentials only through `AuthenticationSessionIssuer`.
+- Successful primary authentication publishes `UserSignInSuccessful`; failed account eligibility checks publish `UserSignInFailed`. The Consumer remains responsible for login-activity post-processing.
+- TOTP MFA is an independent second factor. Primary methods start `ITwoFactorChallengeService` with their `AuthenticationMethod`; `CompleteTwoFactorChallengeHandler` is the only continuation that issues the session after MFA succeeds.
+- Account eligibility is consistent across primary methods: reject deleted, locked, unverified, and cross-tenant accounts before session issuance.
+
+## Native passkeys
+
+- `PasskeyService` wraps .NET 10 `IPasskeyHandler<AppUser>` for WebAuthn options and cryptographic validation. Never implement WebAuthn cryptography or store private keys.
+- `UserManager<AppUser>` owns credential lookup and persistence. Successful assertions must persist the returned `UserPasskeyInfo` so signature counters and backup flags are updated.
+- Identity store schema version 3 is enabled. Passkeys are stored in `authentication.UserPasskeys`; the credential ID is the primary key and native `IdentityPasskeyData` is stored as PostgreSQL `jsonb`.
+- Passkey registration and assertion state is server-side in Redis through `IJsonCache`.
+  Flow tokens are random, short-lived, tenant-bound, and consumed atomically with `GetAndRemoveAsync`;
+  consumed markers distinguish replay from unknown flows.
+- Registration flows are additionally bound to app-user and stakeholder IDs. Credential management always resolves the authenticated user's own Identity passkey collection.
+
+## Configuration and HTTP contract
+
+- `Authentication:Passkeys` configures relying-party ID/name, exact allowed origins, challenge lifetime, and browser authenticator timeout.
+- Origins must be exact HTTPS origins, except loopback origins allowed for local development. Wildcards, paths, queries, and fragments are invalid.
+- Authenticated endpoints create/complete registrations and list/rename/remove credentials.
+  Anonymous endpoints create and complete discoverable-credential authentication flows;
+  all flows remain tenant-bound through the validated request tenant context.
+- Browser credential payloads are accepted and returned as JSON objects. Do not log credential JSON, challenge state, flow tokens, access tokens, or refresh tokens.
 
 ## Cross-cutting
 

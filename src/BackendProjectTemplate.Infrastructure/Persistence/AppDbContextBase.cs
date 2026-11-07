@@ -15,7 +15,16 @@ using System.Linq.Expressions;
 namespace BackendProjectTemplate.Infrastructure.Persistence;
 
 public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> options)
-    : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>(options)
+    : IdentityDbContext<
+        AppUser,
+        IdentityRole<Guid>,
+        Guid,
+        IdentityUserClaim<Guid>,
+        IdentityUserRole<Guid>,
+        IdentityUserLogin<Guid>,
+        IdentityRoleClaim<Guid>,
+        IdentityUserToken<Guid>,
+        IdentityUserPasskey<Guid>>(options)
     where TContext : DbContext
 {
     public DbSet<Country> Countries => Set<Country>();
@@ -54,6 +63,21 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
         modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("UserLogins", SchemaNames.Authentication);
         modelBuilder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles", SchemaNames.Authentication);
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens", SchemaNames.Authentication);
+        modelBuilder.Entity<AppUser>().Property(user => user.PhoneNumber).Metadata.SetMaxLength(null);
+        modelBuilder.Entity<IdentityUserLogin<Guid>>().Property(login => login.LoginProvider).Metadata.SetMaxLength(null);
+        modelBuilder.Entity<IdentityUserLogin<Guid>>().Property(login => login.ProviderKey).Metadata.SetMaxLength(null);
+        modelBuilder.Entity<IdentityUserToken<Guid>>().Property(token => token.LoginProvider).Metadata.SetMaxLength(null);
+        modelBuilder.Entity<IdentityUserToken<Guid>>().Property(token => token.Name).Metadata.SetMaxLength(null);
+        var passkey = modelBuilder.Entity<IdentityUserPasskey<Guid>>();
+        passkey.HasKey(value => value.CredentialId);
+        passkey.ToTable("UserPasskeys", SchemaNames.Authentication);
+        passkey.Property(value => value.CredentialId).HasMaxLength(1024);
+        passkey.HasOne<AppUser>().WithMany().HasForeignKey(value => value.UserId).IsRequired();
+        if (modelBuilder.Model.FindEntityType(typeof(IdentityPasskeyData)) is not null)
+        {
+            modelBuilder.Ignore<IdentityPasskeyData>();
+            passkey.ComplexProperty(value => value.Data).ToJson();
+        }
         modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims", SchemaNames.Authentication);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         ApplyAuditingConventions(modelBuilder);

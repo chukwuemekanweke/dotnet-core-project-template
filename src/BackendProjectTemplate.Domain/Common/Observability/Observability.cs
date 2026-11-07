@@ -69,6 +69,11 @@ public static class Observability
             public const string PasswordSignInCompleted = "PasswordSignInCompleted";
             public const string GoogleSignInStarted = "GoogleSignInStarted";
             public const string GoogleSignInCompleted = "GoogleSignInCompleted";
+            public const string PasskeySignInStarted = "PasskeySignInStarted";
+            public const string PasskeySignInCompleted = "PasskeySignInCompleted";
+            public const string PasskeySignInFailed = "PasskeySignInFailed";
+            public const string PasskeyRegistrationCompleted = "PasskeyRegistrationCompleted";
+            public const string PasskeyRemoved = "PasskeyRemoved";
             public const string SignInPostProcessingCompleted = "SignInPostProcessingCompleted";
             public const string SignInFailureProcessed = "SignInFailureProcessed";
             public const string PasswordResetRequested = "PasswordResetRequested";

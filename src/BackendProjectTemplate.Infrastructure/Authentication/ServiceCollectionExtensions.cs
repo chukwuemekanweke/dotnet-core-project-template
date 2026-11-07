@@ -24,6 +24,10 @@ public static class ServiceCollectionExtensions
             .Get<AuthenticationLockoutOptions>() ?? new AuthenticationLockoutOptions();
 
         lockoutOptions.Validate();
+        var passkeyOptions = configuration
+            .GetSection(PasskeyAuthenticationOptions.SectionName)
+            .Get<PasskeyAuthenticationOptions>() ?? new PasskeyAuthenticationOptions();
+        passkeyOptions.Validate();
 
         services.Configure<AuthenticationLockoutOptions>(configuration.GetSection(AuthenticationLockoutOptions.SectionName));
 
@@ -35,6 +39,7 @@ public static class ServiceCollectionExtensions
             .AddIdentityCore<AppUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
+                options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
                 options.SignIn.RequireConfirmedEmail = true;
                 options.Lockout.AllowedForNewUsers = true;
                 options.Lockout.MaxFailedAccessAttempts = lockoutOptions.MaxFailedAttempts;
@@ -49,6 +54,19 @@ public static class ServiceCollectionExtensions
             .AddEntityFrameworkStores<Persistence.AppDbContext>()
             .AddSignInManager()
             .AddDefaultTokenProviders();
+
+        var allowedOrigins = passkeyOptions.AllowedOrigins
+            .Select(origin => new Uri(origin).GetLeftPart(UriPartial.Authority))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        services.Configure<IdentityPasskeyOptions>(options =>
+        {
+            options.ServerDomain = passkeyOptions.RelyingPartyId;
+            options.AuthenticatorTimeout = passkeyOptions.AuthenticatorTimeout;
+            options.ValidateOrigin = context => ValueTask.FromResult(
+                !context.CrossOrigin && allowedOrigins.Contains(context.Origin));
+        });
+        services.Configure<PasskeyAuthenticationOptions>(configuration.GetSection(PasskeyAuthenticationOptions.SectionName));
+        services.AddHttpContextAccessor();
 
         return services;
     }
@@ -74,6 +92,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAccessTokenService, JwtTokenGenerator>();
         services.AddSingleton<IAccessTokenRevocationService, AccessTokenRevocationService>();
         services.AddScoped<IAuthenticationIdentityService, IdentityUserService>();
+        services.AddScoped<IPasskeyService, PasskeyService>();
         services.AddScoped<IGoogleIdentityTokenService, GoogleIdentityTokenService>();
         services.AddScoped<IGoogleAuthenticationFlowService, GoogleAuthenticationFlowService>();
         services.AddScoped<ITwoFactorChallengeService, TwoFactorChallengeService>();

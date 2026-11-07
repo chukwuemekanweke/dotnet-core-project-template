@@ -44,6 +44,16 @@ public static class EndpointUrl
         public static readonly string TwoFactorV1 = $"{V1}/two-factor";
     }
 
+    public static class Passkeys
+    {
+        public const string Route = $"api/{Versions.V1Route}/authentication/passkeys";
+        public static readonly string V1 = ToV1(Route);
+        public static readonly string RegistrationOptionsV1 = $"{V1}/registration-options";
+        public static readonly string RegistrationsV1 = $"{V1}/registrations";
+        public static readonly string AuthenticationOptionsV1 = $"{V1}/authentication-options";
+        public static readonly string AuthenticationCompletionsV1 = $"{V1}/authentication-completions";
+    }
+
     public static class GoogleRegistrations
     {
         public const string Route = $"{Registrations.Route}/google";

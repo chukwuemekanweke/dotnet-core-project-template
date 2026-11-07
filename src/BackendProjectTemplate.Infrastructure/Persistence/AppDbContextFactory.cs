@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Infrastructure.Persistence;
 
@@ -12,7 +14,15 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
             ?? throw new InvalidOperationException(
                 "Environment variable 'ConnectionStrings__PostgresWrite' is required for design-time AppDbContext creation.");
 
-        optionsBuilder.UseNpgsql(PostgresConnectionString.Normalize(connectionString));
+        var services = new ServiceCollection();
+        services.AddEntityFrameworkNpgsql();
+        services.Configure<IdentityOptions>(options =>
+            options.Stores.SchemaVersion = IdentitySchemaVersions.Version3);
+        var serviceProvider = services.BuildServiceProvider();
+
+        optionsBuilder
+            .UseNpgsql(PostgresConnectionString.Normalize(connectionString))
+            .UseApplicationServiceProvider(serviceProvider);
 
         return new AppDbContext(optionsBuilder.Options);
     }

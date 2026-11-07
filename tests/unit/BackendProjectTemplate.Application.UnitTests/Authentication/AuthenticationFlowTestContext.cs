@@ -1,8 +1,10 @@
 using BackendProjectTemplate.Application.Authentication;
 using BackendProjectTemplate.Application.Authentication.Features.ChangePassword;
 using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExistence;
+using BackendProjectTemplate.Application.Authentication.Features.CompletePasskeySignIn;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.CompleteTwoFactorChallenge;
+using BackendProjectTemplate.Application.Authentication.Features.CreatePasskeyAuthenticationOptions;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
 using BackendProjectTemplate.Application.Authentication.Features.LinkGoogleAccount;
@@ -37,6 +39,7 @@ internal sealed class AuthenticationFlowTestContext
     public IGoogleIdentityTokenService GoogleIdentityTokenService { get; } = Substitute.For<IGoogleIdentityTokenService>();
     public IGoogleAuthenticationFlowService GoogleAuthenticationFlowService { get; } = Substitute.For<IGoogleAuthenticationFlowService>();
     public ITwoFactorChallengeService TwoFactorChallengeService { get; } = Substitute.For<ITwoFactorChallengeService>();
+    public IPasskeyService PasskeyService { get; } = Substitute.For<IPasskeyService>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
     public IAuthenticationSessionService SessionService { get; } = Substitute.For<IAuthenticationSessionService>();
     public IActiveSessionReadModelRepository ActiveSessionReadModelRepository { get; } = Substitute.For<IActiveSessionReadModelRepository>();
@@ -147,6 +150,17 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         SessionIssuer,
         StakeholderResolver,
+        EventPublisher,
+        CustomTelemetryContext,
+        UnitOfWork,
+        Clock);
+    public CreatePasskeyAuthenticationOptionsHandler CreatePasskeyAuthenticationOptionsHandler() => new(PasskeyService);
+    public CompletePasskeySignInHandler CreateCompletePasskeySignInHandler() => new(
+        PasskeyService,
+        IdentityService,
+        SessionIssuer,
+        StakeholderResolver,
+        TwoFactorChallengeService,
         EventPublisher,
         CustomTelemetryContext,
         UnitOfWork,
