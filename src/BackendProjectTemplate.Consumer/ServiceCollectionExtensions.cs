@@ -24,6 +24,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSubscribers(this IServiceCollection services, IConfiguration configuration)
     {
+        EnsureRegisteredMessageTypesAreResolvable();
+
         services.AddScoped<ILoginActivityIpAddressResolver, LoginActivityIpAddressResolver>();
         services.AddScoped<EmailConfirmationOtpSender>();
 
@@ -88,5 +90,36 @@ public static class ServiceCollectionExtensions
                 serviceProvider.GetRequiredService<TimeProvider>()));
 
         return services;
+    }
+
+    private static void EnsureRegisteredMessageTypesAreResolvable()
+    {
+        Type[] messageTypes =
+        [
+            typeof(UserCreatedEvent),
+            typeof(UserEmailConfirmedEvent),
+            typeof(UserSignInSuccessfulEvent),
+            typeof(UserAccessTokenRefreshedEvent),
+            typeof(UserSignInFailedEvent),
+            typeof(EmailDeliveryWebhookReceivedEvent),
+            typeof(SuccessfulPaymentConfirmedEvent),
+            typeof(ResetPassword),
+            typeof(SendEmailConfirmationOtp),
+            typeof(SendNotification),
+            typeof(CreditWalletCommand),
+            typeof(ActivateSubscriptionCommand),
+            typeof(DeleteQuarantinedObject)
+        ];
+
+        foreach (var messageType in messageTypes)
+        {
+            var assemblyQualifiedName = messageType.AssemblyQualifiedName
+                ?? throw new InvalidOperationException($"Message type '{messageType.FullName}' has no assembly-qualified name.");
+            if (Type.GetType(assemblyQualifiedName, throwOnError: false) != messageType)
+            {
+                throw new InvalidOperationException(
+                    $"Registered message type '{assemblyQualifiedName}' cannot be resolved by the RabbitMQ consumer.");
+            }
+        }
     }
 }

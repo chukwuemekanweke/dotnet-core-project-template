@@ -39,4 +39,8 @@ status: stable
 - New cross-process command/event types belong in `Contracts`, not defined ad hoc inside Application or Consumer.
 - Consumer handlers must be idempotent-safe against redelivery (see the message inbox pattern already used) and must mark their `Activity` as errored on failure — see [[observability]].
 
+- Consumer startup eagerly verifies every registered command/event by its assembly-qualified name.
+  This preserves the RabbitMQ envelope contract and prevents a host with an unloadable `Contracts`
+  assembly from starting and rejecting messages as non-transient deserialization failures.
+
 See [[persistence]] for how the outbox table itself is persisted, and [[unit-testing]]/[[integration-testing]] for handler/background-service test coverage requirements.
