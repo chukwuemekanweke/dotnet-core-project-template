@@ -335,6 +335,7 @@ WHERE NOT EXISTS (
 );
 
 WITH payment_provider_values("ProviderName", "ProviderKey", "IsActive") AS (VALUES
+    ('Bachs', 'bachs', TRUE),
     ('SafeHaven', 'safehaven', TRUE),
     ('Credo', 'credo', TRUE)
 ),
@@ -433,6 +434,7 @@ WITH provider_config_source AS (
         cfg."PaymentMethodType",
         cfg."IsEnabled"
     FROM (VALUES
+        ('bachs', 'NGN', 1, 1, TRUE),
         ('safehaven', 'NGN', 1, 2, TRUE),
         ('safehaven', 'NGN', 2, 2, TRUE),
         ('credo', 'NGN', 1, 1, TRUE),

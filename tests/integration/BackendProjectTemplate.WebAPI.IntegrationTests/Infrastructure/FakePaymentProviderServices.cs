@@ -4,6 +4,30 @@ using BackendProjectTemplate.Domain.Payments.Services;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 
+internal sealed class FakeBachsPaymentProviderService : IPaymentProviderService
+{
+    public string ProviderKey => PaymentProviderKeys.Bachs;
+
+    public Task<PaymentProviderInitiationResult> InitiatePaymentAsync(
+        PaymentProviderInitiationRequest request,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(new PaymentProviderInitiationResult(
+            $"chk_{Guid.CreateVersion7():N}",
+            PaymentProviderKeys.Bachs,
+            PaymentMethodType.PaymentLink,
+            DateTimeOffset.UtcNow.AddHours(1),
+            new Dictionary<string, string> { ["paymentLink"] = "https://checkout.bachs.integration/checkout" }));
+
+    public Task<PaymentProviderVerificationResult> VerifyPaymentAsync(
+        PaymentProviderVerificationRequest request,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(new PaymentProviderVerificationResult(
+            PaymentProviderVerificationStatus.Succeeded,
+            request.ProviderReference,
+            null,
+            "reconciliation_confirmed_success"));
+}
+
 internal sealed class FakeCredoPaymentProviderService : IPaymentProviderService
 {
     public string ProviderKey => PaymentProviderKeys.Credo;

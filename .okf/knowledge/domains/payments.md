@@ -1,7 +1,7 @@
 ---
 type: domain
 title: Payments Domain
-description: Payment providers (Credo, SafeHaven), wallet and wallet transactions, webhook inbox idempotency, reconciliation, and subscription activation
+description: Payment providers (Bachs, Credo, SafeHaven), wallet and wallet transactions, webhook inbox idempotency, reconciliation, and subscription activation
 resource: okf://knowledge/domains/payments
 tags:
     - context
@@ -30,10 +30,17 @@ status: stable
 ---
 ## Scope
 
-- Payment providers: Credo and SafeHaven, each with their own webhook payload types under `Infrastructure/Payments/{Credo,SafeHaven}`. Provider activation/deactivation is a distinct feature
+- Payment providers: Bachs, Credo and SafeHaven, each with provider-specific payload types under
+  `Infrastructure/Payments/{Bachs,Credo,SafeHaven}`. Provider activation/deactivation is a distinct feature
   (`ActivatePaymentProvider`) from initiating a payment.
+- Bachs supports one-time hosted-checkout wallet top-ups in this phase. The seeded configuration enables
+  NGN `WalletTopUp` only. Internal amounts are whole minor units; the adapter converts them to exact
+  major-unit decimal strings and verifies merchant reference, currency and amount before success. Bachs
+  webhook signatures cover the timestamp plus original raw request bytes, prefer the V2 multi-signature
+  header, and enforce a five-minute default tolerance.
 - Wallet: `InitiatePayment`, wallet transactions, wallet top-up transaction detail, `CreditWallet` (triggered async, see below).
-- Webhook inbox: incoming provider webhooks (`ProcessCredoWebhook`, `ProcessSafeHavenWebhook`, generic `ProcessPaymentWebhook`) are recorded in a `PaymentWebhookInbox` for idempotency before being
+- Webhook inbox: incoming provider webhooks (`ProcessBachsWebhook`, `ProcessCredoWebhook`,
+  `ProcessSafeHavenWebhook`, generic `ProcessPaymentWebhook`) are recorded in a `PaymentWebhookInbox` for idempotency before being
   acted on — do not process a webhook payload without first checking/recording it there.
 - `ReconcilePayments` (Jobs) periodically reconciles payment state against provider truth.
 - `SuccessfulPaymentConfirmed`, `ActivateSubscriptionCommand`, `CreditWalletCommand` cross into `Consumer`/`Jobs` via `Contracts` and the outbox — see [[async-processing]].

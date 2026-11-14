@@ -37,6 +37,7 @@ using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvid
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
+using BackendProjectTemplate.Application.Payments.Features.ProcessBachsWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ReconcilePayments;
@@ -113,6 +114,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ProcessSafeHavenAccountDebitWebhookHandler>();
         services.AddScoped<ProcessSafeHavenVirtualAccountTransferWebhookHandler>();
         services.AddScoped<ProcessCredoWebhookHandler>();
+        services.AddScoped<ProcessBachsWebhookHandler>();
         services.AddScoped<PaymentReconciliationService>();
 
         return services;

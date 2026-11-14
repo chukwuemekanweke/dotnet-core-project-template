@@ -2,9 +2,11 @@ using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvid
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
+using BackendProjectTemplate.Application.Payments.Features.ProcessBachsWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
@@ -26,6 +28,8 @@ internal sealed class PaymentsControllerTestContext
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
     public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+    public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
+    public IBachsWebhookSignatureValidator BachsWebhookSignatureValidator { get; } = Substitute.For<IBachsWebhookSignatureValidator>();
     public ICredoWebhookSignatureValidator CredoWebhookSignatureValidator { get; } = Substitute.For<ICredoWebhookSignatureValidator>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 13, 0, 0, TimeSpan.Zero));
     public List<IPaymentProviderService> PaymentProviderServices { get; } = [];
@@ -57,6 +61,19 @@ internal sealed class PaymentsControllerTestContext
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
             CredoWebhookSignatureValidator,
+            CustomTelemetryContext,
+            UnitOfWork,
+            Clock);
+
+    public ProcessBachsWebhookHandler CreateBachsWebhookHandler() =>
+        new(
+            PaymentProviderRepository,
+            PaymentWebhookInboxRepository,
+            PaymentTransactionRepository,
+            CurrencyRepository,
+            BachsWebhookSignatureValidator,
+            PaymentProviderServices,
+            EventPublisher,
             CustomTelemetryContext,
             UnitOfWork,
             Clock);
