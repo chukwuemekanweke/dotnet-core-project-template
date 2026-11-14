@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -22,10 +23,19 @@ public sealed class SubscriptionActivationConfiguration : IEntityTypeConfigurati
             .IsRequired();
 
         builder.HasIndex(activation => activation.PaymentTransactionId)
-            .IsUnique()
-            .HasFilter("\"IsDeleted\" = FALSE");
+            .IsUnique();
 
         builder.HasIndex(activation => activation.BillingAccountId);
+
+        builder.HasOne<Subscription>()
+            .WithMany()
+            .HasForeignKey(activation => activation.SubscriptionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(activation => activation.SubscriptionPeriod)
+            .WithMany()
+            .HasForeignKey(activation => activation.SubscriptionPeriodId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<BillingAccount>()
             .WithMany()

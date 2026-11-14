@@ -126,6 +126,21 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
     }
 
+    public static class SubscriptionPlans
+    {
+        public const string Route = $"api/{Versions.V1Route}/subscription-plans";
+        public static readonly string V1 = ToV1(Route);
+    }
+
+    public static class Subscriptions
+    {
+        public const string Route = $"api/{Versions.V1Route}/subscriptions";
+        public static readonly string V1 = ToV1(Route);
+        public static readonly string PurchasesV1 = $"{V1}/purchases";
+        public static readonly string CurrentV1 = $"{V1}/current";
+        public static readonly string CurrentCancellationV1 = $"{CurrentV1}/cancellation-at-period-end";
+    }
+
     public static class PaymentWebhooks
     {
         public static class Bachs

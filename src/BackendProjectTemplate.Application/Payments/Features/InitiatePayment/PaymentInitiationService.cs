@@ -1,0 +1,131 @@
+using BackendProjectTemplate.Domain.Common.Exceptions;
+using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Payments;
+using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.Payments.Services;
+using BackendProjectTemplate.Domain.Payments.Specifications;
+using BackendProjectTemplate.Domain.Stakeholders.Entities;
+
+namespace BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
+
+public sealed class PaymentInitiationService(
+    IRepository<Stakeholder> stakeholderRepository,
+    IRepository<Currency> currencyRepository,
+    IRepository<CountryCurrency> countryCurrencyRepository,
+    IRepository<PaymentProvider> paymentProviderRepository,
+    IRepository<PaymentProviderConfiguration> paymentProviderConfigurationRepository,
+    IRepository<PaymentTransaction> paymentTransactionRepository,
+    IEnumerable<IPaymentProviderService> paymentProviderServices,
+    ICustomTelemetryContext customTelemetryContext,
+    IUnitOfWork unitOfWork)
+{
+    public async Task<InitiatePaymentResult> InitiateAsync(
+        InitiatePaymentCommand command,
+        Func<PaymentTransaction, CancellationToken, Task>? persistCorrelation,
+        CancellationToken cancellationToken)
+    {
+        if (command.Amount <= 0 || decimal.Truncate(command.Amount) != command.Amount)
+        {
+            throw new ArgumentOutOfRangeException(nameof(command), "Payment amount must be a positive whole number of minor currency units.");
+        }
+
+        var stakeholderId = command.ActorContext.StakeholderId
+            ?? throw new InvalidOperationException("Authenticated stakeholder id is required to initiate a payment.");
+
+        var stakeholder = await stakeholderRepository.GetByIdAsync(stakeholderId, cancellationToken)
+            ?? throw new InvalidOperationException($"Unable to resolve stakeholder '{stakeholderId}' for payment initiation.");
+
+        var currency = await currencyRepository.FirstOrDefaultAsync(
+            new ActiveCurrencyByIdSpecification(command.CurrencyId),
+            cancellationToken)
+            ?? throw new InvalidOperationException($"Currency '{command.CurrencyId}' is not active.");
+
+        var supportedCountryCurrency = await countryCurrencyRepository.FirstOrDefaultAsync(
+            new CountryCurrencyByCountryAndCurrencySpecification(stakeholder.CountryId, command.CurrencyId),
+            cancellationToken);
+        if (supportedCountryCurrency is null)
+        {
+            throw new InvalidOperationException(
+                $"Currency '{currency.CurrencyCode}' is not supported for country '{stakeholder.CountryId}'.");
+        }
+
+        var paymentProvider = await paymentProviderRepository.FirstOrDefaultAsync(
+                new ActivePaymentProviderByIdSpecification(command.PaymentProviderId),
+                cancellationToken)
+            ?? throw new InvalidOperationException($"Payment provider '{command.PaymentProviderId}' is not active.");
+
+        _ = await paymentProviderConfigurationRepository.FirstOrDefaultAsync(
+                new EnabledPaymentProviderConfigurationSpecification(command.PaymentProviderId, command.CurrencyId, command.PaymentIntent),
+                cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"Payment provider '{paymentProvider.ProviderName}' does not support '{currency.CurrencyCode}' for '{command.PaymentIntent}'.");
+
+        var paymentProviderService = paymentProviderServices.SingleOrDefault(service =>
+                string.Equals(service.ProviderKey, paymentProvider.ProviderKey, StringComparison.OrdinalIgnoreCase))
+            ?? throw new PaymentProviderResolutionException(
+                $"No payment provider service is registered for '{paymentProvider.ProviderKey}'.");
+
+        var paymentTransaction = PaymentTransaction.Create(
+            $"pay_{Guid.CreateVersion7():N}",
+            command.PaymentIntent,
+            paymentProvider.Id,
+            command.Amount,
+            command.CurrencyId,
+            stakeholder.CountryId,
+            stakeholder.AppUserId,
+            stakeholder.Id,
+            stakeholder.TenantId);
+        await paymentTransactionRepository.AddAsync(paymentTransaction, cancellationToken);
+
+        if (persistCorrelation is not null)
+        {
+            await persistCorrelation(paymentTransaction, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        var initiationResult = await paymentProviderService.InitiatePaymentAsync(
+            new PaymentProviderInitiationRequest(
+                paymentTransaction.MerchantReference,
+                command.Amount,
+                currency.CurrencyCode,
+                command.PaymentIntent,
+                stakeholder.Id,
+                stakeholder.TenantId,
+                stakeholder.CountryId),
+            cancellationToken);
+
+        paymentTransaction.MarkInitiated(
+            initiationResult.ProviderReference,
+            initiationResult.InstructionFields.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal),
+            initiationResult.ExpiresAtUtc,
+            KnownPaymentTransactionChangeReasons.PaymentInitiated);
+        paymentTransaction.SetPaymentMethodType(initiationResult.PaymentMethodType);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.Initiated,
+            ObservabilityEventProperties.Create(
+                command.ActorContext,
+                stakeholder.Id,
+                additionalProperties: new Dictionary<string, string>
+                {
+                    [Observability.PropertyNames.Payments.Provider] = paymentProvider.ProviderKey,
+                    [Observability.PropertyNames.Payments.PaymentMethod] = paymentTransaction.PaymentMethodType.ToString(),
+                    [Observability.PropertyNames.Payments.PaymentIntent] = paymentTransaction.PaymentIntent.ToString(),
+                    [Observability.PropertyNames.Payments.MerchantReference] = paymentTransaction.MerchantReference,
+                    [Observability.PropertyNames.Payments.ProviderReference] = paymentTransaction.ProviderReference ?? string.Empty,
+                    [Observability.PropertyNames.Payments.CurrencyCode] = currency.CurrencyCode
+                }));
+
+        return new InitiatePaymentResult(
+            paymentTransaction.Id,
+            paymentTransaction.MerchantReference,
+            paymentTransaction.PaymentStatus,
+            paymentProvider.Id,
+            paymentProvider.ProviderName,
+            paymentTransaction.ExpiresAtUtc,
+            paymentTransaction.PaymentMethodType,
+            initiationResult.InstructionFields);
+    }
+}

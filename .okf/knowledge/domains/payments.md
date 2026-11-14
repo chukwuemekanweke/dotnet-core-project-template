@@ -17,6 +17,7 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Persistence/BillingAccountResolver.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/BillingAccountConfiguration.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/SubscriptionActivationConfiguration.cs
+    - src/BackendProjectTemplate.Application/Subscriptions/Features/PurchaseSubscription/**
     - src/BackendProjectTemplate.WebAPI/Features/Payments/**
     - src/BackendProjectTemplate.Jobs/Payments/**
     - src/BackendProjectTemplate.Contracts/Payments/**
@@ -49,6 +50,7 @@ status: stable
   acted on — do not process a webhook payload without first checking/recording it there.
 - `ReconcilePayments` (Jobs) periodically reconciles payment state against provider truth.
 - `SuccessfulPaymentConfirmed`, `ActivateSubscriptionCommand`, `CreditWalletCommand` cross into `Consumer`/`Jobs` via `Contracts` and the outbox — see [[async-processing]].
-- There is no dedicated `Subscription` aggregate yet. `SubscriptionActivation`, the existing persisted subscription-related record, references the stakeholder-owned `BillingAccount`; the activation tenant and billing-account tenant are protected by a composite foreign key. The billing-account migration deterministically backfills existing activations from their verified tenant/stakeholder pair before making the reference required.
+- The generic payment-initiation endpoint is wallet-top-up only. Subscription checkout goes through the dedicated [[subscriptions]] purchase slice so plan price/currency are server-authoritative and a durable purchase correlation exists before provider initiation.
+- `Subscription` is the entitlement/lifecycle source of truth. `SubscriptionActivation` remains an immutable compatibility fulfillment record and links new fulfillments to the subscription and period; its new linkage columns are nullable for historical rows and no historical plan data is manufactured.
 
 Follows the standard [[vertical-slices]] feature-folder shape and the [[unit-testing]]/[[integration-testing]] conventions. Distinct from the generic [[providers]] domain (email/file-storage provider registry).

@@ -35,7 +35,7 @@ internal sealed class PaymentsControllerTestContext
     public List<IPaymentProviderService> PaymentProviderServices { get; } = [];
 
     public InitiatePaymentHandler CreateInitiatePaymentHandler() =>
-        new(
+        new(new PaymentInitiationService(
             StakeholderRepository,
             CurrencyRepository,
             CountryCurrencyRepository,
@@ -44,7 +44,7 @@ internal sealed class PaymentsControllerTestContext
             PaymentTransactionRepository,
             PaymentProviderServices,
             CustomTelemetryContext,
-            UnitOfWork);
+            UnitOfWork));
 
     public ActivatePaymentProviderHandler CreateActivatePaymentProviderHandler() =>
         new(PaymentProviderRepository, UnitOfWork);

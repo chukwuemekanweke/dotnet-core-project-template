@@ -18,7 +18,7 @@ public sealed class InitiatePaymentValidator : AbstractValidator<InitiatePayment
 
         RuleFor(request => request.PaymentIntent)
             .NotEmpty()
-            .Must(paymentIntent => Enum.TryParse<PaymentIntent>(paymentIntent, true, out _))
-            .WithMessage("PaymentIntent must be one of: WalletTopUp, Subscription.");
+            .Must(paymentIntent => Enum.TryParse<PaymentIntent>(paymentIntent, true, out var parsed) && parsed == PaymentIntent.WalletTopUp)
+            .WithMessage("PaymentIntent must be WalletTopUp. Use the subscription purchase endpoint for subscriptions.");
     }
 }

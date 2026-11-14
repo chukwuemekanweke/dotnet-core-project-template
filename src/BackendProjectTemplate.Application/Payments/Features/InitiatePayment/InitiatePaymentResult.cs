@@ -3,6 +3,7 @@ using BackendProjectTemplate.Contracts.Payments;
 namespace BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 
 public sealed record InitiatePaymentResult(
+    Guid PaymentTransactionId,
     string MerchantReference,
     PaymentStatus PaymentStatus,
     Guid PaymentProviderId,

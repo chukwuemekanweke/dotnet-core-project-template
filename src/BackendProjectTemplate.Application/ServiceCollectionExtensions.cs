@@ -50,6 +50,10 @@ using BackendProjectTemplate.Application.Stakeholders.Features.GetPreferences;
 using BackendProjectTemplate.Application.Stakeholders.Features.GetProfile;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdatePreferences;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
+using BackendProjectTemplate.Application.Subscriptions.Features.CancelSubscriptionAtPeriodEnd;
+using BackendProjectTemplate.Application.Subscriptions.Features.GetCurrentSubscription;
+using BackendProjectTemplate.Application.Subscriptions.Features.ListSubscriptionPlans;
+using BackendProjectTemplate.Application.Subscriptions.Features.PurchaseSubscription;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Application;
@@ -108,6 +112,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetCountriesHandler>();
         services.AddScoped<GetLanguagesHandler>();
         services.AddScoped<InitiatePaymentHandler>();
+        services.AddScoped<PaymentInitiationService>();
         services.AddScoped<GetStakeholderWalletTransactionsHandler>();
         services.AddScoped<GetStakeholderWalletTopUpTransactionDetailHandler>();
         services.AddScoped<ProcessSafeHavenAccountCreditWebhookHandler>();
@@ -115,6 +120,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ProcessSafeHavenVirtualAccountTransferWebhookHandler>();
         services.AddScoped<ProcessCredoWebhookHandler>();
         services.AddScoped<ProcessBachsWebhookHandler>();
+        services.AddScoped<ListSubscriptionPlansHandler>();
+        services.AddScoped<PurchaseSubscriptionHandler>();
+        services.AddScoped<GetCurrentSubscriptionHandler>();
+        services.AddScoped<CancelSubscriptionAtPeriodEndHandler>();
         services.AddScoped<PaymentReconciliationService>();
 
         return services;

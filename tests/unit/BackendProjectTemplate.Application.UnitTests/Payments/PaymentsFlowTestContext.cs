@@ -37,7 +37,7 @@ internal sealed class PaymentsFlowTestContext
         new(PaymentProviderRepository, UnitOfWork);
 
     public InitiatePaymentHandler CreateInitiatePaymentHandler() =>
-        new(
+        new(new PaymentInitiationService(
             StakeholderRepository,
             CurrencyRepository,
             CountryCurrencyRepository,
@@ -46,7 +46,7 @@ internal sealed class PaymentsFlowTestContext
             PaymentTransactionRepository,
             PaymentProviderServices,
             CustomTelemetryContext,
-            UnitOfWork);
+            UnitOfWork));
 
     public GetStakeholderWalletTransactionsHandler CreateGetStakeholderWalletTransactionsHandler() =>
         new(WalletTransactionReadModelRepository);

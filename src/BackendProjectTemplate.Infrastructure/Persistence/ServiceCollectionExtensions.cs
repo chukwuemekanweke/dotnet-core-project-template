@@ -5,6 +5,7 @@ using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
+using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAppUserRepository, AppUserRepository>();
         services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
         services.AddScoped<IBillingAccountResolver, BillingAccountResolver>();
+        services.AddScoped<ISubscriptionLifecyclePersistence, SubscriptionLifecyclePersistence>();
 
         return services;
     }
