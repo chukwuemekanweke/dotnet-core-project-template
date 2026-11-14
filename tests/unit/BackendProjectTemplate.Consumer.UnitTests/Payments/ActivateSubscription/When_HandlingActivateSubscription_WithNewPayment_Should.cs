@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Shouldly;
 
@@ -22,7 +23,13 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should
 
         capturedActivation.ShouldNotBeNull();
         capturedActivation.PaymentTransactionId.ShouldBe(command.PaymentTransactionId);
+        capturedActivation.BillingAccountId.ShouldNotBe(Guid.Empty);
         capturedActivation.Amount.ShouldBe(command.Amount);
+        await context.BillingAccountResolver.Received(1).ResolveOrCreateAsync(
+            command.TenantId,
+            BillingAccountOwnerType.Stakeholder,
+            command.StakeholderId,
+            Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

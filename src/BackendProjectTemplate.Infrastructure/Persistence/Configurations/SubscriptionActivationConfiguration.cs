@@ -12,6 +12,8 @@ public sealed class SubscriptionActivationConfiguration : IEntityTypeConfigurati
 
         builder.HasKey(activation => activation.Id);
 
+        builder.Property(activation => activation.BillingAccountId).IsRequired();
+
         builder.Property(activation => activation.SubscriptionReference)
             .HasMaxLength(200);
 
@@ -22,5 +24,13 @@ public sealed class SubscriptionActivationConfiguration : IEntityTypeConfigurati
         builder.HasIndex(activation => activation.PaymentTransactionId)
             .IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE");
+
+        builder.HasIndex(activation => activation.BillingAccountId);
+
+        builder.HasOne<BillingAccount>()
+            .WithMany()
+            .HasForeignKey(activation => new { activation.TenantId, activation.BillingAccountId })
+            .HasPrincipalKey(account => new { account.TenantId, account.Id })
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

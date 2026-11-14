@@ -3,7 +3,9 @@ using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.Payments.Exceptions;
 using BackendProjectTemplate.Domain.Payments.Specifications;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
@@ -15,6 +17,7 @@ public sealed class ActivateSubscriptionHandler(
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
     IRepository<SubscriptionActivation> subscriptionActivationRepository,
+    IBillingAccountResolver billingAccountResolver,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     IRepository<MessageInbox> messageInboxRepository,
@@ -37,9 +40,24 @@ public sealed class ActivateSubscriptionHandler(
             return;
         }
 
+        BillingAccount billingAccount;
+        try
+        {
+            billingAccount = await billingAccountResolver.ResolveOrCreateAsync(
+                message.TenantId,
+                BillingAccountOwnerType.Stakeholder,
+                message.StakeholderId,
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is BillingAccountOwnerNotFoundException or BillingAccountResolutionException or ArgumentException)
+        {
+            throw new CannotProcessMessageNonTransientException(exception.Message);
+        }
+
         await subscriptionActivationRepository.AddAsync(
             SubscriptionActivation.Create(
                 message.PaymentTransactionId,
+                billingAccount.Id,
                 message.StakeholderId.Value,
                 message.TenantId,
                 null,

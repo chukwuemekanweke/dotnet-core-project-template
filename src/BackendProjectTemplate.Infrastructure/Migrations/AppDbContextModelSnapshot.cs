@@ -1019,6 +1019,71 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.ToTable("TenantEmailBaseTemplates", "notifications");
                 });
 
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.BillingAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("OwnerType")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("StakeholderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("TenantId", "Id")
+                        .HasName("AK_BillingAccounts_TenantId_Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_BillingAccounts_TenantOwner")
+                        .HasFilter("\"OwnerType\" = 1");
+
+                    b.HasIndex("TenantId", "StakeholderId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_BillingAccounts_StakeholderOwner")
+                        .HasFilter("\"OwnerType\" = 2");
+
+                    b.ToTable("BillingAccounts", "payments", t =>
+                        {
+                            t.HasCheckConstraint("CK_BillingAccounts_Owner", "(\"OwnerType\" = 1 AND \"StakeholderId\" IS NULL) OR (\"OwnerType\" = 2 AND \"StakeholderId\" IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.CountryCurrency", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1464,6 +1529,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<Guid>("BillingAccountId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -1506,9 +1574,13 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BillingAccountId");
+
                     b.HasIndex("PaymentTransactionId")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = FALSE");
+
+                    b.HasIndex("TenantId", "BillingAccountId");
 
                     b.ToTable("SubscriptionActivations", "payments");
                 });
@@ -1833,6 +1905,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.HasKey("Id");
+
+                    b.HasAlternateKey("TenantId", "Id")
+                        .HasName("AK_Stakeholders_TenantId_Id");
 
                     b.HasIndex("AppUserId")
                         .IsUnique()
@@ -2202,12 +2277,37 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Navigation("IpAddressLocation");
                 });
 
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.BillingAccount", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Stakeholders.Entities.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Stakeholders.Entities.Stakeholder", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "StakeholderId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.PaymentProviderConfiguration", b =>
                 {
                     b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentProvider", null)
                         .WithMany("Configurations")
                         .HasForeignKey("PaymentProviderId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.SubscriptionActivation", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.BillingAccount", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "BillingAccountId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
