@@ -32,7 +32,7 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithValidRequest_Shoul
                 Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
-        const string payload = "{\"events\":[{\"event\":\"delivery\",\"message_id\":\"mailtrap-message-id\",\"sending_stream\":\"transactional\",\"email\":\"ada@example.com\",\"sending_domain_name\":\"mail.example.com\",\"timestamp\":1746273900,\"event_id\":\"evt_123\"}]}";
+        const string payload = "{\"events\":[{\"event\":\"bounce\",\"message_id\":\"mailtrap-message-id\",\"sending_stream\":\"transactional\",\"email\":\"ada@example.com\",\"sending_domain_name\":\"mail.example.com\",\"timestamp\":1746273900,\"event_id\":\"evt_123\",\"response\":\"Mailbox unavailable\",\"response_code\":550,\"bounce_category\":\"bad_mailbox\"}]}";
         var sut = new MailtrapWebhooksController(context.CreateHandler(), NullLogger<MailtrapWebhooksController>.Instance);
         sut.ControllerContext = new ControllerContext
         {
@@ -46,10 +46,12 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithValidRequest_Shoul
         result.ShouldBeOfType<OkResult>();
         capturedInbox.ShouldNotBeNull();
         capturedInbox.WebhookProcessingStatus.ShouldBe(WebhookProcessingStatus.Received);
+        capturedInbox.EventType.ShouldBe("bounce");
+        capturedInbox.FailureReason.ShouldBe("Mailbox unavailable");
         await context.MailtrapWebhookSignatureValidator.Received(1).ValidateAsync(
             Arg.Is<MailtrapWebhookSignatureValidationRequest>(request =>
                 request.SignatureHeader == "valid-signature" &&
-                request.RawPayload == payload),
+                request.RawPayload.SequenceEqual(Encoding.UTF8.GetBytes(payload))),
             Arg.Any<CancellationToken>());
         await context.EventPublisher.Received(1).PublishAsync(
             Arg.Is<EmailDeliveryWebhookReceived>(message =>

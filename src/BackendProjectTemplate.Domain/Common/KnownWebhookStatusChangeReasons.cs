@@ -22,5 +22,7 @@ public static class KnownWebhookStatusChangeReasons
         public const string MissingSigningSecret = "missing_signing_secret";
         public const string MissingPayload = "missing_payload";
         public const string NotificationLogDelivered = "notification_log_delivered";
+        public const string NotificationLogBounced = "notification_log_bounced";
+        public const string NotificationLogRejected = "notification_log_rejected";
     }
 }

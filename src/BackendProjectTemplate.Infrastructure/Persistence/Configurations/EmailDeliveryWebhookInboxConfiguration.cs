@@ -19,6 +19,10 @@ public sealed class EmailDeliveryWebhookInboxConfiguration : IEntityTypeConfigur
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(inbox => inbox.EventType)
+            .HasMaxLength(50)
+            .IsRequired();
+
         builder.Property(inbox => inbox.ProviderMessageId)
             .HasMaxLength(200)
             .IsRequired();
@@ -38,6 +42,9 @@ public sealed class EmailDeliveryWebhookInboxConfiguration : IEntityTypeConfigur
         builder.Property(inbox => inbox.RawPayload)
             .HasColumnType("jsonb")
             .IsRequired();
+
+        builder.Property(inbox => inbox.FailureReason)
+            .HasMaxLength(4000);
 
         builder.Property(inbox => inbox.StatusChangeReason)
             .HasMaxLength(500);

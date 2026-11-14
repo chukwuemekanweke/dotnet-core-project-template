@@ -43,8 +43,11 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
         await DisposeClientAsync();
     }
 
-    [Fact]
-    public async Task PersistWebhook()
+    [Theory]
+    [InlineData("delivery", null, null)]
+    [InlineData("bounce", null, "Mailbox unavailable")]
+    [InlineData("reject", "Recipient is suppressed", null)]
+    public async Task PersistWebhook(string eventType, string? reason, string? response)
     {
         await WhenPostingWebhook();
         await ThenTheWebhookIsPersisted();
@@ -57,13 +60,15 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
                 {
                     new
                     {
-                        @event = "delivery",
+                        @event = eventType,
                         message_id = "mailtrap-message-id",
                         sending_stream = "transactional",
                         email = "ada@example.com",
                         sending_domain_name = "mail.example.com",
                         timestamp = DateTimeOffset.Parse("2026-05-03T12:05:00+00:00").ToUnixTimeSeconds(),
-                        event_id = "evt_123"
+                        event_id = $"evt_{eventType}",
+                        reason,
+                        response
                     }
                 }
             };
@@ -98,7 +103,9 @@ public sealed class When_ReceivingMailtrapDeliveryWebhook_WithRecognizedMessage_
             _webhookInboxId = inbox.Id;
             _outboxMessageId = outboxMessage.Id;
             inbox.ProviderMessageId.ShouldBe("mailtrap-message-id");
-            inbox.WebhookEventId.ShouldBe("evt_123");
+            inbox.WebhookEventId.ShouldBe($"evt_{eventType}");
+            inbox.EventType.ShouldBe(eventType);
+            inbox.FailureReason.ShouldBe(response ?? reason);
             inbox.WebhookProcessingStatus.ShouldBe(WebhookProcessingStatus.Received);
             log.DeliveredAtUtc.ShouldBeNull();
             outboxMessage.SentAtUtc.ShouldBeNull();

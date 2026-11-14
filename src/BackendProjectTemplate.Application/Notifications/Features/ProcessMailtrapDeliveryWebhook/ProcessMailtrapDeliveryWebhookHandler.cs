@@ -22,7 +22,7 @@ public sealed class ProcessMailtrapDeliveryWebhookHandler(
         CancellationToken cancellationToken)
     {
         var validationResult = await mailtrapWebhookSignatureValidator.ValidateAsync(
-            new MailtrapWebhookSignatureValidationRequest(command.SignatureHeader, command.RawPayload),
+            new MailtrapWebhookSignatureValidationRequest(command.SignatureHeader, command.RawPayloadBytes),
             cancellationToken);
         if (!validationResult.IsValid)
         {
@@ -61,13 +61,15 @@ public sealed class ProcessMailtrapDeliveryWebhookHandler(
             var inbox = EmailDeliveryWebhookInbox.Create(
                 provider.Id,
                 webhookEvent.EventId,
+                webhookEvent.Event,
                 webhookEvent.MessageId,
                 webhookEvent.Email,
                 webhookEvent.SendingStream,
                 webhookEvent.SendingDomainName,
                 rawEventPayload,
                 occurredAtUtc,
-                now);
+                now,
+                GetFailureReason(webhookEvent));
             await emailDeliveryWebhookInboxRepository.AddAsync(inbox, cancellationToken);
             await eventPublisher.PublishAsync(
                 new EmailDeliveryWebhookReceived
@@ -91,4 +93,12 @@ public sealed class ProcessMailtrapDeliveryWebhookHandler(
 
         return new ProcessMailtrapDeliveryWebhookResult(MailtrapDeliveryWebhookReceiptStatus.Persisted);
     }
+
+    private static string? GetFailureReason(MailtrapDeliveryWebhookEvent webhookEvent) =>
+        webhookEvent.Event switch
+        {
+            MailtrapDeliveryWebhookEvents.Bounce => webhookEvent.Response,
+            MailtrapDeliveryWebhookEvents.Reject => webhookEvent.Reason,
+            _ => null
+        };
 }
