@@ -10,6 +10,8 @@ public sealed class StakeholderConfiguration : IEntityTypeConfiguration<Stakehol
     {
         builder.ToTable("Stakeholders", SchemaNames.Stakeholders);
         builder.HasKey(stakeholder => stakeholder.Id);
+        builder.HasAlternateKey(stakeholder => new { stakeholder.TenantId, stakeholder.Id })
+            .HasName("AK_Stakeholders_TenantId_Id");
 
         builder.Property(stakeholder => stakeholder.AppUserId).IsRequired();
         builder.Property(stakeholder => stakeholder.TenantId).IsRequired();

@@ -14,6 +14,7 @@ public sealed class When_HandlingActivateSubscription_WithDuplicatePaymentTransa
         context.SubscriptionActivationRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<SubscriptionActivation>>(), Arg.Any<CancellationToken>())
             .Returns(SubscriptionActivation.Create(
                 command.PaymentTransactionId,
+                Guid.CreateVersion7(),
                 command.StakeholderId!.Value,
                 command.TenantId,
                 null,

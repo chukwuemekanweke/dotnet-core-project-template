@@ -10,6 +10,7 @@ public sealed class SubscriptionActivation : Entity, IAggregateRoot
 
     private SubscriptionActivation(
         Guid paymentTransactionId,
+        Guid billingAccountId,
         Guid stakeholderId,
         Guid tenantId,
         string? subscriptionReference,
@@ -18,6 +19,7 @@ public sealed class SubscriptionActivation : Entity, IAggregateRoot
         DateTimeOffset activatedAtUtc)
     {
         PaymentTransactionId = paymentTransactionId;
+        BillingAccountId = billingAccountId;
         StakeholderId = stakeholderId;
         TenantId = tenantId;
         SubscriptionReference = string.IsNullOrWhiteSpace(subscriptionReference) ? null : subscriptionReference.Trim();
@@ -27,6 +29,7 @@ public sealed class SubscriptionActivation : Entity, IAggregateRoot
     }
 
     public Guid PaymentTransactionId { get; private set; }
+    public Guid BillingAccountId { get; private set; }
     public Guid StakeholderId { get; private set; }
     public Guid TenantId { get; private set; }
     public string? SubscriptionReference { get; private set; }
@@ -36,11 +39,12 @@ public sealed class SubscriptionActivation : Entity, IAggregateRoot
 
     public static SubscriptionActivation Create(
         Guid paymentTransactionId,
+        Guid billingAccountId,
         Guid stakeholderId,
         Guid tenantId,
         string? subscriptionReference,
         decimal amount,
         Guid currencyId,
         DateTimeOffset activatedAtUtc) =>
-        new(paymentTransactionId, stakeholderId, tenantId, subscriptionReference, amount, currencyId, activatedAtUtc);
+        new(paymentTransactionId, billingAccountId, stakeholderId, tenantId, subscriptionReference, amount, currencyId, activatedAtUtc);
 }

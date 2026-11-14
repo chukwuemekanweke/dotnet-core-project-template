@@ -2,6 +2,7 @@ using BackendProjectTemplate.Consumer.Payments;
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 
@@ -17,6 +18,7 @@ internal sealed class PaymentsConsumerTestContext
     public IRepository<Wallet> WalletRepository { get; } = Substitute.For<IRepository<Wallet>>();
     public IRepository<WalletTransaction> WalletTransactionRepository { get; } = Substitute.For<IRepository<WalletTransaction>>();
     public IRepository<SubscriptionActivation> SubscriptionActivationRepository { get; } = Substitute.For<IRepository<SubscriptionActivation>>();
+    public IBillingAccountResolver BillingAccountResolver { get; } = Substitute.For<IBillingAccountResolver>();
     public IRepository<MessageInbox> MessageInboxRepository { get; } = Substitute.For<IRepository<MessageInbox>>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 14, 0, 0, TimeSpan.Zero));
@@ -46,6 +48,7 @@ internal sealed class PaymentsConsumerTestContext
             CurrentActorAccessor,
             MessageContext,
             SubscriptionActivationRepository,
+            BillingAccountResolver,
             UnitOfWork,
             Clock,
             MessageInboxRepository,
@@ -71,6 +74,17 @@ internal sealed class PaymentsConsumerTestContext
             TenantId = Guid.CreateVersion7(),
             FlowId = Guid.CreateVersion7().ToString("N")
         };
+
+        BillingAccountResolver.ResolveOrCreateAsync(
+                command.TenantId,
+                BillingAccountOwnerType.Stakeholder,
+                command.StakeholderId,
+                Arg.Any<CancellationToken>())
+            .Returns(BillingAccount.Create(
+                command.TenantId,
+                BillingAccountOwnerType.Stakeholder,
+                command.StakeholderId,
+                "Test Stakeholder"));
 
         return command;
     }

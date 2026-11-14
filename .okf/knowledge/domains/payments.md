@@ -14,6 +14,9 @@ code_refs:
     - src/BackendProjectTemplate.Application/Payments/**
     - src/BackendProjectTemplate.Domain/Payments/**
     - src/BackendProjectTemplate.Infrastructure/Payments/**
+    - src/BackendProjectTemplate.Infrastructure/Persistence/BillingAccountResolver.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/BillingAccountConfiguration.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/SubscriptionActivationConfiguration.cs
     - src/BackendProjectTemplate.WebAPI/Features/Payments/**
     - src/BackendProjectTemplate.Jobs/Payments/**
     - src/BackendProjectTemplate.Contracts/Payments/**
@@ -39,10 +42,13 @@ status: stable
   webhook signatures cover the timestamp plus original raw request bytes, prefer the V2 multi-signature
   header, and enforce a five-minute default tolerance.
 - Wallet: `InitiatePayment`, wallet transactions, wallet top-up transaction detail, `CreditWallet` (triggered async, see below).
+- Billing ownership: `BillingAccount` is the tenant-scoped commercial ownership aggregate. Each tenant owner and each tenant/stakeholder owner pair has one retained account, enforced by PostgreSQL partial unique indexes. Stakeholder ownership also uses a composite `(TenantId, StakeholderId)` foreign key so cross-tenant associations fail at the database boundary. Ownership fields are immutable; display names are labels, not identifiers.
+- `IBillingAccountResolver.ResolveOrCreateAsync` validates non-deleted owners, derives display names from verified tenant/stakeholder records, returns an existing account idempotently, and recovers only from the two known owner-uniqueness conflicts after detaching the losing insert. Billing-account uniqueness is intentionally not filtered by soft deletion, so historical commercial identity cannot be silently replaced.
 - Webhook inbox: incoming provider webhooks (`ProcessBachsWebhook`, `ProcessCredoWebhook`,
   `ProcessSafeHavenWebhook`, generic `ProcessPaymentWebhook`) are recorded in a `PaymentWebhookInbox` for idempotency before being
   acted on — do not process a webhook payload without first checking/recording it there.
 - `ReconcilePayments` (Jobs) periodically reconciles payment state against provider truth.
 - `SuccessfulPaymentConfirmed`, `ActivateSubscriptionCommand`, `CreditWalletCommand` cross into `Consumer`/`Jobs` via `Contracts` and the outbox — see [[async-processing]].
+- There is no dedicated `Subscription` aggregate yet. `SubscriptionActivation`, the existing persisted subscription-related record, references the stakeholder-owned `BillingAccount`; the activation tenant and billing-account tenant are protected by a composite foreign key. The billing-account migration deterministically backfills existing activations from their verified tenant/stakeholder pair before making the reference required.
 
 Follows the standard [[vertical-slices]] feature-folder shape and the [[unit-testing]]/[[integration-testing]] conventions. Distinct from the generic [[providers]] domain (email/file-storage provider registry).
