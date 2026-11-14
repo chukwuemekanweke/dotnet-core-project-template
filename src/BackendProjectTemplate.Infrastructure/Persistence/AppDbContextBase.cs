@@ -47,6 +47,9 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<SubscriptionPeriod> SubscriptionPeriods => Set<SubscriptionPeriod>();
     public DbSet<SubscriptionStatusHistory> SubscriptionStatusHistory => Set<SubscriptionStatusHistory>();
     public DbSet<SubscriptionPurchase> SubscriptionPurchases => Set<SubscriptionPurchase>();
+    public DbSet<SubscriptionRenewal> SubscriptionRenewals => Set<SubscriptionRenewal>();
+    public DbSet<SubscriptionRenewalAttempt> SubscriptionRenewalAttempts => Set<SubscriptionRenewalAttempt>();
+    public DbSet<RecurringPaymentAuthorization> RecurringPaymentAuthorizations => Set<RecurringPaymentAuthorization>();
     public DbSet<EmailNotificationTemplate> EmailNotificationTemplates => Set<EmailNotificationTemplate>();
     public DbSet<EmailNotificationLog> EmailNotificationLogs => Set<EmailNotificationLog>();
     public DbSet<EmailDeliveryWebhookInbox> EmailDeliveryWebhookInboxes => Set<EmailDeliveryWebhookInbox>();

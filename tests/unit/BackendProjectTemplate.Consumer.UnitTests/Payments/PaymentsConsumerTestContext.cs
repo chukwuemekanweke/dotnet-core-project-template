@@ -57,6 +57,7 @@ internal sealed class PaymentsConsumerTestContext
             SubscriptionRepository,
             SubscriptionActivationRepository,
             SubscriptionLifecyclePersistence,
+            CommandSender,
             UnitOfWork,
             Clock,
             MessageInboxRepository,

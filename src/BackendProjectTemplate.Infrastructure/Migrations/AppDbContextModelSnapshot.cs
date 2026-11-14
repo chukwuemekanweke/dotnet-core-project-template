@@ -1516,6 +1516,80 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.ToTable("PaymentWebhookInboxes", "payments");
                 });
 
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.RecurringPaymentAuthorization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AuthorizationReference")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("AuthorizedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("BillingAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("PaymentProviderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentProviderId");
+
+                    b.HasIndex("BillingAccountId", "PaymentProviderId", "AuthorizationReference")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "BillingAccountId", "Status");
+
+                    b.ToTable("RecurringPaymentAuthorizations", "payments");
+                });
+
             modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.SubscriptionActivation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2382,6 +2456,174 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionRenewal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BillingAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BillingInterval")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal>("ExpectedPrice")
+                        .HasPrecision(18)
+                        .HasColumnType("numeric(18,0)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("NextRetryAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ReminderSequenceSent")
+                        .HasColumnType("integer");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("TargetPeriodEndUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("TargetPeriodStartUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.HasIndex("Status", "NextRetryAtUtc");
+
+                    b.HasIndex("SubscriptionId", "TargetPeriodStartUtc")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "BillingAccountId");
+
+                    b.ToTable("SubscriptionRenewals", "payments");
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionRenewalAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("NextRetryAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("PaymentTransactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProviderIdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("RecurringAuthorizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RenewalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentTransactionId")
+                        .IsUnique()
+                        .HasFilter("\"PaymentTransactionId\" IS NOT NULL");
+
+                    b.HasIndex("ProviderIdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("RecurringAuthorizationId");
+
+                    b.HasIndex("RenewalId", "AttemptNumber")
+                        .IsUnique();
+
+                    b.ToTable("SubscriptionRenewalAttempts", "payments");
+                });
+
             modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionStatusHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2732,6 +2974,28 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.RecurringPaymentAuthorization", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentProvider", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentProviderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Stakeholders.Entities.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.BillingAccount", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "BillingAccountId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.SubscriptionActivation", b =>
                 {
                     b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription", null)
@@ -2882,6 +3146,54 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionRenewal", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.Currency", null)
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription", null)
+                        .WithMany()
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Stakeholders.Entities.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.BillingAccount", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "BillingAccountId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionRenewalAttempt", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.RecurringPaymentAuthorization", null)
+                        .WithMany()
+                        .HasForeignKey("RecurringAuthorizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionRenewal", null)
+                        .WithMany("Attempts")
+                        .HasForeignKey("RenewalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionStatusHistory", b =>
                 {
                     b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentTransaction", null)
@@ -2976,6 +3288,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Navigation("Periods");
 
                     b.Navigation("StatusHistory");
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionRenewal", b =>
+                {
+                    b.Navigation("Attempts");
                 });
 #pragma warning restore 612, 618
         }

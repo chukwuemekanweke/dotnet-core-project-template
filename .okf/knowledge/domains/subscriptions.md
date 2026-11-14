@@ -23,6 +23,8 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionLifecyclePersistence.cs
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/**
     - src/BackendProjectTemplate.Consumer/Payments/ActivateSubscriptionHandler.cs
+    - src/BackendProjectTemplate.Consumer/Subscriptions/**
+    - src/BackendProjectTemplate.Contracts/Commands/Subscriptions/**
     - tests/unit/BackendProjectTemplate.Domain.UnitTests/Subscriptions/**
     - tests/unit/BackendProjectTemplate.Application.UnitTests/Subscriptions/**
     - tests/integration/BackendProjectTemplate.Consumer.IntegrationTests/Payments/ActivateSubscription/**
@@ -62,9 +64,24 @@ payment/operation uniqueness plus PostgreSQL concurrency for redelivery safety.
 New purchases begin `Pending`; a paid or explicitly administrative activation transitions them to
 `Active`. Administrative allocation creates no fake payment reference. Cancellation at period end
 keeps the subscription active and entitlement intact through `CurrentPeriodEndUtc`, disables renewal,
-clears `NextBillingAtUtc`, and records an auditable lifecycle decision. `NextBillingAtUtc` is the next
-charge-attempt date, not a substitute for entitlement end. Automatic charging, retries, dunning,
-proration, upgrades and downgrades remain outside this domain version.
+clears `NextBillingAtUtc`, records an auditable lifecycle decision, and atomically schedules a
+state-checked `ExpireSubscriptionCommand`. `NextBillingAtUtc` is the next charge-attempt date, not a
+substitute for entitlement end.
+
+Initial paid activation atomically schedules `RenewSubscriptionCommand` through the transactional
+outbox. A durable `SubscriptionRenewal`, uniquely identified by `(SubscriptionId,
+TargetPeriodStartUtc)`, snapshots the authoritative period boundaries, price, currency and interval;
+`SubscriptionRenewalAttempt` is a separate financial-attempt identity. Consumers always re-read the
+subscription and treat stale renewal, reminder and expiry commands as no-ops. Renewal reminders flow
+through the generic notification command/outbox path and are sequence-deduplicated on the renewal.
+
+No current payment adapter exposes a verified merchant-initiated recurring-charge capability. The
+renewal consumer therefore fails closed: it records `AwaitingAuthorization`, schedules conditional
+reminder and grace-expiry commands, and never reuses a one-time payment reference. Retry and
+reconciliation command contracts plus durable attempt storage define the future boundary, but live
+automatic charging, retry execution, and renewal fulfillment remain blocked until a provider adapter
+can prove reusable authorization, idempotent charge submission, and status lookup semantics.
+Proration, upgrades and downgrades remain outside this domain version.
 
 User-facing plan listing, purchase, current-subscription lookup and scheduled cancellation require the
 active-session policy and derive tenant/stakeholder identity from the authenticated actor. Static admin
