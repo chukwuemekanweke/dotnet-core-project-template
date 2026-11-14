@@ -2,8 +2,10 @@ using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Consumer.Notifications;
 using BackendProjectTemplate.Consumer.Payments;
 using BackendProjectTemplate.Consumer.Storage;
+using BackendProjectTemplate.Consumer.Subscriptions;
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Contracts.Commands.Storage;
+using BackendProjectTemplate.Contracts.Commands.Subscriptions;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
@@ -26,6 +28,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<ILoginActivityIpAddressResolver, LoginActivityIpAddressResolver>();
         services.AddScoped<EmailConfirmationOtpSender>();
+        services.Configure<SubscriptionRenewalOptions>(configuration.GetSection(SubscriptionRenewalOptions.SectionName));
 
         var options = configuration
             .GetSection(RabbitMqMessagingOptions.SectionName)
@@ -79,6 +82,9 @@ public static class ServiceCollectionExtensions
                 .AddHandler<SendNotification, SendNotificationHandler>()
                 .AddHandler<CreditWalletCommand, CreditWalletHandler>()
                 .AddHandler<ActivateSubscriptionCommand, ActivateSubscriptionHandler>()
+                .AddHandler<RenewSubscriptionCommand, RenewSubscriptionHandler>()
+                .AddHandler<SendSubscriptionRenewalReminderCommand, SendSubscriptionRenewalReminderHandler>()
+                .AddHandler<ExpireSubscriptionCommand, ExpireSubscriptionHandler>()
                 .AddHandler<DeleteQuarantinedObject, DeleteQuarantinedObjectHandler>())
             .AddHostedService(serviceProvider => new Worker(
                 serviceProvider.GetRequiredKeyedService<ISubscriber>(subscriberConfig.Key),

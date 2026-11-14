@@ -16,6 +16,7 @@ public sealed class When_ValidatingSupportedLanguages_WithCompleteTemplateSets_S
         "PasswordResetSuccessful.html",
         "ResetPassword.html",
         "SignInSuccessful.html",
+        "SubscriptionRenewalReminder.html",
         "TrialExpired.html"
     ];
 

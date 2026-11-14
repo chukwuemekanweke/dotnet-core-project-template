@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Contracts.Commands.Subscriptions;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using Shouldly;
@@ -32,6 +33,10 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should
             Arg.Any<CancellationToken>());
         await context.SubscriptionLifecyclePersistence.Received(1).AddStatusHistoryAsync(
             Arg.Any<SubscriptionStatusHistory>(),
+            Arg.Any<CancellationToken>());
+        await context.CommandSender.Received(1).ScheduleSendAsync(
+            Arg.Is<RenewSubscriptionCommand>(renewal => renewal.SubscriptionId == capturedActivation.SubscriptionId),
+            Arg.Any<DateTimeOffset>(),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

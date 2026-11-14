@@ -11,6 +11,7 @@ public enum NotificationType
     AccountLocked = 7,
     TrialExpired = 8,
     SubscriptionCancelled = 9,
-    SubscriptionInvoice = 10
+    SubscriptionInvoice = 10,
+    SubscriptionRenewalReminder = 11
 
 }

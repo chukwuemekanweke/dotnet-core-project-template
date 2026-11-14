@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
+using BackendProjectTemplate.Contracts.Commands.Subscriptions;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -24,6 +25,7 @@ public sealed class ActivateSubscriptionHandler(
     IRepository<SubscriptionAggregate> subscriptionRepository,
     IRepository<SubscriptionActivation> subscriptionActivationRepository,
     ISubscriptionLifecyclePersistence lifecyclePersistence,
+    ICommandSender commandSender,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     IRepository<MessageInbox> messageInboxRepository,
@@ -110,6 +112,14 @@ public sealed class ActivateSubscriptionHandler(
                 purchase.ExpectedCurrencyId,
                 occurredAtUtc),
             cancellationToken);
+
+        if (subscription.AutoRenew && subscription.NextBillingAtUtc.HasValue)
+        {
+            await commandSender.ScheduleSendAsync(
+                new RenewSubscriptionCommand(subscription.Id, period.PeriodEndUtc),
+                subscription.NextBillingAtUtc.Value,
+                cancellationToken);
+        }
 
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Payments.SubscriptionActivated,
