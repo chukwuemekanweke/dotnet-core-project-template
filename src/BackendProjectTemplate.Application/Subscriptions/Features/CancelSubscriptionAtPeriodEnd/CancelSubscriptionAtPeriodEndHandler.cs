@@ -1,3 +1,5 @@
+using BackendProjectTemplate.Contracts.Commands.Subscriptions;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
@@ -13,6 +15,7 @@ public sealed class CancelSubscriptionAtPeriodEndHandler(
     IRepository<BillingAccount> billingAccountRepository,
     IRepository<SubscriptionAggregate> subscriptionRepository,
     ISubscriptionLifecyclePersistence lifecyclePersistence,
+    ICommandSender commandSender,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -53,6 +56,17 @@ public sealed class CancelSubscriptionAtPeriodEndHandler(
         {
             var statusHistory = subscription.StatusHistory.Single(history => history.OperationId == operationId);
             await lifecyclePersistence.AddStatusHistoryAsync(statusHistory, cancellationToken);
+            if (subscription.CurrentPeriodEndUtc.HasValue)
+            {
+                await commandSender.ScheduleSendAsync(
+                    new ExpireSubscriptionCommand(subscription.Id, subscription.CurrentPeriodEndUtc.Value)
+                    {
+                        TenantId = subscription.TenantId,
+                        StakeholderId = stakeholderId
+                    },
+                    subscription.CurrentPeriodEndUtc.Value,
+                    cancellationToken);
+            }
             await unitOfWork.SaveChangesAsync(cancellationToken);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Subscriptions.CancellationScheduled,

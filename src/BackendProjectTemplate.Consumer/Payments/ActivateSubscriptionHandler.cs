@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
+using BackendProjectTemplate.Contracts.Commands.Subscriptions;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
@@ -22,8 +23,10 @@ public sealed class ActivateSubscriptionHandler(
     IRepository<PaymentTransaction> paymentTransactionRepository,
     IRepository<SubscriptionPurchase> purchaseRepository,
     IRepository<SubscriptionAggregate> subscriptionRepository,
+    IRepository<SubscriptionRenewal> renewalRepository,
     IRepository<SubscriptionActivation> subscriptionActivationRepository,
     ISubscriptionLifecyclePersistence lifecyclePersistence,
+    ICommandSender commandSender,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     IRepository<MessageInbox> messageInboxRepository,
@@ -61,9 +64,12 @@ public sealed class ActivateSubscriptionHandler(
 
         var purchase = await purchaseRepository.FirstOrDefaultAsync(
             new SubscriptionPurchaseByPaymentTransactionSpecification(message.PaymentTransactionId),
-            cancellationToken)
-            ?? throw new CannotProcessMessageNonTransientException(
-                $"Subscription purchase for payment '{message.PaymentTransactionId}' was not found.");
+            cancellationToken);
+        if (purchase is null)
+        {
+            await FulfillRenewalAsync(payment, message, cancellationToken);
+            return;
+        }
 
         try
         {
@@ -111,6 +117,14 @@ public sealed class ActivateSubscriptionHandler(
                 occurredAtUtc),
             cancellationToken);
 
+        if (subscription.AutoRenew && subscription.NextBillingAtUtc.HasValue)
+        {
+            await commandSender.ScheduleSendAsync(
+                new RenewSubscriptionCommand(subscription.Id, period.PeriodEndUtc),
+                subscription.NextBillingAtUtc.Value,
+                cancellationToken);
+        }
+
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Payments.SubscriptionActivated,
             ObservabilityEventProperties.Create(
@@ -120,6 +134,74 @@ public sealed class ActivateSubscriptionHandler(
                 {
                     [Observability.PropertyNames.Payments.PaymentReference] = message.MerchantReference,
                     [Observability.PropertyNames.Payments.CurrencyId] = message.CurrencyId.ToString()
+                }));
+    }
+
+    private async Task FulfillRenewalAsync(
+        PaymentTransaction payment,
+        ActivateSubscriptionCommand message,
+        CancellationToken cancellationToken)
+    {
+        var renewal = await renewalRepository.FirstOrDefaultAsync(
+            new SubscriptionRenewalByPaymentTransactionSpecification(payment.Id),
+            cancellationToken)
+            ?? throw new CannotProcessMessageNonTransientException(
+                $"No subscription purchase or renewal was found for payment '{payment.Id}'.");
+        if (renewal.Status == SubscriptionRenewalStatus.Fulfilled)
+        {
+            return;
+        }
+
+        var attempt = renewal.Attempts.Single(candidate => candidate.PaymentTransactionId == payment.Id);
+        if (renewal.TenantId != message.TenantId ||
+            renewal.ExpectedPrice != payment.Amount ||
+            renewal.CurrencyId != payment.CurrencyId)
+        {
+            throw new CannotProcessMessageNonTransientException(
+                $"Renewal '{renewal.Id}' does not match payment '{payment.Id}'.");
+        }
+
+        var subscription = await subscriptionRepository.FirstOrDefaultAsync(
+            new SubscriptionForFulfillmentSpecification(renewal.SubscriptionId),
+            cancellationToken)
+            ?? throw new CannotProcessMessageNonTransientException(
+                $"Subscription '{renewal.SubscriptionId}' was not found.");
+        if (subscription.TenantId != renewal.TenantId || subscription.BillingAccountId != renewal.BillingAccountId)
+        {
+            throw new CannotProcessMessageNonTransientException(
+                $"Renewal '{renewal.Id}' does not match subscription ownership.");
+        }
+
+        var occurredAtUtc = Clock.GetUtcNow();
+        var period = subscription.RenewFromPayment(renewal, payment.Id, occurredAtUtc, renewal.Id);
+        var statusHistory = subscription.StatusHistory.Single(history => history.OperationId == renewal.Id);
+        await lifecyclePersistence.AddPeriodAsync(period, cancellationToken);
+        await lifecyclePersistence.AddStatusHistoryAsync(statusHistory, cancellationToken);
+        attempt.MarkSucceeded(occurredAtUtc);
+        renewal.MarkFulfilled(occurredAtUtc);
+
+        if (subscription.AutoRenew && !subscription.CancelAtPeriodEnd && subscription.NextBillingAtUtc.HasValue)
+        {
+            await commandSender.ScheduleSendAsync(
+                new RenewSubscriptionCommand(subscription.Id, period.PeriodEndUtc)
+                {
+                    TenantId = subscription.TenantId,
+                    StakeholderId = payment.StakeholderId
+                },
+                subscription.NextBillingAtUtc.Value,
+                cancellationToken);
+        }
+
+        CustomTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.SubscriptionActivated,
+            ObservabilityEventProperties.Create(
+                CurrentActorAccessor,
+                message.StakeholderId,
+                additionalProperties: new Dictionary<string, string>
+                {
+                    [Observability.PropertyNames.Payments.PaymentReference] = message.MerchantReference,
+                    [Observability.PropertyNames.Payments.CurrencyId] = message.CurrencyId.ToString(),
+                    [Observability.PropertyNames.Subscriptions.RenewalId] = renewal.Id.ToString()
                 }));
     }
 }

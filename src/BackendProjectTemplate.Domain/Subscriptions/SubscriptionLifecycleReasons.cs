@@ -7,4 +7,5 @@ public static class SubscriptionLifecycleReasons
     public const string AdministrativeAllocation = "administrative_allocation";
     public const string CancellationScheduled = "cancellation_scheduled";
     public const string PeriodEnded = "period_ended";
+    public const string RenewalPaymentConfirmed = "renewal_payment_confirmed";
 }

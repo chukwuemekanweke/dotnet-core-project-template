@@ -7,4 +7,5 @@ public sealed record PaymentProviderVerificationRequest(
     string? ProviderReference,
     decimal Amount,
     string CurrencyCode,
-    PaymentIntent PaymentIntent);
+    PaymentIntent PaymentIntent,
+    bool IsRecurringCharge = false);

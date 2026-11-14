@@ -37,20 +37,46 @@ status: stable
 - Payment providers: Bachs, Credo and SafeHaven, each with provider-specific payload types under
   `Infrastructure/Payments/{Bachs,Credo,SafeHaven}`. Provider activation/deactivation is a distinct feature
   (`ActivatePaymentProvider`) from initiating a payment.
-- Bachs supports one-time hosted-checkout wallet top-ups in this phase. The seeded configuration enables
-  NGN `WalletTopUp` only. Internal amounts are whole minor units; the adapter converts them to exact
-  major-unit decimal strings and verifies merchant reference, currency and amount before success. Bachs
-  webhook signatures cover the timestamp plus original raw request bytes, prefer the V2 multi-signature
-  header, and enforce a five-minute default tolerance.
+- Bachs supports hosted-checkout wallet top-ups and trusted subscription purchases. The generic
+  payment endpoint remains wallet-top-up only; only the server-authoritative subscription purchase
+  slice sets `IsTrustedSubscriptionPurchase`. Auto-renew purchases create a Bachs customer, send
+  `save_payment_method: true`, and persist a pending authorization tied to the BillingAccount and
+  source PaymentTransaction. Internal amounts are whole minor units; the adapter converts them to
+  exact major-unit decimal strings and verifies merchant reference, currency and amount before success.
+  Bachs webhook signatures cover the timestamp plus original raw request bytes, prefer the V2
+  multi-signature header, and enforce a five-minute default tolerance.
 - Wallet: `InitiatePayment`, wallet transactions, wallet top-up transaction detail, `CreditWallet` (triggered async, see below).
-- Billing ownership: `BillingAccount` is the tenant-scoped commercial ownership aggregate. Each tenant owner and each tenant/stakeholder owner pair has one retained account, enforced by PostgreSQL partial unique indexes. Stakeholder ownership also uses a composite `(TenantId, StakeholderId)` foreign key so cross-tenant associations fail at the database boundary. Ownership fields are immutable; display names are labels, not identifiers.
-- `IBillingAccountResolver.ResolveOrCreateAsync` validates non-deleted owners, derives display names from verified tenant/stakeholder records, returns an existing account idempotently, and recovers only from the two known owner-uniqueness conflicts after detaching the losing insert. Billing-account uniqueness is intentionally not filtered by soft deletion, so historical commercial identity cannot be silently replaced.
+- Billing ownership: `BillingAccount` is the tenant-scoped commercial ownership aggregate. Each tenant
+  owner and each tenant/stakeholder owner pair has one retained account, enforced by PostgreSQL partial
+  unique indexes. Stakeholder ownership also uses a composite `(TenantId, StakeholderId)` foreign key
+  so cross-tenant associations fail at the database boundary. Ownership fields are immutable; display
+  names are labels, not identifiers.
+- `IBillingAccountResolver.ResolveOrCreateAsync` validates non-deleted owners, derives display names
+  from verified tenant/stakeholder records, returns an existing account idempotently, and recovers only
+  from the two known owner-uniqueness conflicts after detaching the losing insert. Billing-account
+  uniqueness is intentionally not filtered by soft deletion, so historical commercial identity cannot
+  be silently replaced.
 - Webhook inbox: incoming provider webhooks (`ProcessBachsWebhook`, `ProcessCredoWebhook`,
   `ProcessSafeHavenWebhook`, generic `ProcessPaymentWebhook`) are recorded in a `PaymentWebhookInbox` for idempotency before being
   acted on — do not process a webhook payload without first checking/recording it there.
-- `ReconcilePayments` (Jobs) periodically reconciles payment state against provider truth.
+- `ReconcilePayments` (Jobs) periodically reconciles payment state against provider truth. Bachs
+  renewal transactions carry a durable `renewal_attempt_id` marker so verification uses
+  `/v1/payments/{payment_id}` instead of the hosted-checkout lookup.
 - `SuccessfulPaymentConfirmed`, `ActivateSubscriptionCommand`, `CreditWalletCommand` cross into `Consumer`/`Jobs` via `Contracts` and the outbox — see [[async-processing]].
-- The generic payment-initiation endpoint is wallet-top-up only. Subscription checkout goes through the dedicated [[subscriptions]] purchase slice so plan price/currency are server-authoritative and a durable purchase correlation exists before provider initiation.
-- `Subscription` is the entitlement/lifecycle source of truth. `SubscriptionActivation` remains an immutable compatibility fulfillment record and links new fulfillments to the subscription and period; its new linkage columns are nullable for historical rows and no historical plan data is manufactured.
+- The generic payment-initiation endpoint is wallet-top-up only. Subscription checkout goes through
+  the dedicated [[subscriptions]] purchase slice so plan price/currency are server-authoritative and a
+  durable purchase correlation exists before provider initiation.
+- `Subscription` is the entitlement/lifecycle source of truth. `SubscriptionActivation` remains an
+  immutable compatibility fulfillment record and links new fulfillments to the subscription and
+  period; its new linkage columns are nullable for historical rows and no historical plan data is
+  manufactured.
+- `RecurringPaymentAuthorization` is provider-agnostic and BillingAccount-, provider-, currency-,
+  consent-, customer- and source-payment-scoped. It begins pending and becomes active only after a
+  signature-verified Bachs `payment_method.saved` webhook. The charge-capable `pm_` reference is
+  protected at rest with ASP.NET Data Protection; PAN and CVV are never stored or returned. Selection
+  requires matching tenant, BillingAccount, currency, active status and expiry. Bachs is the sole
+  registered `IRecurringPaymentProvider`; it supports NGN and USD `POST /v1/charges` requests with an
+  explicit `cust_` customer, `pm_` payment method and stable idempotency key. Credo and SafeHaven fail
+  closed for recurring charges.
 
 Follows the standard [[vertical-slices]] feature-folder shape and the [[unit-testing]]/[[integration-testing]] conventions. Distinct from the generic [[providers]] domain (email/file-storage provider registry).

@@ -55,6 +55,7 @@ public static class Observability
             public const string PurchaseId = "subscription_purchase_id";
             public const string PlanId = "subscription_plan_id";
             public const string BillingAccountId = "billing_account_id";
+            public const string RenewalId = "subscription_renewal_id";
         }
     }
 
@@ -135,6 +136,9 @@ public static class Observability
         {
             public const string PurchaseInitiated = "subscription.purchase.initiated";
             public const string CancellationScheduled = "subscription.cancellation.scheduled";
+            public const string RenewalAwaitingAuthorization = "subscription.renewal.awaiting_authorization";
+            public const string RenewalReminderScheduled = "subscription.renewal.reminder_scheduled";
+            public const string Expired = "subscription.expired";
         }
     }
 }

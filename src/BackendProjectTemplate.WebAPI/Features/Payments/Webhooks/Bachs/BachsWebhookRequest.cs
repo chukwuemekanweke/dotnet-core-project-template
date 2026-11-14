@@ -15,4 +15,11 @@ public sealed record BachsWebhookDataRequest(
     string? Reference,
     string? Status,
     string? Amount,
-    string? Currency);
+    string? Currency,
+    [property: JsonPropertyName("payment_method_id")] string? PaymentMethodId,
+    BachsWebhookCustomerRequest? Customer);
+
+public sealed record BachsWebhookCustomerRequest(
+    [property: JsonPropertyName("customer_id")] string? CustomerId,
+    string? Email,
+    string? Name);

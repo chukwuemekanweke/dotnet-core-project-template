@@ -9,4 +9,6 @@ public sealed record PaymentProviderInitiationRequest(
     PaymentIntent PaymentIntent,
     Guid StakeholderId,
     Guid TenantId,
-    Guid CountryId);
+    Guid CountryId,
+    bool IsTrustedSubscriptionPurchase = false,
+    bool SavePaymentMethod = false);

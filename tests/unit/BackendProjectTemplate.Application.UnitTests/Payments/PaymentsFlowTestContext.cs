@@ -24,12 +24,14 @@ internal sealed class PaymentsFlowTestContext
     public IRepository<PaymentProviderConfiguration> PaymentProviderConfigurationRepository { get; } = Substitute.For<IRepository<PaymentProviderConfiguration>>();
     public IRepository<PaymentTransaction> PaymentTransactionRepository { get; } = Substitute.For<IRepository<PaymentTransaction>>();
     public IRepository<PaymentWebhookInbox> PaymentWebhookInboxRepository { get; } = Substitute.For<IRepository<PaymentWebhookInbox>>();
+    public IRepository<RecurringPaymentAuthorization> RecurringPaymentAuthorizationRepository { get; } = Substitute.For<IRepository<RecurringPaymentAuthorization>>();
     public IWalletTransactionReadModelRepository WalletTransactionReadModelRepository { get; } = Substitute.For<IWalletTransactionReadModelRepository>();
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public ICredoWebhookSignatureValidator CredoWebhookSignatureValidator { get; } = Substitute.For<ICredoWebhookSignatureValidator>();
     public IBachsWebhookSignatureValidator BachsWebhookSignatureValidator { get; } = Substitute.For<IBachsWebhookSignatureValidator>();
+    public IRecurringPaymentAuthorizationProtector RecurringPaymentAuthorizationProtector { get; } = Substitute.For<IRecurringPaymentAuthorizationProtector>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 12, 0, 0, TimeSpan.Zero));
     public List<IPaymentProviderService> PaymentProviderServices { get; } = [];
 
@@ -44,6 +46,7 @@ internal sealed class PaymentsFlowTestContext
             PaymentProviderRepository,
             PaymentProviderConfigurationRepository,
             PaymentTransactionRepository,
+            RecurringPaymentAuthorizationRepository,
             PaymentProviderServices,
             CustomTelemetryContext,
             UnitOfWork));
@@ -69,8 +72,10 @@ internal sealed class PaymentsFlowTestContext
             PaymentProviderRepository,
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
+            RecurringPaymentAuthorizationRepository,
             CurrencyRepository,
             BachsWebhookSignatureValidator,
+            RecurringPaymentAuthorizationProtector,
             PaymentProviderServices,
             EventPublisher,
             CustomTelemetryContext,

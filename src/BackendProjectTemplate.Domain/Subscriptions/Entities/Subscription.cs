@@ -158,6 +158,57 @@ public sealed class Subscription : Entity, IAggregateRoot
         return true;
     }
 
+    public SubscriptionPeriod RenewFromPayment(
+        SubscriptionRenewal renewal,
+        Guid paymentTransactionId,
+        DateTimeOffset renewedAtUtc,
+        Guid operationId)
+    {
+        var duplicatePeriod = _periods.SingleOrDefault(period => period.PaymentTransactionId == paymentTransactionId);
+        if (duplicatePeriod is not null)
+        {
+            return duplicatePeriod;
+        }
+
+        if (Status != SubscriptionStatus.Active ||
+            renewal.SubscriptionId != Id ||
+            renewal.TenantId != TenantId ||
+            renewal.BillingAccountId != BillingAccountId ||
+            CurrentPeriodEndUtc != renewal.TargetPeriodStartUtc)
+        {
+            throw new AggregateStateException($"Subscription '{Id}' cannot be renewed for the requested billing period.");
+        }
+
+        var currentPeriod = _periods.Single(period => period.PeriodEndUtc == renewal.TargetPeriodStartUtc);
+        var period = new SubscriptionPeriod(
+            Id,
+            renewal.TargetPeriodStartUtc,
+            renewal.TargetPeriodEndUtc,
+            currentPeriod.PlanId,
+            currentPeriod.PlanCode,
+            renewal.ExpectedPrice,
+            renewal.CurrencyId,
+            renewal.BillingInterval,
+            paymentTransactionId,
+            SubscriptionActivationSource.PaidRenewal,
+            operationId);
+        _periods.Add(period);
+        CurrentPeriodStartUtc = period.PeriodStartUtc;
+        CurrentPeriodEndUtc = period.PeriodEndUtc;
+        NextBillingAtUtc = AutoRenew && !CancelAtPeriodEnd ? period.PeriodEndUtc : null;
+        LastSuccessfulPaymentTransactionId = paymentTransactionId;
+        _statusHistory.Add(new SubscriptionStatusHistory(
+            Id,
+            Status,
+            Status,
+            SubscriptionLifecycleReasons.RenewalPaymentConfirmed,
+            renewedAtUtc,
+            null,
+            operationId,
+            paymentTransactionId));
+        return period;
+    }
+
     public SubscriptionPeriod ActivateAdministratively(
         SubscriptionPlan plan,
         DateTimeOffset activatedAtUtc,

@@ -9,7 +9,7 @@ namespace BackendProjectTemplate.Infrastructure.Payments.Bachs;
 internal sealed class BachsPaymentProviderService(
     IBachsClient client,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
-    IOptions<BachsOptions> options) : IPaymentProviderService
+    IOptions<BachsOptions> options) : IPaymentProviderService, IRecurringPaymentProvider
 {
     private readonly BachsOptions _options = options.Value;
 
@@ -19,9 +19,10 @@ internal sealed class BachsPaymentProviderService(
         PaymentProviderInitiationRequest request,
         CancellationToken cancellationToken)
     {
-        if (request.PaymentIntent != PaymentIntent.WalletTopUp)
+        if (request.PaymentIntent != PaymentIntent.WalletTopUp &&
+            (request.PaymentIntent != PaymentIntent.Subscription || !request.IsTrustedSubscriptionPurchase))
         {
-            throw new InvalidOperationException("The Bachs integration currently supports wallet top-up payments only.");
+            throw new InvalidOperationException("Bachs subscription payments require the trusted subscription purchase flow.");
         }
 
         if (_options.CheckoutExpirationMinutes is < 1 or > 1440)
@@ -44,12 +45,31 @@ internal sealed class BachsPaymentProviderService(
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Select(value => value.Trim()));
 
+        string? customerId = null;
+        if (request.SavePaymentMethod)
+        {
+            var customer = await client.CreateCustomerAsync(
+                new BachsCreateCustomerRequest(
+                    email,
+                    string.IsNullOrWhiteSpace(customerName) ? null : customerName,
+                    new Dictionary<string, string>
+                    {
+                        ["stakeholder_id"] = request.StakeholderId.ToString(),
+                        ["tenant_id"] = request.TenantId.ToString()
+                    }),
+                $"{request.MerchantReference}-customer",
+                cancellationToken);
+            customerId = NormalizeRequired(customer.CustomerId, "Bachs create customer response did not contain a customer id.");
+        }
+
         var response = await client.CreateCheckoutSessionAsync(
             new BachsCreateCheckoutSessionRequest(
                 new BachsCheckoutPricing(
                     request.CurrencyCode.ToUpperInvariant(),
                     BachsAmountConverter.ToMajorUnitString(request.Amount, request.CurrencyCode)),
-                new BachsCheckoutCustomer(email, string.IsNullOrWhiteSpace(customerName) ? null : customerName),
+                request.SavePaymentMethod
+                    ? new BachsCheckoutCustomer(null, null, customerId)
+                    : new BachsCheckoutCustomer(email, string.IsNullOrWhiteSpace(customerName) ? null : customerName),
                 NormalizeOptional(_options.SuccessUrl),
                 NormalizeOptional(_options.CancelUrl),
                 request.MerchantReference,
@@ -59,7 +79,8 @@ internal sealed class BachsPaymentProviderService(
                     ["payment_intent"] = request.PaymentIntent.ToString(),
                     ["stakeholder_id"] = request.StakeholderId.ToString()
                 },
-                _options.CheckoutExpirationMinutes),
+                _options.CheckoutExpirationMinutes,
+                request.SavePaymentMethod),
             request.MerchantReference,
             cancellationToken);
 
@@ -93,7 +114,37 @@ internal sealed class BachsPaymentProviderService(
                 [BachsKnownKeys.PaymentInstruction.PaymentLink] = checkoutUrl,
                 [BachsKnownKeys.PaymentInstruction.ProviderReference] = checkoutId,
                 [BachsKnownKeys.PaymentInstruction.MerchantReference] = responseReference
-            });
+            },
+            customerId is null ? null : new RecurringPaymentSetupResult(customerId));
+    }
+
+    public async Task<RecurringChargeResult> ChargeAsync(
+        RecurringChargeRequest request,
+        CancellationToken cancellationToken)
+    {
+        EnsureRecurringCurrency(request.CurrencyCode);
+        var response = await client.CreateChargeAsync(
+            new BachsCreateChargeRequest(
+                request.ProviderCustomerReference,
+                request.PaymentMethodReference,
+                BachsAmountConverter.ToMajorUnitString(request.Amount, request.CurrencyCode),
+                request.CurrencyCode.ToUpperInvariant(),
+                "Subscription renewal",
+                request.MerchantReference,
+                request.Metadata),
+            request.IdempotencyKey,
+            cancellationToken);
+
+        return MapCharge(response, request.MerchantReference, request.Amount, request.CurrencyCode);
+    }
+
+    public async Task<RecurringChargeResult> GetChargeAsync(
+        RecurringChargeVerificationRequest request,
+        CancellationToken cancellationToken)
+    {
+        EnsureRecurringCurrency(request.CurrencyCode);
+        var response = await client.GetPaymentAsync(request.ProviderReference, cancellationToken);
+        return MapCharge(response, request.MerchantReference, request.Amount, request.CurrencyCode);
     }
 
     public async Task<PaymentProviderVerificationResult> VerifyPaymentAsync(
@@ -103,6 +154,31 @@ internal sealed class BachsPaymentProviderService(
         if (string.IsNullOrWhiteSpace(request.ProviderReference))
         {
             return Processing(request.ProviderReference);
+        }
+
+        if (request.IsRecurringCharge)
+        {
+            var charge = await GetChargeAsync(
+                new RecurringChargeVerificationRequest(
+                    request.ProviderReference,
+                    request.MerchantReference,
+                    request.Amount,
+                    request.CurrencyCode),
+                cancellationToken);
+            return charge.Status switch
+            {
+                RecurringChargeStatus.Succeeded => new PaymentProviderVerificationResult(
+                    PaymentProviderVerificationStatus.Succeeded,
+                    charge.ProviderReference,
+                    null,
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess),
+                RecurringChargeStatus.Failed => new PaymentProviderVerificationResult(
+                    PaymentProviderVerificationStatus.Failed,
+                    charge.ProviderReference,
+                    charge.FailureReason,
+                    KnownPaymentTransactionChangeReasons.ReconciliationConfirmedFailure),
+                _ => Processing(charge.ProviderReference)
+            };
         }
 
         var response = await client.GetCheckoutSessionAsync(request.ProviderReference, cancellationToken);
@@ -188,6 +264,53 @@ internal sealed class BachsPaymentProviderService(
 
     private static bool EqualsValue(string? value, string expected) =>
         string.Equals(value?.Trim(), expected, StringComparison.OrdinalIgnoreCase);
+
+    private static RecurringChargeResult MapCharge(
+        BachsChargeResponse response,
+        string merchantReference,
+        decimal amount,
+        string currencyCode)
+    {
+        var providerReference = NormalizeRequired(response.PaymentId, "Bachs charge response did not contain a payment id.");
+        if (!string.Equals(NormalizeOptional(response.Reference), merchantReference, StringComparison.Ordinal) ||
+            !string.Equals(NormalizeOptional(response.Currency), currencyCode, StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(response.Amount) ||
+            BachsAmountConverter.ToMinorUnits(response.Amount, currencyCode) != amount)
+        {
+            return new RecurringChargeResult(
+                RecurringChargeStatus.Failed,
+                providerReference,
+                "provider_identity_mismatch",
+                "Bachs charge response did not match the renewal payment.");
+        }
+
+        if (EqualsValue(response.Status, BachsPaymentStatuses.Succeeded))
+        {
+            return new RecurringChargeResult(RecurringChargeStatus.Succeeded, providerReference, null, null);
+        }
+
+        if (EqualsValue(response.Status, "failed") ||
+            EqualsValue(response.Status, "expired") ||
+            EqualsValue(response.Status, "cancelled"))
+        {
+            return new RecurringChargeResult(
+                RecurringChargeStatus.Failed,
+                providerReference,
+                NormalizeOptional(response.FailureCode) ?? "provider_reported_failure",
+                NormalizeOptional(response.FailureReason) ?? "Bachs reported that the recurring charge failed.");
+        }
+
+        return new RecurringChargeResult(RecurringChargeStatus.Processing, providerReference, null, null);
+    }
+
+    private static void EnsureRecurringCurrency(string currencyCode)
+    {
+        if (!string.Equals(currencyCode, "NGN", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(currencyCode, "USD", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"Bachs recurring charges do not support '{currencyCode}'.");
+        }
+    }
 
     private static string NormalizeRequired(string? value, string errorMessage) =>
         string.IsNullOrWhiteSpace(value) ? throw new InvalidOperationException(errorMessage) : value.Trim();

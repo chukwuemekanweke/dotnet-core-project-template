@@ -16,6 +16,7 @@ public sealed class PaymentInitiationService(
     IRepository<PaymentProvider> paymentProviderRepository,
     IRepository<PaymentProviderConfiguration> paymentProviderConfigurationRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
+    IRepository<RecurringPaymentAuthorization> recurringAuthorizationRepository,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
@@ -92,8 +93,32 @@ public sealed class PaymentInitiationService(
                 command.PaymentIntent,
                 stakeholder.Id,
                 stakeholder.TenantId,
-                stakeholder.CountryId),
+                stakeholder.CountryId,
+                command.TrustedSubscriptionContext is not null,
+                command.TrustedSubscriptionContext?.SavePaymentMethod == true),
             cancellationToken);
+
+        if (initiationResult.RecurringPaymentSetup is not null)
+        {
+            var trustedContext = command.TrustedSubscriptionContext
+                ?? throw new InvalidOperationException("A provider returned recurring setup details outside the trusted subscription flow.");
+            if (!trustedContext.SavePaymentMethod || !trustedContext.ConsentedAtUtc.HasValue)
+            {
+                throw new InvalidOperationException("Recurring payment setup requires explicit customer consent.");
+            }
+
+            await recurringAuthorizationRepository.AddAsync(
+                RecurringPaymentAuthorization.Create(
+                    stakeholder.TenantId,
+                    trustedContext.BillingAccountId,
+                    paymentProvider.Id,
+                    initiationResult.RecurringPaymentSetup.ProviderCustomerReference,
+                    currency.Id,
+                    paymentTransaction.Id,
+                    trustedContext.ConsentedAtUtc.Value,
+                    trustedContext.ConsentedAtUtc.Value),
+                cancellationToken);
+        }
 
         paymentTransaction.MarkInitiated(
             initiationResult.ProviderReference,

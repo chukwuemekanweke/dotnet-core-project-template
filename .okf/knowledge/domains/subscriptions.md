@@ -23,6 +23,8 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionLifecyclePersistence.cs
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/**
     - src/BackendProjectTemplate.Consumer/Payments/ActivateSubscriptionHandler.cs
+    - src/BackendProjectTemplate.Consumer/Subscriptions/**
+    - src/BackendProjectTemplate.Contracts/Commands/Subscriptions/**
     - tests/unit/BackendProjectTemplate.Domain.UnitTests/Subscriptions/**
     - tests/unit/BackendProjectTemplate.Application.UnitTests/Subscriptions/**
     - tests/integration/BackendProjectTemplate.Consumer.IntegrationTests/Payments/ActivateSubscription/**
@@ -52,19 +54,41 @@ currency server-side, and saves the pending `PaymentTransaction`, pending `Subsc
 `SubscriptionPurchase` correlation before invoking the provider.
 
 Verified `SuccessfulPaymentConfirmed` events retain the existing command/outbox/Consumer flow.
-`ActivateSubscriptionHandler` requires a succeeded subscription payment and matching purchase tenant,
-amount, currency and merchant reference. Initial activation atomically creates one period, records
-history, fulfills the purchase, links the compatibility `SubscriptionActivation`, and relies on
-payment/operation uniqueness plus PostgreSQL concurrency for redelivery safety.
+`ActivateSubscriptionHandler` distinguishes a `SubscriptionPurchase` from a durably correlated
+`SubscriptionRenewalAttempt`. Initial activation requires matching tenant, amount, currency and
+merchant reference, then atomically creates one period, records history, fulfills the purchase and
+links the compatibility `SubscriptionActivation`. Renewal fulfillment validates the same ownership
+and money invariants, creates exactly one period from the agreed period boundary (not settlement
+time), marks the attempt/renewal fulfilled and schedules the next renewal.
 
 ## Lifecycle semantics
 
 New purchases begin `Pending`; a paid or explicitly administrative activation transitions them to
 `Active`. Administrative allocation creates no fake payment reference. Cancellation at period end
 keeps the subscription active and entitlement intact through `CurrentPeriodEndUtc`, disables renewal,
-clears `NextBillingAtUtc`, and records an auditable lifecycle decision. `NextBillingAtUtc` is the next
-charge-attempt date, not a substitute for entitlement end. Automatic charging, retries, dunning,
-proration, upgrades and downgrades remain outside this domain version.
+clears `NextBillingAtUtc`, records an auditable lifecycle decision, and atomically schedules a
+state-checked `ExpireSubscriptionCommand`. `NextBillingAtUtc` is the next charge-attempt date, not a
+substitute for entitlement end.
+
+Initial paid activation atomically schedules `RenewSubscriptionCommand` through the transactional
+outbox. A durable `SubscriptionRenewal`, uniquely identified by `(SubscriptionId,
+TargetPeriodStartUtc)`, snapshots the authoritative period boundaries, price, currency and interval;
+`SubscriptionRenewalAttempt` is a separate financial-attempt identity. Consumers always re-read the
+subscription and treat stale renewal, reminder and expiry commands as no-ops. Renewal reminders flow
+through the generic notification command/outbox path and are sequence-deduplicated on the renewal.
+
+The Bachs adapter exposes the provider-agnostic recurring-charge boundary for NGN and USD. A renewal
+attempt and normal `PaymentTransaction` are saved before the provider call, including a stable key
+`renewal-{RenewalId}-{AttemptNumber}`. Duplicate commands cannot create another attempt while one is
+pending, submitted or unknown. Immediate success uses the standard successful-payment event;
+confirmed failure schedules bounded backoff retries; processing or transport ambiguity preserves the
+same attempt/key and schedules `ReconcileSubscriptionRenewalCommand`. Reconciliation retrieves a
+known charge or repeats the exact idempotent request when submission timed out. Conditional reminders
+and grace expiry remain scheduled state-checked commands. Missing, pending, revoked, expired,
+wrong-currency or unsupported-provider authorization fails closed as `AwaitingAuthorization`; a paid
+initial subscription remains entitled even if saved-card setup never completes.
+
+Proration, upgrades and downgrades remain outside this domain version.
 
 User-facing plan listing, purchase, current-subscription lookup and scheduled cancellation require the
 active-session policy and derive tenant/stakeholder identity from the authenticated actor. Static admin

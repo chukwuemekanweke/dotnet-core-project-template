@@ -23,6 +23,7 @@ internal sealed class PaymentsConsumerTestContext
     public IRepository<PaymentTransaction> PaymentTransactionRepository { get; } = Substitute.For<IRepository<PaymentTransaction>>();
     public IRepository<SubscriptionPurchase> SubscriptionPurchaseRepository { get; } = Substitute.For<IRepository<SubscriptionPurchase>>();
     public IRepository<SubscriptionAggregate> SubscriptionRepository { get; } = Substitute.For<IRepository<SubscriptionAggregate>>();
+    public IRepository<SubscriptionRenewal> SubscriptionRenewalRepository { get; } = Substitute.For<IRepository<SubscriptionRenewal>>();
     public ISubscriptionLifecyclePersistence SubscriptionLifecyclePersistence { get; } = Substitute.For<ISubscriptionLifecyclePersistence>();
     public IRepository<MessageInbox> MessageInboxRepository { get; } = Substitute.For<IRepository<MessageInbox>>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
@@ -55,8 +56,10 @@ internal sealed class PaymentsConsumerTestContext
             PaymentTransactionRepository,
             SubscriptionPurchaseRepository,
             SubscriptionRepository,
+            SubscriptionRenewalRepository,
             SubscriptionActivationRepository,
             SubscriptionLifecyclePersistence,
+            CommandSender,
             UnitOfWork,
             Clock,
             MessageInboxRepository,
