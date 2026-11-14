@@ -1,5 +1,5 @@
-using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using Shouldly;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Payments.ActivateSubscription;
@@ -25,10 +25,13 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should
         capturedActivation.PaymentTransactionId.ShouldBe(command.PaymentTransactionId);
         capturedActivation.BillingAccountId.ShouldNotBe(Guid.Empty);
         capturedActivation.Amount.ShouldBe(command.Amount);
-        await context.BillingAccountResolver.Received(1).ResolveOrCreateAsync(
-            command.TenantId,
-            BillingAccountOwnerType.Stakeholder,
-            command.StakeholderId,
+        capturedActivation.SubscriptionId.ShouldNotBeNull();
+        capturedActivation.SubscriptionPeriodId.ShouldNotBeNull();
+        await context.SubscriptionLifecyclePersistence.Received(1).AddPeriodAsync(
+            Arg.Any<SubscriptionPeriod>(),
+            Arg.Any<CancellationToken>());
+        await context.SubscriptionLifecyclePersistence.Received(1).AddStatusHistoryAsync(
+            Arg.Any<SubscriptionStatusHistory>(),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

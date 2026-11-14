@@ -48,6 +48,14 @@ public static class Observability
             public const string WalletId = "wallet_id";
             public const string TerminalState = "terminal_state";
         }
+
+        public static class Subscriptions
+        {
+            public const string SubscriptionId = "subscription_id";
+            public const string PurchaseId = "subscription_purchase_id";
+            public const string PlanId = "subscription_plan_id";
+            public const string BillingAccountId = "billing_account_id";
+        }
     }
 
     public static class EventNames
@@ -121,6 +129,12 @@ public static class Observability
             public const string WalletCredited = "payment.wallet.credited";
             public const string CreditWallet = "payment.credit_wallet";
             public const string ActivateSubscription = "payment.activate_subscription";
+        }
+
+        public static class Subscriptions
+        {
+            public const string PurchaseInitiated = "subscription.purchase.initiated";
+            public const string CancellationScheduled = "subscription.cancellation.scheduled";
         }
     }
 }

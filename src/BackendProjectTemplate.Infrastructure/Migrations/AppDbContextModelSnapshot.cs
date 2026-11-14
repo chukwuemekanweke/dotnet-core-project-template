@@ -1558,6 +1558,12 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<Guid>("StakeholderId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SubscriptionPeriodId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("SubscriptionReference")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -1577,8 +1583,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.HasIndex("BillingAccountId");
 
                     b.HasIndex("PaymentTransactionId")
-                        .IsUnique()
-                        .HasFilter("\"IsDeleted\" = FALSE");
+                        .IsUnique();
+
+                    b.HasIndex("SubscriptionId");
+
+                    b.HasIndex("SubscriptionPeriodId");
 
                     b.HasIndex("TenantId", "BillingAccountId");
 
@@ -2025,6 +2034,428 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.ToTable("Tenants", "stakeholders");
                 });
 
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("AutoRenew")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("BillingAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("CancelAtPeriodEnd")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("CancellationRequestedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("CurrentPeriodEndUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("CurrentPeriodStartUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("EndedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("LastSuccessfulPaymentTransactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("NextBillingAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("TenantId", "Id");
+
+                    b.HasIndex("LastSuccessfulPaymentTransactionId");
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("Status", "NextBillingAtUtc");
+
+                    b.HasIndex("TenantId", "BillingAccountId", "Status");
+
+                    b.ToTable("Subscriptions", "payments", t =>
+                        {
+                            t.HasCheckConstraint("CK_Subscriptions_CurrentPeriod", "\"CurrentPeriodStartUtc\" IS NULL OR \"CurrentPeriodEndUtc\" > \"CurrentPeriodStartUtc\"");
+
+                            t.HasCheckConstraint("CK_Subscriptions_Status", "\"Status\" IN (1, 2, 3, 4)");
+                        });
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ActivationSource")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BillingInterval")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PaymentTransactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("PeriodEndUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("PeriodStartUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PlanCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18)
+                        .HasColumnType("numeric(18,0)");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.HasIndex("PaymentTransactionId")
+                        .IsUnique()
+                        .HasFilter("\"PaymentTransactionId\" IS NOT NULL");
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("SubscriptionId", "OperationId")
+                        .IsUnique();
+
+                    b.HasIndex("SubscriptionId", "PeriodStartUtc");
+
+                    b.ToTable("SubscriptionPeriods", "payments", t =>
+                        {
+                            t.HasCheckConstraint("CK_SubscriptionPeriods_ActivationSource", "\"ActivationSource\" IN (1, 2)");
+
+                            t.HasCheckConstraint("CK_SubscriptionPeriods_BillingInterval", "\"BillingInterval\" IN (1, 2)");
+
+                            t.HasCheckConstraint("CK_SubscriptionPeriods_Boundaries", "\"PeriodEndUtc\" > \"PeriodStartUtc\"");
+
+                            t.HasCheckConstraint("CK_SubscriptionPeriods_Price", "\"Price\" >= 0 AND \"Price\" = trunc(\"Price\")");
+                        });
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BillingInterval")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18)
+                        .HasColumnType("numeric(18,0)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("CurrencyId");
+
+                    b.HasIndex("IsActive");
+
+                    b.ToTable("SubscriptionPlans", "payments", t =>
+                        {
+                            t.HasCheckConstraint("CK_SubscriptionPlans_BillingInterval", "\"BillingInterval\" IN (1, 2)");
+
+                            t.HasCheckConstraint("CK_SubscriptionPlans_Price", "\"Price\" >= 0 AND \"Price\" = trunc(\"Price\")");
+                        });
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPurchase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BillingAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BillingInterval")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal>("ExpectedAmount")
+                        .HasPrecision(18)
+                        .HasColumnType("numeric(18,0)");
+
+                    b.Property<Guid>("ExpectedCurrencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("FulfilledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InitiatedByStakeholderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("PaymentTransactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PlanCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpectedCurrencyId");
+
+                    b.HasIndex("PaymentTransactionId")
+                        .IsUnique();
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("SubscriptionId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "BillingAccountId");
+
+                    b.HasIndex("TenantId", "InitiatedByStakeholderId");
+
+                    b.ToTable("SubscriptionPurchases", "payments", t =>
+                        {
+                            t.HasCheckConstraint("CK_SubscriptionPurchases_BillingInterval", "\"BillingInterval\" IN (1, 2)");
+
+                            t.HasCheckConstraint("CK_SubscriptionPurchases_ExpectedAmount", "\"ExpectedAmount\" > 0 AND \"ExpectedAmount\" = trunc(\"ExpectedAmount\")");
+                        });
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionStatusHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("NewStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PaymentTransactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("PreviousStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentTransactionId");
+
+                    b.HasIndex("SubscriptionId", "OccurredAtUtc");
+
+                    b.HasIndex("SubscriptionId", "OperationId")
+                        .IsUnique();
+
+                    b.ToTable("SubscriptionStatusHistory", "payments", t =>
+                        {
+                            t.HasCheckConstraint("CK_SubscriptionStatusHistory_NewStatus", "\"NewStatus\" IN (1, 2, 3, 4)");
+
+                            t.HasCheckConstraint("CK_SubscriptionStatusHistory_PreviousStatus", "\"PreviousStatus\" IS NULL OR \"PreviousStatus\" IN (1, 2, 3, 4)");
+                        });
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2303,12 +2734,24 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.SubscriptionActivation", b =>
                 {
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription", null)
+                        .WithMany()
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPeriod", "SubscriptionPeriod")
+                        .WithMany()
+                        .HasForeignKey("SubscriptionPeriodId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.BillingAccount", null)
                         .WithMany()
                         .HasForeignKey("TenantId", "BillingAccountId")
                         .HasPrincipalKey("TenantId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("SubscriptionPeriod");
                 });
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Stakeholders.Entities.Stakeholder", b =>
@@ -2328,6 +2771,129 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Navigation("AppUser");
 
                     b.Navigation("StakeholderType");
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("LastSuccessfulPaymentTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPlan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Stakeholders.Entities.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.BillingAccount", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "BillingAccountId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPeriod", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.Currency", null)
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPlan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription", null)
+                        .WithMany("Periods")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPlan", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.Currency", null)
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPurchase", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.Currency", null)
+                        .WithMany()
+                        .HasForeignKey("ExpectedCurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPlan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription", null)
+                        .WithMany()
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Stakeholders.Entities.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.BillingAccount", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "BillingAccountId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Stakeholders.Entities.Stakeholder", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "InitiatedByStakeholderId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionStatusHistory", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentTransactionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription", null)
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -2403,6 +2969,13 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
             modelBuilder.Entity("BackendProjectTemplate.Domain.Stakeholders.Entities.StakeholderType", b =>
                 {
                     b.Navigation("Stakeholders");
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription", b =>
+                {
+                    b.Navigation("Periods");
+
+                    b.Navigation("StatusHistory");
                 });
 #pragma warning restore 612, 618
         }

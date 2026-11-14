@@ -2,9 +2,11 @@ using BackendProjectTemplate.Consumer.Payments;
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
-using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.Subscriptions;
+using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
+using SubscriptionAggregate = BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription;
 
 namespace BackendProjectTemplate.Consumer.UnitTests.Payments;
 
@@ -18,7 +20,10 @@ internal sealed class PaymentsConsumerTestContext
     public IRepository<Wallet> WalletRepository { get; } = Substitute.For<IRepository<Wallet>>();
     public IRepository<WalletTransaction> WalletTransactionRepository { get; } = Substitute.For<IRepository<WalletTransaction>>();
     public IRepository<SubscriptionActivation> SubscriptionActivationRepository { get; } = Substitute.For<IRepository<SubscriptionActivation>>();
-    public IBillingAccountResolver BillingAccountResolver { get; } = Substitute.For<IBillingAccountResolver>();
+    public IRepository<PaymentTransaction> PaymentTransactionRepository { get; } = Substitute.For<IRepository<PaymentTransaction>>();
+    public IRepository<SubscriptionPurchase> SubscriptionPurchaseRepository { get; } = Substitute.For<IRepository<SubscriptionPurchase>>();
+    public IRepository<SubscriptionAggregate> SubscriptionRepository { get; } = Substitute.For<IRepository<SubscriptionAggregate>>();
+    public ISubscriptionLifecyclePersistence SubscriptionLifecyclePersistence { get; } = Substitute.For<ISubscriptionLifecyclePersistence>();
     public IRepository<MessageInbox> MessageInboxRepository { get; } = Substitute.For<IRepository<MessageInbox>>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 14, 0, 0, TimeSpan.Zero));
@@ -47,8 +52,11 @@ internal sealed class PaymentsConsumerTestContext
             CustomTelemetryContext,
             CurrentActorAccessor,
             MessageContext,
+            PaymentTransactionRepository,
+            SubscriptionPurchaseRepository,
+            SubscriptionRepository,
             SubscriptionActivationRepository,
-            BillingAccountResolver,
+            SubscriptionLifecyclePersistence,
             UnitOfWork,
             Clock,
             MessageInboxRepository,
@@ -75,16 +83,49 @@ internal sealed class PaymentsConsumerTestContext
             FlowId = Guid.CreateVersion7().ToString("N")
         };
 
-        BillingAccountResolver.ResolveOrCreateAsync(
-                command.TenantId,
-                BillingAccountOwnerType.Stakeholder,
-                command.StakeholderId,
+        var payment = PaymentTransaction.Create(
+            command.MerchantReference,
+            Contracts.Payments.PaymentIntent.Subscription,
+            Guid.CreateVersion7(),
+            amount,
+            currencyId,
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            command.StakeholderId!.Value,
+            command.TenantId);
+        typeof(Domain.Common.Entities.Entity)
+            .GetProperty(nameof(Domain.Common.Entities.Entity.Id))!
+            .SetValue(payment, command.PaymentTransactionId);
+        payment.MarkInitiated("provider-reference", null, null, "initiated");
+        payment.MarkSucceeded("provider-reference", "confirmed", Clock.GetUtcNow());
+
+        var billingAccountId = Guid.CreateVersion7();
+        var plan = SubscriptionPlan.Create("TEST_MONTHLY", "Test Monthly", amount, currencyId, BillingInterval.Monthly, true);
+        var subscription = SubscriptionAggregate.CreatePending(
+            command.TenantId,
+            billingAccountId,
+            plan.Id,
+            true,
+            Clock.GetUtcNow(),
+            Guid.CreateVersion7(),
+            command.StakeholderId.Value.ToString());
+        var purchase = SubscriptionPurchase.Create(
+            command.TenantId,
+            billingAccountId,
+            subscription.Id,
+            plan,
+            payment.Id,
+            command.StakeholderId.Value);
+
+        PaymentTransactionRepository.GetByIdAsync(command.PaymentTransactionId, Arg.Any<CancellationToken>()).Returns(payment);
+        SubscriptionPurchaseRepository.FirstOrDefaultAsync(
+                Arg.Any<ISpecification<SubscriptionPurchase>>(),
                 Arg.Any<CancellationToken>())
-            .Returns(BillingAccount.Create(
-                command.TenantId,
-                BillingAccountOwnerType.Stakeholder,
-                command.StakeholderId,
-                "Test Stakeholder"));
+            .Returns(purchase);
+        SubscriptionRepository.FirstOrDefaultAsync(
+                Arg.Any<ISpecification<SubscriptionAggregate>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(subscription);
 
         return command;
     }
