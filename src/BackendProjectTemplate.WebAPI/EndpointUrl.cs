@@ -128,6 +128,12 @@ public static class EndpointUrl
 
     public static class PaymentWebhooks
     {
+        public static class Bachs
+        {
+            public const string Route = $"api/{Versions.V1Route}/payments/webhooks/bachs";
+            public static readonly string V1 = ToV1(Route);
+        }
+
         public static class SafeHaven
         {
             public const string Route = $"api/{Versions.V1Route}/payments/webhooks/safehaven";

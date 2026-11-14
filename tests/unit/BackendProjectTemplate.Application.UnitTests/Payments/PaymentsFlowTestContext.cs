@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvid
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
+using BackendProjectTemplate.Application.Payments.Features.ProcessBachsWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ReconcilePayments;
@@ -28,6 +29,7 @@ internal sealed class PaymentsFlowTestContext
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public ICredoWebhookSignatureValidator CredoWebhookSignatureValidator { get; } = Substitute.For<ICredoWebhookSignatureValidator>();
+    public IBachsWebhookSignatureValidator BachsWebhookSignatureValidator { get; } = Substitute.For<IBachsWebhookSignatureValidator>();
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 4, 25, 12, 0, 0, TimeSpan.Zero));
     public List<IPaymentProviderService> PaymentProviderServices { get; } = [];
 
@@ -58,6 +60,19 @@ internal sealed class PaymentsFlowTestContext
             PaymentWebhookInboxRepository,
             PaymentTransactionRepository,
             CredoWebhookSignatureValidator,
+            CustomTelemetryContext,
+            UnitOfWork,
+            Clock);
+
+    public ProcessBachsWebhookHandler CreateBachsWebhookHandler() =>
+        new(
+            PaymentProviderRepository,
+            PaymentWebhookInboxRepository,
+            PaymentTransactionRepository,
+            CurrencyRepository,
+            BachsWebhookSignatureValidator,
+            PaymentProviderServices,
+            EventPublisher,
             CustomTelemetryContext,
             UnitOfWork,
             Clock);

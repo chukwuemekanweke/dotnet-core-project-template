@@ -71,6 +71,7 @@ public sealed class CustomWebApplicationFactory(
             if (useFakePaymentProviderServices)
             {
                 services.RemoveAll<IPaymentProviderService>();
+                services.AddScoped<IPaymentProviderService, FakeBachsPaymentProviderService>();
                 services.AddScoped<IPaymentProviderService, FakeCredoPaymentProviderService>();
                 services.AddScoped<IPaymentProviderService, FakeSafeHavenPaymentProviderService>();
             }
