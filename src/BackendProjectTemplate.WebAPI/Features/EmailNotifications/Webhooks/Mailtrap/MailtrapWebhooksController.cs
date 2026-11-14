@@ -23,7 +23,8 @@ public sealed class MailtrapWebhooksController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Handle(CancellationToken cancellationToken)
     {
-        var rawPayload = await ReadRawPayloadAsync(cancellationToken);
+        var rawPayloadBytes = await ReadRawPayloadAsync(cancellationToken);
+        var rawPayload = Encoding.UTF8.GetString(rawPayloadBytes);
         var request = JsonSerializer.Deserialize<MailtrapDeliveryWebhookRequest>(rawPayload, JsonSerializerOptions)
             ?? throw new JsonException("Unable to deserialize Mailtrap delivery webhook payload.");
 
@@ -32,7 +33,7 @@ public sealed class MailtrapWebhooksController(
             return BadRequest("At least one delivery event is required.");
         }
 
-        if (request.Events.Any(item => !string.Equals(item.Event, MailtrapDeliveryWebhookEvents.Delivery, StringComparison.OrdinalIgnoreCase)))
+        if (request.Events.Any(item => !MailtrapDeliveryWebhookEvents.IsSupported(item.Event)))
         {
             return BadRequest("Unsupported Mailtrap webhook event.");
         }
@@ -47,9 +48,14 @@ public sealed class MailtrapWebhooksController(
                         item.Email,
                         item.SendingDomainName,
                         item.Timestamp,
-                        item.EventId))
+                        item.EventId,
+                        item.Reason,
+                        item.Response,
+                        item.ResponseCode,
+                        item.BounceCategory))
                     .ToArray(),
                 rawPayload,
+                rawPayloadBytes,
                 Request.Headers["Mailtrap-Signature"]),
             cancellationToken);
 
@@ -64,14 +70,14 @@ public sealed class MailtrapWebhooksController(
         return Ok();
     }
 
-    private async Task<string> ReadRawPayloadAsync(CancellationToken cancellationToken)
+    private async Task<byte[]> ReadRawPayloadAsync(CancellationToken cancellationToken)
     {
         Request.EnableBuffering();
 
-        using var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true);
-        var rawPayload = await reader.ReadToEndAsync(cancellationToken);
+        using var buffer = new MemoryStream();
+        await Request.Body.CopyToAsync(buffer, cancellationToken);
         Request.Body.Position = 0;
 
-        return rawPayload;
+        return buffer.ToArray();
     }
 }

@@ -16,4 +16,12 @@ public sealed record MailtrapDeliveryWebhookEventRequest(
     [property: JsonPropertyName("timestamp")] 
     long Timestamp,
     [property: JsonPropertyName("event_id")] 
-    string EventId);
+    string EventId,
+    [property: JsonPropertyName("reason")]
+    string? Reason,
+    [property: JsonPropertyName("response")]
+    string? Response,
+    [property: JsonPropertyName("response_code")]
+    int? ResponseCode,
+    [property: JsonPropertyName("bounce_category")]
+    string? BounceCategory);

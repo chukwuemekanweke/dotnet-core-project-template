@@ -69,13 +69,13 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
         }
 
         var now = Clock.GetUtcNow();
-        var wasAlreadyDelivered = emailNotificationLog.DeliveredAtUtc.HasValue;
-        emailNotificationLog.MarkDelivered(inbox.OccurredAtUtc);
+        var previousStatus = emailNotificationLog.DeliveryStatus;
+        ApplyDeliveryOutcome(emailNotificationLog, inbox);
         emailNotificationLogRepository.Update(emailNotificationLog);
-        inbox.MarkProcessed(KnownWebhookStatusChangeReasons.Notifications.NotificationLogDelivered, now);
+        inbox.MarkProcessed(GetStatusChangeReason(inbox.EventType), now);
         emailDeliveryWebhookInboxRepository.Update(inbox);
 
-        if (wasAlreadyDelivered)
+        if (emailNotificationLog.DeliveryStatus == previousStatus)
         {
             return;
         }
@@ -85,7 +85,7 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
             cancellationToken);
 
         CustomTelemetryContext.AddCustomEvent(
-            Observability.EventNames.Notifications.EmailDelivered,
+            GetObservabilityEventName(emailNotificationLog.DeliveryStatus),
             ObservabilityEventProperties.Create(
                 ActorAccessor,
                 additionalProperties: new Dictionary<string, string>
@@ -95,6 +95,50 @@ public sealed class EmailDeliveryWebhookReceivedHandler(
                     [Observability.PropertyNames.Notifications.ProviderMessageId] = emailNotificationLog.ProviderMessageId ?? message.ProviderMessageId,
                     [Observability.PropertyNames.Notifications.NotificationType] = emailNotificationLog.NotificationType.ToString()
                 }));
+    }
+
+    private static void ApplyDeliveryOutcome(
+        EmailNotificationLog emailNotificationLog,
+        EmailDeliveryWebhookInbox inbox)
+    {
+        switch (inbox.EventType)
+        {
+            case MailtrapDeliveryWebhookEventTypes.Delivery:
+                emailNotificationLog.MarkDelivered(inbox.OccurredAtUtc);
+                break;
+            case MailtrapDeliveryWebhookEventTypes.Bounce:
+                emailNotificationLog.MarkBounced(inbox.OccurredAtUtc, inbox.FailureReason);
+                break;
+            case MailtrapDeliveryWebhookEventTypes.Reject:
+                emailNotificationLog.MarkRejected(inbox.OccurredAtUtc, inbox.FailureReason);
+                break;
+            default:
+                throw new CannotProcessMessageNonTransientException(
+                    $"Unsupported Mailtrap delivery event type '{inbox.EventType}'.");
+        }
+    }
+
+    private static string GetStatusChangeReason(string eventType) => eventType switch
+    {
+        MailtrapDeliveryWebhookEventTypes.Delivery => KnownWebhookStatusChangeReasons.Notifications.NotificationLogDelivered,
+        MailtrapDeliveryWebhookEventTypes.Bounce => KnownWebhookStatusChangeReasons.Notifications.NotificationLogBounced,
+        MailtrapDeliveryWebhookEventTypes.Reject => KnownWebhookStatusChangeReasons.Notifications.NotificationLogRejected,
+        _ => throw new CannotProcessMessageNonTransientException($"Unsupported Mailtrap delivery event type '{eventType}'.")
+    };
+
+    private static string GetObservabilityEventName(EmailDeliveryStatus status) => status switch
+    {
+        EmailDeliveryStatus.Delivered => Observability.EventNames.Notifications.EmailDelivered,
+        EmailDeliveryStatus.Bounced => Observability.EventNames.Notifications.EmailBounced,
+        EmailDeliveryStatus.Rejected => Observability.EventNames.Notifications.EmailRejected,
+        _ => throw new InvalidOperationException($"Email delivery status '{status}' is not terminal.")
+    };
+
+    private static class MailtrapDeliveryWebhookEventTypes
+    {
+        public const string Delivery = "delivery";
+        public const string Bounce = "bounce";
+        public const string Reject = "reject";
     }
 }
 

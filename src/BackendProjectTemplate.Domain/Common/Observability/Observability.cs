@@ -104,6 +104,8 @@ public static class Observability
         {
             public const string EmailSent = "EmailNotificationSent";
             public const string EmailDelivered = "EmailNotificationDelivered";
+            public const string EmailBounced = "EmailNotificationBounced";
+            public const string EmailRejected = "EmailNotificationRejected";
         }
 
         public static class Payments

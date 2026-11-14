@@ -7,4 +7,8 @@ public sealed record MailtrapDeliveryWebhookEvent(
     string Email,
     string SendingDomainName,
     long Timestamp,
-    string EventId);
+    string EventId,
+    string? Reason = null,
+    string? Response = null,
+    int? ResponseCode = null,
+    string? BounceCategory = null);

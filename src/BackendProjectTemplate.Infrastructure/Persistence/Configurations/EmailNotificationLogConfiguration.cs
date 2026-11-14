@@ -61,6 +61,16 @@ public sealed class EmailNotificationLogConfiguration : IEntityTypeConfiguration
         builder.Property(log => log.FailureReason)
             .HasMaxLength(4000);
 
+        builder.Property(log => log.DeliveryStatus)
+            .IsRequired();
+
+        builder.Property(log => log.FailedAtUtc);
+
+        builder.Property(log => log.DeliveryFailureReason)
+            .HasMaxLength(4000);
+
+        builder.Property(log => log.LastDeliveryEventAtUtc);
+
         builder.HasIndex(log => log.MessageId)
             .IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE");

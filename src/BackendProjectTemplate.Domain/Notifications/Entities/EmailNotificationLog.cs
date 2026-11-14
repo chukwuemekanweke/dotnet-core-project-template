@@ -34,6 +34,7 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
         Cc = string.IsNullOrWhiteSpace(cc) ? null : cc.Trim();
         Bcc = string.IsNullOrWhiteSpace(bcc) ? null : bcc.Trim();
         EnqueuedAtUtc = enqueuedAtUtc;
+        DeliveryStatus = EmailDeliveryStatus.Pending;
     }
 
     public Guid MessageId { get; private set; }
@@ -50,6 +51,10 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
     public DateTimeOffset? SentAtUtc { get; private set; }
     public DateTimeOffset? DeliveredAtUtc { get; private set; }
     public string? FailureReason { get; private set; }
+    public EmailDeliveryStatus DeliveryStatus { get; private set; }
+    public DateTimeOffset? FailedAtUtc { get; private set; }
+    public string? DeliveryFailureReason { get; private set; }
+    public DateTimeOffset? LastDeliveryEventAtUtc { get; private set; }
 
     public static EmailNotificationLog Create(
         Guid messageId,
@@ -89,9 +94,15 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
 
     public void MarkSent(string providerMessageId, DateTimeOffset utcNow)
     {
+        if (IsTerminal)
+        {
+            return;
+        }
+
         ProviderMessageId = NormalizeProviderMessageId(providerMessageId);
         SentAtUtc = utcNow;
         FailureReason = null;
+        DeliveryStatus = EmailDeliveryStatus.Sent;
     }
 
     public void MarkFailed(string reason)
@@ -102,12 +113,38 @@ public sealed class EmailNotificationLog : Entity, IAggregateRoot
 
     public void MarkDelivered(DateTimeOffset deliveredAtUtc)
     {
-        if (DeliveredAtUtc.HasValue)
+        if (IsTerminal)
         {
             return;
         }
 
+        DeliveryStatus = EmailDeliveryStatus.Delivered;
         DeliveredAtUtc = deliveredAtUtc;
+        LastDeliveryEventAtUtc = deliveredAtUtc;
+        FailedAtUtc = null;
+        DeliveryFailureReason = null;
+    }
+
+    public void MarkBounced(DateTimeOffset failedAtUtc, string? reason) =>
+        MarkDeliveryFailed(EmailDeliveryStatus.Bounced, failedAtUtc, reason);
+
+    public void MarkRejected(DateTimeOffset failedAtUtc, string? reason) =>
+        MarkDeliveryFailed(EmailDeliveryStatus.Rejected, failedAtUtc, reason);
+
+    private bool IsTerminal => DeliveryStatus is
+        EmailDeliveryStatus.Delivered or EmailDeliveryStatus.Bounced or EmailDeliveryStatus.Rejected;
+
+    private void MarkDeliveryFailed(EmailDeliveryStatus status, DateTimeOffset failedAtUtc, string? reason)
+    {
+        if (IsTerminal)
+        {
+            return;
+        }
+
+        DeliveryStatus = status;
+        FailedAtUtc = failedAtUtc;
+        DeliveryFailureReason = NormalizeFailureReason(reason ?? string.Empty);
+        LastDeliveryEventAtUtc = failedAtUtc;
     }
 
     private static string NormalizeFailureReason(string reason)

@@ -13,16 +13,19 @@ public sealed class EmailDeliveryWebhookInbox : Entity, IAggregateRoot
     private EmailDeliveryWebhookInbox(
         Guid providerId,
         string webhookEventId,
+        string eventType,
         string providerMessageId,
         string recipientEmail,
         string sendingStream,
         string sendingDomainName,
         string rawPayload,
         DateTimeOffset occurredAtUtc,
-        DateTimeOffset receivedAtUtc)
+        DateTimeOffset receivedAtUtc,
+        string? failureReason)
     {
         ProviderId = providerId;
         WebhookEventId = webhookEventId;
+        EventType = eventType;
         ProviderMessageId = providerMessageId;
         RecipientEmail = recipientEmail;
         SendingStream = sendingStream;
@@ -31,15 +34,18 @@ public sealed class EmailDeliveryWebhookInbox : Entity, IAggregateRoot
         WebhookProcessingStatus = WebhookProcessingStatus.Received;
         OccurredAtUtc = occurredAtUtc;
         ReceivedAtUtc = receivedAtUtc;
+        FailureReason = NormalizeOptional(failureReason);
     }
 
     public Guid ProviderId { get; private set; }
     public string WebhookEventId { get; private set; } = string.Empty;
+    public string EventType { get; private set; } = string.Empty;
     public string ProviderMessageId { get; private set; } = string.Empty;
     public string RecipientEmail { get; private set; } = string.Empty;
     public string SendingStream { get; private set; } = string.Empty;
     public string SendingDomainName { get; private set; } = string.Empty;
     public string RawPayload { get; private set; } = string.Empty;
+    public string? FailureReason { get; private set; }
     public WebhookProcessingStatus WebhookProcessingStatus { get; private set; }
     public string? StatusChangeReason { get; private set; }
     public string? ProcessingError { get; private set; }
@@ -57,16 +63,42 @@ public sealed class EmailDeliveryWebhookInbox : Entity, IAggregateRoot
         string rawPayload,
         DateTimeOffset occurredAtUtc,
         DateTimeOffset receivedAtUtc) =>
+        Create(
+            providerId,
+            webhookEventId,
+            "delivery",
+            providerMessageId,
+            recipientEmail,
+            sendingStream,
+            sendingDomainName,
+            rawPayload,
+            occurredAtUtc,
+            receivedAtUtc);
+
+    public static EmailDeliveryWebhookInbox Create(
+        Guid providerId,
+        string webhookEventId,
+        string eventType,
+        string providerMessageId,
+        string recipientEmail,
+        string sendingStream,
+        string sendingDomainName,
+        string rawPayload,
+        DateTimeOffset occurredAtUtc,
+        DateTimeOffset receivedAtUtc,
+        string? failureReason = null) =>
         new(
             providerId,
             NormalizeRequired(webhookEventId),
+            NormalizeRequired(eventType),
             NormalizeRequired(providerMessageId),
             NormalizeRequired(recipientEmail),
             NormalizeRequired(sendingStream),
             NormalizeRequired(sendingDomainName),
             NormalizeRequired(rawPayload),
             occurredAtUtc,
-            receivedAtUtc);
+            receivedAtUtc,
+            failureReason);
 
     public void MarkProcessed(string? statusChangeReason, DateTimeOffset utcNow)
     {

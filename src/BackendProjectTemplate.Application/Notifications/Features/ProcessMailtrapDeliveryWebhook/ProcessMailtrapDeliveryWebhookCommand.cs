@@ -3,4 +3,14 @@ namespace BackendProjectTemplate.Application.Notifications.Features.ProcessMailt
 public sealed record ProcessMailtrapDeliveryWebhookCommand(
     IReadOnlyCollection<MailtrapDeliveryWebhookEvent> Events,
     string RawPayload,
-    string? SignatureHeader);
+    byte[] RawPayloadBytes,
+    string? SignatureHeader)
+{
+    public ProcessMailtrapDeliveryWebhookCommand(
+        IReadOnlyCollection<MailtrapDeliveryWebhookEvent> events,
+        string rawPayload,
+        string? signatureHeader)
+        : this(events, rawPayload, System.Text.Encoding.UTF8.GetBytes(rawPayload), signatureHeader)
+    {
+    }
+}

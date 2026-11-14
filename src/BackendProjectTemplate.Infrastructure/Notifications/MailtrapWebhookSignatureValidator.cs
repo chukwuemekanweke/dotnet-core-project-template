@@ -24,7 +24,7 @@ internal sealed class MailtrapWebhookSignatureValidator(IOptions<EmailNotificati
             return Task.FromResult(new MailtrapWebhookSignatureValidationResult(false, KnownWebhookStatusChangeReasons.Shared.MissingSignature));
         }
 
-        if (string.IsNullOrWhiteSpace(request.RawPayload))
+        if (request.RawPayload.Length == 0)
         {
             return Task.FromResult(new MailtrapWebhookSignatureValidationResult(false, KnownWebhookStatusChangeReasons.Notifications.MissingPayload));
         }
@@ -40,11 +40,10 @@ internal sealed class MailtrapWebhookSignatureValidator(IOptions<EmailNotificati
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private static string ComputeSignature(string signingSecret, string rawPayload)
+    private static string ComputeSignature(string signingSecret, byte[] rawPayload)
     {
         var key = Encoding.UTF8.GetBytes(signingSecret);
-        var payload = Encoding.UTF8.GetBytes(rawPayload);
-        var hash = HMACSHA256.HashData(key, payload);
+        var hash = HMACSHA256.HashData(key, rawPayload);
 
         return Convert.ToHexString(hash).ToLowerInvariant();
     }

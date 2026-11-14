@@ -30,7 +30,7 @@
       },
       "id": 1,
       "options": {
-        "content": "## Email Delivery Overview\nThis dashboard is backed by the notification business events already emitted by `BackendProjectTemplate.Consumer`.\n\n### Queryable email delivery events today\n- `EmailNotificationSent`\n- `EmailNotificationDelivered`\n\n### Drilldown dimensions\n- `provider_key`\n- `notification_type`\n\nDelivery rate is computed as delivered emails divided by sent emails for the selected time range.",
+        "content": "## Email Delivery Overview\nThis dashboard is backed by the notification business events emitted by `BackendProjectTemplate.Consumer`.\n\n### Queryable email delivery events\n- `EmailNotificationSent`\n- `EmailNotificationDelivered`\n- `EmailNotificationBounced`\n- `EmailNotificationRejected`\n\n### Drilldown dimensions\n- `provider_key`\n- `notification_type`\n\nDelivery rate is computed as delivered emails divided by sent emails for the selected time range.",
         "mode": "markdown"
       },
       "pluginVersion": "12.0.0",
@@ -468,9 +468,31 @@
           "legendFormat": "Delivered",
           "queryType": "range",
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({service_name=\"BackendProjectTemplate.Consumer\"} | json | custom_event_name=\"EmailNotificationBounced\" [$__interval]))",
+          "legendFormat": "Bounced",
+          "queryType": "range",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({service_name=\"BackendProjectTemplate.Consumer\"} | json | custom_event_name=\"EmailNotificationRejected\" [$__interval]))",
+          "legendFormat": "Rejected",
+          "queryType": "range",
+          "refId": "D"
         }
       ],
-      "title": "Sent Vs Delivered Over Time",
+      "title": "Email Delivery Outcomes Over Time",
       "type": "timeseries"
     },
     {
