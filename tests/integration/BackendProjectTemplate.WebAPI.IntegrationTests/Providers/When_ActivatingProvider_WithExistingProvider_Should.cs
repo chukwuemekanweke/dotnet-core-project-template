@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Authorization;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
@@ -9,6 +10,7 @@ using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.Features.Providers;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using System.Net;
@@ -97,6 +99,7 @@ public sealed class When_ActivatingProvider_WithExistingProvider_Should(Containe
     {
         using var scope = CreateScope();
         var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
@@ -108,6 +111,7 @@ public sealed class When_ActivatingProvider_WithExistingProvider_Should(Containe
         (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
         user.MarkEmailVerified();
         (await identityService.UpdateAsync(user)).Succeeded.ShouldBeTrue();
+        (await userManager.AddToRoleAsync(user, ApplicationRoles.Administrator)).Succeeded.ShouldBeTrue();
 
         var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");
         var stakeholder = Stakeholder.Create(user.Id, _tenantId, _countryId, stakeholderType.Id, firstName, lastName);

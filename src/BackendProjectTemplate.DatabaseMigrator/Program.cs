@@ -1,4 +1,5 @@
 using BackendProjectTemplate.DatabaseMigrator.Healthcheck;
+using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -9,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddPostgresWritePersistence(builder.Configuration);
+builder.Services.AddIdentityUserManagement(builder.Configuration);
 builder.Services.AddSingleton<DatabaseMigrationState>();
 builder.Services.AddHostedService<DatabaseMigrationWorker>();
 builder.Services

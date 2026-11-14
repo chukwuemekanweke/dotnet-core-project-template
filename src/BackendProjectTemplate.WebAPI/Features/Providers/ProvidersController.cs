@@ -1,6 +1,6 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
-using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Authorization;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Providers;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Authorize(Policy = AuthorizationPolicyNames.RequireActiveSession)]
+[Authorize(Policy = PermissionPolicyNames.ProvidersManage)]
 [Route(EndpointUrl.Providers.Route)]
 public sealed class ProvidersController(
     ActivateProviderHandler activateProviderHandler,
@@ -19,6 +19,7 @@ public sealed class ProvidersController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ActivateProvider(
         [FromBody] ActivateProviderRequest request,

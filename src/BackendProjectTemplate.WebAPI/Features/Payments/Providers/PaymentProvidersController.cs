@@ -1,6 +1,6 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
-using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,7 +8,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Payments.Providers;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Authorize(Policy = AuthorizationPolicyNames.RequireActiveSession)]
+[Authorize(Policy = PermissionPolicyNames.PaymentsManage)]
 [Route(EndpointUrl.PaymentProviders.Route)]
 public sealed class PaymentProvidersController(ActivatePaymentProviderHandler handler) : ControllerBase
 {
@@ -16,6 +16,7 @@ public sealed class PaymentProvidersController(ActivatePaymentProviderHandler ha
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetActivation(
         [FromRoute] Guid id,
