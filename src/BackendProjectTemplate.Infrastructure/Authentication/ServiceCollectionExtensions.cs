@@ -1,6 +1,8 @@
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Authorization;
+using BackendProjectTemplate.Infrastructure.Authorization;
 using BackendProjectTemplate.Infrastructure.Http;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -30,6 +32,8 @@ public static class ServiceCollectionExtensions
         passkeyOptions.Validate();
 
         services.Configure<AuthenticationLockoutOptions>(configuration.GetSection(AuthenticationLockoutOptions.SectionName));
+        services.Configure<AdministratorBootstrapOptions>(
+            configuration.GetSection(AdministratorBootstrapOptions.SectionName));
 
         services
             .AddDataProtection()
@@ -54,6 +58,9 @@ public static class ServiceCollectionExtensions
             .AddEntityFrameworkStores<Persistence.AppDbContext>()
             .AddSignInManager()
             .AddDefaultTokenProviders();
+
+        services.AddScoped<IUserPermissionService, IdentityUserPermissionService>();
+        services.AddScoped<IApplicationAuthorizationSeeder, ApplicationAuthorizationSeeder>();
 
         var allowedOrigins = passkeyOptions.AllowedOrigins
             .Select(origin => new Uri(origin).GetLeftPart(UriPartial.Authority))
@@ -157,6 +164,7 @@ public static class ServiceCollectionExtensions
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddSingleton<IConfigureOptions<JwtBearerOptions>, ConfigureJwtBearerOptions>();
         services.AddScoped<IAuthorizationHandler, ActiveSessionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -169,6 +177,17 @@ public static class ServiceCollectionExtensions
                 policy => policy
                     .RequireAuthenticatedUser()
                     .AddRequirements(new ActiveSessionRequirement()));
+
+            foreach (var permission in ApplicationPermissions.All)
+            {
+                options.AddPolicy(
+                    PermissionPolicyNames.For(permission),
+                    policy => policy
+                        .RequireAuthenticatedUser()
+                        .AddRequirements(
+                            new ActiveSessionRequirement(),
+                            new PermissionRequirement(permission)));
+            }
         });
 
         return services;

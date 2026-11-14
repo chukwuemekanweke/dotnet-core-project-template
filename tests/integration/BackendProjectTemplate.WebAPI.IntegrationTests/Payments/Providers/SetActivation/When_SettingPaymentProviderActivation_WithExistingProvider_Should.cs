@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Authorization;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -10,6 +11,7 @@ using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.Features.Payments.Providers;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -88,6 +90,7 @@ public sealed class When_SettingPaymentProviderActivation_WithExistingProvider_S
     {
         using var scope = CreateScope();
         var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var stakeholderTypeRepository = scope.ServiceProvider.GetRequiredService<IRepository<StakeholderType>>();
         var stakeholderRepository = scope.ServiceProvider.GetRequiredService<IRepository<Stakeholder>>();
         var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
@@ -98,6 +101,7 @@ public sealed class When_SettingPaymentProviderActivation_WithExistingProvider_S
         (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
         user.MarkEmailVerified();
         (await identityService.UpdateAsync(user)).Succeeded.ShouldBeTrue();
+        (await userManager.AddToRoleAsync(user, ApplicationRoles.FinanceOfficer)).Succeeded.ShouldBeTrue();
 
         var country = Country.Create("Nigeria", "NG", "+234", "https://example.com/ng.svg");
         var stakeholderType = StakeholderType.Create(_tenantId, "Customer", "customer");

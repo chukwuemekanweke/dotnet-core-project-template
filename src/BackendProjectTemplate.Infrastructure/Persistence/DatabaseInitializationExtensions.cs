@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Infrastructure.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +25,7 @@ public static class DatabaseInitializationExtensions
         await EnsureDatabaseExistsAsync(database.Database.GetConnectionString(), cancellationToken);
         await RunScriptsAsync(database, contentRootPath, "PreDeploy", logger, cancellationToken);
         await database.Database.MigrateAsync(cancellationToken);
+        await scope.ServiceProvider.GetRequiredService<IApplicationAuthorizationSeeder>().SeedAsync(cancellationToken);
         await RunScriptsAsync(database, contentRootPath, "PostDeploy", logger, cancellationToken);
     }
 
