@@ -37,11 +37,14 @@ status: stable
 - Payment providers: Bachs, Credo and SafeHaven, each with provider-specific payload types under
   `Infrastructure/Payments/{Bachs,Credo,SafeHaven}`. Provider activation/deactivation is a distinct feature
   (`ActivatePaymentProvider`) from initiating a payment.
-- Bachs supports one-time hosted-checkout wallet top-ups in this phase. The seeded configuration enables
-  NGN `WalletTopUp` only. Internal amounts are whole minor units; the adapter converts them to exact
-  major-unit decimal strings and verifies merchant reference, currency and amount before success. Bachs
-  webhook signatures cover the timestamp plus original raw request bytes, prefer the V2 multi-signature
-  header, and enforce a five-minute default tolerance.
+- Bachs supports hosted-checkout wallet top-ups and trusted subscription purchases. The generic
+  payment endpoint remains wallet-top-up only; only the server-authoritative subscription purchase
+  slice sets `IsTrustedSubscriptionPurchase`. Auto-renew purchases create a Bachs customer, send
+  `save_payment_method: true`, and persist a pending authorization tied to the BillingAccount and
+  source PaymentTransaction. Internal amounts are whole minor units; the adapter converts them to
+  exact major-unit decimal strings and verifies merchant reference, currency and amount before success.
+  Bachs webhook signatures cover the timestamp plus original raw request bytes, prefer the V2
+  multi-signature header, and enforce a five-minute default tolerance.
 - Wallet: `InitiatePayment`, wallet transactions, wallet top-up transaction detail, `CreditWallet` (triggered async, see below).
 - Billing ownership: `BillingAccount` is the tenant-scoped commercial ownership aggregate. Each tenant
   owner and each tenant/stakeholder owner pair has one retained account, enforced by PostgreSQL partial
@@ -56,7 +59,9 @@ status: stable
 - Webhook inbox: incoming provider webhooks (`ProcessBachsWebhook`, `ProcessCredoWebhook`,
   `ProcessSafeHavenWebhook`, generic `ProcessPaymentWebhook`) are recorded in a `PaymentWebhookInbox` for idempotency before being
   acted on — do not process a webhook payload without first checking/recording it there.
-- `ReconcilePayments` (Jobs) periodically reconciles payment state against provider truth.
+- `ReconcilePayments` (Jobs) periodically reconciles payment state against provider truth. Bachs
+  renewal transactions carry a durable `renewal_attempt_id` marker so verification uses
+  `/v1/payments/{payment_id}` instead of the hosted-checkout lookup.
 - `SuccessfulPaymentConfirmed`, `ActivateSubscriptionCommand`, `CreditWalletCommand` cross into `Consumer`/`Jobs` via `Contracts` and the outbox — see [[async-processing]].
 - The generic payment-initiation endpoint is wallet-top-up only. Subscription checkout goes through
   the dedicated [[subscriptions]] purchase slice so plan price/currency are server-authoritative and a
@@ -65,10 +70,13 @@ status: stable
   immutable compatibility fulfillment record and links new fulfillments to the subscription and
   period; its new linkage columns are nullable for historical rows and no historical plan data is
   manufactured.
-- `RecurringPaymentAuthorization` is the provider-agnostic, BillingAccount-scoped record for an opaque
-  reusable authorization reference and its active/expired/revoked lifecycle. It never stores PAN or
-  CVV. The existing Bachs, Credo and SafeHaven adapters still expose only the generic one-time
-  initiation/verification contract; none is registered as a recurring-charge adapter, so subscription
-  renewal fails closed rather than treating a checkout or payment reference as reusable.
+- `RecurringPaymentAuthorization` is provider-agnostic and BillingAccount-, provider-, currency-,
+  consent-, customer- and source-payment-scoped. It begins pending and becomes active only after a
+  signature-verified Bachs `payment_method.saved` webhook. The charge-capable `pm_` reference is
+  protected at rest with ASP.NET Data Protection; PAN and CVV are never stored or returned. Selection
+  requires matching tenant, BillingAccount, currency, active status and expiry. Bachs is the sole
+  registered `IRecurringPaymentProvider`; it supports NGN and USD `POST /v1/charges` requests with an
+  explicit `cust_` customer, `pm_` payment method and stable idempotency key. Credo and SafeHaven fail
+  closed for recurring charges.
 
 Follows the standard [[vertical-slices]] feature-folder shape and the [[unit-testing]]/[[integration-testing]] conventions. Distinct from the generic [[providers]] domain (email/file-storage provider registry).

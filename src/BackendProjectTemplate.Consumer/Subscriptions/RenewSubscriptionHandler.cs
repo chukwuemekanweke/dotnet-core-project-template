@@ -5,6 +5,7 @@ using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Specifications;
+using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using BackendProjectTemplate.Domain.Subscriptions.Specifications;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
@@ -20,6 +21,8 @@ public sealed class RenewSubscriptionHandler(
     IRepository<SubscriptionAggregate> subscriptionRepository,
     IRepository<SubscriptionRenewal> renewalRepository,
     IRepository<RecurringPaymentAuthorization> authorizationRepository,
+    IRepository<PaymentTransaction> paymentTransactionRepository,
+    SubscriptionRenewalCharger renewalCharger,
     ICommandSender commandSender,
     IOptions<SubscriptionRenewalOptions> options,
     IUnitOfWork unitOfWork,
@@ -61,7 +64,7 @@ public sealed class RenewSubscriptionHandler(
         var renewal = await renewalRepository.FirstOrDefaultAsync(
             new SubscriptionRenewalByIdentitySpecification(subscription.Id, message.TargetPeriodStartUtc),
             cancellationToken);
-        if (renewal is not null)
+        if (renewal?.Status is SubscriptionRenewalStatus.Fulfilled or SubscriptionRenewalStatus.Cancelled or SubscriptionRenewalStatus.Exhausted)
         {
             return;
         }
@@ -72,17 +75,37 @@ public sealed class RenewSubscriptionHandler(
             return;
         }
 
-        renewal = SubscriptionRenewal.Create(subscription, currentPeriod, now);
-        await renewalRepository.AddAsync(renewal, cancellationToken);
+        if (renewal is null)
+        {
+            renewal = SubscriptionRenewal.Create(subscription, currentPeriod, now);
+            await renewalRepository.AddAsync(renewal, cancellationToken);
+        }
+
+        var unresolvedAttempt = renewal.Attempts.SingleOrDefault(attempt => attempt.Status is
+            SubscriptionRenewalAttemptStatus.Pending or
+            SubscriptionRenewalAttemptStatus.Submitted or
+            SubscriptionRenewalAttemptStatus.Unknown);
+        if (unresolvedAttempt is not null)
+        {
+            await commandSender.ScheduleSendAsync(
+                new ReconcileSubscriptionRenewalCommand(renewal.Id, unresolvedAttempt.Id)
+                {
+                    TenantId = renewal.TenantId,
+                    StakeholderId = message.StakeholderId
+                },
+                now.Add(options.Value.ReconciliationDelay),
+                cancellationToken);
+            return;
+        }
 
         var authorization = await authorizationRepository.FirstOrDefaultAsync(
-            new UsableRecurringPaymentAuthorizationSpecification(subscription.TenantId, subscription.BillingAccountId, now),
+            new UsableRecurringPaymentAuthorizationSpecification(
+                subscription.TenantId,
+                subscription.BillingAccountId,
+                renewal.CurrencyId,
+                now),
             cancellationToken);
 
-        // None of the currently integrated providers exposes a verified merchant-initiated recurring
-        // charge capability. Even if an authorization row is provisioned ahead of an adapter, fail
-        // closed instead of treating a one-time provider reference as a reusable mandate.
-        renewal.MarkAwaitingAuthorization();
         for (var index = 0; index < options.Value.ReminderSchedule.Length; index++)
         {
             await commandSender.ScheduleSendAsync(
@@ -94,6 +117,24 @@ public sealed class RenewSubscriptionHandler(
             new ExpireSubscriptionCommand(subscription.Id, message.TargetPeriodStartUtc),
             message.TargetPeriodStartUtc.Add(options.Value.GracePeriod),
             cancellationToken);
+
+        if (authorization is not null)
+        {
+            var identitySource = subscription.LastSuccessfulPaymentTransactionId.HasValue
+                ? await paymentTransactionRepository.GetByIdAsync(
+                    subscription.LastSuccessfulPaymentTransactionId.Value,
+                    cancellationToken)
+                : null;
+            if (identitySource is null)
+            {
+                throw new InvalidOperationException($"Subscription '{subscription.Id}' has no successful payment identity for renewal.");
+            }
+
+            await renewalCharger.ChargeAsync(renewal, subscription, authorization, identitySource, cancellationToken);
+            return;
+        }
+
+        renewal.MarkAwaitingAuthorization();
 
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Subscriptions.RenewalAwaitingAuthorization,
@@ -108,8 +149,7 @@ public sealed class RenewSubscriptionHandler(
                 }));
 
         logger.LogWarning(
-            "Subscription renewal {RenewalId} was not charged because no supported reusable authorization adapter is available. AuthorizationPresent={AuthorizationPresent}",
-            renewal.Id,
-            authorization is not null);
+            "Subscription renewal {RenewalId} is awaiting a usable recurring payment authorization.",
+            renewal.Id);
     }
 }

@@ -9,4 +9,5 @@ public sealed class SubscriptionRenewalOptions
     public TimeSpan GracePeriod { get; set; } = TimeSpan.FromDays(7);
     public TimeSpan[] ReminderSchedule { get; set; } = [TimeSpan.FromDays(2), TimeSpan.FromDays(6)];
     public TimeSpan MaximumPaymentResolutionDelay { get; set; } = TimeSpan.FromHours(24);
+    public TimeSpan ReconciliationDelay { get; set; } = TimeSpan.FromMinutes(5);
 }

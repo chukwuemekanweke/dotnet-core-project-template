@@ -21,4 +21,6 @@ public sealed record BachsWebhookData(
     string? Reference,
     string? Status,
     string? Amount,
-    string? Currency);
+    string? Currency,
+    string? PaymentMethodId = null,
+    string? CustomerId = null);

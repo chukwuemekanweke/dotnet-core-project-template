@@ -54,10 +54,12 @@ currency server-side, and saves the pending `PaymentTransaction`, pending `Subsc
 `SubscriptionPurchase` correlation before invoking the provider.
 
 Verified `SuccessfulPaymentConfirmed` events retain the existing command/outbox/Consumer flow.
-`ActivateSubscriptionHandler` requires a succeeded subscription payment and matching purchase tenant,
-amount, currency and merchant reference. Initial activation atomically creates one period, records
-history, fulfills the purchase, links the compatibility `SubscriptionActivation`, and relies on
-payment/operation uniqueness plus PostgreSQL concurrency for redelivery safety.
+`ActivateSubscriptionHandler` distinguishes a `SubscriptionPurchase` from a durably correlated
+`SubscriptionRenewalAttempt`. Initial activation requires matching tenant, amount, currency and
+merchant reference, then atomically creates one period, records history, fulfills the purchase and
+links the compatibility `SubscriptionActivation`. Renewal fulfillment validates the same ownership
+and money invariants, creates exactly one period from the agreed period boundary (not settlement
+time), marks the attempt/renewal fulfilled and schedules the next renewal.
 
 ## Lifecycle semantics
 
@@ -75,12 +77,17 @@ TargetPeriodStartUtc)`, snapshots the authoritative period boundaries, price, cu
 subscription and treat stale renewal, reminder and expiry commands as no-ops. Renewal reminders flow
 through the generic notification command/outbox path and are sequence-deduplicated on the renewal.
 
-No current payment adapter exposes a verified merchant-initiated recurring-charge capability. The
-renewal consumer therefore fails closed: it records `AwaitingAuthorization`, schedules conditional
-reminder and grace-expiry commands, and never reuses a one-time payment reference. Retry and
-reconciliation command contracts plus durable attempt storage define the future boundary, but live
-automatic charging, retry execution, and renewal fulfillment remain blocked until a provider adapter
-can prove reusable authorization, idempotent charge submission, and status lookup semantics.
+The Bachs adapter exposes the provider-agnostic recurring-charge boundary for NGN and USD. A renewal
+attempt and normal `PaymentTransaction` are saved before the provider call, including a stable key
+`renewal-{RenewalId}-{AttemptNumber}`. Duplicate commands cannot create another attempt while one is
+pending, submitted or unknown. Immediate success uses the standard successful-payment event;
+confirmed failure schedules bounded backoff retries; processing or transport ambiguity preserves the
+same attempt/key and schedules `ReconcileSubscriptionRenewalCommand`. Reconciliation retrieves a
+known charge or repeats the exact idempotent request when submission timed out. Conditional reminders
+and grace expiry remain scheduled state-checked commands. Missing, pending, revoked, expired,
+wrong-currency or unsupported-provider authorization fails closed as `AwaitingAuthorization`; a paid
+initial subscription remains entitled even if saved-card setup never completes.
+
 Proration, upgrades and downgrades remain outside this domain version.
 
 User-facing plan listing, purchase, current-subscription lookup and scheduled cancellation require the

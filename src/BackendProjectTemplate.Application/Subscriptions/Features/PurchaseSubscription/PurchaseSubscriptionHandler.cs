@@ -52,7 +52,11 @@ public sealed class PurchaseSubscriptionHandler(
                 plan.CurrencyId,
                 PaymentIntent.Subscription,
                 command.PaymentProviderId,
-                command.ActorContext),
+                command.ActorContext,
+                new TrustedSubscriptionPaymentContext(
+                    billingAccount.Id,
+                    command.AutoRenew,
+                    command.AutoRenew ? timeProvider.GetUtcNow() : null)),
             async (paymentTransaction, token) =>
             {
                 var operationId = Guid.CreateVersion7();

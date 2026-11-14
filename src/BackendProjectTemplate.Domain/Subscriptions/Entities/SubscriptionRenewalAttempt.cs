@@ -33,4 +33,38 @@ public sealed class SubscriptionRenewalAttempt : Entity
     public string? FailureReason { get; private set; }
     public DateTimeOffset? CompletedAtUtc { get; private set; }
     public DateTimeOffset? NextRetryAtUtc { get; private set; }
+
+    public void AssociatePayment(Guid paymentTransactionId) => PaymentTransactionId = paymentTransactionId;
+
+    public void MarkSubmitted(DateTimeOffset submittedAtUtc)
+    {
+        Status = SubscriptionRenewalAttemptStatus.Submitted;
+        CompletedAtUtc = null;
+        FailureCode = null;
+        FailureReason = null;
+    }
+
+    public void MarkUnknown(string? failureReason)
+    {
+        Status = SubscriptionRenewalAttemptStatus.Unknown;
+        FailureReason = failureReason;
+    }
+
+    public void MarkFailed(string? failureCode, string? failureReason, DateTimeOffset completedAtUtc, DateTimeOffset? nextRetryAtUtc)
+    {
+        Status = SubscriptionRenewalAttemptStatus.Failed;
+        FailureCode = failureCode;
+        FailureReason = failureReason;
+        CompletedAtUtc = completedAtUtc;
+        NextRetryAtUtc = nextRetryAtUtc;
+    }
+
+    public void MarkSucceeded(DateTimeOffset completedAtUtc)
+    {
+        Status = SubscriptionRenewalAttemptStatus.Succeeded;
+        CompletedAtUtc = completedAtUtc;
+        NextRetryAtUtc = null;
+        FailureCode = null;
+        FailureReason = null;
+    }
 }

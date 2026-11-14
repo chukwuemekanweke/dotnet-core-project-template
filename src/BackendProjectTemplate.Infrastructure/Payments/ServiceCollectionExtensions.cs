@@ -50,11 +50,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISafeHavenClient, SafeHavenClient>();
         services.AddScoped<ICredoClient, CredoClient>();
         services.AddScoped<IBachsClient, BachsClient>();
+        services.AddScoped<IRecurringPaymentAuthorizationProtector, RecurringPaymentAuthorizationProtector>();
         services.AddScoped<ICredoWebhookSignatureValidator, CredoWebhookSignatureValidator>();
         services.AddScoped<IBachsWebhookSignatureValidator, BachsWebhookSignatureValidator>();
         services.AddScoped<IPaymentProviderService, SafeHavenPaymentProviderService>();
         services.AddScoped<IPaymentProviderService, CredoPaymentProviderService>();
-        services.AddScoped<IPaymentProviderService, BachsPaymentProviderService>();
+        services.AddScoped<BachsPaymentProviderService>();
+        services.AddScoped<IPaymentProviderService>(provider => provider.GetRequiredService<BachsPaymentProviderService>());
+        services.AddScoped<IRecurringPaymentProvider>(provider => provider.GetRequiredService<BachsPaymentProviderService>());
 
         return services;
     }

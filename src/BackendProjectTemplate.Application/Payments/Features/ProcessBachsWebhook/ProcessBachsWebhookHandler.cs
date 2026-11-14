@@ -18,8 +18,10 @@ public sealed class ProcessBachsWebhookHandler(
     IRepository<PaymentProvider> paymentProviderRepository,
     IRepository<PaymentWebhookInbox> paymentWebhookInboxRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
+    IRepository<RecurringPaymentAuthorization> recurringAuthorizationRepository,
     IRepository<Currency> currencyRepository,
     IBachsWebhookSignatureValidator signatureValidator,
+    IRecurringPaymentAuthorizationProtector authorizationProtector,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
     IEventPublisher eventPublisher,
     ICustomTelemetryContext customTelemetryContext,
@@ -48,7 +50,7 @@ public sealed class ProcessBachsWebhookHandler(
         var eventId = NormalizeRequired(command.Webhook.Id, "Bachs webhook event id is required.");
         var eventName = NormalizeRequired(command.Webhook.Type, "Bachs webhook event type is required.");
         var merchantReference = NormalizeOptional(command.Webhook.Data.Reference);
-        var providerReference = NormalizeOptional(command.Webhook.Data.CheckoutId);
+        var providerReference = NormalizeOptional(command.Webhook.Data.ChargeId) ?? NormalizeOptional(command.Webhook.Data.CheckoutId);
 
         var existingWebhook = await paymentWebhookInboxRepository.FirstOrDefaultAsync(
             new PaymentWebhookInboxByEventIdSpecification(paymentProvider.Id, eventId),
@@ -84,6 +86,33 @@ public sealed class ProcessBachsWebhookHandler(
             return new ProcessPaymentWebhookResult(WebhookReceiptStatus.UnidentifiedTransaction);
         }
 
+        if (eventName == BachsWebhookEvents.PaymentMethodSaved)
+        {
+            var customerId = NormalizeOptional(command.Webhook.Data.CustomerId);
+            var paymentMethodId = NormalizeOptional(command.Webhook.Data.PaymentMethodId);
+            if (customerId is null || paymentMethodId is null)
+            {
+                inbox.MarkIgnored(KnownWebhookStatusChangeReasons.Payments.TransactionNotFoundOrUnmappedStatus, now);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+                return new ProcessPaymentWebhookResult(WebhookReceiptStatus.UnidentifiedTransaction);
+            }
+
+            var authorization = await recurringAuthorizationRepository.FirstOrDefaultAsync(
+                new RecurringPaymentAuthorizationByCustomerSpecification(paymentProvider.Id, customerId),
+                cancellationToken);
+            if (authorization is null)
+            {
+                inbox.MarkIgnored(KnownWebhookStatusChangeReasons.Payments.TransactionNotFoundOrUnmappedStatus, now);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+                return new ProcessPaymentWebhookResult(WebhookReceiptStatus.UnidentifiedTransaction);
+            }
+
+            authorization.Activate(authorizationProtector.Protect(paymentMethodId), now);
+            inbox.MarkProcessed(KnownWebhookStatusChangeReasons.Shared.SignatureVerified, now);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            return new ProcessPaymentWebhookResult(WebhookReceiptStatus.Persisted);
+        }
+
         var paymentTransaction = await ResolvePaymentTransactionAsync(
             merchantReference,
             providerReference,
@@ -114,7 +143,8 @@ public sealed class ProcessBachsWebhookHandler(
                 paymentTransaction.ProviderReference,
                 paymentTransaction.Amount,
                 currency.CurrencyCode,
-                paymentTransaction.PaymentIntent),
+                paymentTransaction.PaymentIntent,
+                paymentTransaction.ProviderPayloadMetadata.ContainsKey("renewal_attempt_id")),
             cancellationToken);
 
         await ApplyVerificationAsync(paymentTransaction, verification, now, cancellationToken);
@@ -207,7 +237,8 @@ public sealed class ProcessBachsWebhookHandler(
     private static bool IsSupportedEvent(string eventName) =>
         eventName is BachsWebhookEvents.CollectionSucceeded or
             BachsWebhookEvents.CollectionFailed or
-            BachsWebhookEvents.CheckoutExpired;
+            BachsWebhookEvents.CheckoutExpired or
+            BachsWebhookEvents.PaymentMethodSaved;
 
     private static string NormalizeRequired(string? value, string errorMessage) =>
         string.IsNullOrWhiteSpace(value) ? throw new InvalidOperationException(errorMessage) : value.Trim();

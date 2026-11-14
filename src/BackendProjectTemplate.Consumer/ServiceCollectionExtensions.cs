@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILoginActivityIpAddressResolver, LoginActivityIpAddressResolver>();
         services.AddScoped<EmailConfirmationOtpSender>();
         services.Configure<SubscriptionRenewalOptions>(configuration.GetSection(SubscriptionRenewalOptions.SectionName));
+        services.AddScoped<SubscriptionRenewalCharger>();
 
         var options = configuration
             .GetSection(RabbitMqMessagingOptions.SectionName)
@@ -83,6 +84,8 @@ public static class ServiceCollectionExtensions
                 .AddHandler<CreditWalletCommand, CreditWalletHandler>()
                 .AddHandler<ActivateSubscriptionCommand, ActivateSubscriptionHandler>()
                 .AddHandler<RenewSubscriptionCommand, RenewSubscriptionHandler>()
+                .AddHandler<RetrySubscriptionRenewalCommand, RetrySubscriptionRenewalHandler>()
+                .AddHandler<ReconcileSubscriptionRenewalCommand, ReconcileSubscriptionRenewalHandler>()
                 .AddHandler<SendSubscriptionRenewalReminderCommand, SendSubscriptionRenewalReminderHandler>()
                 .AddHandler<ExpireSubscriptionCommand, ExpireSubscriptionHandler>()
                 .AddHandler<DeleteQuarantinedObject, DeleteQuarantinedObjectHandler>())

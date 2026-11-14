@@ -43,6 +43,7 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
         var providerRepository = Substitute.For<IRepository<PaymentProvider>>();
         var providerConfigurationRepository = Substitute.For<IRepository<PaymentProviderConfiguration>>();
         var paymentRepository = Substitute.For<IRepository<PaymentTransaction>>();
+        var recurringAuthorizationRepository = Substitute.For<IRepository<RecurringPaymentAuthorization>>();
         var planRepository = Substitute.For<IRepository<SubscriptionPlan>>();
         var subscriptionRepository = Substitute.For<IRepository<SubscriptionAggregate>>();
         var purchaseRepository = Substitute.For<IRepository<SubscriptionPurchase>>();
@@ -93,6 +94,7 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
             providerRepository,
             providerConfigurationRepository,
             paymentRepository,
+            recurringAuthorizationRepository,
             [providerService],
             telemetry,
             unitOfWork);
@@ -117,6 +119,8 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
         providerRequest.ShouldNotBeNull();
         providerRequest.Amount.ShouldBe(plan.Price);
         providerRequest.CurrencyCode.ShouldBe(currency.CurrencyCode);
+        providerRequest.IsTrustedSubscriptionPurchase.ShouldBeTrue();
+        providerRequest.SavePaymentMethod.ShouldBeTrue();
         capturedPurchase.ShouldNotBeNull();
         capturedPurchase.ExpectedAmount.ShouldBe(plan.Price);
         capturedPurchase.ExpectedCurrencyId.ShouldBe(plan.CurrencyId);

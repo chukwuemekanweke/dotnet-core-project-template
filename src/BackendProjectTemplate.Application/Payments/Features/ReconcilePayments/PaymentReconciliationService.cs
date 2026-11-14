@@ -61,7 +61,8 @@ public sealed class PaymentReconciliationService(
                     transaction.ProviderReference,
                     transaction.Amount,
                     currency.CurrencyCode,
-                    transaction.PaymentIntent),
+                transaction.PaymentIntent,
+                transaction.ProviderPayloadMetadata.ContainsKey("renewal_attempt_id")),
                 cancellationToken);
 
             switch (verificationResult.VerificationStatus)

@@ -63,5 +63,7 @@ public sealed class BachsWebhooksController(ProcessBachsWebhookHandler handler) 
                 request.Data.Reference,
                 request.Data.Status,
                 request.Data.Amount,
-                request.Data.Currency));
+                request.Data.Currency,
+                request.Data.PaymentMethodId,
+                request.Data.Customer?.CustomerId));
 }

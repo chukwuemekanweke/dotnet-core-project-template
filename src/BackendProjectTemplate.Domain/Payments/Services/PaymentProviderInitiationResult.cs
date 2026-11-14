@@ -7,4 +7,7 @@ public sealed record PaymentProviderInitiationResult(
     string PaymentProvider,
     PaymentMethodType PaymentMethodType,
     DateTimeOffset? ExpiresAtUtc,
-    IReadOnlyDictionary<string, string> InstructionFields);
+    IReadOnlyDictionary<string, string> InstructionFields,
+    RecurringPaymentSetupResult? RecurringPaymentSetup = null);
+
+public sealed record RecurringPaymentSetupResult(string ProviderCustomerReference);

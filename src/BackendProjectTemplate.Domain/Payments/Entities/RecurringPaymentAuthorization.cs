@@ -14,25 +14,32 @@ public sealed class RecurringPaymentAuthorization : Entity, IAggregateRoot
         Guid tenantId,
         Guid billingAccountId,
         Guid paymentProviderId,
-        string authorizationReference,
+        string providerCustomerReference,
+        Guid currencyId,
+        Guid sourcePaymentTransactionId,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset? expiresAtUtc)
+        DateTimeOffset consentedAtUtc)
     {
         TenantId = tenantId;
         BillingAccountId = billingAccountId;
         PaymentProviderId = paymentProviderId;
-        AuthorizationReference = NormalizeReference(authorizationReference);
-        Status = RecurringPaymentAuthorizationStatus.Active;
-        AuthorizedAtUtc = createdAtUtc;
-        ExpiresAtUtc = expiresAtUtc;
+        ProviderCustomerReference = NormalizeReference(providerCustomerReference);
+        CurrencyId = currencyId;
+        SourcePaymentTransactionId = sourcePaymentTransactionId;
+        Status = RecurringPaymentAuthorizationStatus.Pending;
+        ConsentedAtUtc = consentedAtUtc;
     }
 
     public Guid TenantId { get; private set; }
     public Guid BillingAccountId { get; private set; }
     public Guid PaymentProviderId { get; private set; }
-    public string AuthorizationReference { get; private set; } = string.Empty;
+    public string? AuthorizationReference { get; private set; }
+    public string ProviderCustomerReference { get; private set; } = string.Empty;
+    public Guid CurrencyId { get; private set; }
+    public Guid SourcePaymentTransactionId { get; private set; }
     public RecurringPaymentAuthorizationStatus Status { get; private set; }
-    public DateTimeOffset AuthorizedAtUtc { get; private set; }
+    public DateTimeOffset ConsentedAtUtc { get; private set; }
+    public DateTimeOffset? AuthorizedAtUtc { get; private set; }
     public DateTimeOffset? ExpiresAtUtc { get; private set; }
     public DateTimeOffset? RevokedAtUtc { get; private set; }
     public uint RowVersion { get; private set; }
@@ -41,14 +48,37 @@ public sealed class RecurringPaymentAuthorization : Entity, IAggregateRoot
         Guid tenantId,
         Guid billingAccountId,
         Guid paymentProviderId,
-        string authorizationReference,
+        string providerCustomerReference,
+        Guid currencyId,
+        Guid sourcePaymentTransactionId,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset? expiresAtUtc = null) =>
-        new(tenantId, billingAccountId, paymentProviderId, authorizationReference, createdAtUtc, expiresAtUtc);
+        DateTimeOffset consentedAtUtc) =>
+        new(
+            tenantId,
+            billingAccountId,
+            paymentProviderId,
+            providerCustomerReference,
+            currencyId,
+            sourcePaymentTransactionId,
+            createdAtUtc,
+            consentedAtUtc);
 
     public bool IsUsableAt(DateTimeOffset utcNow) =>
         Status == RecurringPaymentAuthorizationStatus.Active &&
         (!ExpiresAtUtc.HasValue || ExpiresAtUtc.Value > utcNow);
+
+    public void Activate(string protectedAuthorizationReference, DateTimeOffset authorizedAtUtc, DateTimeOffset? expiresAtUtc = null)
+    {
+        if (Status is RecurringPaymentAuthorizationStatus.Revoked or RecurringPaymentAuthorizationStatus.Expired)
+        {
+            throw new InvalidOperationException("A revoked or expired recurring payment authorization cannot be activated.");
+        }
+
+        AuthorizationReference = NormalizeReference(protectedAuthorizationReference);
+        Status = RecurringPaymentAuthorizationStatus.Active;
+        AuthorizedAtUtc = authorizedAtUtc;
+        ExpiresAtUtc = expiresAtUtc;
+    }
 
     public void Revoke(DateTimeOffset revokedAtUtc)
     {

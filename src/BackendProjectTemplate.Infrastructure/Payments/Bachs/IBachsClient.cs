@@ -10,4 +10,16 @@ internal interface IBachsClient
     Task<BachsCheckoutSessionResponse> GetCheckoutSessionAsync(
         string checkoutId,
         CancellationToken cancellationToken);
+
+    Task<BachsCustomerResponse> CreateCustomerAsync(
+        BachsCreateCustomerRequest request,
+        string idempotencyKey,
+        CancellationToken cancellationToken);
+
+    Task<BachsChargeResponse> CreateChargeAsync(
+        BachsCreateChargeRequest request,
+        string idempotencyKey,
+        CancellationToken cancellationToken);
+
+    Task<BachsChargeResponse> GetPaymentAsync(string paymentId, CancellationToken cancellationToken);
 }

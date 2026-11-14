@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BackendProjectTemplate.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261114205805_ImplementAutomaticSubscriptionRenewal")]
+    [Migration("20261114221720_ImplementAutomaticSubscriptionRenewal")]
     partial class ImplementAutomaticSubscriptionRenewal
     {
         /// <inheritdoc />
@@ -1526,15 +1526,17 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AuthorizationReference")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<DateTimeOffset>("AuthorizedAtUtc")
+                    b.Property<DateTimeOffset?>("AuthorizedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("BillingAccountId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ConsentedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -1542,6 +1544,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset?>("DeletedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -1559,6 +1564,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<Guid>("PaymentProviderId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ProviderCustomerReference")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTimeOffset?>("RevokedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -1567,6 +1577,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<Guid>("SourcePaymentTransactionId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -1583,9 +1596,14 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CurrencyId");
+
                     b.HasIndex("PaymentProviderId");
 
-                    b.HasIndex("BillingAccountId", "PaymentProviderId", "AuthorizationReference")
+                    b.HasIndex("SourcePaymentTransactionId")
+                        .IsUnique();
+
+                    b.HasIndex("BillingAccountId", "PaymentProviderId", "ProviderCustomerReference")
                         .IsUnique();
 
                     b.HasIndex("TenantId", "BillingAccountId", "Status");
@@ -2979,9 +2997,21 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Payments.Entities.RecurringPaymentAuthorization", b =>
                 {
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.Currency", null)
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentProvider", null)
                         .WithMany()
                         .HasForeignKey("PaymentProviderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.PaymentTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("SourcePaymentTransactionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

@@ -82,6 +82,55 @@ public sealed class SubscriptionRenewal : Entity, IAggregateRoot
 
     public void MarkAwaitingAuthorization() => Status = SubscriptionRenewalStatus.AwaitingAuthorization;
 
+    public SubscriptionRenewalAttempt StartAttempt(
+        Guid recurringAuthorizationId,
+        Guid paymentTransactionId,
+        string providerIdempotencyKey,
+        DateTimeOffset createdAtUtc)
+    {
+        if (_attempts.Any(attempt => attempt.Status is
+                SubscriptionRenewalAttemptStatus.Pending or
+                SubscriptionRenewalAttemptStatus.Submitted or
+                SubscriptionRenewalAttemptStatus.Unknown))
+        {
+            throw new AggregateStateException($"Renewal '{Id}' already has an unresolved payment attempt.");
+        }
+
+        var attempt = new SubscriptionRenewalAttempt(
+            Id,
+            _attempts.Count + 1,
+            recurringAuthorizationId,
+            providerIdempotencyKey,
+            createdAtUtc);
+        attempt.AssociatePayment(paymentTransactionId);
+        _attempts.Add(attempt);
+        Status = SubscriptionRenewalStatus.Charging;
+        NextRetryAtUtc = null;
+        return attempt;
+    }
+
+    public void MarkAwaitingReconciliation() => Status = SubscriptionRenewalStatus.AwaitingReconciliation;
+
+    public void MarkRetryScheduled(DateTimeOffset retryAtUtc)
+    {
+        Status = SubscriptionRenewalStatus.RetryScheduled;
+        NextRetryAtUtc = retryAtUtc;
+    }
+
+    public void MarkExhausted(DateTimeOffset completedAtUtc)
+    {
+        Status = SubscriptionRenewalStatus.Exhausted;
+        CompletedAtUtc = completedAtUtc;
+        NextRetryAtUtc = null;
+    }
+
+    public void MarkFulfilled(DateTimeOffset completedAtUtc)
+    {
+        Status = SubscriptionRenewalStatus.Fulfilled;
+        CompletedAtUtc = completedAtUtc;
+        NextRetryAtUtc = null;
+    }
+
     public bool MarkReminderSent(int sequence)
     {
         if (sequence <= ReminderSequenceSent || Status is SubscriptionRenewalStatus.Fulfilled or SubscriptionRenewalStatus.Cancelled)

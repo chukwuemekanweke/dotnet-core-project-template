@@ -19,9 +19,13 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     BillingAccountId = table.Column<Guid>(type: "uuid", nullable: false),
                     PaymentProviderId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AuthorizationReference = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    AuthorizationReference = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    ProviderCustomerReference = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    CurrencyId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SourcePaymentTransactionId = table.Column<Guid>(type: "uuid", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    AuthorizedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    ConsentedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    AuthorizedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     ExpiresAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     RevokedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
@@ -44,10 +48,24 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         principalColumns: new[] { "TenantId", "Id" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_RecurringPaymentAuthorizations_Currencies_CurrencyId",
+                        column: x => x.CurrencyId,
+                        principalSchema: "payments",
+                        principalTable: "Currencies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_RecurringPaymentAuthorizations_PaymentProviders_PaymentProv~",
                         column: x => x.PaymentProviderId,
                         principalSchema: "payments",
                         principalTable: "PaymentProviders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_RecurringPaymentAuthorizations_PaymentTransactions_SourcePa~",
+                        column: x => x.SourcePaymentTransactionId,
+                        principalSchema: "payments",
+                        principalTable: "PaymentTransactions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -173,14 +191,27 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                 name: "IX_RecurringPaymentAuthorizations_BillingAccountId_PaymentProv~",
                 schema: "payments",
                 table: "RecurringPaymentAuthorizations",
-                columns: new[] { "BillingAccountId", "PaymentProviderId", "AuthorizationReference" },
+                columns: new[] { "BillingAccountId", "PaymentProviderId", "ProviderCustomerReference" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringPaymentAuthorizations_CurrencyId",
+                schema: "payments",
+                table: "RecurringPaymentAuthorizations",
+                column: "CurrencyId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RecurringPaymentAuthorizations_PaymentProviderId",
                 schema: "payments",
                 table: "RecurringPaymentAuthorizations",
                 column: "PaymentProviderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringPaymentAuthorizations_SourcePaymentTransactionId",
+                schema: "payments",
+                table: "RecurringPaymentAuthorizations",
+                column: "SourcePaymentTransactionId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_RecurringPaymentAuthorizations_TenantId_BillingAccountId_St~",

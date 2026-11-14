@@ -9,4 +9,10 @@ public sealed record InitiatePaymentCommand(
     Guid CurrencyId,
     PaymentIntent PaymentIntent,
     Guid PaymentProviderId,
-    ActorContext ActorContext);
+    ActorContext ActorContext,
+    TrustedSubscriptionPaymentContext? TrustedSubscriptionContext = null);
+
+public sealed record TrustedSubscriptionPaymentContext(
+    Guid BillingAccountId,
+    bool SavePaymentMethod,
+    DateTimeOffset? ConsentedAtUtc);

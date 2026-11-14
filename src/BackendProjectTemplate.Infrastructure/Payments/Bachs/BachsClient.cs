@@ -29,13 +29,62 @@ internal sealed class BachsClient(
             null,
             cancellationToken);
 
-    private async Task<BachsCheckoutSessionResponse> SendAsync(
+    public Task<BachsCustomerResponse> CreateCustomerAsync(
+        BachsCreateCustomerRequest request,
+        string idempotencyKey,
+        CancellationToken cancellationToken) =>
+        SendAsync<BachsCreateCustomerRequest, BachsCustomerResponse>(
+            _writeHttpClient,
+            HttpMethod.Post,
+            "/v1/customers",
+            request,
+            idempotencyKey,
+            cancellationToken);
+
+    public Task<BachsChargeResponse> CreateChargeAsync(
+        BachsCreateChargeRequest request,
+        string idempotencyKey,
+        CancellationToken cancellationToken) =>
+        SendAsync<BachsCreateChargeRequest, BachsChargeResponse>(
+            _writeHttpClient,
+            HttpMethod.Post,
+            "/v1/charges",
+            request,
+            idempotencyKey,
+            cancellationToken);
+
+    public Task<BachsChargeResponse> GetPaymentAsync(string paymentId, CancellationToken cancellationToken) =>
+        SendAsync<object, BachsChargeResponse>(
+            _readHttpClient,
+            HttpMethod.Get,
+            $"/v1/payments/{Uri.EscapeDataString(paymentId)}",
+            null,
+            null,
+            cancellationToken);
+
+    private Task<BachsCheckoutSessionResponse> SendAsync(
         HttpClient httpClient,
         HttpMethod method,
         string requestUri,
         BachsCreateCheckoutSessionRequest? payload,
         string? idempotencyKey,
+        CancellationToken cancellationToken) =>
+        SendAsync<BachsCreateCheckoutSessionRequest, BachsCheckoutSessionResponse>(
+            httpClient,
+            method,
+            requestUri,
+            payload,
+            idempotencyKey,
+            cancellationToken);
+
+    private async Task<TResponse> SendAsync<TRequest, TResponse>(
+        HttpClient httpClient,
+        HttpMethod method,
+        string requestUri,
+        TRequest? payload,
+        string? idempotencyKey,
         CancellationToken cancellationToken)
+        where TRequest : class
     {
         var apiKey = string.IsNullOrWhiteSpace(_options.ApiKey)
             ? throw new InvalidOperationException("Bachs API key is not configured.")
@@ -57,7 +106,7 @@ internal sealed class BachsClient(
         using var response = await httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<BachsCheckoutSessionResponse>(cancellationToken)
-            ?? throw new InvalidOperationException("Bachs checkout response was empty.");
+        return await response.Content.ReadFromJsonAsync<TResponse>(cancellationToken)
+            ?? throw new InvalidOperationException("Bachs response was empty.");
     }
 }
