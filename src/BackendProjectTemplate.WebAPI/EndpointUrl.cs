@@ -111,6 +111,22 @@ public static class EndpointUrl
         public static readonly string V1 = ToV1(Route);
     }
 
+    public static class Kyc
+    {
+        public const string Route = $"api/{Versions.V1Route}/stakeholders/me/kyc";
+        public static readonly string V1 = ToV1(Route);
+        public static readonly string StartV1 = $"{V1}/start";
+    }
+
+    public static class KycWebhooks
+    {
+        public static class Kycaid
+        {
+            public const string Route = $"api/{Versions.V1Route}/webhooks/kycaid";
+            public static readonly string V1 = ToV1(Route);
+        }
+    }
+
     public static class Payments
     {
         public const string Route = $"api/{Versions.V1Route}/payments";
