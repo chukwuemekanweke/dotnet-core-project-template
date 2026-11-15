@@ -33,6 +33,9 @@ using BackendProjectTemplate.Application.Authentication.Features.VerifyStepUpMfa
 using BackendProjectTemplate.Application.Authentication.Features.VerifyTwoFactorEnrollment;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Application.Common.FileUploads;
+using BackendProjectTemplate.Application.Kyc.Features.GetCurrentVerification;
+using BackendProjectTemplate.Application.Kyc.Features.ReceiveVerificationCallback;
+using BackendProjectTemplate.Application.Kyc.Features.StartVerification;
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
@@ -80,6 +83,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TwoFactorActorResolver>();
         services.AddScoped<TwoFactorProofVerifier>();
         services.AddScoped<FileUploadService>();
+        services.AddScoped<StartKycVerificationHandler>();
+        services.AddScoped<GetCurrentKycVerificationHandler>();
+        services.AddScoped<ReceiveKycCallbackHandler>();
         services.AddScoped<CheckEmailExistenceHandler>();
         services.AddScoped<CompleteTwoFactorChallengeHandler>();
         services.AddScoped<CreatePasskeyRegistrationOptionsHandler>();

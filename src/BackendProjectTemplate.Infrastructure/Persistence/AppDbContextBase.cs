@@ -2,6 +2,7 @@ using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.FileUploads.Entities;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Kyc.Entities;
 using BackendProjectTemplate.Domain.Notifications.Entities;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Providers.Entities;
@@ -64,6 +65,8 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<IpAddressLocation> IpAddressLocations => Set<IpAddressLocation>();
     public DbSet<LoginActivity> LoginActivities => Set<LoginActivity>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<KycVerification> KycVerifications => Set<KycVerification>();
+    public DbSet<KycWebhookInbox> KycWebhookInboxes => Set<KycWebhookInbox>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

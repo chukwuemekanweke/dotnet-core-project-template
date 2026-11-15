@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Consumer.Authentication;
+using BackendProjectTemplate.Consumer.Kyc;
 using BackendProjectTemplate.Consumer.Notifications;
 using BackendProjectTemplate.Consumer.Payments;
 using BackendProjectTemplate.Consumer.Storage;
@@ -10,6 +11,7 @@ using BackendProjectTemplate.Infrastructure.Messaging;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer.DependencyInjection;
 using EmailDeliveryWebhookReceivedEvent = BackendProjectTemplate.Contracts.Events.EmailDeliveryWebhookReceived;
+using KycWebhookReceivedEvent = BackendProjectTemplate.Contracts.Events.KycWebhookReceived;
 using ResetPassword = BackendProjectTemplate.Contracts.Commands.Authentication.ResetPasswordCommand;
 using SendEmailConfirmationOtp = BackendProjectTemplate.Contracts.Commands.Authentication.SendEmailConfirmationOtpCommand;
 using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications.SendNotificationCommand;
@@ -76,6 +78,7 @@ public static class ServiceCollectionExtensions
                 .AddHandler<UserAccessTokenRefreshedEvent, UserAccessTokenRefreshedHandler>()
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>()
                 .AddHandler<EmailDeliveryWebhookReceivedEvent, EmailDeliveryWebhookReceivedHandler>()
+                .AddHandler<KycWebhookReceivedEvent, KycWebhookReceivedHandler>()
                 .AddHandler<SuccessfulPaymentConfirmedEvent, SuccessfulPaymentConfirmedHandler>())
             .AddConsumer(consumerConfig, builder => builder
                 .AddHandler<ResetPassword, ResetPasswordHandler>()

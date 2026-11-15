@@ -23,13 +23,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AuditAndSoftDeleteInterceptor>();
         services.AddScoped<ObservabilityCommandInterceptor>();
         services.AddSingleton<SubscriptionConflictTranslationInterceptor>();
+        services.AddSingleton<KycConflictTranslationInterceptor>();
 
         services.AddDbContext<AppDbContext>((serviceProvider, options) =>
             options.UseNpgsql(GetRequiredConnectionString(configuration, "PostgresWrite"))
                 .AddInterceptors(
                     serviceProvider.GetRequiredService<AuditAndSoftDeleteInterceptor>(),
                     serviceProvider.GetRequiredService<ObservabilityCommandInterceptor>(),
-                    serviceProvider.GetRequiredService<SubscriptionConflictTranslationInterceptor>()));
+                    serviceProvider.GetRequiredService<SubscriptionConflictTranslationInterceptor>(),
+                    serviceProvider.GetRequiredService<KycConflictTranslationInterceptor>()));
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IAppUserRepository, AppUserRepository>();
