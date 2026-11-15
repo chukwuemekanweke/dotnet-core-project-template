@@ -103,7 +103,15 @@ public sealed class AllocateSubscriptionHandler(
                 new OverlappingEntitlementSpecification(command.TenantId, billingAccount.Id, startUtc, endUtc, null),
                 cancellationToken))
         {
-            return EntitlementConflict(billingAccount.Id);
+            // The initial idempotency lookup can run before a concurrent winner commits while this later
+            // overlap check observes its subscription. Re-check the operation before treating it as a
+            // competing entitlement so identical concurrent requests remain replay-safe.
+            var winner = await allocationRepository.FirstOrDefaultAsync(
+                new SubscriptionAllocationByOperationIdSpecification(command.IdempotencyKey),
+                cancellationToken);
+            return winner is null
+                ? EntitlementConflict(billingAccount.Id)
+                : await ReplayAsync(winner, command, cancellationToken);
         }
 
         var subscription = SubscriptionAggregate.CreateAllocated(

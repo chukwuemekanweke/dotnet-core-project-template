@@ -12,16 +12,22 @@ tags:
 governance: constraint
 code_refs:
     - src/BackendProjectTemplate.Domain/Common/Authorization/**
+    - src/BackendProjectTemplate.Domain/Common/Authentication/StepUpMfa*
+    - src/BackendProjectTemplate.Application/Authentication/Features/VerifyStepUpMfa/**
     - src/BackendProjectTemplate.Infrastructure/Authorization/**
     - src/BackendProjectTemplate.Infrastructure/Authentication/ServiceCollectionExtensions.cs
+    - src/BackendProjectTemplate.Infrastructure/Authentication/RedisStepUpMfaProofStore.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/DatabaseInitializationExtensions.cs
     - src/BackendProjectTemplate.WebAPI/Features/Providers/ProvidersController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Payments/Providers/PaymentProvidersController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/AdminSubscriptions/AdminSubscriptionsController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/AdminSubscriptionPlans/AdminSubscriptionPlansController.cs
+    - src/BackendProjectTemplate.WebAPI/Features/Authentication/Security/StepUpMfaController.cs
+    - src/BackendProjectTemplate.WebAPI/Infrastructure/StepUpMfa/**
     - tests/unit/BackendProjectTemplate.Domain.UnitTests/Authorization/**
     - tests/unit/BackendProjectTemplate.Infrastructure.UnitTests/Authorization/**
     - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Authorization/**
+    - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Authentication/Security/StepUpMfa/**
 sources:
     - kind: file
       path: src/BackendProjectTemplate.Domain/Common/Authorization/RolePermissionMappings.cs
@@ -44,6 +50,21 @@ on every authorized request and evaluates `RolePermissionMappings`; JWT permissi
 not authoritative. Role additions/removals converge on the next request with no permission cache.
 Unknown permissions, deleted/missing users, and dependency failures fail closed. Resource and tenant
 authorization still applies independently.
+
+Privileged administrative mutations additionally use `RequireStepUpMfa` with a stable operation from
+`StepUpMfaOperations`. The resource filter runs after the existing authorization policies and before
+MVC model binding, requires authenticator enrollment, fingerprints the method, registered operation,
+versioned path, sorted query, and recursively property-sorted JSON body, and atomically consumes the
+proof. Reads and customer-scoped mutations do not receive this requirement.
+
+`POST /api/v1/authentication/security/step-up/verifications` accepts only Identity authenticator TOTP,
+never recovery codes or passkeys. Proofs are opaque, last exactly two minutes, and bind AppUser,
+stakeholder, active session, Identity security stamp, operation, and request fingerprint. Redis stores
+only a SHA-256 token verifier and bound metadata; the Redis library's native atomic `GETDEL` operation
+gives consume-once behavior across instances. Binding validation follows retrieval, so mismatches also
+consume the one-time proof. Redis failure fails closed. A distributed replay marker prevents the same TOTP code
+from issuing multiple proofs during the configured replay window. Security-stamp changes and session
+revocation invalidate outstanding authorization.
 
 ## Persistence and bootstrap
 
@@ -68,3 +89,11 @@ retries require `subscriptions.manage` (Administrator, FinanceOfficer); plan cre
 requires `subscriptions.plans.manage` (Administrator only). These endpoints are cross-tenant by design:
 the target tenant is an explicit input, and permission policies — not the caller's own tenant — gate
 access. Permissions are applied per action because one controller mixes permission levels.
+
+Every mutation described above also requires its operation-specific step-up proof. The current stable
+operation catalog covers general/payment provider activation, subscription allocation, both
+administrative cancellation forms, fulfillment retry, and plan create/update/activation. A new
+privileged mutation is incomplete until its operation contract, `RequireStepUpMfa` attribute, and proof
+binding tests are added. Proof consumption precedes MVC validation and business execution, so validation
+or execution failure requires a new proof; domain idempotency remains responsible for lost responses and
+retries because Redis and PostgreSQL do not share a distributed transaction.

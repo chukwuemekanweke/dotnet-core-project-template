@@ -16,4 +16,12 @@ public static class AuthenticationErrorCodes
     public const string TwoFactorChallengeExpired = "two_factor_challenge_expired";
     public const string TwoFactorChallengeConsumed = "two_factor_challenge_consumed";
     public const string TwoFactorChallengeExhausted = "two_factor_challenge_exhausted";
+    public const string MfaEnrollmentRequired = "mfa_enrollment_required";
+    public const string MfaVerificationRequired = "mfa_verification_required";
+    public const string MfaVerificationFailed = "mfa_verification_failed";
+    public const string MfaProofExpired = "mfa_proof_expired";
+    public const string MfaProofInvalid = "mfa_proof_invalid";
+    public const string MfaProofConsumed = "mfa_proof_consumed";
+    public const string MfaOperationMismatch = "mfa_operation_mismatch";
+    public const string MfaVerificationRateLimited = "mfa_verification_rate_limited";
 }

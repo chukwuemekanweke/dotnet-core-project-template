@@ -27,6 +27,8 @@ public sealed class RegenerateTwoFactorRecoveryCodesHandler(
         if (!await proofVerifier.VerifyAsync(actor.User, command.VerificationMethod, command.Code))
             return new RegenerateTwoFactorRecoveryCodesResult(RegenerateTwoFactorRecoveryCodesStatus.InvalidProof);
 
+        if (!(await identityService.UpdateSecurityStampAsync(actor.User)).Succeeded)
+            return new RegenerateTwoFactorRecoveryCodesResult(RegenerateTwoFactorRecoveryCodesStatus.Failed);
         var codes = (await identityService.GenerateNewTwoFactorRecoveryCodesAsync(
             actor.User,
             options.Value.RecoveryCodeCount))?.ToArray();

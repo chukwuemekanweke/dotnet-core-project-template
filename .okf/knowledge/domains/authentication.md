@@ -86,6 +86,15 @@ canonical `XXXXX-XXXXX` form as well as compact, spaced, or case-varied equivale
 proofs return the stable `invalid_two_factor_code` problem code. Refresh-token rotation remains the
 existing transparent session flow and never requests MFA again.
 
+Privileged administrative step-up is separate from login MFA and never issues a session or JWT.
+`VerifyStepUpMfaHandler` accepts only Identity authenticator TOTP for a registered administrative
+operation, applies Identity failed-access/lockout handling, rejects reuse of the same TOTP through a
+distributed Redis replay marker, and issues a two-minute user/session/operation/request-bound proof.
+Recovery codes and passkeys cannot issue administrative authorization. Enrollment, recovery-code
+regeneration, and disable explicitly rotate the Identity security stamp so outstanding step-up proofs
+for the initiating session also become invalid; first-time enrollment remains possible without a
+pre-existing step-up proof. See [[authorization]] for consumption and endpoint-binding rules.
+
 ## Google authentication continuation
 
 Google authentication is a single entry point backed by a 5-10 minute Redis `IJsonCache` flow.

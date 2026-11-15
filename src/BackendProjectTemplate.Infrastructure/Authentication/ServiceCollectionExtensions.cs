@@ -88,9 +88,14 @@ public static class ServiceCollectionExtensions
             .GetSection(TwoFactorAuthenticationOptions.SectionName)
             .Get<TwoFactorAuthenticationOptions>() ?? new TwoFactorAuthenticationOptions();
         twoFactorOptions.Validate();
+        var stepUpMfaOptions = configuration
+            .GetSection(StepUpMfaOptions.SectionName)
+            .Get<StepUpMfaOptions>() ?? new StepUpMfaOptions();
+        stepUpMfaOptions.Validate();
 
         services.Configure<GoogleAuthenticationOptions>(configuration.GetSection(GoogleAuthenticationOptions.SectionName));
         services.Configure<TwoFactorAuthenticationOptions>(configuration.GetSection(TwoFactorAuthenticationOptions.SectionName));
+        services.Configure<StepUpMfaOptions>(configuration.GetSection(StepUpMfaOptions.SectionName));
         services.Configure<RefreshTokenOptions>(configuration.GetSection(RefreshTokenOptions.SectionName));
         services.AddSingleton<IUserAgentParserService, UserAgentParserService>();
         services.AddScoped<IIpAddressResolver, IpAddressResolver>();
@@ -105,6 +110,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITwoFactorChallengeService, TwoFactorChallengeService>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<ITwoFactorOtpService, TwoFactorOtpService>();
+        services.AddSingleton<IStepUpMfaProofStore, RedisStepUpMfaProofStore>();
 
         return services;
     }

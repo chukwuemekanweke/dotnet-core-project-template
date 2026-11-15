@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
@@ -24,10 +23,7 @@ public abstract class WebApiIntegrationTestBase
 
     protected Task InitializeClientAsync()
     {
-        Client = _factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false
-        });
+        Client = _factory.CreateStepUpAwareClient();
 
         return Task.CompletedTask;
     }
@@ -39,4 +35,5 @@ public abstract class WebApiIntegrationTestBase
     }
 
     protected IServiceScope CreateScope() => _factory.Services.CreateScope();
+    protected HttpClient CreateRawClient() => _factory.CreateRawClient();
 }

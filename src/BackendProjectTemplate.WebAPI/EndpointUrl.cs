@@ -35,6 +35,7 @@ public static class EndpointUrl
         public static readonly string RefreshV1 = $"{V1}/refresh";
         public static readonly string LogoutV1 = $"{V1}/logout";
         public static readonly string TwoFactorV1 = $"{V1}/two-factor";
+        public static readonly string StepUpVerificationsV1 = $"{V1}/step-up/verifications";
     }
 
     public static class AuthenticationSecurity

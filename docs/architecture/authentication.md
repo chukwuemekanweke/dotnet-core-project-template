@@ -52,3 +52,32 @@ Google authentication uses `Authentication:Google`:
 Startup fails when Google authentication is enabled without at least one non-empty client ID, or when the flow lifetime is outside five to ten minutes. Multiple client IDs are allowed. No Google client secret is used.
 
 MFA uses `Authentication:TwoFactor` with issuer label, challenge lifetime, challenge attempt count, and recovery-code count settings. The defaults are `BackendProjectTemplate`, five minutes, five attempts, and ten recovery codes.
+
+## Privileged-action step-up MFA
+
+Login MFA and privileged-action MFA are separate flows. Login MFA establishes a normal application
+session; step-up MFA never issues access or refresh tokens. An already authenticated caller with an
+active session verifies an authenticator code at
+`POST /api/v1/authentication/security/step-up/verifications` for one registered administrative request.
+Recovery codes and passkeys are intentionally excluded. The resulting opaque proof expires after two
+minutes, is bound to the current user, stakeholder, active session, Identity security stamp, operation,
+route/query, and canonical JSON payload, and is consumed atomically once through Redis.
+
+Identity failed-access and lockout processing plus the existing two-factor verification rate limit
+protect the verification endpoint. A Redis replay marker prevents the same TOTP code from issuing
+multiple step-up proofs during the configured replay window. Disabling/re-enrolling MFA and regenerating
+recovery codes rotate the Identity security stamp, invalidating outstanding proofs; session revocation
+also denies use because protected endpoints continue to require an active session. First-time
+authenticator enrollment does not itself require step-up MFA.
+
+Configuration is under `Authentication:StepUpMfa`:
+
+```json
+{
+  "ProofLifetime": "00:02:00",
+  "ReplayWindow": "00:02:00"
+}
+```
+
+See `authorization.md` for the endpoint payload, canonicalization contract, proof header, endpoint
+coverage, errors, and retry behavior.

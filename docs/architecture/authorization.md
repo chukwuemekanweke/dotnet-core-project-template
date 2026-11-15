@@ -46,6 +46,13 @@ Role additions and removals therefore apply on the next authorized request, incl
 with an already-issued access token. Existing session revocation and expiry remain independently
 enforced. Tenant and resource checks are not replaced by an administrative permission.
 
+Privileged state-changing actions additionally carry `[RequireStepUpMfa(<operation>)]`. This resource
+filter runs after normal authentication, active-session, and permission authorization and before MVC
+model binding or the business handler. It requires an enrolled authenticator and atomically consumes
+one proof from `X-Step-Up-Authorization`. MFA never replaces permission evaluation: removing a role or
+revoking a session denies the request before the proof is used. Administrative reads do not require a
+step-up proof.
+
 Current protected operations are:
 
 | Operation | Policy |
@@ -57,6 +64,66 @@ Current protected operations are:
 | Subscription allocation (`POST /admin/subscriptions/allocations`) | `subscriptions.allocate` |
 | Immediate / period-end cancellation, blocked-purchase fulfillment retry | `subscriptions.manage` |
 | Plan create, update, activation/deactivation | `subscriptions.plans.manage` |
+
+All mutation rows in this table require step-up MFA. Their stable operations are
+`admin.providers.activate`, `admin.payment-providers.set-activation`,
+`admin.subscriptions.allocate`, `admin.subscriptions.cancel-immediately`,
+`admin.subscriptions.cancel-at-period-end`, `admin.subscriptions.retry-purchase-fulfillment`,
+`admin.subscription-plans.create`, `admin.subscription-plans.update`, and
+`admin.subscription-plans.set-activation`.
+
+## Privileged-action step-up MFA
+
+An active administrator requests a proof with
+`POST /api/v1/authentication/security/step-up/verifications`. The JSON request contains
+`verificationMethod: "authenticator"`, the six-digit `code`, a registered `operation`, and an
+`intendedRequest` containing the exact HTTP `method`, versioned `path`, optional query values, and
+optional JSON body of the mutation. Actor, stakeholder, and session identifiers always come from the
+authenticated JWT and server-side session; clients never supply them. Recovery codes and passkeys are
+not accepted by this endpoint.
+
+The server validates the operation contract and creates the request fingerprint as SHA-256 over:
+
+```text
+UPPERCASE_METHOD\n
+operation\n
+lowercase_versioned_path_without_trailing_slash\n
+query\n
+canonical_json_body
+```
+
+Query keys and each key's values are ordinal-sorted and percent-encoded. JSON object properties are
+ordinal-sorted recursively; array order and JSON scalar representations are preserved. Clients do not
+calculate or submit a fingerprint. They submit the intended request fields, and the server applies the
+same canonicalizer to those fields and to the eventual protected HTTP request. Changing the method,
+operation, route GUID, query value, or payload changes the fingerprint.
+
+Successful verification returns an opaque 256-bit `authorizationToken` and `expiresAtUtc`, with
+`Cache-Control: no-store`. The raw token is returned once and never logged or stored. Redis keys use a
+SHA-256 token verifier and store the user, stakeholder, session, Identity security stamp, operation,
+fingerprint, verification time, and expiry. The Redis library's native atomic `GETDEL` operation consumes
+the proof before the application compares its bindings, so concurrent API instances cannot accept it
+twice. A binding mismatch therefore also consumes the one-time proof. Consumed and expired markers remain
+briefly to provide stable errors. Redis failure denies the action. The same TOTP code cannot issue a
+second proof during the configured replay window; Identity failed-access tracking and the existing MFA
+verification rate limit also apply.
+
+Proof lifetime is fixed at two minutes under `Authentication:StepUpMfa`; `ReplayWindow` defaults to two
+minutes. Startup rejects a different proof lifetime or a replay window outside 30 seconds to 5 minutes.
+Stable failures include `mfa_enrollment_required`, `mfa_verification_required`,
+`mfa_verification_failed`, `mfa_proof_expired`, `mfa_proof_invalid`, `mfa_proof_consumed`,
+`mfa_operation_mismatch`, and `mfa_verification_rate_limited`.
+
+Authorization consumes the proof before MVC request validation. If validation or business execution
+then fails, the proof remains consumed and the client must verify again before retrying. A lost success
+response is handled by the operation's existing idempotency key or domain idempotency behavior; the MFA
+proof is never reusable. There is deliberately no distributed transaction between Redis consumption
+and PostgreSQL mutation.
+
+To protect a new privileged mutation, add a stable constant to `StepUpMfaOperations`, register its
+method and versioned path in `StepUpMfaOperationRegistry`, and apply
+`[RequireStepUpMfa(StepUpMfaOperations.YourOperation)]` alongside its permission policy. Add canonical
+request, proof lifecycle, and endpoint coverage. Do not apply step-up globally to customer mutations.
 
 Administrative subscription endpoints are cross-tenant: the target tenant and subscription are explicit
 request inputs, the acting administrator is always taken from the authenticated session, and permission

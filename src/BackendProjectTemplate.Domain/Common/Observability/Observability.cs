@@ -61,6 +61,12 @@ public static class Observability
             public const string OperationId = "subscription_operation_id";
             public const string Status = "subscription_status";
         }
+
+        public static class Authentication
+        {
+            public const string SessionId = "authentication_session_id";
+            public const string StepUpOperation = "step_up_operation";
+        }
     }
 
     public static class EventNames
@@ -106,6 +112,14 @@ public static class Observability
             public const string TwoFactorEnrollmentCompleted = "TwoFactorEnrollmentCompleted";
             public const string TwoFactorDisabled = "TwoFactorDisabled";
             public const string TwoFactorRecoveryCodesRegenerated = "TwoFactorRecoveryCodesRegenerated";
+            public const string StepUpMfaVerificationRequested = "StepUpMfaVerificationRequested";
+            public const string StepUpMfaVerificationCompleted = "StepUpMfaVerificationCompleted";
+            public const string StepUpMfaVerificationFailed = "StepUpMfaVerificationFailed";
+            public const string StepUpMfaEnrollmentMissing = "StepUpMfaEnrollmentMissing";
+            public const string StepUpMfaProofIssued = "StepUpMfaProofIssued";
+            public const string StepUpMfaProofConsumed = "StepUpMfaProofConsumed";
+            public const string StepUpMfaReplayRejected = "StepUpMfaReplayRejected";
+            public const string StepUpMfaProofStoreFailed = "StepUpMfaProofStoreFailed";
             public const string ProfileUpdateCompleted = "ProfileUpdateCompleted";
             public const string ProfileUpdateFailed = "ProfileUpdateFailed";
             public const string AvatarUploadCompleted = "AvatarUploadCompleted";

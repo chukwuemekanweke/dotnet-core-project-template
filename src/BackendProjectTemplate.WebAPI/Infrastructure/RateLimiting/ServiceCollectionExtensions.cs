@@ -69,7 +69,13 @@ public static class ServiceCollectionExtensions
                         Status = StatusCodes.Status429TooManyRequests,
                         Title = "Too many requests",
                         Detail = "Too many requests were sent in a short period. Please wait and try again.",
-                        Extensions = { ["code"] = AuthenticationErrorCodes.RateLimited }
+                        Extensions =
+                        {
+                            ["code"] = context.HttpContext.GetEndpoint()?.Metadata
+                                .GetMetadata<StepUpMfaVerificationEndpointAttribute>() is not null
+                                ? AuthenticationErrorCodes.MfaVerificationRateLimited
+                                : AuthenticationErrorCodes.RateLimited
+                        }
                     }
                 });
             };

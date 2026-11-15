@@ -5,9 +5,11 @@ using BackendProjectTemplate.Application.Subscriptions.Features.ListAdminSubscri
 using BackendProjectTemplate.Application.Subscriptions.Features.SetSubscriptionPlanActivation;
 using BackendProjectTemplate.Application.Subscriptions.Features.UpdateSubscriptionPlan;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Authorization;
 using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.WebAPI.Infrastructure;
+using BackendProjectTemplate.WebAPI.Infrastructure.StepUpMfa;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -41,6 +43,7 @@ public sealed class AdminSubscriptionPlansController(
 
     [HttpPost]
     [Authorize(Policy = PermissionPolicyNames.SubscriptionPlansManage)]
+    [RequireStepUpMfa(StepUpMfaOperations.CreateSubscriptionPlan)]
     [ProducesResponseType<AdminSubscriptionPlanResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -78,6 +81,7 @@ public sealed class AdminSubscriptionPlansController(
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = PermissionPolicyNames.SubscriptionPlansManage)]
+    [RequireStepUpMfa(StepUpMfaOperations.UpdateSubscriptionPlan)]
     [ProducesResponseType<AdminSubscriptionPlanResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -107,6 +111,7 @@ public sealed class AdminSubscriptionPlansController(
 
     [HttpPut("{id:guid}/activation")]
     [Authorize(Policy = PermissionPolicyNames.SubscriptionPlansManage)]
+    [RequireStepUpMfa(StepUpMfaOperations.SetSubscriptionPlanActivation)]
     [ProducesResponseType<AdminSubscriptionPlanResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
