@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Kyc;
 using BackendProjectTemplate.Domain.Kyc.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -19,6 +20,7 @@ public sealed class KycWebhookInboxConfiguration : IEntityTypeConfiguration<KycW
         builder.Property(value => value.ExternalApplicantId).HasMaxLength(50);
         builder.Property(value => value.ProviderStatus).HasMaxLength(50).IsRequired();
         builder.HasIndex(value => new { value.ProviderKey, value.RequestId }).IsUnique()
-            .HasFilter("\"IsDeleted\" = FALSE");
+            .HasFilter("\"IsDeleted\" = FALSE")
+            .HasDatabaseName(KycPersistenceConstraints.WebhookRequestUniqueIndexName);
     }
 }

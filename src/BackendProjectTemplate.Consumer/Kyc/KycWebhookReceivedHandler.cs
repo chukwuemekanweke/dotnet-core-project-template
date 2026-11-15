@@ -62,11 +62,13 @@ public sealed class KycWebhookReceivedHandler(
             return;
         }
 
+        verification.RecordProviderVerificationReference(inbox.VerificationReference);
+
         if (inbox.EventType == "FORM_URL_EXPIRED")
         {
             if (verification.IsActive)
             {
-                verification.MarkExpired(now);
+                verification.MarkFormUrlExpired(now);
             }
         }
         else
@@ -108,9 +110,6 @@ public sealed class KycWebhookReceivedHandler(
             }
         }
 
-        return inbox.ExternalApplicantId is null
-            ? null
-            : await verificationRepository.FirstOrDefaultAsync(
-                new ActiveKycVerificationByExternalApplicantIdSpecification(KycProviderKeys.Kycaid, inbox.ExternalApplicantId), cancellationToken);
+        return null;
     }
 }

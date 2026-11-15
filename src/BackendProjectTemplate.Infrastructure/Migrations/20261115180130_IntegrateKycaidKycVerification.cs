@@ -31,8 +31,10 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     VerificationUrl = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
                     FormUrlExpiresAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     StartedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    SessionRequestedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     SubmittedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     CompletedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    LastReconciledAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     CreatedAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
@@ -113,7 +115,7 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                 filter: "\"Status\" IN (2, 3) AND \"IsDeleted\" = FALSE");
 
             migrationBuilder.CreateIndex(
-                name: "IX_KycWebhookInboxes_ProviderKey_RequestId",
+                name: "UX_KycWebhookInboxes_ProviderRequest",
                 schema: "kyc",
                 table: "KycWebhookInboxes",
                 columns: new[] { "ProviderKey", "RequestId" },

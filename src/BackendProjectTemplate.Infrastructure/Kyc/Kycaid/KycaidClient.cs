@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Domain.Kyc;
 using Microsoft.Extensions.Options;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
@@ -20,7 +21,7 @@ internal sealed class KycaidClient(HttpClient httpClient, IOptions<KycaidOptions
         };
         ApplyApiKey(message);
         using var response = await httpClient.SendAsync(message, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        EnsureSuccess(response);
         var payload = await response.Content.ReadFromJsonAsync<CreateFormUrlResponse>(cancellationToken)
             ?? throw new InvalidOperationException("KYCAID form URL response was empty.");
         if (!Uri.TryCreate(payload.FormUrl, UriKind.Absolute, out var formUrl) || formUrl.Scheme != Uri.UriSchemeHttps ||
@@ -38,7 +39,7 @@ internal sealed class KycaidClient(HttpClient httpClient, IOptions<KycaidOptions
         using var message = new HttpRequestMessage(HttpMethod.Get, $"/verifications/{Uri.EscapeDataString(verificationReference)}");
         ApplyApiKey(message);
         using var response = await httpClient.SendAsync(message, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        EnsureSuccess(response);
         var payload = await response.Content.ReadFromJsonAsync<GetVerificationResponse>(cancellationToken)
             ?? throw new InvalidOperationException("KYCAID verification response was empty.");
         return new(payload.VerificationId, payload.ApplicantId, payload.Status, payload.Verified);
@@ -48,7 +49,23 @@ internal sealed class KycaidClient(HttpClient httpClient, IOptions<KycaidOptions
 
     private void EnsureEnabled()
     {
-        if (!_options.Enabled) throw new InvalidOperationException("KYCAID integration is disabled.");
+        if (!_options.Enabled) throw new KycProviderRequestRejectedException("KYCAID integration is disabled.");
+    }
+
+    // A 4xx answer means KYCAID did not perform the operation, so callers may safely retry it.
+    // 408 is excluded: the request may still have been processed. Anything else stays an HttpRequestException
+    // whose outcome is unknown.
+    private static void EnsureSuccess(HttpResponseMessage response)
+    {
+        var statusCode = (int)response.StatusCode;
+        if (statusCode is >= 400 and < 500 && response.StatusCode != HttpStatusCode.RequestTimeout)
+        {
+            throw new KycProviderRequestRejectedException(
+                $"KYCAID rejected the request with status {statusCode}.",
+                new HttpRequestException(response.ReasonPhrase, null, response.StatusCode));
+        }
+
+        response.EnsureSuccessStatusCode();
     }
 
     private sealed record CreateFormUrlRequest(

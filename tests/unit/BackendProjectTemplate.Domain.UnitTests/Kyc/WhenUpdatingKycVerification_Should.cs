@@ -11,6 +11,7 @@ public sealed class WhenUpdatingKycVerification_Should
     public void MarkVerifiedOnlyFromAuthoritativeCompletedApproval()
     {
         var verification = CreateVerification();
+        verification.MarkSessionRequested(StartedAt);
         verification.AttachSession(new("verification-1", "token-1", new Uri("https://forms.kycaid.com/token-1"), null));
 
         verification.ApplyProviderResult("pending", null, "applicant-1", StartedAt.AddMinutes(1));

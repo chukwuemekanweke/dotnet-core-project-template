@@ -57,69 +57,98 @@ public sealed class StartKycVerificationHandler(
             return new(StartKycVerificationStatus.IncompleteProfile, Error: "First and last name are required before verification can start.");
         }
 
+        var now = timeProvider.GetUtcNow();
         var active = await verificationRepository.FirstOrDefaultAsync(
             new ActiveKycVerificationSpecification(tenantId.Value, stakeholderId.Value), cancellationToken);
-        if (active is not null && !string.IsNullOrWhiteSpace(active.VerificationUrl))
+        if (active is not null &&
+            (!string.IsNullOrWhiteSpace(active.VerificationUrl) || active.Status == KycVerificationStatus.InProgress))
         {
             return Success(active);
         }
 
-        var provider = providerServices.Single(service => service.ProviderKey == KycProviderKeys.Kycaid);
-        var latest = active ?? await verificationRepository.FirstOrDefaultAsync(
-            new CurrentKycVerificationSpecification(tenantId.Value, stakeholderId.Value), cancellationToken);
-        var verification = active ?? KycVerification.Start(
-            tenantId.Value,
-            stakeholderId.Value,
-            provider.ProviderKey,
-            stakeholderId.Value.ToString("N"),
-            latest?.ProviderApplicantReference,
-            timeProvider.GetUtcNow());
-
-        if (active is null)
+        if (active?.HasPendingSessionRequest(now) == true)
         {
-            await verificationRepository.AddAsync(verification, cancellationToken);
-            try
-            {
-                await unitOfWork.SaveChangesAsync(cancellationToken);
-            }
-            catch (KycActiveVerificationConflictException)
-            {
-                unitOfWork.DiscardChanges();
-                var concurrent = await verificationRepository.FirstOrDefaultAsync(
-                    new ActiveKycVerificationSpecification(tenantId.Value, stakeholderId.Value), cancellationToken);
-                return concurrent is null
-                    ? new(StartKycVerificationStatus.ProviderUnavailable)
-                    : Success(concurrent);
-            }
+            return SessionBeingPrepared();
         }
 
+        var provider = providerServices.Single(service => service.ProviderKey == KycProviderKeys.Kycaid);
+        KycVerification verification;
+        if (active is null)
+        {
+            var latest = await verificationRepository.FirstOrDefaultAsync(
+                new CurrentKycVerificationSpecification(tenantId.Value, stakeholderId.Value), cancellationToken);
+            verification = KycVerification.Start(
+                tenantId.Value,
+                stakeholderId.Value,
+                provider.ProviderKey,
+                stakeholderId.Value.ToString("N"),
+                latest?.ProviderApplicantReference,
+                now);
+            verification.MarkSessionRequested(now);
+            await verificationRepository.AddAsync(verification, cancellationToken);
+        }
+        else
+        {
+            verification = active;
+            verification.MarkSessionRequested(now);
+        }
+
+        // The session request is committed before calling the provider so that a concurrent or retried start
+        // cannot create a second provider form while this request's outcome is unknown.
         try
         {
-            var session = await provider.CreateSessionAsync(
-                new KycSessionRequest(verification.ExternalApplicantId, verification.ProviderApplicantReference), cancellationToken);
-            verification.AttachSession(session);
             await unitOfWork.SaveChangesAsync(cancellationToken);
-            return Success(verification);
+        }
+        catch (Exception exception) when (exception is KycActiveVerificationConflictException or KycVerificationConcurrencyException)
+        {
+            unitOfWork.DiscardChanges();
+            var concurrent = await verificationRepository.FirstOrDefaultAsync(
+                new ActiveKycVerificationSpecification(tenantId.Value, stakeholderId.Value), cancellationToken);
+            return concurrent is not null && !string.IsNullOrWhiteSpace(concurrent.VerificationUrl)
+                ? Success(concurrent)
+                : SessionBeingPrepared();
+        }
+
+        KycSessionResult session;
+        try
+        {
+            session = await provider.CreateSessionAsync(
+                new KycSessionRequest(verification.ExternalApplicantId, verification.ProviderApplicantReference), cancellationToken);
+        }
+        catch (KycProviderRequestRejectedException exception)
+        {
+            // The provider definitively did not create a form, so the request can be retried immediately.
+            verification.ReleaseSessionRequest();
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            return new(StartKycVerificationStatus.ProviderUnavailable, Error: exception.Message);
         }
         catch (HttpRequestException exception)
         {
-            verification.MarkFailed(timeProvider.GetUtcNow());
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-            return new(StartKycVerificationStatus.ProviderUnavailable, Error: exception.Message);
+            return UnknownSessionOutcome(exception);
         }
         catch (TaskCanceledException exception) when (!cancellationToken.IsCancellationRequested)
         {
-            verification.MarkFailed(timeProvider.GetUtcNow());
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-            return new(StartKycVerificationStatus.ProviderUnavailable, Error: exception.Message);
+            return UnknownSessionOutcome(exception);
         }
         catch (InvalidOperationException exception)
         {
-            verification.MarkFailed(timeProvider.GetUtcNow());
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-            return new(StartKycVerificationStatus.ProviderUnavailable, Error: exception.Message);
+            return UnknownSessionOutcome(exception);
         }
+
+        verification.AttachSession(session);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return Success(verification);
     }
+
+    // The provider may or may not have created a form. The session request stays pending until
+    // KycVerification.SessionProvisioningLease elapses, after which a new start may request a fresh session.
+    private static StartKycVerificationResult UnknownSessionOutcome(Exception exception) =>
+        new(StartKycVerificationStatus.ProviderUnavailable, Error: exception.Message);
+
+    private static StartKycVerificationResult SessionBeingPrepared() =>
+        new(
+            StartKycVerificationStatus.ProviderUnavailable,
+            Error: "A verification session is already being prepared. Try again shortly.");
 
     private static StartKycVerificationResult Success(KycVerification verification) =>
         new(StartKycVerificationStatus.Success, new(verification.Id, verification.ProviderKey, verification.Status.ToString(), verification.VerificationUrl));

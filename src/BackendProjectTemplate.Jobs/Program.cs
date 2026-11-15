@@ -6,6 +6,7 @@ using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Jobs.Authentication;
 using BackendProjectTemplate.Jobs.HealthChecks;
 using BackendProjectTemplate.Jobs.Infrastructure.BackgroundServices;
+using BackendProjectTemplate.Jobs.Kyc;
 using BackendProjectTemplate.Jobs.Observability;
 using BackendProjectTemplate.Jobs.OutboxProcessing;
 using BackendProjectTemplate.Jobs.Payments;
@@ -30,6 +31,7 @@ builder.Services.AddRabbitMqOutboxDispatching(builder.Configuration);
 builder.Services.AddOutboxMessageProcessing(builder.Configuration);
 builder.Services.AddIpAddressLocationEnrichment(builder.Configuration);
 builder.Services.AddPaymentReconciliation(builder.Configuration);
+builder.Services.AddKycReconciliation(builder.Configuration);
 builder.Services.AddJobsHealthChecks();
 builder.Services.AddJobsOpenTelemetry(builder.Configuration);
 

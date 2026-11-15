@@ -730,6 +730,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTimeOffset?>("LastReconciledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("ProviderApplicantReference")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -757,6 +760,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<DateTimeOffset?>("SessionRequestedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("StakeholderId")
                         .HasColumnType("uuid");
@@ -881,6 +887,7 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasIndex("ProviderKey", "RequestId")
                         .IsUnique()
+                        .HasDatabaseName("UX_KycWebhookInboxes_ProviderRequest")
                         .HasFilter("\"IsDeleted\" = FALSE");
 
                     b.ToTable("KycWebhookInboxes", "kyc");

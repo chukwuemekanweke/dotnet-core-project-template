@@ -41,8 +41,17 @@ later attempts reuse it to preserve KYCAID applicant history.
 
 An attempt starts as Pending. KYCAID `pending` moves it to InProgress. `completed` plus `verified: true`
 marks the attempt and stakeholder verified; `verified: false` rejects it. Completion without a decision is
-not approval. `FORM_URL_EXPIRED` expires only the attempt URL. Rejected, failed and expired attempts may
-restart; verified stakeholders may not.
+not approval. `FORM_URL_EXPIRED` expires only the form URL: an unsubmitted attempt can request a new form,
+and a submitted attempt keeps waiting for its decision. Rejected, failed and expired attempts may restart;
+verified stakeholders may not.
+
+A form request is recorded before KYCAID is called. If KYCAID rejects it (4xx other than 408, or the
+integration is disabled) the request can be retried at once. If the outcome is unknown (timeout, network
+error, 5xx), no new form is requested for 10 minutes so a slow response cannot produce a duplicate form.
+
+The Jobs host reconciles active attempts whose callbacks were missed by polling KYCAID's verification
+endpoint (`Jobs:Kyc:Reconciliation` — `BatchSize`, `PollInterval`, `StaleThreshold`, `RecheckDelay`). The
+Jobs host therefore needs the same `Kyc__Kycaid__*` configuration as the WebAPI.
 
 After signature verification, WebAPI stores the provider-independent callback fields and a
 `KycWebhookReceived` outbox event atomically, then responds. The Consumer applies verification state and

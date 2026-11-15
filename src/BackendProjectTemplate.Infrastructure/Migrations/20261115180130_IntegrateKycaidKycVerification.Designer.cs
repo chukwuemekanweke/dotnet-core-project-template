@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BackendProjectTemplate.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261115165654_IntegrateKycaidKycVerification")]
+    [Migration("20261115180130_IntegrateKycaidKycVerification")]
     partial class IntegrateKycaidKycVerification
     {
         /// <inheritdoc />
@@ -733,6 +733,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTimeOffset?>("LastReconciledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("ProviderApplicantReference")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -760,6 +763,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<DateTimeOffset?>("SessionRequestedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("StakeholderId")
                         .HasColumnType("uuid");
@@ -884,6 +890,7 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasIndex("ProviderKey", "RequestId")
                         .IsUnique()
+                        .HasDatabaseName("UX_KycWebhookInboxes_ProviderRequest")
                         .HasFilter("\"IsDeleted\" = FALSE");
 
                     b.ToTable("KycWebhookInboxes", "kyc");

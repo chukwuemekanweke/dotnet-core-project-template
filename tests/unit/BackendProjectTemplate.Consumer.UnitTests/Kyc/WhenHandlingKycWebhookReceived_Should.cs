@@ -23,6 +23,7 @@ public sealed class WhenHandlingKycWebhookReceived_Should
         var tenantId = Guid.CreateVersion7();
         var stakeholder = Stakeholder.Create(Guid.CreateVersion7(), tenantId, Guid.CreateVersion7(), Guid.CreateVersion7(), "Ada", "Lovelace");
         var verification = KycVerification.Start(tenantId, stakeholder.Id, KycProviderKeys.Kycaid, stakeholder.Id.ToString("N"), null, StartedAt);
+        verification.MarkSessionRequested(StartedAt);
         verification.AttachSession(new("verification-1", "token-1", new Uri("https://forms.kycaid.com/token-1"), null));
         var webhook = KycWebhookInbox.Create(
             KycProviderKeys.Kycaid,

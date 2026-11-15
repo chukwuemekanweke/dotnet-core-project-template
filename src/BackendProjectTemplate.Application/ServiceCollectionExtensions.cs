@@ -35,6 +35,7 @@ using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Application.Common.FileUploads;
 using BackendProjectTemplate.Application.Kyc.Features.GetCurrentVerification;
 using BackendProjectTemplate.Application.Kyc.Features.ReceiveVerificationCallback;
+using BackendProjectTemplate.Application.Kyc.Features.ReconcileVerifications;
 using BackendProjectTemplate.Application.Kyc.Features.StartVerification;
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
@@ -86,6 +87,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<StartKycVerificationHandler>();
         services.AddScoped<GetCurrentKycVerificationHandler>();
         services.AddScoped<ReceiveKycCallbackHandler>();
+        services.AddScoped<KycReconciliationService>();
         services.AddScoped<CheckEmailExistenceHandler>();
         services.AddScoped<CompleteTwoFactorChallengeHandler>();
         services.AddScoped<CreatePasskeyRegistrationOptionsHandler>();

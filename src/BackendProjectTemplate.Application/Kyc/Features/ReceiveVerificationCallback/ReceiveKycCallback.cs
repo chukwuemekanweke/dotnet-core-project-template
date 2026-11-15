@@ -58,7 +58,15 @@ public sealed class ReceiveKycCallbackHandler(
                 OccuredAt = now
             },
             cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (KycWebhookDuplicateException)
+        {
+            unitOfWork.DiscardChanges();
+            return ReceiveKycCallbackStatus.Duplicate;
+        }
 
         return ReceiveKycCallbackStatus.Persisted;
     }

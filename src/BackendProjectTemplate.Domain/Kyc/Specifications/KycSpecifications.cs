@@ -48,13 +48,19 @@ public sealed class KycVerificationBySessionReferenceSpecification : Specificati
     }
 }
 
-public sealed class ActiveKycVerificationByExternalApplicantIdSpecification : Specification<KycVerification>
+public sealed class PendingKycReconciliationSpecification : Specification<KycVerification>
 {
-    public ActiveKycVerificationByExternalApplicantIdSpecification(string providerKey, string externalApplicantId)
+    public PendingKycReconciliationSpecification(
+        DateTimeOffset staleThresholdUtc,
+        DateTimeOffset nextCheckThresholdUtc,
+        int batchSize)
     {
-        Where(value => value.ProviderKey == providerKey && value.ExternalApplicantId == externalApplicantId &&
-            (value.Status == KycVerificationStatus.Pending || value.Status == KycVerificationStatus.InProgress));
-        ApplyOrderByDescending(value => value.StartedAtUtc);
+        Where(value => value.ProviderVerificationReference != null &&
+            (value.Status == KycVerificationStatus.Pending || value.Status == KycVerificationStatus.InProgress) &&
+            value.StartedAtUtc <= staleThresholdUtc &&
+            (!value.LastReconciledAtUtc.HasValue || value.LastReconciledAtUtc <= nextCheckThresholdUtc));
+        ApplyOrderBy(value => value.StartedAtUtc);
+        ApplyPaging(0, batchSize);
         EnableTracking();
     }
 }
