@@ -17,6 +17,8 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Persistence/DatabaseInitializationExtensions.cs
     - src/BackendProjectTemplate.WebAPI/Features/Providers/ProvidersController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Payments/Providers/PaymentProvidersController.cs
+    - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/AdminSubscriptions/AdminSubscriptionsController.cs
+    - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/AdminSubscriptionPlans/AdminSubscriptionPlansController.cs
     - tests/unit/BackendProjectTemplate.Domain.UnitTests/Authorization/**
     - tests/unit/BackendProjectTemplate.Infrastructure.UnitTests/Authorization/**
     - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Authorization/**
@@ -24,7 +26,7 @@ sources:
     - kind: file
       path: src/BackendProjectTemplate.Domain/Common/Authorization/RolePermissionMappings.cs
 generated:
-    at: "2026-11-14T00:00:00Z"
+    at: "2026-11-15T00:00:00Z"
     by: agent
 status: stable
 ---
@@ -58,3 +60,11 @@ General provider activation requires `providers.manage` (Administrator only). Pa
 activation requires `payments.manage` (Administrator and FinanceOfficer). Customer payment initiation
 and stakeholder-owned wallet history are not administrative operations and retain their existing
 active-session and resource scoping.
+
+Administrative subscriptions: list/detail and the full plan catalog require `subscriptions.read`
+(Administrator, FinanceOfficer, SupportAgent); allocation requires `subscriptions.allocate`
+(Administrator, FinanceOfficer); immediate/period-end cancellation and blocked-purchase fulfillment
+retries require `subscriptions.manage` (Administrator, FinanceOfficer); plan create/update/activation
+requires `subscriptions.plans.manage` (Administrator only). These endpoints are cross-tenant by design:
+the target tenant is an explicit input, and permission policies — not the caller's own tenant — gate
+access. Permissions are applied per action because one controller mixes permission levels.

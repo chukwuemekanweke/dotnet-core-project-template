@@ -31,6 +31,9 @@ internal sealed class PaymentsConsumerTestContext
     public ILogger<SuccessfulPaymentConfirmedHandler> SuccessfulPaymentConfirmedLogger { get; } = Substitute.For<ILogger<SuccessfulPaymentConfirmedHandler>>();
     public ILogger<CreditWalletHandler> CreditWalletLogger { get; } = Substitute.For<ILogger<CreditWalletHandler>>();
     public ILogger<ActivateSubscriptionHandler> ActivateSubscriptionLogger { get; } = Substitute.For<ILogger<ActivateSubscriptionHandler>>();
+    public PaymentTransaction? SeededPayment { get; private set; }
+    public SubscriptionPurchase? SeededPurchase { get; private set; }
+    public SubscriptionAggregate? SeededSubscription { get; private set; }
 
     public SuccessfulPaymentConfirmedHandler CreateSuccessfulPaymentConfirmedHandler() =>
         new(CustomTelemetryContext, CurrentActorAccessor, MessageContext, CommandSender, UnitOfWork, Clock, MessageInboxRepository, SuccessfulPaymentConfirmedLogger);
@@ -120,6 +123,9 @@ internal sealed class PaymentsConsumerTestContext
             payment.Id,
             command.StakeholderId.Value);
 
+        SeededPayment = payment;
+        SeededPurchase = purchase;
+        SeededSubscription = subscription;
         PaymentTransactionRepository.GetByIdAsync(command.PaymentTransactionId, Arg.Any<CancellationToken>()).Returns(payment);
         SubscriptionPurchaseRepository.FirstOrDefaultAsync(
                 Arg.Any<ISpecification<SubscriptionPurchase>>(),

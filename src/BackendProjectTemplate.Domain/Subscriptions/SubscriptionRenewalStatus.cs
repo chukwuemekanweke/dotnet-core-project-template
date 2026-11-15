@@ -9,5 +9,6 @@ public enum SubscriptionRenewalStatus
     RetryScheduled = 5,
     Fulfilled = 6,
     Exhausted = 7,
-    Cancelled = 8
+    Cancelled = 8,
+    FulfillmentBlocked = 9
 }

@@ -47,6 +47,16 @@ public sealed class SubscriptionPurchase : Entity, IAggregateRoot
     public Guid InitiatedByStakeholderId { get; private set; }
     public DateTimeOffset? FulfilledAtUtc { get; private set; }
 
+    /// <summary>
+    /// Set when a verified payment could not be fulfilled (for example because the BillingAccount already
+    /// holds a conflicting entitlement). The payment record is preserved and the purchase stays unfulfilled
+    /// until an administrator resolves the conflict and retries fulfillment, or refunds outside this domain.
+    /// </summary>
+    public DateTimeOffset? FulfillmentBlockedAtUtc { get; private set; }
+    public string? FulfillmentBlockedReason { get; private set; }
+
+    public bool IsFulfillmentBlocked => FulfillmentBlockedAtUtc.HasValue && !FulfilledAtUtc.HasValue;
+
     public static SubscriptionPurchase Create(
         Guid tenantId,
         Guid billingAccountId,
@@ -75,6 +85,22 @@ public sealed class SubscriptionPurchase : Entity, IAggregateRoot
 
         FulfilledAtUtc = fulfilledAtUtc;
         return true;
+    }
+
+    public void MarkFulfillmentBlocked(string reason, DateTimeOffset blockedAtUtc)
+    {
+        if (FulfilledAtUtc.HasValue)
+        {
+            throw new AggregateStateException($"Purchase '{Id}' is already fulfilled.");
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("A fulfillment block reason is required.", nameof(reason));
+        }
+
+        FulfillmentBlockedAtUtc = blockedAtUtc;
+        FulfillmentBlockedReason = reason.Trim();
     }
 
     public void ValidatePayment(Guid tenantId, decimal amount, Guid currencyId)

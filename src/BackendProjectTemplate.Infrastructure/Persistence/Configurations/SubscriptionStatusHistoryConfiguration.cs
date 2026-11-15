@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -14,7 +15,7 @@ public sealed class SubscriptionStatusHistoryConfiguration : IEntityTypeConfigur
             SchemaNames.Payments,
             tableBuilder =>
             {
-                const string validStatuses = "1, 2, 3, 4";
+                var validStatuses = string.Join(", ", Enum.GetValues<SubscriptionStatus>().Select(status => (int)status));
                 tableBuilder.HasCheckConstraint("CK_SubscriptionStatusHistory_NewStatus", $"\"NewStatus\" IN ({validStatuses})");
                 tableBuilder.HasCheckConstraint(
                     "CK_SubscriptionStatusHistory_PreviousStatus",
@@ -23,6 +24,7 @@ public sealed class SubscriptionStatusHistoryConfiguration : IEntityTypeConfigur
         builder.HasKey(history => history.Id);
         builder.Property(history => history.Reason).HasMaxLength(SubscriptionStatusHistory.MaxReasonLength).IsRequired();
         builder.Property(history => history.ActorId).HasMaxLength(SubscriptionStatusHistory.MaxActorIdLength);
+        builder.Property(history => history.Details).HasMaxLength(SubscriptionStatusHistory.MaxDetailsLength);
         builder.HasIndex(history => new { history.SubscriptionId, history.OccurredAtUtc });
         builder.HasIndex(history => new { history.SubscriptionId, history.OperationId }).IsUnique();
         builder.HasOne<PaymentTransaction>()

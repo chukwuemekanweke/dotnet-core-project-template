@@ -18,7 +18,11 @@ public sealed class SubscriptionConfiguration : IEntityTypeConfiguration<Subscri
             {
                 tableBuilder.HasCheckConstraint(
                     "CK_Subscriptions_Status",
-                    $"\"Status\" IN ({(int)SubscriptionStatus.Pending}, {(int)SubscriptionStatus.Active}, {(int)SubscriptionStatus.Cancelled}, {(int)SubscriptionStatus.Expired})");
+                    $"\"Status\" IN ({(int)SubscriptionStatus.Pending}, {(int)SubscriptionStatus.Active}, {(int)SubscriptionStatus.Cancelled}, {(int)SubscriptionStatus.Expired}, {(int)SubscriptionStatus.Scheduled})");
+                tableBuilder.HasCheckConstraint(
+                    "CK_Subscriptions_EntitlementWindow",
+                    $"(\"Status\" NOT IN ({(int)SubscriptionStatus.Active}, {(int)SubscriptionStatus.Scheduled}) OR \"EntitlementStartUtc\" IS NOT NULL) "
+                    + "AND (\"EntitlementStartUtc\" IS NULL OR \"EntitlementEndUtc\" IS NULL OR \"EntitlementEndUtc\" >= \"EntitlementStartUtc\")");
                 tableBuilder.HasCheckConstraint(
                     "CK_Subscriptions_CurrentPeriod",
                     "\"CurrentPeriodStartUtc\" IS NULL OR \"CurrentPeriodEndUtc\" > \"CurrentPeriodStartUtc\"");
@@ -30,9 +34,12 @@ public sealed class SubscriptionConfiguration : IEntityTypeConfiguration<Subscri
         builder.Property(subscription => subscription.BillingAccountId).IsRequired();
         builder.Property(subscription => subscription.PlanId).IsRequired();
         builder.Property(subscription => subscription.Status).IsRequired();
+        builder.Property(subscription => subscription.CancellationReason).HasMaxLength(Subscription.MaxCancellationReasonLength);
         builder.Property(subscription => subscription.RowVersion).IsRowVersion();
         builder.HasIndex(subscription => new { subscription.TenantId, subscription.BillingAccountId, subscription.Status });
         builder.HasIndex(subscription => new { subscription.Status, subscription.NextBillingAtUtc });
+        builder.HasIndex(subscription => new { subscription.CreatedAtUtc, subscription.Id });
+        builder.HasIndex(subscription => subscription.PlanId);
         builder.HasOne<Tenant>().WithMany().HasForeignKey(subscription => subscription.TenantId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<BillingAccount>()
             .WithMany()

@@ -38,6 +38,6 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should
             Arg.Is<RenewSubscriptionCommand>(renewal => renewal.SubscriptionId == capturedActivation.SubscriptionId),
             Arg.Any<DateTimeOffset>(),
             Arg.Any<CancellationToken>());
-        await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.UnitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

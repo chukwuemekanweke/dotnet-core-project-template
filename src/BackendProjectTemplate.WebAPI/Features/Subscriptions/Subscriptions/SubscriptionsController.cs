@@ -5,6 +5,7 @@ using BackendProjectTemplate.Application.Subscriptions.Features.PurchaseSubscrip
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Payments;
+using BackendProjectTemplate.Domain.Subscriptions.Exceptions;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,7 @@ public sealed class SubscriptionsController(
     [ProducesResponseType<PurchaseSubscriptionResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<PurchaseSubscriptionResponse>> Purchase(
         [FromBody] PurchaseSubscriptionRequest request,
         CancellationToken cancellationToken)
@@ -38,14 +40,23 @@ public sealed class SubscriptionsController(
         }
 
         _ = Enum.TryParse<BillingAccountOwnerType>(request.BillingAccountOwnerType, true, out var ownerType);
-        var result = await purchaseHandler.HandleAsync(
-            new PurchaseSubscriptionCommand(
-                request.PlanId,
-                request.PaymentProviderId,
-                ownerType,
-                request.AutoRenew,
-                ActorContext.FromCurrentActor(currentActor)),
-            cancellationToken);
+        PurchaseSubscriptionResult result;
+        try
+        {
+            result = await purchaseHandler.HandleAsync(
+                new PurchaseSubscriptionCommand(
+                    request.PlanId,
+                    request.PaymentProviderId,
+                    ownerType,
+                    request.AutoRenew,
+                    ActorContext.FromCurrentActor(currentActor)),
+                cancellationToken);
+        }
+        catch (SubscriptionEntitlementConflictException exception)
+        {
+            return Problem(exception.Message, statusCode: StatusCodes.Status409Conflict);
+        }
+
         return Ok(new PurchaseSubscriptionResponse(
             result.SubscriptionId,
             result.PurchaseId,

@@ -25,6 +25,7 @@ public static class ApplicationPermissions
         public const string Read = "subscriptions.read";
         public const string Manage = "subscriptions.manage";
         public const string Allocate = "subscriptions.allocate";
+        public const string ManagePlans = "subscriptions.plans.manage";
     }
 
     public static class Providers
@@ -43,6 +44,7 @@ public static class ApplicationPermissions
         Subscriptions.Read,
         Subscriptions.Manage,
         Subscriptions.Allocate,
+        Subscriptions.ManagePlans,
         Providers.Manage
     };
 }

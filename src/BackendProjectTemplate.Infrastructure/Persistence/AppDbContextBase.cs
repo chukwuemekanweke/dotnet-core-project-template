@@ -47,6 +47,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<SubscriptionPeriod> SubscriptionPeriods => Set<SubscriptionPeriod>();
     public DbSet<SubscriptionStatusHistory> SubscriptionStatusHistory => Set<SubscriptionStatusHistory>();
     public DbSet<SubscriptionPurchase> SubscriptionPurchases => Set<SubscriptionPurchase>();
+    public DbSet<SubscriptionAllocation> SubscriptionAllocations => Set<SubscriptionAllocation>();
     public DbSet<SubscriptionRenewal> SubscriptionRenewals => Set<SubscriptionRenewal>();
     public DbSet<SubscriptionRenewalAttempt> SubscriptionRenewalAttempts => Set<SubscriptionRenewalAttempt>();
     public DbSet<RecurringPaymentAuthorization> RecurringPaymentAuthorizations => Set<RecurringPaymentAuthorization>();
@@ -67,6 +68,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresExtension("btree_gist");
 
         modelBuilder.Entity<IdentityRole<Guid>>().ToTable("Roles", SchemaNames.Authentication);
         modelBuilder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims", SchemaNames.Authentication);

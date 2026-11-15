@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.Application.Subscriptions.Features.ListAdminSubscriptionPlans;
+
+public sealed record ListAdminSubscriptionPlansCommand(bool? IsActive);

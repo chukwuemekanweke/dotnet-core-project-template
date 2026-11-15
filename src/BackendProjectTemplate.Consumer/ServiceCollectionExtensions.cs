@@ -88,6 +88,7 @@ public static class ServiceCollectionExtensions
                 .AddHandler<ReconcileSubscriptionRenewalCommand, ReconcileSubscriptionRenewalHandler>()
                 .AddHandler<SendSubscriptionRenewalReminderCommand, SendSubscriptionRenewalReminderHandler>()
                 .AddHandler<ExpireSubscriptionCommand, ExpireSubscriptionHandler>()
+                .AddHandler<ActivateAllocatedSubscriptionCommand, ActivateAllocatedSubscriptionHandler>()
                 .AddHandler<DeleteQuarantinedObject, DeleteQuarantinedObjectHandler>())
             .AddHostedService(serviceProvider => new Worker(
                 serviceProvider.GetRequiredKeyedService<ISubscriber>(subscriberConfig.Key),

@@ -10,7 +10,7 @@ public sealed class When_InspectingApplicationAuthorizationCatalog_Should
         ApplicationRoles.All.Count.ShouldBe(4);
         ApplicationRoles.All.Distinct(StringComparer.Ordinal).Count().ShouldBe(ApplicationRoles.All.Count);
         ApplicationRoles.All.Select(ApplicationRoles.GetId).Distinct().Count().ShouldBe(ApplicationRoles.All.Count);
-        ApplicationPermissions.All.Count.ShouldBe(10);
+        ApplicationPermissions.All.Count.ShouldBe(11);
 
         foreach (var role in ApplicationRoles.All)
         {

@@ -8,4 +8,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 {
     public async Task<IUnitOfWorkTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
         new EfUnitOfWorkTransaction(await Database.BeginTransactionAsync(cancellationToken));
+
+    public void DiscardChanges() => ChangeTracker.Clear();
 }

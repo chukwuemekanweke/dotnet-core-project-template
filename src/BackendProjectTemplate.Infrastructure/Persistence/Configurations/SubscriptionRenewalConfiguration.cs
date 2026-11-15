@@ -14,6 +14,7 @@ public sealed class SubscriptionRenewalConfiguration : IEntityTypeConfiguration<
         builder.HasKey(renewal => renewal.Id);
         builder.Property(renewal => renewal.ExpectedPrice).HasPrecision(18, 0).IsRequired();
         builder.Property(renewal => renewal.RowVersion).IsRowVersion();
+        builder.Ignore(renewal => renewal.IsOpenForCancellation);
         builder.HasIndex(renewal => new { renewal.SubscriptionId, renewal.TargetPeriodStartUtc }).IsUnique();
         builder.HasIndex(renewal => new { renewal.Status, renewal.NextRetryAtUtc });
         builder.HasOne<Subscription>().WithMany().HasForeignKey(renewal => renewal.SubscriptionId).OnDelete(DeleteBehavior.Restrict);
