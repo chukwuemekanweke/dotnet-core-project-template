@@ -1,6 +1,8 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Authorization;
+using BackendProjectTemplate.WebAPI.Infrastructure.StepUpMfa;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +15,7 @@ namespace BackendProjectTemplate.WebAPI.Features.Payments.Providers;
 public sealed class PaymentProvidersController(ActivatePaymentProviderHandler handler) : ControllerBase
 {
     [HttpPut("{id:guid}/activation")]
+    [RequireStepUpMfa(StepUpMfaOperations.SetPaymentProviderActivation)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

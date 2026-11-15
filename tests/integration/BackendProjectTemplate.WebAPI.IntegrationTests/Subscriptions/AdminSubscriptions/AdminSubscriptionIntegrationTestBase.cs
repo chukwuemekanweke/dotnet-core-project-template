@@ -114,6 +114,10 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var payload = await response.Content.ReadFromJsonAsync<SignInResponse>();
         Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", payload!.AccessToken);
+        using var scope = CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var user = await userManager.FindByIdAsync(AdminUserId.ToString());
+        (await userManager.SetTwoFactorEnabledAsync(user!, true)).Succeeded.ShouldBeTrue();
     }
 
     protected async Task GrantRoleAsync(string role)

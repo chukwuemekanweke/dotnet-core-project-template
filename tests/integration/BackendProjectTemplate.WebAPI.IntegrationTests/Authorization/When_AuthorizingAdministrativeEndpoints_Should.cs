@@ -16,6 +16,7 @@ using Shouldly;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Authorization;
 
@@ -94,6 +95,48 @@ public sealed class When_AuthorizingAdministrativeEndpoints_Should(ContainersFix
 
         (await ActivateProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await ActivatePaymentProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task RequireEnrollmentAndThenAFreshProofForPrivilegedMutations()
+    {
+        await AuthenticateAsync();
+        using (var scope = CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var user = await userManager.FindByIdAsync(_user.Id.ToString());
+            user.ShouldNotBeNull();
+            (await userManager.AddToRoleAsync(user, ApplicationRoles.Administrator)).Succeeded.ShouldBeTrue();
+        }
+
+        using var rawClient = CreateRawClient();
+        rawClient.DefaultRequestHeaders.Add("X-Tenant-Id", Client.DefaultRequestHeaders.GetValues("X-Tenant-Id").Single());
+        rawClient.DefaultRequestHeaders.Authorization = Client.DefaultRequestHeaders.Authorization;
+        using var enrollmentRequired = await rawClient.PutAsJsonAsync(
+            $"{EndpointUrl.Providers.V1}/active",
+            new ActivateProviderRequest("Email", $"missing-{Guid.CreateVersion7():N}"));
+        enrollmentRequired.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        using (var problem = JsonDocument.Parse(await enrollmentRequired.Content.ReadAsStringAsync()))
+        {
+            problem.RootElement.GetProperty("code").GetString().ShouldBe("mfa_enrollment_required");
+        }
+
+        using (var scope = CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var user = await userManager.FindByIdAsync(_user.Id.ToString());
+            user.ShouldNotBeNull();
+            (await userManager.SetTwoFactorEnabledAsync(user, true)).Succeeded.ShouldBeTrue();
+        }
+
+        using var proofRequired = await rawClient.PutAsJsonAsync(
+            $"{EndpointUrl.Providers.V1}/active",
+            new ActivateProviderRequest("Email", $"missing-{Guid.CreateVersion7():N}"));
+        proofRequired.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        using (var problem = JsonDocument.Parse(await proofRequired.Content.ReadAsStringAsync()))
+        {
+            problem.RootElement.GetProperty("code").GetString().ShouldBe("mfa_verification_required");
+        }
     }
 
     private async Task AssertRoleAsync(

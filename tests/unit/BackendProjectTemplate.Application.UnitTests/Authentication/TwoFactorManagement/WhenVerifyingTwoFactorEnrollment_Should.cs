@@ -26,6 +26,7 @@ public sealed class WhenVerifyingTwoFactorEnrollment_Should
                 Guid.CreateVersion7(), Guid.CreateVersion7(), "Jane", "Doe", null, true));
         context.IdentityService.FindByIdAsync(user.Id).Returns(user);
         context.IdentityService.VerifyAuthenticatorTokenAsync(user, "123456").Returns(true);
+        context.IdentityService.UpdateSecurityStampAsync(user).Returns(IdentityResult.Success);
         context.IdentityService.SetTwoFactorEnabledAsync(user, true).Returns(IdentityResult.Success);
         context.IdentityService.GenerateNewTwoFactorRecoveryCodesAsync(user, 10)
             .Returns(["recovery-one", "recovery-two"]);
@@ -44,7 +45,7 @@ public sealed class WhenVerifyingTwoFactorEnrollment_Should
         result.RecoveryCodes.ShouldBe(["recovery-one", "recovery-two"]);
         await context.SessionService.Received(1)
             .RevokeOthersAsync(sessionId, stakeholderId, Arg.Any<CancellationToken>());
-        await context.IdentityService.DidNotReceiveWithAnyArgs().UpdateSecurityStampAsync(default!);
+        await context.IdentityService.Received(1).UpdateSecurityStampAsync(user);
     }
 
     [Fact]

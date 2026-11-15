@@ -7,10 +7,12 @@ using BackendProjectTemplate.Application.Subscriptions.Features.GetSubscriptionD
 using BackendProjectTemplate.Application.Subscriptions.Features.ListSubscriptions;
 using BackendProjectTemplate.Application.Subscriptions.Features.RetrySubscriptionPurchaseFulfillment;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Authorization;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.WebAPI.Infrastructure;
+using BackendProjectTemplate.WebAPI.Infrastructure.StepUpMfa;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -98,6 +100,7 @@ public sealed class AdminSubscriptionsController(
 
     [HttpPost("allocations")]
     [Authorize(Policy = PermissionPolicyNames.SubscriptionsAllocate)]
+    [RequireStepUpMfa(StepUpMfaOperations.AllocateSubscription)]
     [ProducesResponseType<AllocateSubscriptionResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<AllocateSubscriptionResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -148,6 +151,7 @@ public sealed class AdminSubscriptionsController(
 
     [HttpPost("{id:guid}/immediate-cancellation")]
     [Authorize(Policy = PermissionPolicyNames.SubscriptionsManage)]
+    [RequireStepUpMfa(StepUpMfaOperations.CancelSubscriptionImmediately)]
     [ProducesResponseType<AdminSubscriptionLifecycleResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -178,6 +182,7 @@ public sealed class AdminSubscriptionsController(
 
     [HttpPost("{id:guid}/cancellation-at-period-end")]
     [Authorize(Policy = PermissionPolicyNames.SubscriptionsManage)]
+    [RequireStepUpMfa(StepUpMfaOperations.CancelSubscriptionAtPeriodEnd)]
     [ProducesResponseType<AdminSubscriptionLifecycleResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -209,6 +214,7 @@ public sealed class AdminSubscriptionsController(
 
     [HttpPost("{id:guid}/purchase-fulfillment-retries")]
     [Authorize(Policy = PermissionPolicyNames.SubscriptionsManage)]
+    [RequireStepUpMfa(StepUpMfaOperations.RetrySubscriptionPurchaseFulfillment)]
     [ProducesResponseType<RetrySubscriptionPurchaseFulfillmentResult>(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

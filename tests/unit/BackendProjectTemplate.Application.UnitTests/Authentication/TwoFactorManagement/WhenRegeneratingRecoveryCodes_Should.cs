@@ -27,6 +27,7 @@ public sealed class WhenRegeneratingRecoveryCodes_Should
         context.IdentityService.FindByIdAsync(user.Id).Returns(user);
         context.IdentityService.GetTwoFactorEnabledAsync(user).Returns(true);
         context.IdentityService.VerifyAuthenticatorTokenAsync(user, "123456").Returns(true);
+        context.IdentityService.UpdateSecurityStampAsync(user).Returns(IdentityResult.Success);
         context.IdentityService.GenerateNewTwoFactorRecoveryCodesAsync(user, 10)
             .Returns(["new-code-one", "new-code-two"]);
         var handler = new RegenerateTwoFactorRecoveryCodesHandler(
@@ -45,7 +46,7 @@ public sealed class WhenRegeneratingRecoveryCodes_Should
 
         result.Status.ShouldBe(RegenerateTwoFactorRecoveryCodesStatus.Success);
         result.RecoveryCodes.ShouldBe(["new-code-one", "new-code-two"]);
-        await context.IdentityService.DidNotReceiveWithAnyArgs().UpdateSecurityStampAsync(default!);
+        await context.IdentityService.Received(1).UpdateSecurityStampAsync(user);
         await context.SessionService.Received(1)
             .RevokeOthersAsync(sessionId, stakeholderId, Arg.Any<CancellationToken>());
     }
@@ -66,6 +67,7 @@ public sealed class WhenRegeneratingRecoveryCodes_Should
         context.IdentityService.GetTwoFactorEnabledAsync(user).Returns(true);
         context.IdentityService.RedeemTwoFactorRecoveryCodeAsync(user, "ABCDE-FGHIJ")
             .Returns(IdentityResult.Success);
+        context.IdentityService.UpdateSecurityStampAsync(user).Returns(IdentityResult.Success);
         context.IdentityService.GenerateNewTwoFactorRecoveryCodesAsync(user, 10)
             .Returns(["new-code-one", "new-code-two"]);
         var handler = new RegenerateTwoFactorRecoveryCodesHandler(

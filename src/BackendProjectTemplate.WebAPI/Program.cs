@@ -12,6 +12,7 @@ using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
+using BackendProjectTemplate.WebAPI.Infrastructure.StepUpMfa;
 using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
 
@@ -53,6 +54,8 @@ builder.Services
         options.SubstituteApiVersionInUrl = true;
     });
 builder.Services.AddProblemDetails();
+builder.Services.AddSingleton<StepUpMfaOperationRegistry>();
+builder.Services.AddSingleton<StepUpMfaRequestCanonicalizer>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();
 builder.Services.AddApiDocumentation();

@@ -25,6 +25,8 @@ public sealed class DisableTwoFactorHandler(
         if (!await proofVerifier.VerifyAsync(actor.User, command.VerificationMethod, command.Code))
             return DisableTwoFactorResult.InvalidProof;
 
+        if (!(await identityService.UpdateSecurityStampAsync(actor.User)).Succeeded)
+            return DisableTwoFactorResult.Failed;
         if (!(await identityService.SetTwoFactorEnabledAsync(actor.User, false)).Succeeded)
             return DisableTwoFactorResult.Failed;
         if (!(await identityService.ResetAuthenticatorKeyAsync(actor.User)).Succeeded)

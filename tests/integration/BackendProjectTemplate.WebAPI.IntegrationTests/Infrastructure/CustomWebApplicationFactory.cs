@@ -19,6 +19,20 @@ public sealed class CustomWebApplicationFactory(
 {
     public FakeGoogleIdentityTokenService GoogleIdentityTokenService { get; } = new();
 
+    public HttpClient CreateStepUpAwareClient()
+    {
+        var handler = new StepUpMfaTestAuthorizationHandler(Services)
+        {
+            InnerHandler = Server.CreateHandler()
+        };
+        return new HttpClient(handler) { BaseAddress = new Uri("http://localhost") };
+    }
+
+    public HttpClient CreateRawClient() => CreateClient(new WebApplicationFactoryClientOptions
+    {
+        AllowAutoRedirect = false
+    });
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("IntegrationTests");

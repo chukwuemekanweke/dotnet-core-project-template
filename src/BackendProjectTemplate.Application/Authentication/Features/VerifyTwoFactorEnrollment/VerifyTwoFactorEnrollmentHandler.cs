@@ -26,6 +26,8 @@ public sealed class VerifyTwoFactorEnrollmentHandler(
         if (!await identityService.VerifyAuthenticatorTokenAsync(actor.User, command.Code))
             return new VerifyTwoFactorEnrollmentResult(VerifyTwoFactorEnrollmentStatus.InvalidCode);
 
+        if (!(await identityService.UpdateSecurityStampAsync(actor.User)).Succeeded)
+            return new VerifyTwoFactorEnrollmentResult(VerifyTwoFactorEnrollmentStatus.Failed);
         var enabled = await identityService.SetTwoFactorEnabledAsync(actor.User, true);
         if (!enabled.Succeeded)
             return new VerifyTwoFactorEnrollmentResult(VerifyTwoFactorEnrollmentStatus.Failed);

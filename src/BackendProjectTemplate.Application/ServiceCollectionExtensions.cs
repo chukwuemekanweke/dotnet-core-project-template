@@ -29,6 +29,7 @@ using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Authentication.Features.SignUp;
 using BackendProjectTemplate.Application.Authentication.Features.SignUpOtp;
 using BackendProjectTemplate.Application.Authentication.Features.StartGoogleAuthenticationFlow;
+using BackendProjectTemplate.Application.Authentication.Features.VerifyStepUpMfa;
 using BackendProjectTemplate.Application.Authentication.Features.VerifyTwoFactorEnrollment;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Application.Common.FileUploads;
@@ -107,6 +108,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SignInHandler>();
         services.AddScoped<SetupTwoFactorHandler>();
         services.AddScoped<VerifyTwoFactorEnrollmentHandler>();
+        services.AddScoped<VerifyStepUpMfaHandler>();
         services.AddScoped<DisableTwoFactorHandler>();
         services.AddScoped<RequestEmailConfirmationOtpHandler>();
         services.AddScoped<RequestPasswordResetHandler>();
