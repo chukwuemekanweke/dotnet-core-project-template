@@ -28,7 +28,7 @@ public sealed class SubscriptionPlanConfiguration : IEntityTypeConfiguration<Sub
         builder.Property(plan => plan.CurrencyId).IsRequired();
         builder.Property(plan => plan.BillingInterval).IsRequired();
         builder.Property(plan => plan.IsActive).IsRequired();
-        builder.HasIndex(plan => plan.Code).IsUnique();
+        builder.HasIndex(plan => plan.Code).IsUnique().HasDatabaseName(SubscriptionPersistenceConstraints.PlanCodeUniqueIndexName);
         builder.HasIndex(plan => plan.IsActive);
         builder.HasOne<Currency>().WithMany().HasForeignKey(plan => plan.CurrencyId).OnDelete(DeleteBehavior.Restrict);
     }

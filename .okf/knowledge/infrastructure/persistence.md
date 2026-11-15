@@ -28,6 +28,11 @@ status: stable
   `EfRepository`/`EfReadRepository` implementations. Do not query `DbContext` directly from Application — go through a repository or read-model repository.
 - Cross-cutting persistence behavior (audit fields, soft delete, observability spans around commands) is implemented via `SaveChangesInterceptor`s (`AuditAndSoftDeleteInterceptor`,
   `ObservabilityCommandInterceptor`), not by repeating that logic in each handler.
+- Database-enforced domain invariants surface to Application/Consumer code as domain exceptions through a
+  write-context `SaveChangesInterceptor` (e.g. `SubscriptionConflictTranslationInterceptor` for named
+  exclusion/unique constraints and aggregate row-version conflicts), so Application never references EF
+  Core or Npgsql. Constraints EF cannot model (exclusion constraints) are added with `migrationBuilder.Sql`
+  in the migration; required extensions are declared with `HasPostgresExtension` so the snapshot tracks them.
 - `CurrentActorAccessor` resolves the acting stakeholder for audit fields; use it instead of re-deriving the actor from `HttpContext` in Infrastructure/Application code.
 - Read-only, denormalized query paths (e.g. `StakeholderReadModelRepository`, `WalletTransactionReadModelRepository`) go through `AppReadDbContext`, not the write context.
 

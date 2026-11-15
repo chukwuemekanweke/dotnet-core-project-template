@@ -142,6 +142,23 @@ public sealed class SubscriptionRenewal : Entity, IAggregateRoot
         return true;
     }
 
+    /// <summary>
+    /// A renewal charge succeeded but the subscription can no longer be extended (for example it was
+    /// cancelled immediately while the charge was in flight). The collected payment remains recorded and the
+    /// renewal is flagged for financial reconciliation instead of silently extending entitlement.
+    /// </summary>
+    public void MarkFulfillmentBlocked(DateTimeOffset completedAtUtc)
+    {
+        Status = SubscriptionRenewalStatus.FulfillmentBlocked;
+        CompletedAtUtc = completedAtUtc;
+        NextRetryAtUtc = null;
+    }
+
+    public bool IsOpenForCancellation =>
+        Status is SubscriptionRenewalStatus.Pending or
+            SubscriptionRenewalStatus.AwaitingAuthorization or
+            SubscriptionRenewalStatus.RetryScheduled;
+
     public void MarkCancelled(DateTimeOffset completedAtUtc)
     {
         Status = SubscriptionRenewalStatus.Cancelled;

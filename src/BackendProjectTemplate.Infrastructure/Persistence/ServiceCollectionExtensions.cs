@@ -6,6 +6,7 @@ using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using BackendProjectTemplate.Domain.Subscriptions;
+using BackendProjectTemplate.Domain.Subscriptions.ReadModels;
 using BackendProjectTemplate.Infrastructure.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,12 +22,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICurrentActor>(serviceProvider => serviceProvider.GetRequiredService<ICurrentActorAccessor>());
         services.AddScoped<AuditAndSoftDeleteInterceptor>();
         services.AddScoped<ObservabilityCommandInterceptor>();
+        services.AddSingleton<SubscriptionConflictTranslationInterceptor>();
 
         services.AddDbContext<AppDbContext>((serviceProvider, options) =>
             options.UseNpgsql(GetRequiredConnectionString(configuration, "PostgresWrite"))
                 .AddInterceptors(
                     serviceProvider.GetRequiredService<AuditAndSoftDeleteInterceptor>(),
-                    serviceProvider.GetRequiredService<ObservabilityCommandInterceptor>()));
+                    serviceProvider.GetRequiredService<ObservabilityCommandInterceptor>(),
+                    serviceProvider.GetRequiredService<SubscriptionConflictTranslationInterceptor>()));
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IAppUserRepository, AppUserRepository>();
@@ -50,6 +53,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWalletTransactionReadModelRepository, WalletTransactionReadModelRepository>();
         services.AddScoped<ILoginActivityReadModelRepository, LoginActivityReadModelRepository>();
         services.AddScoped<IActiveSessionReadModelRepository, ActiveSessionReadModelRepository>();
+        services.AddScoped<ISubscriptionAdministrationReadModelRepository, SubscriptionAdministrationReadModelRepository>();
 
         return services;
     }

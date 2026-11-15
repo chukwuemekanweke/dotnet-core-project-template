@@ -25,6 +25,8 @@ public sealed class SubscriptionPurchaseConfiguration : IEntityTypeConfiguration
         builder.HasKey(purchase => purchase.Id);
         builder.Property(purchase => purchase.PlanCode).HasMaxLength(SubscriptionPurchase.MaxPlanCodeLength).IsRequired();
         builder.Property(purchase => purchase.ExpectedAmount).HasPrecision(18, 0).IsRequired();
+        builder.Property(purchase => purchase.FulfillmentBlockedReason).HasMaxLength(100);
+        builder.Ignore(purchase => purchase.IsFulfillmentBlocked);
         builder.HasIndex(purchase => purchase.PaymentTransactionId).IsUnique();
         builder.HasIndex(purchase => purchase.SubscriptionId).IsUnique();
         builder.HasIndex(purchase => new { purchase.TenantId, purchase.BillingAccountId });

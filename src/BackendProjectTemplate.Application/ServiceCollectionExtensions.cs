@@ -50,10 +50,20 @@ using BackendProjectTemplate.Application.Stakeholders.Features.GetPreferences;
 using BackendProjectTemplate.Application.Stakeholders.Features.GetProfile;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdatePreferences;
 using BackendProjectTemplate.Application.Stakeholders.Features.UpdateProfile;
+using BackendProjectTemplate.Application.Subscriptions.Features.AdministrativelyCancelSubscriptionAtPeriodEnd;
+using BackendProjectTemplate.Application.Subscriptions.Features.AllocateSubscription;
 using BackendProjectTemplate.Application.Subscriptions.Features.CancelSubscriptionAtPeriodEnd;
+using BackendProjectTemplate.Application.Subscriptions.Features.CancelSubscriptionImmediately;
+using BackendProjectTemplate.Application.Subscriptions.Features.CreateSubscriptionPlan;
 using BackendProjectTemplate.Application.Subscriptions.Features.GetCurrentSubscription;
+using BackendProjectTemplate.Application.Subscriptions.Features.GetSubscriptionDetail;
+using BackendProjectTemplate.Application.Subscriptions.Features.ListAdminSubscriptionPlans;
 using BackendProjectTemplate.Application.Subscriptions.Features.ListSubscriptionPlans;
+using BackendProjectTemplate.Application.Subscriptions.Features.ListSubscriptions;
 using BackendProjectTemplate.Application.Subscriptions.Features.PurchaseSubscription;
+using BackendProjectTemplate.Application.Subscriptions.Features.RetrySubscriptionPurchaseFulfillment;
+using BackendProjectTemplate.Application.Subscriptions.Features.SetSubscriptionPlanActivation;
+using BackendProjectTemplate.Application.Subscriptions.Features.UpdateSubscriptionPlan;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BackendProjectTemplate.Application;
@@ -124,6 +134,16 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PurchaseSubscriptionHandler>();
         services.AddScoped<GetCurrentSubscriptionHandler>();
         services.AddScoped<CancelSubscriptionAtPeriodEndHandler>();
+        services.AddScoped<AllocateSubscriptionHandler>();
+        services.AddScoped<ListSubscriptionsHandler>();
+        services.AddScoped<GetSubscriptionDetailHandler>();
+        services.AddScoped<CancelSubscriptionImmediatelyHandler>();
+        services.AddScoped<AdministrativelyCancelSubscriptionAtPeriodEndHandler>();
+        services.AddScoped<RetrySubscriptionPurchaseFulfillmentHandler>();
+        services.AddScoped<ListAdminSubscriptionPlansHandler>();
+        services.AddScoped<CreateSubscriptionPlanHandler>();
+        services.AddScoped<UpdateSubscriptionPlanHandler>();
+        services.AddScoped<SetSubscriptionPlanActivationHandler>();
         services.AddScoped<PaymentReconciliationService>();
 
         return services;

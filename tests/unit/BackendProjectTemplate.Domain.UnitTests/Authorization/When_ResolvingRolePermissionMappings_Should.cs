@@ -14,11 +14,15 @@ public sealed class When_ResolvingRolePermissionMappings_Should
         var finance = RolePermissionMappings.ForRole(ApplicationRoles.FinanceOfficer);
         finance.ShouldContain(ApplicationPermissions.Payments.Manage);
         finance.ShouldNotContain(ApplicationPermissions.Users.Manage);
+        finance.ShouldContain(ApplicationPermissions.Subscriptions.Allocate);
+        finance.ShouldNotContain(ApplicationPermissions.Subscriptions.ManagePlans);
+        RolePermissionMappings.ForRole(ApplicationRoles.Administrator).ShouldContain(ApplicationPermissions.Subscriptions.ManagePlans);
 
         var support = RolePermissionMappings.ForRole(ApplicationRoles.SupportAgent);
         support.ShouldContain(ApplicationPermissions.Users.Read);
         support.ShouldNotContain(ApplicationPermissions.Users.Manage);
         support.ShouldNotContain(ApplicationPermissions.Kyc.Manage);
+        support.ShouldNotContain(ApplicationPermissions.Subscriptions.ManagePlans);
 
         var combined = RolePermissionMappings.ForRoles(
             [ApplicationRoles.ComplianceOfficer, ApplicationRoles.FinanceOfficer]);

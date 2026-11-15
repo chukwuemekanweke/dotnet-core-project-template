@@ -9,6 +9,7 @@ using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Specifications;
 using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
+using BackendProjectTemplate.Domain.Subscriptions.Exceptions;
 using BackendProjectTemplate.Domain.Subscriptions.Specifications;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
 using Chidelu.Integration.Messaging.RabbitMQ.Core.Exceptions;
@@ -32,6 +33,9 @@ public sealed class ActivateSubscriptionHandler(
     IRepository<MessageInbox> messageInboxRepository,
     ILogger<ActivateSubscriptionHandler> logger) : BaseMessageHandler<ActivateSubscriptionCommand>(customTelemetryContext, currentActorAccessor, messageContext, messageInboxRepository, unitOfWork, timeProvider, logger)
 {
+    private readonly ILogger<ActivateSubscriptionHandler> _logger = logger;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+
     public ICurrentActorAccessor CurrentActorAccessor { get; } = currentActorAccessor;
 
     protected override async Task HandleAsyncInternal(ActivateSubscriptionCommand message, CancellationToken cancellationToken)
@@ -93,6 +97,32 @@ public sealed class ActivateSubscriptionHandler(
         }
 
         var occurredAtUtc = Clock.GetUtcNow();
+        if (subscription.FindPeriodForPayment(payment.Id) is null)
+        {
+            // A verified payment must never bypass the one-entitlement-per-BillingAccount rule. If it cannot be
+            // fulfilled, keep the financial record, leave the purchase unfulfilled and flag it for an explicit
+            // administrative retry or refund instead of throwing (which would only redeliver forever).
+            if (subscription.Status != SubscriptionStatus.Pending)
+            {
+                BlockPurchase(purchase, subscription, message, SubscriptionFulfillmentBlockReasons.SubscriptionNotPending, occurredAtUtc);
+                return;
+            }
+
+            var (entitlementStartUtc, entitlementEndUtc) = subscription.ProjectPaidEntitlement(purchase, occurredAtUtc);
+            if (await subscriptionRepository.AnyAsync(
+                    new OverlappingEntitlementSpecification(
+                        subscription.TenantId,
+                        subscription.BillingAccountId,
+                        entitlementStartUtc,
+                        entitlementEndUtc,
+                        subscription.Id),
+                    cancellationToken))
+            {
+                BlockPurchase(purchase, subscription, message, SubscriptionFulfillmentBlockReasons.EntitlementConflict, occurredAtUtc);
+                return;
+            }
+        }
+
         var period = subscription.ActivateFromPayment(
             purchase,
             payment.Id,
@@ -124,6 +154,40 @@ public sealed class ActivateSubscriptionHandler(
                 subscription.NextBillingAtUtc.Value,
                 cancellationToken);
         }
+        else if (!subscription.AutoRenew && subscription.CurrentPeriodEndUtc.HasValue)
+        {
+            await commandSender.ScheduleSendAsync(
+                new ExpireSubscriptionCommand(subscription.Id, subscription.CurrentPeriodEndUtc.Value)
+                {
+                    TenantId = subscription.TenantId
+                },
+                subscription.CurrentPeriodEndUtc.Value,
+                cancellationToken);
+        }
+
+        // The application check above cannot see a concurrent, uncommitted grant. PostgreSQL's exclusion
+        // constraint is authoritative: if a competing entitlement wins, discard the activation and persist the
+        // blocked purchase in this same delivery instead of depending on broker redelivery.
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (SubscriptionEntitlementConflictException)
+        {
+            _unitOfWork.DiscardChanges();
+            var blockedPurchase = await purchaseRepository.FirstOrDefaultAsync(
+                new SubscriptionPurchaseByPaymentTransactionSpecification(message.PaymentTransactionId),
+                cancellationToken)
+                ?? throw new CannotProcessMessageNonTransientException(
+                    $"Purchase for payment '{message.PaymentTransactionId}' could not be reloaded after an entitlement conflict.");
+            BlockPurchase(
+                blockedPurchase,
+                subscription,
+                message,
+                SubscriptionFulfillmentBlockReasons.EntitlementConflict,
+                Clock.GetUtcNow());
+            return;
+        }
 
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Payments.SubscriptionActivated,
@@ -137,6 +201,35 @@ public sealed class ActivateSubscriptionHandler(
                 }));
     }
 
+    private void BlockPurchase(
+        SubscriptionPurchase purchase,
+        SubscriptionAggregate subscription,
+        ActivateSubscriptionCommand message,
+        string reason,
+        DateTimeOffset blockedAtUtc)
+    {
+        purchase.MarkFulfillmentBlocked(reason, blockedAtUtc);
+        _logger.LogError(
+            "Payment {PaymentTransactionId} for purchase {PurchaseId} was verified but subscription {SubscriptionId} cannot be activated ({Reason}); the purchase awaits administrative reconciliation.",
+            message.PaymentTransactionId,
+            purchase.Id,
+            subscription.Id,
+            reason);
+        CustomTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Subscriptions.PurchaseFulfillmentBlocked,
+            ObservabilityEventProperties.Create(
+                CurrentActorAccessor,
+                message.StakeholderId,
+                failureReason: reason,
+                additionalProperties: new Dictionary<string, string>
+                {
+                    [Observability.PropertyNames.Subscriptions.SubscriptionId] = subscription.Id.ToString(),
+                    [Observability.PropertyNames.Subscriptions.PurchaseId] = purchase.Id.ToString(),
+                    [Observability.PropertyNames.Subscriptions.BillingAccountId] = subscription.BillingAccountId.ToString(),
+                    [Observability.PropertyNames.Payments.PaymentReference] = message.MerchantReference
+                }));
+    }
+
     private async Task FulfillRenewalAsync(
         PaymentTransaction payment,
         ActivateSubscriptionCommand message,
@@ -147,7 +240,7 @@ public sealed class ActivateSubscriptionHandler(
             cancellationToken)
             ?? throw new CannotProcessMessageNonTransientException(
                 $"No subscription purchase or renewal was found for payment '{payment.Id}'.");
-        if (renewal.Status == SubscriptionRenewalStatus.Fulfilled)
+        if (renewal.Status is SubscriptionRenewalStatus.Fulfilled or SubscriptionRenewalStatus.FulfillmentBlocked)
         {
             return;
         }
@@ -173,6 +266,34 @@ public sealed class ActivateSubscriptionHandler(
         }
 
         var occurredAtUtc = Clock.GetUtcNow();
+        if (subscription.FindPeriodForPayment(payment.Id) is null &&
+            (subscription.Status != SubscriptionStatus.Active || subscription.CurrentPeriodEndUtc != renewal.TargetPeriodStartUtc))
+        {
+            // The charge succeeded but the subscription was cancelled (or otherwise moved on) while it was in
+            // flight. Never resurrect entitlement: record the collected payment against the attempt and flag the
+            // renewal for financial reconciliation.
+            attempt.MarkSucceeded(occurredAtUtc);
+            renewal.MarkFulfillmentBlocked(occurredAtUtc);
+            _logger.LogError(
+                "Renewal {RenewalId} payment {PaymentTransactionId} succeeded but subscription {SubscriptionId} in status {Status} cannot be extended; reconciliation required.",
+                renewal.Id,
+                payment.Id,
+                subscription.Id,
+                subscription.Status);
+            CustomTelemetryContext.AddCustomEvent(
+                Observability.EventNames.Subscriptions.RenewalFulfillmentBlocked,
+                ObservabilityEventProperties.Create(
+                    CurrentActorAccessor,
+                    message.StakeholderId,
+                    failureReason: SubscriptionFulfillmentBlockReasons.SubscriptionNotActive,
+                    additionalProperties: new Dictionary<string, string>
+                    {
+                        [Observability.PropertyNames.Subscriptions.SubscriptionId] = subscription.Id.ToString(),
+                        [Observability.PropertyNames.Subscriptions.RenewalId] = renewal.Id.ToString()
+                    }));
+            return;
+        }
+
         var period = subscription.RenewFromPayment(renewal, payment.Id, occurredAtUtc, renewal.Id);
         var statusHistory = subscription.StatusHistory.Single(history => history.OperationId == renewal.Id);
         await lifecyclePersistence.AddPeriodAsync(period, cancellationToken);

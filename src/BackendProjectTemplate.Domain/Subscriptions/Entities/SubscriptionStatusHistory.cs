@@ -6,6 +6,7 @@ public sealed class SubscriptionStatusHistory : Entity
 {
     public const int MaxReasonLength = 200;
     public const int MaxActorIdLength = 200;
+    public const int MaxDetailsLength = 1000;
 
     private SubscriptionStatusHistory()
     {
@@ -19,7 +20,8 @@ public sealed class SubscriptionStatusHistory : Entity
         DateTimeOffset occurredAtUtc,
         string? actorId,
         Guid operationId,
-        Guid? paymentTransactionId)
+        Guid? paymentTransactionId,
+        string? details = null)
     {
         SubscriptionId = subscriptionId;
         PreviousStatus = previousStatus;
@@ -29,6 +31,7 @@ public sealed class SubscriptionStatusHistory : Entity
         ActorId = string.IsNullOrWhiteSpace(actorId) ? null : actorId.Trim();
         OperationId = operationId;
         PaymentTransactionId = paymentTransactionId;
+        Details = NormalizeDetails(details);
     }
 
     public Guid SubscriptionId { get; private set; }
@@ -39,4 +42,23 @@ public sealed class SubscriptionStatusHistory : Entity
     public string? ActorId { get; private set; }
     public Guid OperationId { get; private set; }
     public Guid? PaymentTransactionId { get; private set; }
+
+    /// <summary>
+    /// Free-text business justification supplied by an administrator for this transition. Lifecycle
+    /// <see cref="Reason"/> remains a stable machine-readable code.
+    /// </summary>
+    public string? Details { get; private set; }
+
+    private static string? NormalizeDetails(string? details)
+    {
+        if (string.IsNullOrWhiteSpace(details))
+        {
+            return null;
+        }
+
+        var normalized = details.Trim();
+        return normalized.Length <= MaxDetailsLength
+            ? normalized
+            : throw new ArgumentException($"Details must not exceed {MaxDetailsLength} characters.", nameof(details));
+    }
 }

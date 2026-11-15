@@ -1,7 +1,7 @@
 ---
 type: domain
 title: Subscriptions Domain
-description: Provider-agnostic subscription plans, BillingAccount ownership, purchase correlation, lifecycle periods, status history, and cancellation semantics
+description: Provider-agnostic subscription plans, BillingAccount ownership, purchase correlation, administrative allocation, the one-entitlement-per-BillingAccount invariant, lifecycle periods, status history, and cancellation semantics
 resource: okf://knowledge/domains/subscriptions
 tags:
     - context
@@ -13,7 +13,7 @@ tags:
 sources:
     - resource: ""
 generated:
-    at: "2026-11-14T00:00:00Z"
+    at: "2026-11-15T00:00:00Z"
     by: agent
 status: stable
 code_refs:
@@ -21,6 +21,9 @@ code_refs:
     - src/BackendProjectTemplate.Application/Subscriptions/**
     - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/Subscription*.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionLifecyclePersistence.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionAdministrationReadModelRepository.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/Interceptors/SubscriptionConflictTranslationInterceptor.cs
+    - src/BackendProjectTemplate.Infrastructure/Migrations/*_ImplementAdminSubscriptionManagement.cs
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/**
     - src/BackendProjectTemplate.Consumer/Payments/ActivateSubscriptionHandler.cs
     - src/BackendProjectTemplate.Consumer/Subscriptions/**
@@ -28,6 +31,9 @@ code_refs:
     - tests/unit/BackendProjectTemplate.Domain.UnitTests/Subscriptions/**
     - tests/unit/BackendProjectTemplate.Application.UnitTests/Subscriptions/**
     - tests/integration/BackendProjectTemplate.Consumer.IntegrationTests/Payments/ActivateSubscription/**
+    - tests/integration/BackendProjectTemplate.Consumer.IntegrationTests/Subscriptions/**
+    - tests/unit/BackendProjectTemplate.Consumer.UnitTests/Subscriptions/**
+    - tests/unit/BackendProjectTemplate.WebAPI.UnitTests/Features/Subscriptions/**
     - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Subscriptions/**
 governance: context
 ---
@@ -88,9 +94,88 @@ and grace expiry remain scheduled state-checked commands. Missing, pending, revo
 wrong-currency or unsupported-provider authorization fails closed as `AwaitingAuthorization`; a paid
 initial subscription remains entitled even if saved-card setup never completes.
 
-Proration, upgrades and downgrades remain outside this domain version.
+Proration, upgrades, downgrades, refunds, ownership transfers and automatic complimentary renewal remain
+outside this domain version.
+
+## One active entitlement per BillingAccount
+
+`Subscription.EntitlementStartUtc`/`EntitlementEndUtc` form a half-open window `[start, end)`; a NULL end
+is open-ended and is used only by paid subscriptions that are still auto-renewing (cancel-at-period-end
+closes it to `CurrentPeriodEndUtc`). Scheduled and Active subscriptions on the same `(TenantId,
+BillingAccountId)` must never overlap, so an entitlement starting exactly at another's end is valid.
+PostgreSQL enforces this with the `EX_Subscriptions_BillingAccountEntitlement` GiST exclusion constraint
+(`btree_gist`, `tstzrange(..., '[)')`, filtered to Active/Scheduled) — the authoritative concurrent-write
+guard. `OverlappingEntitlementSpecification` mirrors it for deterministic application checks.
+`SubscriptionConflictTranslationInterceptor` translates the exclusion violation, the allocation
+idempotency index, plan-code uniqueness and `Subscription` row-version conflicts into domain exceptions.
+Lifecycle boundaries are normalized to microsecond precision (`SubscriptionTimestamps`) because scheduled
+commands compare them by exact equality against `timestamptz` values.
+
+Customer purchase initiation rejects (409) a BillingAccount that already holds a current or scheduled
+entitlement. Entitlement-changing consumers (paid fulfillment, scheduled allocation activation) save their
+own changes inside the handler: when PostgreSQL rejects the write because a concurrent, previously
+uncommitted entitlement won, they call `IUnitOfWork.DiscardChanges()` and persist the compensating outcome
+(blocked purchase, or allocation left Scheduled) in the same delivery, so correctness never depends on
+broker redelivery. The base handler then records the inbox entry in a second save; redelivery remains safe
+because every handler re-checks state. A verified payment that still cannot be fulfilled (conflict, or the subscription is no longer
+Pending) is never activated and never redelivered forever: the payment stays Succeeded, the purchase is
+marked `FulfillmentBlocked*`, and an administrator resolves the conflict then calls the
+purchase-fulfillment retry endpoint, which re-enqueues `ActivateSubscriptionCommand` through the outbox
+(refunds are out of scope). A renewal charge that succeeds after the subscription was cancelled marks the
+renewal `FulfillmentBlocked` instead of extending entitlement. Non-renewing paid activations schedule
+`ExpireSubscriptionCommand` at period end.
+
+## Administrative allocation
+
+`AllocateSubscription` grants a complimentary subscription to a tenant- or stakeholder-owned
+BillingAccount resolved through `IBillingAccountResolver` (which validates that a stakeholder belongs to
+the target tenant and may commit a new account before the allocation transaction; it runs before any
+subscription state is tracked). Allocations always have `AutoRenew = false` (a request with
+`AutoRenew: true` is rejected), carry no `PaymentTransaction`, `SubscriptionPurchase`, payment reference or
+renewal, and record a period whose price is a nominal plan snapshot, not money collected. The allocation
+window defaults to the plan's calendar billing interval from the start; an explicit `EndAtUtc` must be
+later than the start; a start more than five minutes in the past is rejected.
+
+`SubscriptionAllocation` is the immutable audit record (business `AllocationSource`: AdminAllocation,
+Promotion, Migration, Trial — distinct from the technical `SubscriptionActivationSource`), holding the
+reason, the authenticated actor, the window and a plan snapshot. Its `OperationId` is the caller's
+idempotency key (unique) and equals the allocation period's `OperationId`; a duplicate request returns the
+original allocation, including when a concurrent duplicate loses on either database constraint. Replay
+is only accepted when the stored `RequestFingerprint` (SHA-256 of the full canonical request: tenant, owner
+type, stakeholder, plan, requested window as sent, source and trimmed reason, timestamps normalized to
+microseconds) matches; any material difference returns 409 `IdempotencyKeyReused`.
+`SubscriptionStatusHistory.Details` stores administrator-supplied justification beside the stable
+machine-readable `Reason` code.
+
+An allocation starting now is Active immediately and schedules `ExpireSubscriptionCommand` at its end. A
+future allocation is `Scheduled` (reserving its window under the exclusion constraint) and schedules
+`ActivateAllocatedSubscriptionCommand` at its start. The consumer re-reads subscription and allocation,
+requires matching tenant, BillingAccount and window and Scheduled status (otherwise a stale no-op),
+re-schedules early deliveries, activates late deliveries from the agreed start (never extending the
+grant) using the allocation's plan snapshot, lapses a command delivered after the whole window ended
+straight from Scheduled to Expired (`scheduled_allocation_lapsed` history, no period, never Active) — plan deactivation after approval does not block activation —
+and then schedules expiry. All of these commands set `TenantId` to the subscription's tenant, never the
+administrator's.
+
+## Cancellation
+
+Period-end cancellation (customer or administrative) keeps the subscription Active through
+`CurrentPeriodEndUtc`, disables renewal and schedules state-checked expiry; repeated requests are no-ops.
+Immediate administrative cancellation is valid for Active and Scheduled subscriptions: status becomes
+Cancelled, `EndedAtUtc`/`CancelledAtUtc` record the effective termination while `CurrentPeriodEndUtc`
+keeps the originally granted boundary, the entitlement window closes, open (non-charging) renewals are
+cancelled, and periods and payments are retained. Activation, renewal, reminder and expiry consumers all
+re-check state, so stale commands cannot restore entitlement. Neither mode implies a refund.
+
+## Access
 
 User-facing plan listing, purchase, current-subscription lookup and scheduled cancellation require the
-active-session policy and derive tenant/stakeholder identity from the authenticated actor. Static admin
-permissions already include `subscriptions.read`, `subscriptions.manage`, and `subscriptions.allocate`;
-no administrative allocation endpoint is introduced here.
+active-session policy and derive tenant/stakeholder identity from the authenticated actor. Administrative
+endpoints live under `api/v1/admin/subscriptions` and `api/v1/admin/subscription-plans`, target explicit
+tenant/subscription ids, read the acting administrator only from the authenticated actor, and are
+permission-guarded (see [[authorization]]). Listing uses `(CreatedAtUtc, Id)` cursor pagination over
+projections; detail issues a fixed set of bounded queries and keeps financial history (purchase, payments,
+renewals/attempts) separate from entitlement history (periods, status history, allocations). Plans are
+never deleted; code, currency and billing interval are immutable after creation, while name and price may
+change without affecting purchase, period, renewal or allocation snapshots. Deactivating a plan blocks new
+purchases and allocations only.

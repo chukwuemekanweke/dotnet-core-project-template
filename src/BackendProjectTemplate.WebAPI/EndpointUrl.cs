@@ -141,6 +141,25 @@ public static class EndpointUrl
         public static readonly string CurrentCancellationV1 = $"{CurrentV1}/cancellation-at-period-end";
     }
 
+    public static class AdminSubscriptions
+    {
+        public const string Route = $"api/{Versions.V1Route}/admin/subscriptions";
+        public static readonly string V1 = ToV1(Route);
+        public static readonly string AllocationsV1 = $"{V1}/allocations";
+        public static string DetailV1(Guid subscriptionId) => $"{V1}/{subscriptionId}";
+        public static string ImmediateCancellationV1(Guid subscriptionId) => $"{V1}/{subscriptionId}/immediate-cancellation";
+        public static string CancellationAtPeriodEndV1(Guid subscriptionId) => $"{V1}/{subscriptionId}/cancellation-at-period-end";
+        public static string PurchaseFulfillmentRetriesV1(Guid subscriptionId) => $"{V1}/{subscriptionId}/purchase-fulfillment-retries";
+    }
+
+    public static class AdminSubscriptionPlans
+    {
+        public const string Route = $"api/{Versions.V1Route}/admin/subscription-plans";
+        public static readonly string V1 = ToV1(Route);
+        public static string PlanV1(Guid planId) => $"{V1}/{planId}";
+        public static string ActivationV1(Guid planId) => $"{V1}/{planId}/activation";
+    }
+
     public static class PaymentWebhooks
     {
         public static class Bachs

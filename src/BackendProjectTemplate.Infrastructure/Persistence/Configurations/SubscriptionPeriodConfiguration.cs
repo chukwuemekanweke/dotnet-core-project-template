@@ -22,7 +22,7 @@ public sealed class SubscriptionPeriodConfiguration : IEntityTypeConfiguration<S
                     $"\"BillingInterval\" IN ({(int)BillingInterval.Monthly}, {(int)BillingInterval.Yearly})");
                 tableBuilder.HasCheckConstraint(
                     "CK_SubscriptionPeriods_ActivationSource",
-                    $"\"ActivationSource\" IN ({(int)SubscriptionActivationSource.PaidPurchase}, {(int)SubscriptionActivationSource.AdministrativeAllocation})");
+                    $"\"ActivationSource\" IN ({(int)SubscriptionActivationSource.PaidPurchase}, {(int)SubscriptionActivationSource.AdministrativeAllocation}, {(int)SubscriptionActivationSource.PaidRenewal})");
             });
 
         builder.HasKey(period => period.Id);

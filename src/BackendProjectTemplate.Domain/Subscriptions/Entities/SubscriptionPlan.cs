@@ -48,16 +48,31 @@ public sealed class SubscriptionPlan : Entity, IAggregateRoot
         new(code, name, price, currencyId, billingInterval, isActive);
 
     public DateTimeOffset CalculatePeriodEnd(DateTimeOffset periodStartUtc) =>
-        BillingInterval switch
-        {
-            BillingInterval.Monthly => periodStartUtc.AddMonths(1),
-            BillingInterval.Yearly => periodStartUtc.AddYears(1),
-            _ => throw new InvalidOperationException($"Unsupported billing interval '{BillingInterval}'.")
-        };
+        BillingIntervals.CalculatePeriodEnd(BillingInterval, periodStartUtc);
 
     public void SetActive(bool isActive) => IsActive = isActive;
 
     public void ChangePrice(decimal price) => Price = ValidatePrice(price);
+
+    /// <summary>
+    /// Updates the commercial terms an administrator may change after creation. The code, currency and
+    /// billing interval are immutable; historical purchase, period and renewal snapshots are unaffected.
+    /// </summary>
+    public bool UpdateTerms(string name, decimal price)
+    {
+        var normalizedName = NormalizeName(name);
+        var validatedPrice = ValidatePrice(price);
+        if (Name == normalizedName && Price == validatedPrice)
+        {
+            return false;
+        }
+
+        Name = normalizedName;
+        Price = validatedPrice;
+        return true;
+    }
+
+    public static string NormalizePlanCode(string code) => NormalizeCode(code);
 
     private static string NormalizeCode(string code)
     {

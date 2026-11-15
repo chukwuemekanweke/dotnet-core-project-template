@@ -4,6 +4,7 @@ using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
+using BackendProjectTemplate.Domain.Subscriptions.Exceptions;
 using BackendProjectTemplate.Domain.Subscriptions.Specifications;
 using SubscriptionAggregate = BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription;
 
@@ -43,6 +44,17 @@ public sealed class PurchaseSubscriptionHandler(
             command.BillingAccountOwnerType,
             ownerStakeholderId,
             cancellationToken);
+
+        // One active entitlement per BillingAccount: do not take money for a purchase that could never be
+        // fulfilled because the account already holds a current or scheduled entitlement. Fulfillment
+        // re-checks this at payment confirmation, where the PostgreSQL exclusion constraint is authoritative.
+        if (await subscriptionRepository.AnyAsync(
+                new OverlappingEntitlementSpecification(tenantId, billingAccount.Id, timeProvider.GetUtcNow(), null, null),
+                cancellationToken))
+        {
+            throw new SubscriptionEntitlementConflictException(
+                "The billing account already holds or has reserved a subscription entitlement.");
+        }
 
         SubscriptionAggregate? subscription = null;
         SubscriptionPurchase? purchase = null;

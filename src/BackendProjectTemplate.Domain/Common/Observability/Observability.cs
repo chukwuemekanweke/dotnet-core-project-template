@@ -56,6 +56,10 @@ public static class Observability
             public const string PlanId = "subscription_plan_id";
             public const string BillingAccountId = "billing_account_id";
             public const string RenewalId = "subscription_renewal_id";
+            public const string AllocationId = "subscription_allocation_id";
+            public const string AllocationSource = "subscription_allocation_source";
+            public const string OperationId = "subscription_operation_id";
+            public const string Status = "subscription_status";
         }
     }
 
@@ -139,6 +143,18 @@ public static class Observability
             public const string RenewalAwaitingAuthorization = "subscription.renewal.awaiting_authorization";
             public const string RenewalReminderScheduled = "subscription.renewal.reminder_scheduled";
             public const string Expired = "subscription.expired";
+            public const string Allocated = "subscription.allocation.created";
+            public const string AllocationActivated = "subscription.allocation.activated";
+            public const string AllocationActivationSkipped = "subscription.allocation.activation_skipped";
+            public const string AllocationLapsed = "subscription.allocation.lapsed";
+            public const string CancelledImmediately = "subscription.cancelled_immediately";
+            public const string AdministrativeCancellationScheduled = "subscription.cancellation.administratively_scheduled";
+            public const string PurchaseFulfillmentBlocked = "subscription.purchase.fulfillment_blocked";
+            public const string PurchaseFulfillmentRetryRequested = "subscription.purchase.fulfillment_retry_requested";
+            public const string RenewalFulfillmentBlocked = "subscription.renewal.fulfillment_blocked";
+            public const string PlanCreated = "subscription.plan.created";
+            public const string PlanUpdated = "subscription.plan.updated";
+            public const string PlanActivationChanged = "subscription.plan.activation_changed";
         }
     }
 }

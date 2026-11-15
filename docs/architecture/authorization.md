@@ -21,6 +21,7 @@ source-controlled mapping:
 | `subscriptions.read` | Yes | No | Yes | Yes |
 | `subscriptions.manage` | Yes | No | No | Yes |
 | `subscriptions.allocate` | Yes | No | No | Yes |
+| `subscriptions.plans.manage` | Yes | No | No | No |
 | `providers.manage` | Yes | No | No | No |
 
 `payments.manage` is separate from `payments.read`; a read capability never authorizes payment-provider
@@ -51,10 +52,20 @@ Current protected operations are:
 | --- | --- |
 | General provider activation | `providers.manage` |
 | Payment-provider activation | `payments.manage` |
+| Admin subscription list and detail (`GET /admin/subscriptions[/{id}]`) | `subscriptions.read` |
+| Admin plan catalog including inactive plans (`GET /admin/subscription-plans`) | `subscriptions.read` |
+| Subscription allocation (`POST /admin/subscriptions/allocations`) | `subscriptions.allocate` |
+| Immediate / period-end cancellation, blocked-purchase fulfillment retry | `subscriptions.manage` |
+| Plan create, update, activation/deactivation | `subscriptions.plans.manage` |
 
-Customer payment initiation and access to a stakeholder's own wallet transactions remain active-session
-and resource-scoped operations. The user, KYC, and subscription permissions are foundations for their
-future feature endpoints; this work does not add those feature sets.
+Administrative subscription endpoints are cross-tenant: the target tenant and subscription are explicit
+request inputs, the acting administrator is always taken from the authenticated session, and permission
+policies are applied per action. Plan management is restricted to Administrator because it changes the
+commercial catalog for every tenant.
+
+Customer payment initiation, subscription purchase/current-subscription/cancellation, and access to a
+stakeholder's own wallet transactions remain active-session and resource-scoped operations. The user and
+KYC permissions are foundations for their future feature endpoints.
 
 ## Deterministic seeding
 
