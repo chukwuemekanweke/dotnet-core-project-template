@@ -1,3 +1,5 @@
+using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Kyc;
 using BackendProjectTemplate.Domain.Kyc.Entities;
@@ -17,6 +19,7 @@ public sealed class KycReconciliationService(
     IRepository<KycVerification> verificationRepository,
     IRepository<Stakeholder> stakeholderRepository,
     IEnumerable<IKycProviderService> providerServices,
+    IEventPublisher eventPublisher,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     ILogger<KycReconciliationService> logger)
@@ -83,14 +86,33 @@ public sealed class KycReconciliationService(
             return false;
         }
 
+        Stakeholder? stakeholder = null;
+        if (result.Transition == KycVerificationTransition.Verified)
+        {
+            stakeholder = await stakeholderRepository.GetByIdAsync(verification.StakeholderId, cancellationToken);
+            if (stakeholder is null || stakeholder.TenantId != verification.TenantId)
+            {
+                throw new InvalidOperationException(
+                    $"Stakeholder for KYC verification '{verification.Id}' could not be loaded.");
+            }
+        }
+
         var previousStatus = verification.Status;
-        verification.ApplyProviderResult(result.ProviderStatus, result.Verified, result.ApplicantReference, now);
+        verification.ApplyProviderResult(result.Transition, result.ApplicantReference, now);
         if (verification.Status == KycVerificationStatus.Verified && previousStatus != KycVerificationStatus.Verified)
         {
-            var stakeholder = await stakeholderRepository.GetByIdAsync(verification.StakeholderId, cancellationToken);
-            if (stakeholder is not null && stakeholder.TenantId == verification.TenantId)
+            stakeholder!.MarkVerified();
+            if (verification.TryMarkVerifiedEventPublished(now))
             {
-                stakeholder.MarkVerified();
+                await eventPublisher.PublishAsync(
+                    new StakeholderKycVerified
+                    {
+                        TenantId = verification.TenantId,
+                        StakeholderId = verification.StakeholderId,
+                        KycVerificationId = verification.Id,
+                        OccuredAt = now
+                    },
+                    cancellationToken);
             }
         }
 

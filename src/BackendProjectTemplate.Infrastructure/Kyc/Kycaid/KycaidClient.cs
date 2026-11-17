@@ -6,7 +6,10 @@ using System.Text.Json.Serialization;
 
 namespace BackendProjectTemplate.Infrastructure.Kyc.Kycaid;
 
-internal sealed class KycaidClient(HttpClient httpClient, IOptions<KycaidOptions> options) : IKycProviderService
+internal sealed class KycaidClient(
+    HttpClient httpClient,
+    IOptions<KycaidOptions> options,
+    IKycVerificationResultNormalizer resultNormalizer) : IKycProviderService
 {
     private readonly KycaidOptions _options = options.Value;
 
@@ -42,7 +45,7 @@ internal sealed class KycaidClient(HttpClient httpClient, IOptions<KycaidOptions
         EnsureSuccess(response);
         var payload = await response.Content.ReadFromJsonAsync<GetVerificationResponse>(cancellationToken)
             ?? throw new InvalidOperationException("KYCAID verification response was empty.");
-        return new(payload.VerificationId, payload.ApplicantId, payload.Status, payload.Verified);
+        return new(payload.VerificationId, payload.ApplicantId, resultNormalizer.Normalize(payload.Status, payload.Verified));
     }
 
     private void ApplyApiKey(HttpRequestMessage message) => message.Headers.TryAddWithoutValidation("API-Key", _options.ApiKey);

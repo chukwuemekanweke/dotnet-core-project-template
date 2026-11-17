@@ -14,10 +14,10 @@ public sealed class WhenUpdatingKycVerification_Should
         verification.MarkSessionRequested(StartedAt);
         verification.AttachSession(new("verification-1", "token-1", new Uri("https://forms.kycaid.com/token-1"), null));
 
-        verification.ApplyProviderResult("pending", null, "applicant-1", StartedAt.AddMinutes(1));
+        verification.ApplyProviderResult(KycVerificationTransition.InProgress, "applicant-1", StartedAt.AddMinutes(1));
         verification.Status.ShouldBe(KycVerificationStatus.InProgress);
 
-        verification.ApplyProviderResult("completed", true, "applicant-1", StartedAt.AddMinutes(2));
+        verification.ApplyProviderResult(KycVerificationTransition.Verified, "applicant-1", StartedAt.AddMinutes(2));
         verification.Status.ShouldBe(KycVerificationStatus.Verified);
         verification.CompletedAtUtc.ShouldBe(StartedAt.AddMinutes(2));
     }
@@ -27,7 +27,7 @@ public sealed class WhenUpdatingKycVerification_Should
     {
         var verification = CreateVerification();
 
-        verification.ApplyProviderResult("completed", null, "applicant-1", StartedAt.AddMinutes(1));
+        verification.ApplyProviderResult(KycVerificationTransition.NoChange, "applicant-1", StartedAt.AddMinutes(1));
 
         verification.Status.ShouldBe(KycVerificationStatus.Pending);
     }
@@ -36,9 +36,9 @@ public sealed class WhenUpdatingKycVerification_Should
     public void PreventTerminalStatusDowngrade()
     {
         var verification = CreateVerification();
-        verification.ApplyProviderResult("completed", true, "applicant-1", StartedAt.AddMinutes(1));
+        verification.ApplyProviderResult(KycVerificationTransition.Verified, "applicant-1", StartedAt.AddMinutes(1));
 
-        verification.ApplyProviderResult("pending", null, "applicant-1", StartedAt.AddMinutes(2));
+        verification.ApplyProviderResult(KycVerificationTransition.InProgress, "applicant-1", StartedAt.AddMinutes(2));
 
         verification.Status.ShouldBe(KycVerificationStatus.Verified);
     }

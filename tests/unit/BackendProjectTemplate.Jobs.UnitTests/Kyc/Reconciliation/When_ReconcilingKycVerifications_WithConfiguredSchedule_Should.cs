@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Kyc.Features.ReconcileVerifications;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Kyc;
 using BackendProjectTemplate.Domain.Kyc.Entities;
 using BackendProjectTemplate.Domain.Kyc.Specifications;
@@ -24,6 +25,7 @@ public sealed class When_ReconcilingKycVerifications_WithConfiguredSchedule_Shou
             .AddSingleton(verificationRepository)
             .AddSingleton(Substitute.For<IRepository<Stakeholder>>())
             .AddSingleton<IEnumerable<IKycProviderService>>([Substitute.For<IKycProviderService>()])
+            .AddSingleton(Substitute.For<IEventPublisher>())
             .AddSingleton(Substitute.For<IUnitOfWork>())
             .AddSingleton<TimeProvider>(clock)
             .AddLogging()

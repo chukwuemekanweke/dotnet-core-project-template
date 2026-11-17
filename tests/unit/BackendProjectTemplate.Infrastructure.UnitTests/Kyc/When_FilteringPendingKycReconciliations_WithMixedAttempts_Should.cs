@@ -19,7 +19,7 @@ public sealed class When_FilteringPendingKycReconciliations_WithMixedAttempts_Sh
         var tooRecent = CreateAttempt(Now.AddMinutes(-5), "verification-3");
         var withoutReference = CreateAttempt(Now.AddHours(-2), null);
         var completed = CreateAttempt(Now.AddHours(-2), "verification-4");
-        completed.ApplyProviderResult("completed", true, "applicant-1", Now.AddHours(-1));
+        completed.ApplyProviderResult(KycVerificationTransition.Verified, "applicant-1", Now.AddHours(-1));
         var specification = new PendingKycReconciliationSpecification(Now.AddMinutes(-30), Now.AddMinutes(-30), 50);
 
         var result = SpecificationEvaluator

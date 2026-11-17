@@ -17,7 +17,7 @@ public sealed class KycVerificationConfiguration : IEntityTypeConfiguration<KycV
         builder.Property(value => value.ProviderApplicantReference).HasMaxLength(100);
         builder.Property(value => value.ProviderVerificationReference).HasMaxLength(100);
         builder.Property(value => value.ProviderSessionReference).HasMaxLength(100);
-        builder.Property(value => value.ProviderStatus).HasMaxLength(50).IsRequired();
+        builder.Property(value => value.LastProviderTransition).IsRequired();
         builder.Property(value => value.VerificationUrl).HasMaxLength(2048);
         builder.Property(value => value.RowVersion).IsRowVersion();
         builder.HasIndex(value => new { value.TenantId, value.StakeholderId, value.StartedAtUtc });

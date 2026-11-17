@@ -30,6 +30,7 @@ public sealed class KycWebhookInbox : Entity, IAggregateRoot
         ProviderStatus = providerStatus;
         Verified = verified;
         ReceivedAtUtc = receivedAtUtc;
+        ProcessingOutcome = KycWebhookProcessingOutcome.Pending;
     }
 
     public string ProviderKey { get; private set; } = string.Empty;
@@ -43,6 +44,7 @@ public sealed class KycWebhookInbox : Entity, IAggregateRoot
     public bool? Verified { get; private set; }
     public DateTimeOffset ReceivedAtUtc { get; private set; }
     public DateTimeOffset? ProcessedAtUtc { get; private set; }
+    public KycWebhookProcessingOutcome ProcessingOutcome { get; private set; }
 
     public static KycWebhookInbox Create(
         string providerKey,
@@ -67,7 +69,16 @@ public sealed class KycWebhookInbox : Entity, IAggregateRoot
             verified,
             receivedAtUtc);
 
-    public void MarkProcessed(DateTimeOffset utcNow) => ProcessedAtUtc = utcNow;
+    public void MarkProcessed(KycWebhookProcessingOutcome outcome, DateTimeOffset utcNow)
+    {
+        if (outcome == KycWebhookProcessingOutcome.Pending)
+        {
+            throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "A processed webhook must have a final outcome.");
+        }
+
+        ProcessingOutcome = outcome;
+        ProcessedAtUtc = utcNow;
+    }
 
     private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

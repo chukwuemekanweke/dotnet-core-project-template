@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Kyc.Features.ReconcileVerifications;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Kyc;
 using BackendProjectTemplate.Domain.Kyc.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
@@ -18,6 +19,7 @@ internal sealed class KycReconciliationTestContext
     public IRepository<KycVerification> VerificationRepository { get; } = Substitute.For<IRepository<KycVerification>>();
     public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
     public IKycProviderService Provider { get; } = Substitute.For<IKycProviderService>();
+    public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
     public (Stakeholder Stakeholder, KycVerification Verification) CreateAttempt(string verificationReference)
@@ -41,6 +43,7 @@ internal sealed class KycReconciliationTestContext
                 VerificationRepository,
                 StakeholderRepository,
                 [Provider],
+                EventPublisher,
                 UnitOfWork,
                 new FixedTimeProvider(Now),
                 NullLogger<KycReconciliationService>.Instance)
