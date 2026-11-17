@@ -10,7 +10,7 @@ public sealed class When_MarkingKycFormUrlExpired_WithSubmittedAttempt_Should
         var verification = KycVerificationTestData.CreateWithSession();
         var submittedAt = KycVerificationTestData.StartedAt.AddMinutes(1);
         var expiredAt = submittedAt.AddMinutes(1);
-        verification.ApplyProviderResult("pending", null, "applicant-1", submittedAt);
+        verification.ApplyProviderResult(KycVerificationTransition.InProgress, "applicant-1", submittedAt);
 
         verification.MarkFormUrlExpired(expiredAt);
 

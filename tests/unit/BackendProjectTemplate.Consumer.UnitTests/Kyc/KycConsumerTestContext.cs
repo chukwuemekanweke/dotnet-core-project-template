@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Consumer.Kyc;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
+using BackendProjectTemplate.Domain.Kyc;
 using BackendProjectTemplate.Domain.Kyc.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
 using Chidelu.Integration.Messaging.RabbitMQ.Consumer;
@@ -12,11 +13,24 @@ internal sealed class KycConsumerTestContext
     public KycConsumerTestContext()
     {
         MessageContext.CorrelationId.Returns(Guid.CreateVersion7().ToString("N"));
+        ResultNormalizer.Normalize(Arg.Any<string?>(), Arg.Any<bool?>()).Returns(callInfo =>
+        {
+            var status = callInfo.ArgAt<string?>(0);
+            var verified = callInfo.ArgAt<bool?>(1);
+            if (status == "completed" && verified.HasValue)
+            {
+                return verified.Value ? KycVerificationTransition.Verified : KycVerificationTransition.Rejected;
+            }
+
+            return status == "pending" ? KycVerificationTransition.InProgress : KycVerificationTransition.NoChange;
+        });
     }
 
     public IRepository<KycWebhookInbox> WebhookInboxRepository { get; } = Substitute.For<IRepository<KycWebhookInbox>>();
     public IRepository<KycVerification> VerificationRepository { get; } = Substitute.For<IRepository<KycVerification>>();
     public IRepository<Stakeholder> StakeholderRepository { get; } = Substitute.For<IRepository<Stakeholder>>();
+    public IKycVerificationResultNormalizer ResultNormalizer { get; } = Substitute.For<IKycVerificationResultNormalizer>();
+    public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public ICurrentActorAccessor CurrentActorAccessor { get; } = Substitute.For<ICurrentActorAccessor>();
     public IMessageContext MessageContext { get; } = Substitute.For<IMessageContext>();
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
@@ -30,6 +44,8 @@ internal sealed class KycConsumerTestContext
             WebhookInboxRepository,
             VerificationRepository,
             StakeholderRepository,
+            ResultNormalizer,
+            EventPublisher,
             CurrentActorAccessor,
             MessageContext,
             CustomTelemetryContext,

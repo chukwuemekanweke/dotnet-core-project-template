@@ -12,7 +12,7 @@ public sealed class When_ReconcilingKycVerifications_WithUncorrelatedProviderRes
         var (stakeholder, verification) = context.CreateAttempt("verification-1");
         context.ReturnEligible(verification);
         context.Provider.GetVerificationAsync("verification-1", Arg.Any<CancellationToken>())
-            .Returns(new KycProviderVerificationResult("verification-other", "applicant-1", "completed", true));
+            .Returns(new KycProviderVerificationResult("verification-other", "applicant-1", KycVerificationTransition.Verified));
 
         var result = await context.RunAsync();
 

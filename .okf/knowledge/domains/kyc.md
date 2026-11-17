@@ -16,6 +16,7 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Kyc/**
     - src/BackendProjectTemplate.WebAPI/Features/Kyc/**
     - src/BackendProjectTemplate.Contracts/Events/KycWebhookReceived.cs
+    - src/BackendProjectTemplate.Contracts/Events/StakeholderKycVerified.cs
     - src/BackendProjectTemplate.Consumer/Kyc/**
     - src/BackendProjectTemplate.Jobs/Kyc/**
     - tests/unit/BackendProjectTemplate.Domain.UnitTests/Kyc/**
@@ -27,7 +28,7 @@ sources:
     - kind: file
       path: src/BackendProjectTemplate.Domain/Kyc/Entities/KycVerification.cs
 generated:
-    at: "2026-11-15T18:00:00Z"
+    at: "2026-11-16T00:00:00Z"
     by: agent
 status: stable
 ---
@@ -40,10 +41,12 @@ per tenant and stakeholder.
 
 ## Approval rule
 
-Form completion or a pending callback never verifies a stakeholder. Only an authenticated provider result
-with provider status `completed` and `verified: true` transitions the attempt to `Verified` and calls
-`Stakeholder.MarkVerified()`. Provider results are applied only to active (Pending/InProgress) attempts, so
-late callbacks never change Verified, Rejected, Failed or Expired attempts.
+Form completion or a pending callback never verifies a stakeholder. Infrastructure normalizes KYCAID status
+and decision fields to `KycVerificationTransition`; the aggregate only understands provider-independent
+`NoChange`, `InProgress`, `Verified` and `Rejected` transitions. Only KYCAID `completed` with `verified: true`
+normalizes to `Verified`; `completed` with no decision and unknown statuses normalize to `NoChange`. Provider
+results are applied only to active (Pending/InProgress) attempts, so late callbacks never change Verified,
+Rejected, Failed or Expired attempts.
 
 ## Callbacks
 
@@ -54,14 +57,24 @@ and uses the shared message inbox for redelivery safety. Provider callback reque
 (`UX_KycWebhookInboxes_ProviderRequest`); a concurrent duplicate surfaces as `KycWebhookDuplicateException` and is
 acknowledged as a duplicate. Callbacks resolve an attempt only by provider verification or session reference —
 never by external applicant ID, which is shared by every attempt of a stakeholder — and applicant references
-must correlate. A verification reference first seen in a callback is recorded on the attempt.
+must correlate. A verification reference first seen in a callback is recorded on the attempt. Every receipt
+starts with `KycWebhookProcessingOutcome.Pending`; Consumer processing records StateTransitioned,
+NoStateTransition, UnknownVerification, ReferenceMismatch or TerminalVerificationIgnored with a TimeProvider
+timestamp. Permanent correlation failures are acknowledged and audited rather than endlessly retried, while
+infrastructure exceptions still escape for retry.
+
+The first transition to Verified marks the stakeholder and appends `StakeholderKycVerified` to the transactional
+outbox in the same unit of work. `VerifiedEventPublishedAtUtc` is the durable logical-publication guard. The
+verification PostgreSQL row version makes concurrent webhook and reconciliation attempts conflict, so only one
+transaction can commit the transition, guard and event.
 
 ## Reconciliation
 
 `Jobs/Kyc/KycReconciliationProcessor` periodically runs `KycReconciliationService`, which fetches the provider
-result (`IKycProviderService.GetVerificationAsync`) for stale active attempts that have a verification reference
-and applies it with the same aggregate rules as callbacks. Every checked attempt records `LastReconciledAtUtc`,
-including provider failures, so the recheck delay backs off unreachable attempts.
+result (`IKycProviderService.GetVerificationAsync`) for stale active attempts that have a verification reference.
+The provider client returns the same normalized transition used by callbacks, and reconciliation uses the same
+one-time verified-event guard. Every checked attempt records `LastReconciledAtUtc`, including provider failures,
+so the recheck delay backs off unreachable attempts.
 
 ## Start and retry policy
 

@@ -15,7 +15,7 @@ public sealed class When_ReconcilingKycVerifications_WithProviderFailure_Should
         context.Provider.GetVerificationAsync("verification-1", Arg.Any<CancellationToken>())
             .Returns<KycProviderVerificationResult>(_ => throw new HttpRequestException("unavailable"));
         context.Provider.GetVerificationAsync("verification-2", Arg.Any<CancellationToken>())
-            .Returns(new KycProviderVerificationResult("verification-2", "applicant-2", "completed", false));
+            .Returns(new KycProviderVerificationResult("verification-2", "applicant-2", KycVerificationTransition.Rejected));
 
         var result = await context.RunAsync();
 

@@ -19,6 +19,7 @@ public sealed class KycWebhookInboxConfiguration : IEntityTypeConfiguration<KycW
         builder.Property(value => value.ApplicantReference).HasMaxLength(100);
         builder.Property(value => value.ExternalApplicantId).HasMaxLength(50);
         builder.Property(value => value.ProviderStatus).HasMaxLength(50).IsRequired();
+        builder.Property(value => value.ProcessingOutcome).IsRequired();
         builder.HasIndex(value => new { value.ProviderKey, value.RequestId }).IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE")
             .HasDatabaseName(KycPersistenceConstraints.WebhookRequestUniqueIndexName);

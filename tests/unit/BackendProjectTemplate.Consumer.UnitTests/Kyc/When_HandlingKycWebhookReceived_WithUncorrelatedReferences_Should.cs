@@ -24,6 +24,7 @@ public sealed class When_HandlingKycWebhookReceived_WithUncorrelatedReferences_S
             CancellationToken.None);
 
         webhook.ProcessedAtUtc.ShouldBe(context.Clock.GetUtcNow());
+        webhook.ProcessingOutcome.ShouldBe(KycWebhookProcessingOutcome.UnknownVerification);
         await context.VerificationRepository.Received(2).FirstOrDefaultAsync(
             Arg.Is<ISpecification<KycVerification>>(specification =>
                 specification is KycVerificationByProviderReferenceSpecification ||

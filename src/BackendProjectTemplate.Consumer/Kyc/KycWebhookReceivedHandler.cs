@@ -16,6 +16,8 @@ public sealed class KycWebhookReceivedHandler(
     IRepository<KycWebhookInbox> webhookInboxRepository,
     IRepository<KycVerification> verificationRepository,
     IRepository<Stakeholder> stakeholderRepository,
+    IKycVerificationResultNormalizer resultNormalizer,
+    IEventPublisher eventPublisher,
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
     ICustomTelemetryContext customTelemetryContext,
@@ -53,39 +55,86 @@ public sealed class KycWebhookReceivedHandler(
 
         var verification = await ResolveVerificationAsync(inbox, cancellationToken);
         var now = Clock.GetUtcNow();
-        if (verification is null ||
-            (inbox.ExternalApplicantId is not null && inbox.ExternalApplicantId != verification.ExternalApplicantId) ||
+        if (verification is null)
+        {
+            MarkProcessed(inbox, KycWebhookProcessingOutcome.UnknownVerification, now);
+            logger.LogWarning("KYC webhook {KycWebhookInboxId} did not match a verification.", inbox.Id);
+            return;
+        }
+
+        if ((inbox.ExternalApplicantId is not null && inbox.ExternalApplicantId != verification.ExternalApplicantId) ||
             (verification.ProviderApplicantReference is not null &&
              !string.Equals(verification.ProviderApplicantReference, inbox.ApplicantReference, StringComparison.Ordinal)))
         {
-            inbox.MarkProcessed(now);
+            MarkProcessed(inbox, KycWebhookProcessingOutcome.ReferenceMismatch, now);
+            logger.LogWarning("KYC webhook {KycWebhookInboxId} references did not correlate.", inbox.Id);
+            return;
+        }
+
+        if (!verification.IsActive)
+        {
+            MarkProcessed(inbox, KycWebhookProcessingOutcome.TerminalVerificationIgnored, now);
+            logger.LogInformation(
+                "KYC webhook {KycWebhookInboxId} was ignored because verification {KycVerificationId} is terminal.",
+                inbox.Id,
+                verification.Id);
             return;
         }
 
         verification.RecordProviderVerificationReference(inbox.VerificationReference);
 
+        var transitioned = false;
+        Stakeholder? stakeholder = null;
         if (inbox.EventType == "FORM_URL_EXPIRED")
         {
-            if (verification.IsActive)
-            {
-                verification.MarkFormUrlExpired(now);
-            }
+            verification.MarkFormUrlExpired(now);
+            transitioned = true;
         }
         else
         {
-            verification.ApplyProviderResult(inbox.ProviderStatus, inbox.Verified, inbox.ApplicantReference, now);
+            var transition = resultNormalizer.Normalize(inbox.ProviderStatus, inbox.Verified);
+            if (transition == KycVerificationTransition.Verified)
+            {
+                stakeholder = await stakeholderRepository.GetByIdAsync(verification.StakeholderId, cancellationToken);
+                if (stakeholder is null || stakeholder.TenantId != verification.TenantId)
+                {
+                    throw new InvalidOperationException(
+                        $"Stakeholder for KYC verification '{verification.Id}' could not be loaded.");
+                }
+            }
+
+            transitioned = verification.ApplyProviderResult(transition, inbox.ApplicantReference, now);
         }
 
-        if (verification.Status == KycVerificationStatus.Verified)
+        if (transitioned && verification.Status == KycVerificationStatus.Verified)
         {
-            var stakeholder = await stakeholderRepository.GetByIdAsync(verification.StakeholderId, cancellationToken);
-            if (stakeholder is not null && stakeholder.TenantId == verification.TenantId)
+            stakeholder!.MarkVerified();
+            if (verification.TryMarkVerifiedEventPublished(now))
             {
-                stakeholder.MarkVerified();
+                await eventPublisher.PublishAsync(
+                    new StakeholderKycVerified
+                    {
+                        TenantId = verification.TenantId,
+                        StakeholderId = verification.StakeholderId,
+                        KycVerificationId = verification.Id,
+                        OccuredAt = now
+                    },
+                    cancellationToken);
             }
         }
 
-        inbox.MarkProcessed(now);
+        MarkProcessed(
+            inbox,
+            transitioned ? KycWebhookProcessingOutcome.StateTransitioned : KycWebhookProcessingOutcome.NoStateTransition,
+            now);
+    }
+
+    private void MarkProcessed(KycWebhookInbox inbox, KycWebhookProcessingOutcome outcome, DateTimeOffset now)
+    {
+        inbox.MarkProcessed(outcome, now);
+        CustomTelemetryContext.AddCustomEvent(
+            "kyc_webhook_processed",
+            new Dictionary<string, string> { ["processing_outcome"] = outcome.ToString() });
     }
 
     private async Task<KycVerification?> ResolveVerificationAsync(KycWebhookInbox inbox, CancellationToken cancellationToken)

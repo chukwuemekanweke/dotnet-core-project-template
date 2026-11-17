@@ -730,6 +730,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("LastProviderTransition")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset?>("LastReconciledAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -745,11 +748,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<string>("ProviderSessionReference")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
-
-                    b.Property<string>("ProviderStatus")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("ProviderVerificationReference")
                         .HasMaxLength(100)
@@ -789,6 +787,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<string>("VerificationUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
+
+                    b.Property<DateTimeOffset?>("VerifiedEventPublishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -846,6 +847,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.Property<DateTimeOffset?>("ProcessedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ProcessingOutcome")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ProviderKey")
                         .IsRequired()

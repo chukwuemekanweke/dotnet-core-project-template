@@ -20,7 +20,7 @@ public sealed class When_ApplyingKycProviderResult_WithInactiveAttempt_Should
             verification.MarkExpired(closedAt);
         }
 
-        verification.ApplyProviderResult("completed", true, "applicant-1", closedAt.AddMinutes(1));
+        verification.ApplyProviderResult(KycVerificationTransition.Verified, "applicant-1", closedAt.AddMinutes(1));
 
         verification.Status.ShouldBe(terminalStatus);
         verification.CompletedAtUtc.ShouldBe(closedAt);

@@ -14,7 +14,7 @@ public sealed class When_StartingKycVerification_WithSubmittedAttempt_Should
         var active = context.CreateAttempt(startedAt);
         active.MarkSessionRequested(startedAt);
         active.AttachSession(new("verification-1", "token-1", new Uri("https://forms.kycaid.com/token-1"), null));
-        active.ApplyProviderResult("pending", null, "applicant-1", startedAt.AddMinutes(5));
+        active.ApplyProviderResult(KycVerificationTransition.InProgress, "applicant-1", startedAt.AddMinutes(5));
         context.ReturnActiveAttempt(active);
 
         var result = await context.CreateHandler().HandleAsync(context.Command, CancellationToken.None);

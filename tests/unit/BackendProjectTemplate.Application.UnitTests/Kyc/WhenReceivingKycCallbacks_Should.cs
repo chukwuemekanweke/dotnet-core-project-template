@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Kyc.Features.ReceiveVerificationCallback;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Messaging;
+using BackendProjectTemplate.Domain.Kyc;
 using BackendProjectTemplate.Domain.Kyc.Entities;
 using Shouldly;
 
@@ -33,6 +34,7 @@ public sealed class WhenReceivingKycCallbacks_Should
         persistedInbox.ShouldNotBeNull();
         persistedInbox.RequestId.ShouldBe("request-1");
         persistedInbox.ProcessedAtUtc.ShouldBeNull();
+        persistedInbox.ProcessingOutcome.ShouldBe(KycWebhookProcessingOutcome.Pending);
         publishedEvent.ShouldNotBeNull();
         publishedEvent.WebhookInboxId.ShouldBe(persistedInbox.Id);
         publishedEvent.RequestId.ShouldBe(persistedInbox.RequestId);

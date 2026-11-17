@@ -39,11 +39,12 @@ later attempts reuse it to preserve KYCAID applicant history.
 
 ## Lifecycle and security
 
-An attempt starts as Pending. KYCAID `pending` moves it to InProgress. `completed` plus `verified: true`
-marks the attempt and stakeholder verified; `verified: false` rejects it. Completion without a decision is
-not approval. `FORM_URL_EXPIRED` expires only the form URL: an unsubmitted attempt can request a new form,
-and a submitted attempt keeps waiting for its decision. Rejected, failed and expired attempts may restart;
-verified stakeholders may not.
+An attempt starts as Pending. Infrastructure normalizes KYCAID's vocabulary into provider-independent
+transitions before the aggregate sees a result. KYCAID `pending` becomes InProgress. Only `completed` plus
+`verified: true` becomes Verified; `completed` plus `verified: false` becomes Rejected. Completion without a
+decision and unknown statuses produce no transition. `FORM_URL_EXPIRED` expires only the form URL: an
+unsubmitted attempt can request a new form, and a submitted attempt keeps waiting for its decision. Rejected,
+failed and expired attempts may restart; verified stakeholders may not.
 
 A form request is recorded before KYCAID is called. If KYCAID rejects it (4xx other than 408, or the
 integration is disabled) the request can be retried at once. If the outcome is unknown (timeout, network
@@ -57,6 +58,14 @@ After signature verification, WebAPI stores the provider-independent callback fi
 `KycWebhookReceived` outbox event atomically, then responds. The Consumer applies verification state and
 stakeholder changes and records the shared message-inbox entry in one transaction. Therefore a `200`
 response means the callback was durably queued, not that downstream processing has already completed.
+
+Each callback receipt records a bounded processing outcome: pending, state transitioned, no state transition,
+unknown verification, reference mismatch, or terminal verification ignored. Unknown and mismatched callbacks
+are final audit outcomes and are not retried forever; infrastructure and database failures still escape the
+Consumer and remain retryable. A first transition to Verified also writes a provider-neutral
+`StakeholderKycVerified` event to the transactional outbox. The verification row records that publication
+intent, and its optimistic concurrency token prevents webhook processing and reconciliation from committing
+duplicate logical success events.
 
 The database preserves attempt history, enforces one active attempt per tenant/stakeholder, uniquely indexes
 provider verification references, and deduplicates callback request IDs. Signatures use lowercase-hex
@@ -72,9 +81,9 @@ not call KYCAID. Run the repository verification sequence from `AGENTS.md` after
 
 KYCAID retries unacknowledged callbacks. Duplicate and out-of-order deliveries are safe. A reserved attempt
 left without a session URL after a provider or persistence interruption is retried by the next start request.
-The provider result can be reconciled through `GET /verifications/{verification_id}` once the verification
-reference has been durably stored. No background polling is enabled by default; add bounded polling only if
-operational evidence shows callbacks are insufficient.
+The provider result is reconciled through `GET /verifications/{verification_id}` once the verification
+reference has been durably stored. Reconciliation uses the same normalizer and one-time completion-event
+guard as webhook processing.
 
 References: [form integration](https://docs.kycaid.com/guides/form-integration),
 [retrieve form URL](https://docs.kycaid.com/objects/forms/retrieve-form-url),

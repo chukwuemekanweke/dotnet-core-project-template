@@ -17,7 +17,7 @@ public sealed class KycVerification : Entity, IAggregateRoot
         ExternalApplicantId = externalApplicantId;
         ProviderApplicantReference = NormalizeOptional(applicantReference);
         Status = KycVerificationStatus.Pending;
-        ProviderStatus = "unused";
+        LastProviderTransition = KycVerificationTransition.NoChange;
         StartedAtUtc = startedAtUtc;
     }
 
@@ -28,7 +28,7 @@ public sealed class KycVerification : Entity, IAggregateRoot
     public string? ProviderApplicantReference { get; private set; }
     public string? ProviderVerificationReference { get; private set; }
     public string? ProviderSessionReference { get; private set; }
-    public string ProviderStatus { get; private set; } = string.Empty;
+    public KycVerificationTransition LastProviderTransition { get; private set; }
     public KycVerificationStatus Status { get; private set; }
     public string? VerificationUrl { get; private set; }
     public DateTimeOffset? FormUrlExpiresAtUtc { get; private set; }
@@ -37,6 +37,7 @@ public sealed class KycVerification : Entity, IAggregateRoot
     public DateTimeOffset? SubmittedAtUtc { get; private set; }
     public DateTimeOffset? CompletedAtUtc { get; private set; }
     public DateTimeOffset? LastReconciledAtUtc { get; private set; }
+    public DateTimeOffset? VerifiedEventPublishedAtUtc { get; private set; }
     public uint RowVersion { get; private set; }
 
     public bool IsActive => Status is KycVerificationStatus.Pending or KycVerificationStatus.InProgress;
@@ -109,30 +110,46 @@ public sealed class KycVerification : Entity, IAggregateRoot
         }
     }
 
-    public void ApplyProviderResult(string providerStatus, bool? verified, string? applicantReference, DateTimeOffset utcNow)
+    public bool ApplyProviderResult(KycVerificationTransition transition, string? applicantReference, DateTimeOffset utcNow)
     {
         if (!IsActive)
         {
-            return;
+            return false;
         }
 
-        ProviderStatus = providerStatus.Trim().ToLowerInvariant();
+        var previousStatus = Status;
+        LastProviderTransition = transition;
         ProviderApplicantReference ??= NormalizeOptional(applicantReference);
 
-        if (ProviderStatus == "completed" && verified.HasValue)
+        if (transition is KycVerificationTransition.Verified or KycVerificationTransition.Rejected)
         {
-            Status = verified.Value ? KycVerificationStatus.Verified : KycVerificationStatus.Rejected;
+            Status = transition == KycVerificationTransition.Verified
+                ? KycVerificationStatus.Verified
+                : KycVerificationStatus.Rejected;
             CompletedAtUtc = utcNow;
             VerificationUrl = null;
-            return;
+            return Status != previousStatus;
         }
 
-        if (ProviderStatus == "pending")
+        if (transition == KycVerificationTransition.InProgress)
         {
             Status = KycVerificationStatus.InProgress;
             SubmittedAtUtc ??= utcNow;
             VerificationUrl = null;
         }
+
+        return Status != previousStatus;
+    }
+
+    public bool TryMarkVerifiedEventPublished(DateTimeOffset utcNow)
+    {
+        if (Status != KycVerificationStatus.Verified || VerifiedEventPublishedAtUtc.HasValue)
+        {
+            return false;
+        }
+
+        VerifiedEventPublishedAtUtc = utcNow;
+        return true;
     }
 
     public void RecordReconciliation(DateTimeOffset utcNow) => LastReconciledAtUtc = utcNow;
@@ -158,7 +175,7 @@ public sealed class KycVerification : Entity, IAggregateRoot
     {
         EnsureActive();
         Status = KycVerificationStatus.Expired;
-        ProviderStatus = "expired";
+        LastProviderTransition = KycVerificationTransition.NoChange;
         FormUrlExpiresAtUtc = utcNow;
         CompletedAtUtc = utcNow;
         VerificationUrl = null;
@@ -168,7 +185,7 @@ public sealed class KycVerification : Entity, IAggregateRoot
     {
         EnsureActive();
         Status = KycVerificationStatus.Failed;
-        ProviderStatus = "provider_error";
+        LastProviderTransition = KycVerificationTransition.NoChange;
         CompletedAtUtc = utcNow;
         VerificationUrl = null;
     }

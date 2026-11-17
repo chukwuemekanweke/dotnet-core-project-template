@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         });
         services.AddScoped<IKycProviderService>(provider => provider.GetRequiredService<KycaidClient>());
         services.AddScoped<IKycCallbackSignatureValidator, KycaidCallbackSignatureValidator>();
+        services.AddSingleton<IKycVerificationResultNormalizer, KycaidVerificationResultNormalizer>();
         return services;
     }
 }

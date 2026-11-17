@@ -13,6 +13,7 @@ public sealed class WhenHandlingKycWebhookReceived_Should
     [Theory]
     [InlineData("pending", null, KycVerificationStatus.InProgress, false)]
     [InlineData("completed", true, KycVerificationStatus.Verified, true)]
+    [InlineData("completed", false, KycVerificationStatus.Rejected, false)]
     public async Task ProcessDurableCallbackAndRecordMessage(
         string providerStatus,
         bool? verified,
@@ -47,6 +48,23 @@ public sealed class WhenHandlingKycWebhookReceived_Should
         verification.Status.ShouldBe(expectedStatus);
         stakeholder.IsVerified.ShouldBe(expectedStakeholderVerification);
         webhook.ProcessedAtUtc.ShouldBe(context.Clock.GetUtcNow());
+        webhook.ProcessingOutcome.ShouldBe(KycWebhookProcessingOutcome.StateTransitioned);
+        if (expectedStatus == KycVerificationStatus.Verified)
+        {
+            verification.VerifiedEventPublishedAtUtc.ShouldBe(context.Clock.GetUtcNow());
+            await context.EventPublisher.Received(1).PublishAsync(
+                Arg.Is<StakeholderKycVerified>(value =>
+                    value.KycVerificationId == verification.Id &&
+                    value.StakeholderId == stakeholder.Id &&
+                    value.TenantId == tenantId),
+                Arg.Any<CancellationToken>());
+        }
+        else
+        {
+            await context.EventPublisher.DidNotReceive().PublishAsync(
+                Arg.Any<StakeholderKycVerified>(),
+                Arg.Any<CancellationToken>());
+        }
         await context.MessageInboxRepository.Received(1).AddAsync(Arg.Any<MessageInbox>(), Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
