@@ -176,6 +176,17 @@ public static class EndpointUrl
         public static string DetailV1(Guid paymentTransactionId) => $"{V1}/{paymentTransactionId}";
     }
 
+    public static class AdminPaymentAnalytics
+    {
+        public const string Route = $"{AdminPayments.Route}/analytics";
+        public static readonly string V1 = ToV1(Route);
+        public static readonly string SummaryV1 = $"{V1}/summary";
+        public static readonly string TimelineV1 = $"{V1}/timeline";
+        public static readonly string StatusesV1 = $"{V1}/statuses";
+        public static readonly string ProvidersV1 = $"{V1}/providers";
+        public static readonly string IntentsV1 = $"{V1}/intents";
+    }
+
     public static class AdminUsers
     {
         public const string Route = $"api/{Versions.V1Route}/admin/users";

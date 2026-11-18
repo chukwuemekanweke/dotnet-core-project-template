@@ -47,7 +47,13 @@ using BackendProjectTemplate.Application.Kyc.Features.ReceiveVerificationCallbac
 using BackendProjectTemplate.Application.Kyc.Features.ReconcileVerifications;
 using BackendProjectTemplate.Application.Kyc.Features.StartVerification;
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
+using BackendProjectTemplate.Application.Payments.Analytics;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
+using BackendProjectTemplate.Application.Payments.Features.GetAdminPaymentAnalyticsIntents;
+using BackendProjectTemplate.Application.Payments.Features.GetAdminPaymentAnalyticsProviders;
+using BackendProjectTemplate.Application.Payments.Features.GetAdminPaymentAnalyticsStatuses;
+using BackendProjectTemplate.Application.Payments.Features.GetAdminPaymentAnalyticsSummary;
+using BackendProjectTemplate.Application.Payments.Features.GetAdminPaymentAnalyticsTimeline;
 using BackendProjectTemplate.Application.Payments.Features.GetAdminPaymentDetail;
 using BackendProjectTemplate.Application.Payments.Features.GetAdminPayments;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
@@ -157,6 +163,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetStakeholderWalletTopUpTransactionDetailHandler>();
         services.AddScoped<GetAdminPaymentsHandler>();
         services.AddScoped<GetAdminPaymentDetailHandler>();
+        services.AddScoped<PaymentAnalyticsService>();
+        services.AddScoped<GetAdminPaymentAnalyticsSummaryHandler>();
+        services.AddScoped<GetAdminPaymentAnalyticsTimelineHandler>();
+        services.AddScoped<GetAdminPaymentAnalyticsStatusesHandler>();
+        services.AddScoped<GetAdminPaymentAnalyticsProvidersHandler>();
+        services.AddScoped<GetAdminPaymentAnalyticsIntentsHandler>();
         services.AddScoped<ProcessSafeHavenAccountCreditWebhookHandler>();
         services.AddScoped<ProcessSafeHavenAccountDebitWebhookHandler>();
         services.AddScoped<ProcessSafeHavenVirtualAccountTransferWebhookHandler>();

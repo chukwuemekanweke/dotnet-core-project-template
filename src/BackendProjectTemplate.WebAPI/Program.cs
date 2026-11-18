@@ -60,6 +60,8 @@ builder.Services.AddSingleton<StepUpMfaRequestCanonicalizer>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();
 builder.Services.AddApiDocumentation();
+builder.Services.Configure<BackendProjectTemplate.Application.Payments.Analytics.PaymentAnalyticsOptions>(
+    builder.Configuration.GetSection(BackendProjectTemplate.Application.Payments.Analytics.PaymentAnalyticsOptions.SectionName));
 builder.Services.AddApplication();
 builder.Services.AddPostgresWritePersistence(builder.Configuration);
 builder.Services.AddPostgresReadPersistence(builder.Configuration);

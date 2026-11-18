@@ -16,6 +16,7 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Payments/**
     - src/BackendProjectTemplate.Infrastructure/Persistence/BillingAccountResolver.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/PaymentAdministrationReadModelRepository.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/PaymentAnalyticsReadModelRepository.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/BillingAccountConfiguration.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/SubscriptionActivationConfiguration.cs
     - src/BackendProjectTemplate.Application/Subscriptions/Features/PurchaseSubscription/**
@@ -72,6 +73,17 @@ status: stable
   returns raw webhook payloads, provider metadata, processing exceptions or provider failure text.
   Payment ordering uses a filtered `(CreatedAtUtc, Id)` index; direct payment filters and the
   provider-plus-reference webhook correlation paths have dedicated indexes.
+- Administrative payment analytics exposes independent summary, timeline, status, provider and intent
+  endpoints under `/api/v1/admin/payments/analytics` using `payments.analytics.read`. The bounded,
+  inclusive UTC `DateOnly` range is translated to an index-friendly half-open `CreatedAtUtc` predicate.
+  `IPaymentAnalyticsReadModelRepository` performs conditional counts/sums and grouping in PostgreSQL;
+  Application fills bounded missing timeline buckets. Monetary results always remain grouped by
+  currency. Success rate uses only terminal outcomes (succeeded, failed, cancelled, expired), while
+  pending/initiated payments are processing. Endpoint-specific `IJsonCache` entries include every
+  effective filter and tenant/global scope, use short configurable TTLs, fall back to PostgreSQL on
+  Redis failure, and use a per-process single-flight gate for identical misses.
+  Calendar bucket boundaries and aggregate percentage/average calculations reuse the shared
+  `Domain.Common.Analytics` utilities and common `Interval` enum.
 - Payment status-transition history and reconciliation-attempt history are not currently persisted.
   Administrative detail therefore returns the current status plus its latest safe reason and
   `LastStatusCheckAtUtc`; it must not infer or manufacture historical transitions or reconciliation outcomes.

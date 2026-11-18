@@ -24,6 +24,7 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Persistence/DatabaseInitializationExtensions.cs
     - src/BackendProjectTemplate.WebAPI/Features/Providers/ProvidersController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Payments/Providers/PaymentProvidersController.cs
+    - src/BackendProjectTemplate.WebAPI/Features/Payments/AdminPayments/Analytics/**
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/AdminSubscriptions/AdminSubscriptionsController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/AdminSubscriptionPlans/AdminSubscriptionPlansController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Authentication/Security/StepUpMfaController.cs
@@ -92,6 +93,10 @@ General provider activation requires `providers.manage` (Administrator only). Pa
 activation requires `payments.manage` (Administrator and FinanceOfficer). Customer payment initiation
 and stakeholder-owned wallet history are not administrative operations and retain their existing
 active-session and resource scoping.
+
+Administrative payment analytics requires the dedicated `payments.analytics.read` permission, granted
+only to Administrator and FinanceOfficer. These read-only reports are cross-tenant by design and may be
+narrowed with an explicit tenant filter; authorization is evaluated before any tenant-scoped cache read.
 
 Administrative subscriptions: list/detail and the full plan catalog require `subscriptions.read`
 (Administrator, FinanceOfficer, SupportAgent); allocation requires `subscriptions.allocate`
