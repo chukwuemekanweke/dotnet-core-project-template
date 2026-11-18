@@ -67,6 +67,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<KycVerification> KycVerifications => Set<KycVerification>();
     public DbSet<KycWebhookInbox> KycWebhookInboxes => Set<KycWebhookInbox>();
+    public DbSet<AdministrativeSecurityAudit> AdministrativeSecurityAudits => Set<AdministrativeSecurityAudit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

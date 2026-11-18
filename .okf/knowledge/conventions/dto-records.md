@@ -29,5 +29,8 @@ Treat commands, requests, responses, results, and similar transport/application 
 public sealed record SignUpCommand(string Email, string Password);
 ```
 
+Keep each public DTO in its own file named after the type. Do not combine request and response DTOs
+in a shared catch-all file.
+
 This applies to Application feature commands/responses/results, WebAPI request DTOs, and `Contracts` commands/events (see [[async-processing]]). Domain entities are not DTOs and follow normal entity
 conventions instead (private constructors, factory methods) — this rule does not apply to them.

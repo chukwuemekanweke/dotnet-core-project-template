@@ -149,6 +149,11 @@ filters it before ordering and cursor pagination.
 - Account eligibility is consistent across primary methods: reject deleted, locked, unverified, and
   cross-tenant accounts before session issuance. MFA completion re-resolves the user and stakeholder
   and repeats deletion, tenant, lockout, and email-verification checks before issuing a session.
+- Administrative lock is persistent AppUser state distinct from temporary Identity failed-login lockout.
+  `IAuthenticationIdentityService.IsLockedOutAsync` composes both states, so password, Google, passkey,
+  MFA continuation, and refresh paths reject administratively locked users. Administrative locking also
+  rotates the security stamp and revokes all sessions resolved through the user's stakeholder record;
+  unlocking restores sign-in eligibility but never reactivates those sessions.
 
 ## Native passkeys
 

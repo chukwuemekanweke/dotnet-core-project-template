@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Authentication.Administration;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Authentication.ReadModels;
 using BackendProjectTemplate.Domain.Common.Auditing;
@@ -38,6 +39,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
         services.AddScoped<IBillingAccountResolver, BillingAccountResolver>();
         services.AddScoped<ISubscriptionLifecyclePersistence, SubscriptionLifecyclePersistence>();
+        services.AddScoped<AdminUserMutationExecutor>();
+        services.AddScoped<AdministratorSafetyGuard>();
+        services.AddScoped<IAdminUserAccountAdministration, AdminUserAccountAdministration>();
+        services.AddScoped<IAdminUserSessionAdministration, AdminUserSessionAdministration>();
+        services.AddScoped<IAdminUserRoleAdministration, AdminUserRoleAdministration>();
 
         return services;
     }
@@ -56,6 +62,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILoginActivityReadModelRepository, LoginActivityReadModelRepository>();
         services.AddScoped<IActiveSessionReadModelRepository, ActiveSessionReadModelRepository>();
         services.AddScoped<ISubscriptionAdministrationReadModelRepository, SubscriptionAdministrationReadModelRepository>();
+        services.AddScoped<IAdminUserReadModelRepository, AdminUserReadModelRepository>();
 
         return services;
     }

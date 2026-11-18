@@ -18,7 +18,7 @@ public sealed class IdentityUserPermissionService(UserManager<AppUser> userManag
 
         cancellationToken.ThrowIfCancellationRequested();
         var user = await userManager.FindByIdAsync(userId.ToString());
-        if (user is null || user.IsDeleted)
+        if (user is null || user.IsDeleted || user.IsAdministrativelyLocked)
         {
             return false;
         }

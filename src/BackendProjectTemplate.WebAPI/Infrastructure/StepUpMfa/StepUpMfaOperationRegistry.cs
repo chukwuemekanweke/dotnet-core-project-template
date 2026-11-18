@@ -15,7 +15,13 @@ public sealed class StepUpMfaOperationRegistry
             [StepUpMfaOperations.UpdateSubscriptionPlan] = new("PUT", "/api/v1/admin/subscription-plans/{id}"),
             [StepUpMfaOperations.SetSubscriptionPlanActivation] = new("PUT", "/api/v1/admin/subscription-plans/{id}/activation"),
             [StepUpMfaOperations.SetPaymentProviderActivation] = new("PUT", "/api/v1/payment-providers/{id}/activation"),
-            [StepUpMfaOperations.ActivateProvider] = new("PUT", "/api/v1/providers/active")
+            [StepUpMfaOperations.ActivateProvider] = new("PUT", "/api/v1/providers/active"),
+            [StepUpMfaOperations.LockUser] = new("POST", "/api/v1/admin/users/{id}/lock"),
+            [StepUpMfaOperations.UnlockUser] = new("POST", "/api/v1/admin/users/{id}/unlock"),
+            [StepUpMfaOperations.RevokeUserSession] = new("DELETE", "/api/v1/admin/users/{id}/sessions/{id}"),
+            [StepUpMfaOperations.RevokeAllUserSessions] = new("DELETE", "/api/v1/admin/users/{id}/sessions"),
+            [StepUpMfaOperations.AssignUserRole] = new("PUT", "/api/v1/admin/users/{id}/roles/{roleName}"),
+            [StepUpMfaOperations.RemoveUserRole] = new("DELETE", "/api/v1/admin/users/{id}/roles/{roleName}")
         };
 
     public bool Matches(string operation, string method, string path) =>
@@ -53,6 +59,13 @@ public sealed class StepUpMfaOperationRegistry
                 if (expected[index] == "{id}")
                 {
                     if (!Guid.TryParse(actual[index], out _))
+                        return false;
+                    continue;
+                }
+
+                if (expected[index] == "{roleName}")
+                {
+                    if (string.IsNullOrWhiteSpace(actual[index]))
                         return false;
                     continue;
                 }
