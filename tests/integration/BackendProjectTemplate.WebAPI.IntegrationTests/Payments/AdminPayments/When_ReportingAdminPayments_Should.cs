@@ -18,6 +18,7 @@ public sealed class When_ReportingAdminPayments_Should(ContainersFixture fixture
     : AdminSubscriptionIntegrationTestBase(fixture)
 {
     private readonly string _referencePrefix = $"admin-report-{Guid.CreateVersion7():N}";
+    private readonly List<Guid> _paymentProviderIds = [];
 
     [Fact]
     public async Task AuthorizeFilterPaginateAndReturnSafeDiagnosticDetail()
@@ -91,6 +92,9 @@ public sealed class When_ReportingAdminPayments_Should(ContainersFixture fixture
             await dbContext.Wallets.IgnoreQueryFilters()
                 .Where(item => item.TenantId == TargetTenantId && item.StakeholderId == TargetStakeholderId && item.CurrencyId == CurrencyId)
                 .ExecuteDeleteAsync();
+            await dbContext.PaymentProviders.IgnoreQueryFilters()
+                .Where(item => _paymentProviderIds.Contains(item.Id))
+                .ExecuteDeleteAsync();
         }
 
         await base.DisposeAsync();
@@ -100,8 +104,13 @@ public sealed class When_ReportingAdminPayments_Should(ContainersFixture fixture
     {
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var providers = await dbContext.PaymentProviders.OrderBy(item => item.ProviderKey).Take(2).ToListAsync();
-        providers.Count.ShouldBeGreaterThanOrEqualTo(2);
+        var providers = new[]
+        {
+            PaymentProvider.Create("Admin Report Primary", $"{_referencePrefix}-primary", true),
+            PaymentProvider.Create("Admin Report Isolated", $"{_referencePrefix}-isolated", true)
+        };
+        _paymentProviderIds.AddRange(providers.Select(item => item.Id));
+        dbContext.PaymentProviders.AddRange(providers);
         var stakeholder = await dbContext.Stakeholders.SingleAsync(item => item.Id == TargetStakeholderId);
         var now = UtcNow();
         var first = CreateSucceededPayment(providers[0].Id, stakeholder.AppUserId, stakeholder.CountryId, "one", now);
