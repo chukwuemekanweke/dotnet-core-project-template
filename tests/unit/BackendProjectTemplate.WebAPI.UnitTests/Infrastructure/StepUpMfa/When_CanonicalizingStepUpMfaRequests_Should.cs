@@ -85,4 +85,46 @@ public sealed class When_CanonicalizingStepUpMfaRequests_Should
             null,
             out _).ShouldBeFalse();
     }
+
+    [Fact]
+    public void BindAdministrativeUserProofsToTargetRoleAndReason()
+    {
+        var firstUserId = Guid.CreateVersion7();
+        var secondUserId = Guid.CreateVersion7();
+        using var firstReason = JsonDocument.Parse("""{"reason":"Security incident"}""");
+        using var secondReason = JsonDocument.Parse("""{"reason":"Support request"}""");
+
+        _sut.TryCreateFingerprint(
+            StepUpMfaOperations.AssignUserRole,
+            "PUT",
+            $"/api/v1/admin/users/{firstUserId}/roles/SupportAgent",
+            null,
+            firstReason.RootElement,
+            out var original).ShouldBeTrue();
+        _sut.TryCreateFingerprint(
+            StepUpMfaOperations.AssignUserRole,
+            "PUT",
+            $"/api/v1/admin/users/{secondUserId}/roles/SupportAgent",
+            null,
+            firstReason.RootElement,
+            out var differentTarget).ShouldBeTrue();
+        _sut.TryCreateFingerprint(
+            StepUpMfaOperations.AssignUserRole,
+            "PUT",
+            $"/api/v1/admin/users/{firstUserId}/roles/FinanceOfficer",
+            null,
+            firstReason.RootElement,
+            out var differentRole).ShouldBeTrue();
+        _sut.TryCreateFingerprint(
+            StepUpMfaOperations.AssignUserRole,
+            "PUT",
+            $"/api/v1/admin/users/{firstUserId}/roles/SupportAgent",
+            null,
+            secondReason.RootElement,
+            out var differentReason).ShouldBeTrue();
+
+        differentTarget.ShouldNotBe(original);
+        differentRole.ShouldNotBe(original);
+        differentReason.ShouldNotBe(original);
+    }
 }

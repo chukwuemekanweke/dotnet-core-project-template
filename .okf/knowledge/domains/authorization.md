@@ -14,6 +14,10 @@ code_refs:
     - src/BackendProjectTemplate.Domain/Common/Authorization/**
     - src/BackendProjectTemplate.Domain/Common/Authentication/StepUpMfa*
     - src/BackendProjectTemplate.Application/Authentication/Features/VerifyStepUpMfa/**
+    - src/BackendProjectTemplate.Application/Authentication/Features/*AdminUser*/**
+    - src/BackendProjectTemplate.Domain/Authentication/Administration/**
+    - src/BackendProjectTemplate.Infrastructure/Persistence/AdminUser*
+    - src/BackendProjectTemplate.WebAPI/Features/Authentication/AdminUsers/**
     - src/BackendProjectTemplate.Infrastructure/Authorization/**
     - src/BackendProjectTemplate.Infrastructure/Authentication/ServiceCollectionExtensions.cs
     - src/BackendProjectTemplate.Infrastructure/Authentication/RedisStepUpMfaProofStore.cs
@@ -40,7 +44,8 @@ status: stable
 
 ASP.NET Core Identity roles and the existing `AppUser` are authoritative. Roles, permissions, and
 role-to-permission mappings are static source-controlled catalogs; do not add runtime IAM CRUD, a
-parallel admin identity, or an `IsAdmin` flag. User-role assignment APIs remain outside this boundary.
+parallel admin identity, or an `IsAdmin` flag. Administrative role assignment may only change membership
+in the four known roles; it never changes the role or permission catalogs.
 
 ## Evaluation
 
@@ -75,6 +80,12 @@ Initial Administrator bootstrap targets an existing verified user by GUID from p
 configuration. A role claim marker makes bootstrap globally one-time; recovery requires deliberate
 removal of the marker through controlled database maintenance before rerunning the migrator.
 
+CAF-BE-017 administrative user security mutations share a PostgreSQL transaction-scoped advisory lock.
+Locking an Administrator and removing the Administrator role count usable (verified, non-deleted,
+non-administratively-locked) administrators while that lock is held, preventing concurrent requests from
+removing or locking the final usable Administrator. The bootstrap marker is never reset by these APIs.
+Successful mutations and `AdministrativeSecurityAudit` creation commit in the same database transaction.
+
 ## Current endpoint matrix
 
 General provider activation requires `providers.manage` (Administrator only). Payment-provider
@@ -97,3 +108,11 @@ privileged mutation is incomplete until its operation contract, `RequireStepUpMf
 binding tests are added. Proof consumption precedes MVC validation and business execution, so validation
 or execution failure requires a new proof; domain idempotency remains responsible for lost responses and
 retries because Redis and PostgreSQL do not share a distributed transaction.
+
+Administrative users: list/detail/current-role reads require `users.read`. Lock/unlock, revoke one/all
+sessions, and assign/remove a role require `users.manage` plus operation-specific step-up proofs. Roles
+are limited to `ApplicationRoles.All`; the APIs do not edit the catalog, permission mappings, or Identity
+role claims. Request fingerprints bind the target AppUser, session or role path where applicable, and the
+reason body. Account mutation resolves AppUser-to-Stakeholder relationships before session operations.
+Administrative lock is dedicated AppUser state rather than failed-login lockout; locking rotates the
+security stamp and revokes active sessions, while unlock never reactivates revoked sessions.

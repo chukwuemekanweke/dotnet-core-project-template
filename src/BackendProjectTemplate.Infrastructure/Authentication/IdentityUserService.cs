@@ -45,11 +45,16 @@ public sealed class IdentityUserService(UserManager<AppUser> userManager) : IAut
     public Task<IdentityResult> UpdateSecurityStampAsync(AppUser user) =>
         userManager.UpdateSecurityStampAsync(user);
 
-    public Task<bool> IsLockedOutAsync(AppUser user) =>
-        userManager.IsLockedOutAsync(user);
+    public async Task<bool> IsLockedOutAsync(AppUser user) =>
+        user.IsAdministrativelyLocked || await userManager.IsLockedOutAsync(user);
 
     public async Task<DateTimeOffset?> GetLockoutEndUtcAsync(AppUser user)
     {
+        if (user.IsAdministrativelyLocked)
+        {
+            return DateTimeOffset.MaxValue;
+        }
+
         var lockoutEnd = await userManager.GetLockoutEndDateAsync(user);
         return lockoutEnd?.ToUniversalTime();
     }

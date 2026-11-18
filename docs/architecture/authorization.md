@@ -64,13 +64,63 @@ Current protected operations are:
 | Subscription allocation (`POST /admin/subscriptions/allocations`) | `subscriptions.allocate` |
 | Immediate / period-end cancellation, blocked-purchase fulfillment retry | `subscriptions.manage` |
 | Plan create, update, activation/deactivation | `subscriptions.plans.manage` |
+| Admin user list, detail, and role reads | `users.read` |
+| Admin user lock/unlock, session revocation, and seeded-role changes | `users.manage` |
 
 All mutation rows in this table require step-up MFA. Their stable operations are
 `admin.providers.activate`, `admin.payment-providers.set-activation`,
 `admin.subscriptions.allocate`, `admin.subscriptions.cancel-immediately`,
 `admin.subscriptions.cancel-at-period-end`, `admin.subscriptions.retry-purchase-fulfillment`,
 `admin.subscription-plans.create`, `admin.subscription-plans.update`, and
-`admin.subscription-plans.set-activation`.
+`admin.subscription-plans.set-activation`. Administrative user mutations use
+`admin.users.lock`, `admin.users.unlock`, `admin.users.sessions.revoke`,
+`admin.users.sessions.revoke-all`, `admin.users.roles.assign`, and
+`admin.users.roles.remove`. Their proof fingerprint binds the target user, optional session or role,
+and the reason body, so a proof cannot be redirected to another account or operation.
+
+## Administrative user management
+
+`GET /api/v1/admin/users` provides server-side search, role/account-lock/tenant filters, deterministic
+ordering, offset pagination, total count, and explicit safe projections. `GET /api/v1/admin/users/{id}`
+returns the bounded Identity, stakeholder, latest KYC, active-session, latest-login, and current
+stakeholder-subscription summaries. `GET /api/v1/admin/users/{id}/roles` returns current server-side
+Identity membership. These reads require `users.read`; they never return password/token hashes,
+security stamps, authenticator material, recovery codes, or refresh tokens.
+
+The privileged endpoints are explicit:
+
+| Endpoint | Behavior |
+| --- | --- |
+| `POST /api/v1/admin/users/{id}/lock` | Administrative lock and revoke all target sessions |
+| `POST /api/v1/admin/users/{id}/unlock` | Remove only the administrative lock; revoked sessions remain revoked |
+| `DELETE /api/v1/admin/users/{id}/sessions/{sessionId}` | Revoke one session after verifying target ownership |
+| `DELETE /api/v1/admin/users/{id}/sessions` | Revoke all sessions resolved through the target's stakeholder records |
+| `PUT /api/v1/admin/users/{id}/roles/{roleName}` | Assign one known seeded role idempotently |
+| `DELETE /api/v1/admin/users/{id}/roles/{roleName}` | Remove one known seeded role idempotently |
+
+Each requires `users.manage`, a request-bound step-up proof, and a non-empty reason. Role names are
+restricted to `ApplicationRoles.All`; role definition, renaming, deletion, permission editing, and
+role-claim editing remain unavailable through HTTP.
+
+Administrative lock is dedicated persistent state on `AppUser`, distinct from Identity's temporary
+failed-login lockout. Shared account-eligibility checks treat either state as locked. Locking rotates the
+security stamp and revokes every active session resolved through the user's stakeholder association;
+active-session authorization and refresh-token rotation therefore fail for previously issued sessions.
+Unlocking does not resurrect them. Password, Google, passkey, MFA-continuation, and refresh workflows all
+reuse the same Identity eligibility service.
+
+Locking yourself and removing your own Administrator role are forbidden. Locking an Administrator or
+removing that role takes a PostgreSQL transaction-scoped advisory lock and rechecks the number of usable,
+email-confirmed Administrators inside the transaction. This serializes competing requests and prevents
+the final usable Administrator from being removed or locked. The one-time bootstrap marker is never reset;
+recovery still follows the controlled maintenance procedure below.
+
+Successful security mutations write `authentication.AdministrativeSecurityAudits` in the same database
+transaction as the committed change. Records include actor and target AppUser IDs, action, reason,
+timestamp, request tenant/correlation/flow context, and previous/resulting role sets. Failed and unchanged
+operations do not create misleading success rows. Tenant-scoped stakeholder, KYC, subscription, and
+session information is always joined from the global AppUser relationship; AppUser and Stakeholder IDs
+are never treated as interchangeable.
 
 ## Privileged-action step-up MFA
 
@@ -163,8 +213,8 @@ original user's role is removed. Recovery is an explicit privileged operation: c
 Administrator remains, remove that marker in a controlled database maintenance transaction, configure
 the verified recovery user ID, run DatabaseMigrator once, and disable the settings again.
 
-CAF-BE-015 may assign the seeded roles to users through an authenticated administrative workflow; it
-must not make role definitions or permission mappings runtime-editable.
+CAF-BE-017 assigns and removes the seeded roles through the authenticated, audited, step-up-protected
+administrative workflow described above. Role definitions and permission mappings remain source controlled.
 
 ## Verification matrix
 
@@ -173,4 +223,6 @@ allow/deny matrix for all four roles across both administrative mutations, and i
 role removal with the same JWT. Separate integration coverage verifies repeatable role/claim seeding,
 stale-claim reconciliation, user-role preservation, and one-time bootstrap behavior. Unit coverage
 verifies catalog uniqueness, valid mappings, least privilege, multi-role unions, unknown-permission
-denial, and dependency fail-closed behavior.
+denial, and dependency fail-closed behavior. Administrative-user coverage additionally verifies safe
+read projections and filters, seeded-role assignment, unknown-role rejection, session invalidation,
+lock/unlock authentication effects, durable audits, and concurrent last-Administrator protection.

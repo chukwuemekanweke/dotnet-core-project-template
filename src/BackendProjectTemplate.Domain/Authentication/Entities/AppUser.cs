@@ -25,6 +25,9 @@ public sealed class AppUser : IdentityUser<Guid>, IAuditableEntity, ISoftDelete
     public bool IsDeleted { get; private set; }
     public DateTimeOffset? DeletedAtUtc { get; private set; }
     public string? DeletedBy { get; private set; }
+    public bool IsAdministrativelyLocked { get; private set; }
+    public DateTimeOffset? AdministrativelyLockedAtUtc { get; private set; }
+    public Guid? AdministrativelyLockedByUserId { get; private set; }
     public static AppUser Create(string email) =>
         new(email);
 
@@ -34,6 +37,32 @@ public sealed class AppUser : IdentityUser<Guid>, IAuditableEntity, ISoftDelete
     public void MarkEmailVerified()
     {
         EmailConfirmed = true;
+    }
+
+    public bool LockAdministratively(Guid actorUserId, DateTimeOffset utcNow)
+    {
+        if (IsAdministrativelyLocked)
+        {
+            return false;
+        }
+
+        IsAdministrativelyLocked = true;
+        AdministrativelyLockedAtUtc = utcNow;
+        AdministrativelyLockedByUserId = actorUserId;
+        return true;
+    }
+
+    public bool UnlockAdministratively()
+    {
+        if (!IsAdministrativelyLocked)
+        {
+            return false;
+        }
+
+        IsAdministrativelyLocked = false;
+        AdministrativelyLockedAtUtc = null;
+        AdministrativelyLockedByUserId = null;
+        return true;
     }
 
     public void SetCreatedAudit(DateTimeOffset utcNow, string actorId)

@@ -13,10 +13,13 @@ public sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
         builder.Property(user => user.NormalizedUserName).HasMaxLength(256);
         builder.Property(user => user.Email).HasMaxLength(256);
         builder.Property(user => user.NormalizedEmail).HasMaxLength(256);
+        builder.Property(user => user.IsAdministrativelyLocked).IsRequired();
 
         builder.HasIndex(user => user.NormalizedUserName)
             .HasDatabaseName("UserNameIndex")
             .IsUnique()
             .HasFilter("\"NormalizedUserName\" IS NOT NULL AND \"IsDeleted\" = FALSE");
+
+        builder.HasIndex(user => user.IsAdministrativelyLocked);
     }
 }

@@ -11,6 +11,12 @@ public static class StepUpMfaOperations
     public const string SetSubscriptionPlanActivation = "admin.subscription-plans.set-activation";
     public const string SetPaymentProviderActivation = "admin.payment-providers.set-activation";
     public const string ActivateProvider = "admin.providers.activate";
+    public const string LockUser = "admin.users.lock";
+    public const string UnlockUser = "admin.users.unlock";
+    public const string RevokeUserSession = "admin.users.sessions.revoke";
+    public const string RevokeAllUserSessions = "admin.users.sessions.revoke-all";
+    public const string AssignUserRole = "admin.users.roles.assign";
+    public const string RemoveUserRole = "admin.users.roles.remove";
 
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
@@ -22,6 +28,12 @@ public static class StepUpMfaOperations
         UpdateSubscriptionPlan,
         SetSubscriptionPlanActivation,
         SetPaymentProviderActivation,
-        ActivateProvider
+        ActivateProvider,
+        LockUser,
+        UnlockUser,
+        RevokeUserSession,
+        RevokeAllUserSessions,
+        AssignUserRole,
+        RemoveUserRole
     };
 }

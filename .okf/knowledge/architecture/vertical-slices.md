@@ -40,6 +40,8 @@ Matching WebAPI:
 - WebAPI request DTOs and request validators live in the matching controller's feature folder at the HTTP edge, not in Application.
 - Feature-specific helper classes live in the same feature folder when only that feature uses them.
 - WebAPI controllers are organized by feature folder and use resource-oriented routes.
+- Controller action parameters declare their binding source explicitly: use `[FromRoute]` for route
+  parameters, `[FromQuery]` for query parameters, and `[FromBody]` for request bodies.
 - Prefer controller-based endpoints over minimal APIs.
 - Existing top-level feature groupings: `Authentication`, `Stakeholders`, `Payments`, `Notifications`, `Providers`, `ReferenceData` — place new features under the matching domain, or propose a new
   top-level domain folder only when the feature genuinely doesn't belong to an existing one.
