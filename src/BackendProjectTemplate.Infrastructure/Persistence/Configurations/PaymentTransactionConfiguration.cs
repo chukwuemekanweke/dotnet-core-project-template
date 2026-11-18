@@ -57,7 +57,12 @@ public sealed class PaymentTransactionConfiguration : IEntityTypeConfiguration<P
         builder.HasIndex(transaction => transaction.PaymentStatus);
         builder.HasIndex(transaction => transaction.PaymentIntent);
         builder.HasIndex(transaction => transaction.PaymentProviderId);
-        builder.HasIndex(transaction => transaction.CreatedAtUtc);
+        builder.HasIndex(transaction => transaction.TenantId);
+        builder.HasIndex(transaction => transaction.StakeholderId);
+        builder.HasIndex(transaction => transaction.CurrencyId);
+        builder.HasIndex(transaction => transaction.PaymentMethodType);
+        builder.HasIndex(transaction => new { transaction.CreatedAtUtc, transaction.Id })
+            .HasFilter("\"IsDeleted\" = FALSE");
         builder.HasIndex(transaction => transaction.InitiatedByUserId);
     }
 

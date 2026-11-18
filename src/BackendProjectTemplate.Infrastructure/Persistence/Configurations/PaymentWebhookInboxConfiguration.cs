@@ -38,10 +38,10 @@ public sealed class PaymentWebhookInboxConfiguration : IEntityTypeConfiguration<
         builder.Property(inbox => inbox.RowVersion)
             .IsRowVersion();
 
-        builder.HasIndex(inbox => inbox.MerchantReference)
+        builder.HasIndex(inbox => new { inbox.PaymentProviderId, inbox.MerchantReference, inbox.ReceivedAtUtc, inbox.Id })
             .HasFilter("\"MerchantReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
 
-        builder.HasIndex(inbox => inbox.ProviderReference)
+        builder.HasIndex(inbox => new { inbox.PaymentProviderId, inbox.ProviderReference, inbox.ReceivedAtUtc, inbox.Id })
             .HasFilter("\"ProviderReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
 
         builder.HasIndex(inbox => inbox.WebhookProcessingStatus);
