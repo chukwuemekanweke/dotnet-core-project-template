@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.Application.Payments.Features.GetAdminPaymentDetail;
+
+public sealed record GetAdminPaymentDetailCommand(Guid PaymentTransactionId, int WebhookHistoryLimit);

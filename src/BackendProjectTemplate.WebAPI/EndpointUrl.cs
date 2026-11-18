@@ -169,6 +169,13 @@ public static class EndpointUrl
         public static string PurchaseFulfillmentRetriesV1(Guid subscriptionId) => $"{V1}/{subscriptionId}/purchase-fulfillment-retries";
     }
 
+    public static class AdminPayments
+    {
+        public const string Route = $"api/{Versions.V1Route}/admin/payments";
+        public static readonly string V1 = ToV1(Route);
+        public static string DetailV1(Guid paymentTransactionId) => $"{V1}/{paymentTransactionId}";
+    }
+
     public static class AdminUsers
     {
         public const string Route = $"api/{Versions.V1Route}/admin/users";

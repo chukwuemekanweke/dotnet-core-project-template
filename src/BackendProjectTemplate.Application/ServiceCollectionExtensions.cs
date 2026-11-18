@@ -48,6 +48,8 @@ using BackendProjectTemplate.Application.Kyc.Features.ReconcileVerifications;
 using BackendProjectTemplate.Application.Kyc.Features.StartVerification;
 using BackendProjectTemplate.Application.Notifications.Features.ProcessMailtrapDeliveryWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
+using BackendProjectTemplate.Application.Payments.Features.GetAdminPaymentDetail;
+using BackendProjectTemplate.Application.Payments.Features.GetAdminPayments;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
@@ -153,6 +155,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PaymentInitiationService>();
         services.AddScoped<GetStakeholderWalletTransactionsHandler>();
         services.AddScoped<GetStakeholderWalletTopUpTransactionDetailHandler>();
+        services.AddScoped<GetAdminPaymentsHandler>();
+        services.AddScoped<GetAdminPaymentDetailHandler>();
         services.AddScoped<ProcessSafeHavenAccountCreditWebhookHandler>();
         services.AddScoped<ProcessSafeHavenAccountDebitWebhookHandler>();
         services.AddScoped<ProcessSafeHavenVirtualAccountTransferWebhookHandler>();

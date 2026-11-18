@@ -1693,7 +1693,7 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAtUtc");
+                    b.HasIndex("CurrencyId");
 
                     b.HasIndex("InitiatedByUserId");
 
@@ -1703,12 +1703,21 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasIndex("PaymentIntent");
 
+                    b.HasIndex("PaymentMethodType");
+
                     b.HasIndex("PaymentProviderId");
 
                     b.HasIndex("PaymentStatus");
 
                     b.HasIndex("ProviderReference")
                         .HasFilter("\"ProviderReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
+
+                    b.HasIndex("StakeholderId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("CreatedAtUtc", "Id")
+                        .HasFilter("\"IsDeleted\" = FALSE");
 
                     b.ToTable("PaymentTransactions", "payments");
                 });
@@ -1795,17 +1804,17 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MerchantReference")
-                        .HasFilter("\"MerchantReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
-
-                    b.HasIndex("ProviderReference")
-                        .HasFilter("\"ProviderReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
-
                     b.HasIndex("WebhookProcessingStatus");
 
                     b.HasIndex("PaymentProviderId", "WebhookEventId")
                         .IsUnique()
                         .HasFilter("\"WebhookEventId\" IS NOT NULL AND \"IsDeleted\" = FALSE");
+
+                    b.HasIndex("PaymentProviderId", "MerchantReference", "ReceivedAtUtc", "Id")
+                        .HasFilter("\"MerchantReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
+
+                    b.HasIndex("PaymentProviderId", "ProviderReference", "ReceivedAtUtc", "Id")
+                        .HasFilter("\"ProviderReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
 
                     b.ToTable("PaymentWebhookInboxes", "payments");
                 });

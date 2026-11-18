@@ -15,6 +15,7 @@ code_refs:
     - src/BackendProjectTemplate.Domain/Payments/**
     - src/BackendProjectTemplate.Infrastructure/Payments/**
     - src/BackendProjectTemplate.Infrastructure/Persistence/BillingAccountResolver.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/PaymentAdministrationReadModelRepository.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/BillingAccountConfiguration.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/SubscriptionActivationConfiguration.cs
     - src/BackendProjectTemplate.Application/Subscriptions/Features/PurchaseSubscription/**
@@ -62,6 +63,18 @@ status: stable
 - `ReconcilePayments` (Jobs) periodically reconciles payment state against provider truth. Bachs
   renewal transactions carry a durable `renewal_attempt_id` marker so verification uses
   `/v1/payments/{payment_id}` instead of the hosted-checkout lookup.
+- Administrative payment reporting is read-only and cross-tenant under `payments.read`: `GET
+  /api/v1/admin/payments` performs SQL-side filtering, safe reference search and deterministic
+  `(CreatedAtUtc, Id)` keyset pagination; `GET /api/v1/admin/payments/{id}` projects provider/currency/
+  stakeholder details, provider-isolated bounded webhook activity, the latest reconciliation check,
+  and persisted wallet-credit, subscription-purchase or subscription-renewal fulfillment evidence.
+  Reporting uses `AppReadDbContext` through `IPaymentAdministrationReadModelRepository`; it never
+  returns raw webhook payloads, provider metadata, processing exceptions or provider failure text.
+  Payment ordering uses a filtered `(CreatedAtUtc, Id)` index; direct payment filters and the
+  provider-plus-reference webhook correlation paths have dedicated indexes.
+- Payment status-transition history and reconciliation-attempt history are not currently persisted.
+  Administrative detail therefore returns the current status plus its latest safe reason and
+  `LastStatusCheckAtUtc`; it must not infer or manufacture historical transitions or reconciliation outcomes.
 - `SuccessfulPaymentConfirmed`, `ActivateSubscriptionCommand`, `CreditWalletCommand` cross into `Consumer`/`Jobs` via `Contracts` and the outbox — see [[async-processing]].
 - The generic payment-initiation endpoint is wallet-top-up only. Subscription checkout goes through
   the dedicated [[subscriptions]] purchase slice so plan price/currency are server-authoritative and a
