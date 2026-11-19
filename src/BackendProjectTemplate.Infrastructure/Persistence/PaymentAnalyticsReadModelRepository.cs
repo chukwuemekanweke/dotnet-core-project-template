@@ -148,79 +148,75 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
     private async Task<IReadOnlyList<PaymentAnalyticsTimelineRow>> GetTimelineByDayAsync(
         IQueryable<PaymentTransaction> payments,
         CancellationToken cancellationToken) =>
-        MapTimeline(await GroupTimeline(payments.Select(payment => new TimelineSource<DayPeriod>
+        await GetTimelineAsync(payments.Select(payment => new TimelineSource
             {
                 Payment = payment,
-                Period = new DayPeriod(payment.CreatedAtUtc.Year, payment.CreatedAtUtc.Month, payment.CreatedAtUtc.Day)
-            }))
-            .ToListAsync(cancellationToken), key => new DateOnly(key.Year, key.Month, key.Day));
+                PeriodStart = payment.CreatedAtUtc.Date
+            }), cancellationToken);
 
     private async Task<IReadOnlyList<PaymentAnalyticsTimelineRow>> GetTimelineByWeekAsync(
         IQueryable<PaymentTransaction> payments,
         CancellationToken cancellationToken)
     {
-        var rows = await GroupTimeline(payments.Select(payment => new TimelineSource<DateTime>
+        return await GetTimelineAsync(payments.Select(payment => new TimelineSource
             {
                 Payment = payment,
-                Period = payment.CreatedAtUtc.Date.AddDays(-(((int)payment.CreatedAtUtc.DayOfWeek + 6) % 7))
-            }))
-            .ToListAsync(cancellationToken);
-        return MapTimeline(rows, DateOnly.FromDateTime);
+                PeriodStart = payment.CreatedAtUtc.Date.AddDays(-(((int)payment.CreatedAtUtc.DayOfWeek + 6) % 7))
+            }), cancellationToken);
     }
 
     private async Task<IReadOnlyList<PaymentAnalyticsTimelineRow>> GetTimelineByMonthAsync(
         IQueryable<PaymentTransaction> payments,
         CancellationToken cancellationToken) =>
-        MapTimeline(await GroupTimeline(payments.Select(payment => new TimelineSource<MonthPeriod>
+        await GetTimelineAsync(payments.Select(payment => new TimelineSource
             {
                 Payment = payment,
-                Period = new MonthPeriod(payment.CreatedAtUtc.Year, payment.CreatedAtUtc.Month)
-            }))
-            .ToListAsync(cancellationToken), key => new DateOnly(key.Year, key.Month, 1));
+                PeriodStart = new DateTime(payment.CreatedAtUtc.Year, payment.CreatedAtUtc.Month, 1)
+            }), cancellationToken);
 
     private async Task<IReadOnlyList<PaymentAnalyticsTimelineRow>> GetTimelineByYearAsync(
         IQueryable<PaymentTransaction> payments,
         CancellationToken cancellationToken) =>
-        MapTimeline(await GroupTimeline(payments.Select(payment => new TimelineSource<int>
+        await GetTimelineAsync(payments.Select(payment => new TimelineSource
             {
                 Payment = payment,
-                Period = payment.CreatedAtUtc.Year
-            }))
-            .ToListAsync(cancellationToken), year => new DateOnly(year, 1, 1));
+                PeriodStart = new DateTime(payment.CreatedAtUtc.Year, 1, 1)
+            }), cancellationToken);
 
-    private IQueryable<TimelineAggregate<TKey>> GroupTimeline<TKey>(
-        IQueryable<TimelineSource<TKey>> source) where TKey : notnull =>
-        from item in source
-        join currency in dbContext.Currencies.AsNoTracking() on item.Payment.CurrencyId equals currency.Id
-        group item.Payment by new { item.Period, item.Payment.CurrencyId, currency.CurrencyCode }
-        into groupItems
-        select new TimelineAggregate<TKey>
-        {
-            Period = groupItems.Key.Period,
-            CurrencyId = groupItems.Key.CurrencyId,
-            CurrencyCode = groupItems.Key.CurrencyCode,
-            TransactionCount = groupItems.LongCount(),
-            SuccessfulCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Succeeded),
-            UnsuccessfulCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Failed || item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired),
-            ProcessingCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated),
-            AttemptedVolume = groupItems.Sum(item => item.Amount),
-            SuccessfulVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Succeeded ? item.Amount : 0m),
-            FailedVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Failed ? item.Amount : 0m),
-            ProcessingVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated ? item.Amount : 0m),
-            CancelledVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Cancelled ? item.Amount : 0m),
-            ExpiredVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m)
-        };
+    private async Task<IReadOnlyList<PaymentAnalyticsTimelineRow>> GetTimelineAsync(
+        IQueryable<TimelineSource> source,
+        CancellationToken cancellationToken)
+    {
+        var rows = await (
+                from item in source
+                join currency in dbContext.Currencies.AsNoTracking() on item.Payment.CurrencyId equals currency.Id
+                group item.Payment by new { item.PeriodStart, item.Payment.CurrencyId, currency.CurrencyCode }
+                into groupItems
+                orderby groupItems.Key.PeriodStart, groupItems.Key.CurrencyCode
+                select new TimelineAggregate
+                {
+                    PeriodStart = groupItems.Key.PeriodStart,
+                    CurrencyId = groupItems.Key.CurrencyId,
+                    CurrencyCode = groupItems.Key.CurrencyCode,
+                    TransactionCount = groupItems.LongCount(),
+                    SuccessfulCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Succeeded),
+                    UnsuccessfulCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Failed || item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired),
+                    ProcessingCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated),
+                    AttemptedVolume = groupItems.Sum(item => item.Amount),
+                    SuccessfulVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Succeeded ? item.Amount : 0m),
+                    FailedVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Failed ? item.Amount : 0m),
+                    ProcessingVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated ? item.Amount : 0m),
+                    CancelledVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Cancelled ? item.Amount : 0m),
+                    ExpiredVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m)
+                })
+            .ToListAsync(cancellationToken);
 
-    private static IReadOnlyList<PaymentAnalyticsTimelineRow> MapTimeline<TKey>(
-        IEnumerable<TimelineAggregate<TKey>> rows,
-        Func<TKey, DateOnly> dateSelector) where TKey : notnull =>
-        rows.Select(row => new PaymentAnalyticsTimelineRow(
-                dateSelector(row.Period), row.CurrencyId, row.CurrencyCode, row.TransactionCount,
+        return rows.Select(row => new PaymentAnalyticsTimelineRow(
+                DateOnly.FromDateTime(row.PeriodStart), row.CurrencyId, row.CurrencyCode, row.TransactionCount,
                 row.SuccessfulCount, row.UnsuccessfulCount, row.ProcessingCount, row.AttemptedVolume,
                 row.SuccessfulVolume, row.FailedVolume, row.ProcessingVolume, row.CancelledVolume, row.ExpiredVolume))
-            .OrderBy(row => row.PeriodStart)
-            .ThenBy(row => row.CurrencyCode, StringComparer.Ordinal)
             .ToArray();
+    }
 
     private static IQueryable<PaymentTransaction> ApplyFilters(
         IQueryable<PaymentTransaction> payments,
@@ -240,9 +236,9 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
         return payments;
     }
 
-    private sealed class TimelineAggregate<TKey> where TKey : notnull
+    private sealed class TimelineAggregate
     {
-        public required TKey Period { get; init; }
+        public DateTime PeriodStart { get; init; }
         public Guid CurrencyId { get; init; }
         public string CurrencyCode { get; init; } = string.Empty;
         public long TransactionCount { get; init; }
@@ -257,12 +253,9 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
         public decimal ExpiredVolume { get; init; }
     }
 
-    private sealed class TimelineSource<TKey> where TKey : notnull
+    private sealed class TimelineSource
     {
         public required PaymentTransaction Payment { get; init; }
-        public required TKey Period { get; init; }
+        public DateTime PeriodStart { get; init; }
     }
-
-    private sealed record DayPeriod(int Year, int Month, int Day);
-    private sealed record MonthPeriod(int Year, int Month);
 }

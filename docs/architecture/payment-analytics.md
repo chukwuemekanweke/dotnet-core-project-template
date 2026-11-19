@@ -31,6 +31,10 @@ currencies present in the result. Empty datasets return zero summary counts and 
 `PaymentAnalyticsReadModelRepository` applies composable filters and conditional `Count`/`Sum`
 aggregates to `AppReadDbContext`; it never loads individual transactions for grouping. The existing
 filter indexes and `(CreatedAtUtc, Id)` reporting index are reused, so this change adds no migration.
+Timeline queries project each transaction to one `DateTime` period start, then use one explicit
+currency-separated aggregate query for every interval. Npgsql translates day/week buckets to
+`date_trunc`/`date_part` expressions and month/year buckets to date-part grouping; only the already
+aggregated rows are converted to `DateOnly` in Infrastructure.
 Shared reporting code uses `Domain.Common.Analytics`: `Interval` defines the calendar grain,
 `AnalyticsCalendar` owns UTC calendar bucket boundaries, and `AnalyticsMath` owns safe rounded
 percentages and averages. Other reporting slices should reuse these utilities instead of recreating
@@ -40,9 +44,14 @@ Each endpoint has a separate SHA-256 cache key containing the effective UTC rang
 interval, all filters, tenant/global scope, and reporting timezone. Default TTLs are summary two
 minutes, statuses three minutes, and timeline/providers/intents five minutes. Authorization runs before
 cache access. Cache failures are logged and fall back to PostgreSQL; writes are best effort, and a
-per-process single-flight gate limits concurrent identical cache misses. Historical records are not
-cached indefinitely because reconciliation may update payment state.
+reference-counted per-process keyed lock limits concurrent identical cache misses. A key cannot be
+retired while callers hold or await it; waiting cancellation releases only that caller's reference,
+and the final releaser removes the idle entry. Historical records are not cached indefinitely because
+reconciliation may update payment state.
 
 Known limitations: V1 uses UTC only, has no reporting-currency conversion, and does not use materialized
 views or precomputed aggregates. Empty timelines cannot manufacture a currency series when no matching
-transaction identifies a currency.
+transaction identifies a currency. PostgreSQL-backed tests verify the generated command count,
+parameterized half-open filters, SQL grouping/conditional aggregation and all four provider-translated
+calendar expressions. The integration dataset is intentionally small and is not representative enough
+for meaningful `EXPLAIN (ANALYZE, BUFFERS)` benchmarking, so no additional index is claimed or added.

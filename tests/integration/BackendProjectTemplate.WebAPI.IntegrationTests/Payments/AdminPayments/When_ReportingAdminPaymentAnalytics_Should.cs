@@ -1,12 +1,16 @@
 using BackendProjectTemplate.Application.Payments.Analytics;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Common.Analytics;
 using BackendProjectTemplate.Domain.Common.Authorization;
 using BackendProjectTemplate.Domain.Payments.Entities;
+using BackendProjectTemplate.Domain.Payments.ReadModels;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Subscriptions.AdminSubscriptions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -31,33 +35,71 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
 
         await GrantRoleAsync(ApplicationRoles.FinanceOfficer);
         await SeedAnalyticsPaymentsAsync();
-        var today = DateOnly.FromDateTime(UtcNow().UtcDateTime);
-        var query = $"from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}&tenantId={TargetTenantId}";
+        var from = new DateOnly(2025, 12, 28);
+        var to = new DateOnly(2026, 4, 30);
+        var query = $"from={from:yyyy-MM-dd}&to={to:yyyy-MM-dd}&tenantId={TargetTenantId}";
 
         using var summaryResponse = await Client.GetAsync($"{EndpointUrl.AdminPaymentAnalytics.SummaryV1}?{query}");
         summaryResponse.StatusCode.ShouldBe(HttpStatusCode.OK, await summaryResponse.Content.ReadAsStringAsync());
         var summary = (await summaryResponse.Content.ReadFromJsonAsync<PaymentAnalyticsSummaryResponse>())!;
-        summary.TransactionCount.ShouldBe(4);
-        summary.SuccessfulCount.ShouldBe(1);
-        summary.UnsuccessfulCount.ShouldBe(2);
-        summary.ProcessingCount.ShouldBe(1);
-        summary.SuccessRate.ShouldBe(33.33m);
+        summary.TransactionCount.ShouldBe(12);
+        summary.SuccessfulCount.ShouldBe(4);
+        summary.UnsuccessfulCount.ShouldBe(4);
+        summary.ProcessingCount.ShouldBe(4);
+        summary.SuccessRate.ShouldBe(50m);
         summary.Currencies.Count.ShouldBe(2);
-        summary.Currencies.Sum(item => item.TransactionCount).ShouldBe(4);
+        summary.Currencies.Sum(item => item.TransactionCount).ShouldBe(12);
+        var ngn = summary.Currencies.Single(item => item.CurrencyId == CurrencyId);
+        ngn.TransactionCount.ShouldBe(9);
+        ngn.AttemptedVolume.ShouldBe(761m);
+        ngn.SuccessfulVolume.ShouldBe(600m);
+        var usd = summary.Currencies.Single(item => item.CurrencyId == _secondCurrencyId);
+        usd.TransactionCount.ShouldBe(3);
+        usd.AttemptedVolume.ShouldBe(21m);
+        usd.SuccessfulVolume.ShouldBe(5m);
 
-        foreach (var interval in new[] { "Day", "Week", "Month", "Year" })
-        {
-            using var timelineResponse = await Client.GetAsync(
-                $"{EndpointUrl.AdminPaymentAnalytics.TimelineV1}?{query}&interval={interval}");
-            timelineResponse.StatusCode.ShouldBe(HttpStatusCode.OK, await timelineResponse.Content.ReadAsStringAsync());
-            var timeline = (await timelineResponse.Content.ReadFromJsonAsync<PaymentAnalyticsTimelineResponse>())!;
-            timeline.Buckets.Sum(item => item.TransactionCount).ShouldBe(4);
-            timeline.Buckets.Select(item => item.CurrencyCode).Distinct().Count().ShouldBe(2);
-        }
+        var day = await GetTimelineAsync(query, "Day");
+        AssertBucket(day, new DateOnly(2025, 12, 28), CurrencyId, 2, 150m, 100m);
+        AssertBucket(day, new DateOnly(2025, 12, 29), CurrencyId, 1, 30m, 0m);
+        AssertBucket(day, new DateOnly(2025, 12, 29), _secondCurrencyId, 1, 5m, 5m);
+        AssertBucket(day, new DateOnly(2025, 12, 30), CurrencyId, 0, 0m, 0m);
+        AssertBucket(day, new DateOnly(2025, 12, 30), _secondCurrencyId, 0, 0m, 0m);
+        AssertBucket(day, new DateOnly(2026, 4, 30), CurrencyId, 1, 11m, 0m);
+        day.Buckets.ShouldAllBe(item => item.PeriodStart == item.PeriodEnd);
+
+        var week = await GetTimelineAsync(query, "Week");
+        AssertBucket(week, new DateOnly(2025, 12, 22), CurrencyId, 2, 150m, 100m, new DateOnly(2025, 12, 28));
+        AssertBucket(week, new DateOnly(2025, 12, 29), CurrencyId, 4, 100m, 0m, new DateOnly(2026, 1, 4));
+        AssertBucket(week, new DateOnly(2025, 12, 29), _secondCurrencyId, 1, 5m, 5m, new DateOnly(2026, 1, 4));
+        AssertBucket(week, new DateOnly(2026, 1, 5), CurrencyId, 1, 200m, 200m, new DateOnly(2026, 1, 11));
+        AssertBucket(week, new DateOnly(2026, 1, 5), _secondCurrencyId, 1, 7m, 0m, new DateOnly(2026, 1, 11));
+        AssertBucket(week, new DateOnly(2026, 1, 12), CurrencyId, 0, 0m, 0m, new DateOnly(2026, 1, 18));
+        AssertBucket(week, new DateOnly(2026, 1, 26), CurrencyId, 1, 300m, 300m, new DateOnly(2026, 2, 1));
+        AssertBucket(week, new DateOnly(2026, 1, 26), _secondCurrencyId, 1, 9m, 0m, new DateOnly(2026, 2, 1));
+
+        var month = await GetTimelineAsync(query, "Month");
+        AssertBucket(month, new DateOnly(2025, 12, 1), CurrencyId, 4, 200m, 100m, new DateOnly(2025, 12, 31));
+        AssertBucket(month, new DateOnly(2026, 1, 1), CurrencyId, 3, 250m, 200m, new DateOnly(2026, 1, 31));
+        AssertBucket(month, new DateOnly(2026, 2, 1), CurrencyId, 1, 300m, 300m, new DateOnly(2026, 2, 28));
+        AssertBucket(month, new DateOnly(2026, 3, 1), CurrencyId, 0, 0m, 0m, new DateOnly(2026, 3, 31));
+        AssertBucket(month, new DateOnly(2026, 3, 1), _secondCurrencyId, 0, 0m, 0m, new DateOnly(2026, 3, 31));
+        AssertBucket(month, new DateOnly(2026, 4, 1), CurrencyId, 1, 11m, 0m, new DateOnly(2026, 4, 30));
+
+        var year = await GetTimelineAsync(query, "Year");
+        AssertBucket(year, new DateOnly(2025, 1, 1), CurrencyId, 4, 200m, 100m, new DateOnly(2025, 12, 31));
+        AssertBucket(year, new DateOnly(2025, 1, 1), _secondCurrencyId, 1, 5m, 5m, new DateOnly(2025, 12, 31));
+        AssertBucket(year, new DateOnly(2026, 1, 1), CurrencyId, 5, 561m, 500m, new DateOnly(2026, 4, 30));
+        AssertBucket(year, new DateOnly(2026, 1, 1), _secondCurrencyId, 2, 16m, 0m, new DateOnly(2026, 4, 30));
 
         using var statusesResponse = await Client.GetAsync($"{EndpointUrl.AdminPaymentAnalytics.StatusesV1}?{query}");
         var statuses = (await statusesResponse.Content.ReadFromJsonAsync<PaymentAnalyticsStatusesResponse>())!;
         statuses.Statuses.Sum(item => item.TransactionCount).ShouldBe(summary.TransactionCount);
+        AssertStatus(statuses, PaymentStatus.Succeeded, 4, 605m);
+        AssertStatus(statuses, PaymentStatus.Failed, 2, 57m);
+        AssertStatus(statuses, PaymentStatus.Cancelled, 1, 30m);
+        AssertStatus(statuses, PaymentStatus.Expired, 1, 20m);
+        AssertStatus(statuses, PaymentStatus.PendingInitiation, 2, 21m);
+        AssertStatus(statuses, PaymentStatus.Initiated, 2, 49m);
 
         using var providersResponse = await Client.GetAsync($"{EndpointUrl.AdminPaymentAnalytics.ProvidersV1}?{query}");
         var providers = (await providersResponse.Content.ReadFromJsonAsync<PaymentAnalyticsProvidersResponse>())!;
@@ -67,11 +109,13 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         var intents = (await intentsResponse.Content.ReadFromJsonAsync<PaymentAnalyticsIntentsResponse>())!;
         intents.Intents.Sum(item => item.TransactionCount).ShouldBe(summary.TransactionCount);
 
+        await VerifyGeneratedSqlAsync(from, to);
+
         using var filteredResponse = await Client.GetAsync(
             $"{EndpointUrl.AdminPaymentAnalytics.SummaryV1}?{query}&currencyId={CurrencyId}&paymentStatus=Succeeded&paymentProviderId={_providerId}&paymentIntent=WalletTopUp");
         var filtered = (await filteredResponse.Content.ReadFromJsonAsync<PaymentAnalyticsSummaryResponse>())!;
-        filtered.TransactionCount.ShouldBe(1);
-        filtered.Currencies.ShouldHaveSingleItem().SuccessfulVolume.ShouldBe(100m);
+        filtered.TransactionCount.ShouldBe(3);
+        filtered.Currencies.ShouldHaveSingleItem().SuccessfulVolume.ShouldBe(600m);
 
         using var invalidRange = await Client.GetAsync(
             $"{EndpointUrl.AdminPaymentAnalytics.SummaryV1}?from=2026-01-01&to=2027-12-31");
@@ -110,19 +154,120 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         dbContext.PaymentProviders.Add(provider);
         dbContext.Currencies.Add(secondCurrency);
 
-        var now = UtcNow();
-        var succeeded = CreatePayment(provider.Id, CurrencyId, stakeholder.AppUserId, stakeholder.CountryId, 100m, "succeeded");
-        succeeded.MarkInitiated("analytics-succeeded", null, now.AddHours(1), null);
-        succeeded.MarkSucceeded(succeeded.ProviderReference, null, now);
-        var failed = CreatePayment(provider.Id, CurrencyId, stakeholder.AppUserId, stakeholder.CountryId, 50m, "failed");
-        failed.MarkInitiated("analytics-failed", null, now.AddHours(1), null);
-        failed.MarkFailed(failed.ProviderReference, "declined", null, now);
-        var pending = CreatePayment(provider.Id, secondCurrency.Id, stakeholder.AppUserId, stakeholder.CountryId, 25m, "pending");
-        var expired = CreatePayment(provider.Id, secondCurrency.Id, stakeholder.AppUserId, stakeholder.CountryId, 20m, "expired");
-        expired.MarkInitiated("analytics-expired", null, now.AddHours(1), null);
-        expired.MarkExpired(expired.ProviderReference, "expired", null);
-        dbContext.PaymentTransactions.AddRange(succeeded, failed, pending, expired);
+        var definitions = new[]
+        {
+            new PaymentDefinition(CurrencyId, 100m, PaymentStatus.Succeeded, Utc(2025, 12, 28, 0, 0, 0), "dec-sunday-start"),
+            new PaymentDefinition(CurrencyId, 50m, PaymentStatus.Failed, Utc(2025, 12, 28, 23, 59, 59), "dec-sunday-end"),
+            new PaymentDefinition(CurrencyId, 30m, PaymentStatus.Cancelled, Utc(2025, 12, 29, 0, 0, 0), "dec-monday"),
+            new PaymentDefinition(_secondCurrencyId, 5m, PaymentStatus.Succeeded, Utc(2025, 12, 29, 10, 0, 0), "usd-dec"),
+            new PaymentDefinition(CurrencyId, 20m, PaymentStatus.Expired, Utc(2025, 12, 31, 12, 0, 0), "dec-expired"),
+            new PaymentDefinition(CurrencyId, 40m, PaymentStatus.Initiated, Utc(2026, 1, 1, 0, 0, 0), "jan-initiated"),
+            new PaymentDefinition(CurrencyId, 10m, PaymentStatus.PendingInitiation, Utc(2026, 1, 3, 10, 0, 0), "jan-pending"),
+            new PaymentDefinition(CurrencyId, 200m, PaymentStatus.Succeeded, Utc(2026, 1, 5, 8, 0, 0), "jan-monday"),
+            new PaymentDefinition(_secondCurrencyId, 7m, PaymentStatus.Failed, Utc(2026, 1, 5, 9, 0, 0), "usd-jan"),
+            new PaymentDefinition(CurrencyId, 300m, PaymentStatus.Succeeded, Utc(2026, 2, 1, 11, 0, 0), "feb-success"),
+            new PaymentDefinition(_secondCurrencyId, 9m, PaymentStatus.Initiated, Utc(2026, 2, 1, 12, 0, 0), "usd-feb"),
+            new PaymentDefinition(CurrencyId, 11m, PaymentStatus.PendingInitiation, Utc(2026, 4, 30, 23, 59, 59), "range-end"),
+            new PaymentDefinition(CurrencyId, 999m, PaymentStatus.Succeeded, Utc(2025, 12, 27, 23, 59, 59), "before-range"),
+            new PaymentDefinition(CurrencyId, 999m, PaymentStatus.Succeeded, Utc(2026, 5, 1, 0, 0, 0), "after-range")
+        };
+        var payments = definitions.Select(definition => new
+        {
+            Definition = definition,
+            Payment = CreatePayment(
+                provider.Id,
+                definition.CurrencyId,
+                stakeholder.AppUserId,
+                stakeholder.CountryId,
+                definition.Amount,
+                definition.Suffix)
+        }).ToArray();
+        dbContext.PaymentTransactions.AddRange(payments.Select(item => item.Payment));
         await dbContext.SaveChangesAsync();
+
+        foreach (var item in payments)
+        {
+            await dbContext.PaymentTransactions
+                .Where(payment => payment.Id == item.Payment.Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(payment => payment.CreatedAtUtc, item.Definition.CreatedAtUtc)
+                    .SetProperty(payment => payment.PaymentStatus, item.Definition.PaymentStatus));
+        }
+    }
+
+    private async Task<PaymentAnalyticsTimelineResponse> GetTimelineAsync(string query, string interval)
+    {
+        using var response = await Client.GetAsync(
+            $"{EndpointUrl.AdminPaymentAnalytics.TimelineV1}?{query}&interval={interval}");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        return (await response.Content.ReadFromJsonAsync<PaymentAnalyticsTimelineResponse>())!;
+    }
+
+    private static void AssertBucket(
+        PaymentAnalyticsTimelineResponse timeline,
+        DateOnly periodStart,
+        Guid currencyId,
+        long transactionCount,
+        decimal attemptedVolume,
+        decimal successfulVolume,
+        DateOnly? periodEnd = null)
+    {
+        var bucket = timeline.Buckets.Single(item => item.PeriodStart == periodStart && item.CurrencyId == currencyId);
+        bucket.PeriodEnd.ShouldBe(periodEnd ?? periodStart);
+        bucket.TransactionCount.ShouldBe(transactionCount);
+        bucket.AttemptedVolume.ShouldBe(attemptedVolume);
+        bucket.SuccessfulVolume.ShouldBe(successfulVolume);
+    }
+
+    private static void AssertStatus(
+        PaymentAnalyticsStatusesResponse response,
+        PaymentStatus status,
+        long transactionCount,
+        decimal amount)
+    {
+        var rows = response.Statuses.Where(item => item.PaymentStatus == status.ToString()).ToArray();
+        rows.Sum(item => item.TransactionCount).ShouldBe(transactionCount);
+        rows.Sum(item => item.TotalAmount).ShouldBe(amount);
+    }
+
+    private async Task VerifyGeneratedSqlAsync(DateOnly from, DateOnly to)
+    {
+        using var scope = CreateScope();
+        var configuredContext = scope.ServiceProvider.GetRequiredService<AppReadDbContext>();
+        var interceptor = new CommandCaptureInterceptor();
+        var options = new DbContextOptionsBuilder<AppReadDbContext>()
+            .UseNpgsql(configuredContext.Database.GetConnectionString())
+            .AddInterceptors(interceptor)
+            .Options;
+        await using var readContext = new AppReadDbContext(options);
+        var repository = new PaymentAnalyticsReadModelRepository(readContext);
+        var filter = new PaymentAnalyticsFilter(
+            new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)),
+            new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)),
+            null,
+            null,
+            null,
+            null,
+            TargetTenantId);
+
+        await repository.GetSummaryAsync(filter, CancellationToken.None);
+        foreach (var interval in Enum.GetValues<Interval>())
+            await repository.GetTimelineAsync(filter, interval, CancellationToken.None);
+        await repository.GetStatusesAsync(filter, CancellationToken.None);
+        await repository.GetProvidersAsync(filter, CancellationToken.None);
+        await repository.GetIntentsAsync(filter, CancellationToken.None);
+
+        interceptor.Commands.Count.ShouldBe(9);
+        interceptor.Commands.ShouldAllBe(command => command.Contains("WHERE", StringComparison.OrdinalIgnoreCase));
+        interceptor.Commands.ShouldAllBe(command => command.Contains("GROUP BY", StringComparison.OrdinalIgnoreCase));
+        interceptor.Commands.ShouldAllBe(command => command.Contains("COUNT", StringComparison.OrdinalIgnoreCase));
+        interceptor.Commands.Count(command => command.Contains("SUM", StringComparison.OrdinalIgnoreCase)).ShouldBe(8);
+        interceptor.Commands.ShouldAllBe(command => command.Contains(">= @filter_FromUtc", StringComparison.Ordinal));
+        interceptor.Commands.ShouldAllBe(command => command.Contains("< @filter_ToExclusiveUtc", StringComparison.Ordinal));
+        interceptor.Commands[2].ShouldContain("date_trunc('day'", Case.Insensitive);
+        interceptor.Commands[3].ShouldContain("date_part('dow'", Case.Insensitive);
+        interceptor.Commands[4].ShouldContain("date_part('month'", Case.Insensitive);
+        interceptor.Commands[5].ShouldContain("date_part('year'", Case.Insensitive);
     }
 
     private PaymentTransaction CreatePayment(
@@ -134,4 +279,29 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         string suffix) => PaymentTransaction.Create(
         $"analytics-{Guid.CreateVersion7():N}-{suffix}", PaymentIntent.WalletTopUp, providerId, amount,
         currencyId, countryId, userId, TargetStakeholderId, TargetTenantId);
+
+    private static DateTimeOffset Utc(int year, int month, int day, int hour, int minute, int second) =>
+        new(year, month, day, hour, minute, second, TimeSpan.Zero);
+
+    private sealed record PaymentDefinition(
+        Guid CurrencyId,
+        decimal Amount,
+        PaymentStatus PaymentStatus,
+        DateTimeOffset CreatedAtUtc,
+        string Suffix);
+
+    private sealed class CommandCaptureInterceptor : DbCommandInterceptor
+    {
+        public List<string> Commands { get; } = [];
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            Commands.Add(command.CommandText);
+            return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
+        }
+    }
 }

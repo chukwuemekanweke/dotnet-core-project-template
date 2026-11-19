@@ -81,7 +81,9 @@ status: stable
   currency. Success rate uses only terminal outcomes (succeeded, failed, cancelled, expired), while
   pending/initiated payments are processing. Endpoint-specific `IJsonCache` entries include every
   effective filter and tenant/global scope, use short configurable TTLs, fall back to PostgreSQL on
-  Redis failure, and use a per-process single-flight gate for identical misses.
+  Redis failure, and use a reference-counted per-process keyed lock for identical misses. Lock entries
+  remain registered while held or awaited and are removed by the final releaser, preventing parallel
+  gates for one cache key without retaining idle entries.
   Calendar bucket boundaries and aggregate percentage/average calculations reuse the shared
   `Domain.Common.Analytics` utilities and common `Interval` enum.
 - Payment status-transition history and reconciliation-attempt history are not currently persisted.

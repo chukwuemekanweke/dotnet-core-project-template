@@ -1,9 +1,9 @@
+using BackendProjectTemplate.Application.Common.Concurrency;
 using BackendProjectTemplate.Domain.Common.Analytics;
 using BackendProjectTemplate.Domain.Common.Caching;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -17,7 +17,7 @@ public sealed class PaymentAnalyticsService(
     IOptions<PaymentAnalyticsOptions> options,
     ILogger<PaymentAnalyticsService> logger)
 {
-    private static readonly ConcurrentDictionary<string, SemaphoreSlim> Locks = new(StringComparer.Ordinal);
+    private static readonly AsyncKeyedLock SingleFlight = new();
     private readonly PaymentAnalyticsOptions _options = options.Value;
 
     public Task<PaymentAnalyticsSummaryResponse> GetSummaryAsync(PaymentAnalyticsQuery query, CancellationToken cancellationToken)
@@ -121,29 +121,20 @@ public sealed class PaymentAnalyticsService(
         if (cached is not null)
             return cached;
 
-        var gate = Locks.GetOrAdd(key, static _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync(cancellationToken);
+        await using var lease = await SingleFlight.AcquireAsync(key, cancellationToken);
+        cached = await TryGetAsync<T>(key, cancellationToken);
+        if (cached is not null)
+            return cached;
+        var value = await factory();
         try
         {
-            cached = await TryGetAsync<T>(key, cancellationToken);
-            if (cached is not null)
-                return cached;
-            var value = await factory();
-            try
-            {
-                await cache.SetAsync(key, value, ttl, cancellationToken);
-            }
-            catch (Exception exception) when (exception is not OperationCanceledException)
-            {
-                logger.LogWarning(exception, "Could not write payment analytics cache entry {CacheKey}.", key);
-            }
-            return value;
+            await cache.SetAsync(key, value, ttl, cancellationToken);
         }
-        finally
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            gate.Release();
-            Locks.TryRemove(new KeyValuePair<string, SemaphoreSlim>(key, gate));
+            logger.LogWarning(exception, "Could not write payment analytics cache entry {CacheKey}.", key);
         }
+        return value;
     }
 
     private async Task<T?> TryGetAsync<T>(string key, CancellationToken cancellationToken) where T : class
