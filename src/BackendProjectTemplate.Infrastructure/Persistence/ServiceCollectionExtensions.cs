@@ -3,6 +3,7 @@ using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Authentication.ReadModels;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
+using BackendProjectTemplate.Domain.Kyc.ReadModels;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
@@ -60,6 +61,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IStakeholderReadModelRepository, StakeholderReadModelRepository>();
         services.AddScoped<IWalletTransactionReadModelRepository, WalletTransactionReadModelRepository>();
         services.AddScoped<IPaymentAdministrationReadModelRepository, PaymentAdministrationReadModelRepository>();
+        services.AddScoped<IKycAdministrationReadModelRepository, KycAdministrationReadModelRepository>();
         services.AddScoped<IPaymentAnalyticsReadModelRepository, PaymentAnalyticsReadModelRepository>();
         services.AddScoped<ILoginActivityReadModelRepository, LoginActivityReadModelRepository>();
         services.AddScoped<IActiveSessionReadModelRepository, ActiveSessionReadModelRepository>();

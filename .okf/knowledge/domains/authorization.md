@@ -25,6 +25,7 @@ code_refs:
     - src/BackendProjectTemplate.WebAPI/Features/Providers/ProvidersController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Payments/Providers/PaymentProvidersController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Payments/AdminPayments/Analytics/**
+    - src/BackendProjectTemplate.WebAPI/Features/Kyc/AdminKyc/**
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/AdminSubscriptions/AdminSubscriptionsController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/AdminSubscriptionPlans/AdminSubscriptionPlansController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Authentication/Security/StepUpMfaController.cs
@@ -97,6 +98,10 @@ active-session and resource scoping.
 Administrative payment analytics requires the dedicated `payments.analytics.read` permission, granted
 only to Administrator and FinanceOfficer. These read-only reports are cross-tenant by design and may be
 narrowed with an explicit tenant filter; authorization is evaluated before any tenant-scoped cache read.
+
+Administrative KYC list/detail monitoring requires `kyc.read` and is cross-tenant by the same platform-admin
+model; an explicit tenant filter narrows reporting but is not an authorization grant. These endpoints are
+read-only and do not require step-up MFA.
 
 Administrative subscriptions: list/detail and the full plan catalog require `subscriptions.read`
 (Administrator, FinanceOfficer, SupportAgent); allocation requires `subscriptions.allocate`

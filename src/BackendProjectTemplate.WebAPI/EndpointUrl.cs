@@ -127,6 +127,13 @@ public static class EndpointUrl
         }
     }
 
+    public static class AdminKyc
+    {
+        public const string Route = $"api/{Versions.V1Route}/admin/kyc";
+        public static readonly string V1 = ToV1(Route);
+        public static string DetailV1(Guid verificationId) => $"{V1}/{verificationId}";
+    }
+
     public static class Payments
     {
         public const string Route = $"api/{Versions.V1Route}/payments";

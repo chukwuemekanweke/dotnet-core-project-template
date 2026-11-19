@@ -20,6 +20,10 @@ public sealed class KycWebhookInboxConfiguration : IEntityTypeConfiguration<KycW
         builder.Property(value => value.ExternalApplicantId).HasMaxLength(50);
         builder.Property(value => value.ProviderStatus).HasMaxLength(50).IsRequired();
         builder.Property(value => value.ProcessingOutcome).IsRequired();
+        builder.HasIndex(value => new { value.ProviderKey, value.VerificationReference, value.ReceivedAtUtc, value.Id })
+            .HasFilter("\"VerificationReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
+        builder.HasIndex(value => new { value.ProviderKey, value.SessionReference, value.ReceivedAtUtc, value.Id })
+            .HasFilter("\"SessionReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
         builder.HasIndex(value => new { value.ProviderKey, value.RequestId }).IsUnique()
             .HasFilter("\"IsDeleted\" = FALSE")
             .HasDatabaseName(KycPersistenceConstraints.WebhookRequestUniqueIndexName);

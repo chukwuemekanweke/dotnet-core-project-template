@@ -14,6 +14,9 @@ code_refs:
     - src/BackendProjectTemplate.Domain/Kyc/**
     - src/BackendProjectTemplate.Application/Kyc/**
     - src/BackendProjectTemplate.Infrastructure/Kyc/**
+    - src/BackendProjectTemplate.Infrastructure/Persistence/KycAdministrationReadModelRepository.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/KycVerificationConfiguration.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/KycWebhookInboxConfiguration.cs
     - src/BackendProjectTemplate.WebAPI/Features/Kyc/**
     - src/BackendProjectTemplate.Contracts/Events/KycWebhookReceived.cs
     - src/BackendProjectTemplate.Contracts/Events/StakeholderKycVerified.cs
@@ -24,6 +27,7 @@ code_refs:
     - tests/unit/BackendProjectTemplate.Consumer.UnitTests/Kyc/**
     - tests/unit/BackendProjectTemplate.Infrastructure.UnitTests/Kyc/**
     - tests/unit/BackendProjectTemplate.Jobs.UnitTests/Kyc/**
+    - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Kyc/**
 sources:
     - kind: file
       path: src/BackendProjectTemplate.Domain/Kyc/Entities/KycVerification.cs
@@ -75,6 +79,20 @@ result (`IKycProviderService.GetVerificationAsync`) for stale active attempts th
 The provider client returns the same normalized transition used by callbacks, and reconciliation uses the same
 one-time verified-event guard. Every checked attempt records `LastReconciledAtUtc`, including provider failures,
 so the recheck delay backs off unreachable attempts.
+
+## Administrative monitoring
+
+`GET /api/v1/admin/kyc` and `GET /api/v1/admin/kyc/{verificationId}` are read-only, cross-tenant
+administrative reporting endpoints under `kyc.read`; the optional tenant filter narrows results but does
+not grant access. They project through `IKycAdministrationReadModelRepository` and `AppReadDbContext`,
+never load provider services or mutate verification state. The list uses deterministic descending
+`(StartedAtUtc, Id)` keyset pagination and server-side filters. Detail returns at most 50 callbacks and
+does not expose raw payloads, form URLs, external applicant identifiers, identity documents or credentials.
+
+Callback-derived provider status is distinct from aggregate status and processing outcome. Reporting uses
+the same provider verification/session reference boundary as callback processing, additionally requiring
+that the references identify exactly one attempt and that supplied applicant references agree. Ambiguous,
+applicant-only and mismatched callbacks are excluded rather than attributed speculatively.
 
 ## Start and retry policy
 
