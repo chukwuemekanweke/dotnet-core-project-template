@@ -21,6 +21,7 @@ public static class RolePermissionMappings
             {
                 ApplicationPermissions.Payments.Read,
                 ApplicationPermissions.Payments.Manage,
+                ApplicationPermissions.Payments.AnalyticsRead,
                 ApplicationPermissions.Subscriptions.Read,
                 ApplicationPermissions.Subscriptions.Manage,
                 ApplicationPermissions.Subscriptions.Allocate

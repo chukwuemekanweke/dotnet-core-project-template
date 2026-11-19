@@ -49,4 +49,6 @@ processes holding DLL locks and cause transient build failures.
 ## Always
 
 - Never commit or print secrets, credentials, connection strings, or API keys.
+- Keep one top-level class, record, struct, interface, or enum per source file. Additional types are
+  allowed only when they are nested inside their containing type.
 - Keep this file small — durable rules and explanations belong in `.okf/knowledge/`, not here.

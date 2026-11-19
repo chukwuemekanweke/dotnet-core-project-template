@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.Application.Payments.Analytics;
+
+public sealed record PaymentAnalyticsIntentsResponse(IReadOnlyList<PaymentAnalyticsIntentResponse> Intents);

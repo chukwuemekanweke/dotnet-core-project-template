@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <InternalsVisibleTo Include="BackendProjectTemplate.Application.UnitTests" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <ProjectReference Include="..\\BackendProjectTemplate.Contracts\\BackendProjectTemplate.Contracts.csproj" />
     <ProjectReference Include="..\\BackendProjectTemplate.Domain\\BackendProjectTemplate.Domain.csproj" />
