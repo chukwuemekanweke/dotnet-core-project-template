@@ -7,12 +7,3 @@ public sealed record SignInResult(
     AuthenticationTokens? Tokens,
     DateTimeOffset? LockedUntilUtc = null,
     TwoFactorChallenge? Challenge = null);
-
-public enum SignInStatus
-{
-    Success = 1,
-    InvalidCredentials = 2,
-    EmailNotVerified = 3,
-    AccountLocked = 4,
-    RequiresTwoFactor = 5
-}

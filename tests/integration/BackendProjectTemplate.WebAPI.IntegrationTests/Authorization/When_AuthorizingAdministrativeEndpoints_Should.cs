@@ -71,27 +71,33 @@ public sealed class When_AuthorizingAdministrativeEndpoints_Should(ContainersFix
     public async Task EnforceTheRolePermissionMatrixAndCurrentRoleMembership()
     {
         (await ActivateProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (await GetUserAnalyticsAsync()).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         await AuthenticateAsync();
 
         (await ActivateProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await ActivatePaymentProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await GetUserAnalyticsAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
         await AssertRoleAsync(
             ApplicationRoles.ComplianceOfficer,
+            HttpStatusCode.Forbidden,
             HttpStatusCode.Forbidden,
             HttpStatusCode.Forbidden);
         await AssertRoleAsync(
             ApplicationRoles.SupportAgent,
             HttpStatusCode.Forbidden,
+            HttpStatusCode.Forbidden,
             HttpStatusCode.Forbidden);
         await AssertRoleAsync(
             ApplicationRoles.FinanceOfficer,
             HttpStatusCode.Forbidden,
-            HttpStatusCode.NotFound);
+            HttpStatusCode.NotFound,
+            HttpStatusCode.Forbidden);
         await AssertRoleAsync(
             ApplicationRoles.Administrator,
             HttpStatusCode.NotFound,
-            HttpStatusCode.NotFound);
+            HttpStatusCode.NotFound,
+            HttpStatusCode.OK);
 
         (await ActivateProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await ActivatePaymentProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
@@ -142,7 +148,8 @@ public sealed class When_AuthorizingAdministrativeEndpoints_Should(ContainersFix
     private async Task AssertRoleAsync(
         string role,
         HttpStatusCode expectedProviderStatus,
-        HttpStatusCode expectedPaymentProviderStatus)
+        HttpStatusCode expectedPaymentProviderStatus,
+        HttpStatusCode expectedUserAnalyticsStatus)
     {
         using var scope = CreateScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
@@ -152,6 +159,10 @@ public sealed class When_AuthorizingAdministrativeEndpoints_Should(ContainersFix
 
         (await ActivateProviderAsync()).StatusCode.ShouldBe(expectedProviderStatus);
         (await ActivatePaymentProviderAsync()).StatusCode.ShouldBe(expectedPaymentProviderStatus);
+        (await GetUserAnalyticsAsync()).StatusCode.ShouldBe(expectedUserAnalyticsStatus);
+        (await GetRegistrationAnalyticsAsync()).StatusCode.ShouldBe(expectedUserAnalyticsStatus);
+        (await GetRegistrationUsersAsync()).StatusCode.ShouldBe(expectedUserAnalyticsStatus);
+        (await GetActiveUserListAsync()).StatusCode.ShouldBe(expectedUserAnalyticsStatus);
 
         (await userManager.RemoveFromRoleAsync(user, role)).Succeeded.ShouldBeTrue();
     }
@@ -170,6 +181,34 @@ public sealed class When_AuthorizingAdministrativeEndpoints_Should(ContainersFix
         var response = await Client.PutAsJsonAsync(
             $"{EndpointUrl.PaymentProviders.V1}/{Guid.CreateVersion7()}/activation",
             new SetPaymentProviderActivationRequest(true));
+        _responses.Add(response);
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> GetUserAnalyticsAsync()
+    {
+        var response = await Client.GetAsync(EndpointUrl.AdminUserAnalytics.ActiveUsersV1);
+        _responses.Add(response);
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> GetRegistrationAnalyticsAsync()
+    {
+        var response = await Client.GetAsync(EndpointUrl.AdminUserAnalytics.RegistrationsV1);
+        _responses.Add(response);
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> GetRegistrationUsersAsync()
+    {
+        var response = await Client.GetAsync(EndpointUrl.AdminUserAnalytics.RegistrationUsersV1);
+        _responses.Add(response);
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> GetActiveUserListAsync()
+    {
+        var response = await Client.GetAsync($"{EndpointUrl.AdminUserAnalytics.ActiveUserListV1}?date=2026-11-20");
         _responses.Add(response);
         return response;
     }

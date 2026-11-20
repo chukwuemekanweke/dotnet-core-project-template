@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Analytics.ReadModels;
 using BackendProjectTemplate.Domain.Authentication.Administration;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Authentication.ReadModels;
@@ -67,6 +68,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IActiveSessionReadModelRepository, ActiveSessionReadModelRepository>();
         services.AddScoped<ISubscriptionAdministrationReadModelRepository, SubscriptionAdministrationReadModelRepository>();
         services.AddScoped<IAdminUserReadModelRepository, AdminUserReadModelRepository>();
+        services.AddScoped<IRegistrationAnalyticsReadModelRepository, RegistrationAnalyticsReadModelRepository>();
+        services.AddScoped<IActiveUserAnalyticsReadModelRepository, ActiveUserAnalyticsReadModelRepository>();
 
         return services;
     }

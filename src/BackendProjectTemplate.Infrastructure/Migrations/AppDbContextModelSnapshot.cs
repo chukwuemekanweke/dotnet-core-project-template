@@ -134,6 +134,8 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId", "ActivityDate", "StakeholderId");
+
                     b.HasIndex("TenantId", "StakeholderId", "ActivityDate")
                         .IsUnique();
 
@@ -654,6 +656,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.HasIndex("StakeholderId");
 
                     b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "StakeholderId", "ActivityType", "OccurredAtUtc")
+                        .IsDescending(false, false, false, true);
 
                     b.HasIndex("TenantId", "StakeholderId", "OccurredAtUtc", "Id");
 
@@ -2450,6 +2455,8 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.HasIndex("StakeholderTypeId");
 
                     b.HasIndex("TenantId");
+
+                    b.HasIndex("TenantId", "CreatedAtUtc", "Id");
 
                     b.ToTable("Stakeholders", "stakeholders");
                 });

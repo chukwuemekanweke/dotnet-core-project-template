@@ -30,6 +30,7 @@ public sealed class StakeholderConfiguration : IEntityTypeConfiguration<Stakehol
         builder.HasIndex(stakeholder => stakeholder.TenantId);
         builder.HasIndex(stakeholder => stakeholder.CountryId);
         builder.HasIndex(stakeholder => stakeholder.StakeholderTypeId);
+        builder.HasIndex(stakeholder => new { stakeholder.TenantId, stakeholder.CreatedAtUtc, stakeholder.Id });
 
         builder.HasOne(stakeholder => stakeholder.AppUser)
             .WithOne()

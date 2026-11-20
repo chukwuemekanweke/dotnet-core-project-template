@@ -126,3 +126,7 @@ role claims. Request fingerprints bind the target AppUser, session or role path 
 reason body. Account mutation resolves AppUser-to-Stakeholder relationships before session operations.
 Administrative lock is dedicated AppUser state rather than failed-login lockout; locking rotates the
 security stamp and revokes active sessions, while unlock never reactivates revoked sessions.
+
+Administrative registration and active-user analytics require `users.analytics.read`, granted only to
+Administrator. These read-only endpoints follow the platform cross-tenant model: an optional tenant filter
+narrows data but does not grant access, and permission authorization completes before aggregate cache access.

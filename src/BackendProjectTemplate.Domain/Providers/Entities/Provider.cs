@@ -2,12 +2,6 @@ using BackendProjectTemplate.Domain.Common.Entities;
 
 namespace BackendProjectTemplate.Domain.Providers.Entities;
 
-public enum ProviderType
-{
-    Email = 1,
-    FileStorage = 2
-}
-
 public sealed class Provider : Entity, IAggregateRoot
 {
     private Provider()
