@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Analytics;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
@@ -18,6 +19,7 @@ public sealed class UserSignInSuccessfulHandler(
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
     IAuthenticationIdentityService identityService,
+    IUserDailyActivityPersistence activityPersistence,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
     ILoginActivityIpAddressResolver loginActivityIpAddressResolver,
@@ -43,6 +45,15 @@ public sealed class UserSignInSuccessfulHandler(
             throw new CannotProcessMessageNonTransientException(
                 $"Unable to process UserSignInSuccessful because no stakeholder could be found for stakeholder '{message.StakeholderId}'.");
         }
+
+        await activityPersistence.ObserveAsync(
+            message.MessageId,
+            stakeholder.TenantId,
+            stakeholder.StakeholderId,
+            DateOnly.FromDateTime(message.OccuredAt.UtcDateTime),
+            message.OccuredAt,
+            UserActivityType.Login,
+            cancellationToken);
 
         var user = await identityService.FindByIdAsync(stakeholder.AppUserId);
         if (user is null)

@@ -144,7 +144,9 @@ filters it before ordering and cursor pagination.
 ## Shared authentication architecture
 
 - Password, Google, and passkey primary authentication all resolve the same `AppUser` and `Stakeholder` and issue credentials only through `AuthenticationSessionIssuer`.
-- Successful primary authentication publishes `UserSignInSuccessful`; failed account eligibility checks publish `UserSignInFailed`. The Consumer remains responsible for login-activity post-processing.
+- Successful primary authentication publishes `UserSignInSuccessful`; failed account eligibility checks
+  publish `UserSignInFailed`. The Consumer remains responsible for login-activity post-processing and
+  records the successful sign-in as qualifying daily user activity through [[user-activity]].
 - TOTP MFA is an independent second factor. Primary methods start `ITwoFactorChallengeService` with their `AuthenticationMethod`; `CompleteTwoFactorChallengeHandler` is the only continuation that issues the session after MFA succeeds.
 - Account eligibility is consistent across primary methods: reject deleted, locked, unverified, and
   cross-tenant accounts before session issuance. MFA completion re-resolves the user and stakeholder

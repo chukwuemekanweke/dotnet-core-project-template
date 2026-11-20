@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Consumer;
+using BackendProjectTemplate.Infrastructure.Analytics;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
 using BackendProjectTemplate.Infrastructure.Messaging;
@@ -23,6 +24,7 @@ builder.Services.AddPostgresReadPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
 builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddRedisCaching(builder.Configuration);
+builder.Services.AddUserActivityAnalytics();
 builder.Services.AddTransactionalOutbox();
 builder.Services.AddNotificationServices(builder.Configuration);
 builder.Services.AddPaymentServices(builder.Configuration);

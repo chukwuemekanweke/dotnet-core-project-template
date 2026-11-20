@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Analytics;
 using BackendProjectTemplate.Application.Authentication;
 using BackendProjectTemplate.Application.Authentication.Features.AssignAdminUserRole;
 using BackendProjectTemplate.Application.Authentication.Features.ChangePassword;
@@ -96,6 +97,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        services.AddScoped<UserActivityObservationService>();
         services.AddScoped<StakeholderResolver>();
         services.AddScoped<RegistrationCountryValidator>();
         services.AddScoped<AuthenticationSessionIssuer>();

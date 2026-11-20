@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Infrastructure.Analytics;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
 using BackendProjectTemplate.Infrastructure.Messaging;
@@ -128,6 +129,7 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddIdentityUserManagement(configuration);
         builder.Services.AddAuthenticationServices();
         builder.Services.AddRedisCaching(configuration);
+        builder.Services.AddUserActivityAnalytics();
         builder.Services.AddTransactionalOutbox();
         builder.Services.AddNotificationServices(configuration);
         builder.Services.AddObjectStorage(configuration);

@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Analytics;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
@@ -39,6 +40,7 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutStakeholderActorId_Sh
             currentActorAccessor,
             messageContext,
             identityService,
+            Substitute.For<IUserDailyActivityPersistence>(),
             stakeholderReadModelRepository,
             commandSender,
             loginActivityIpAddressResolver,
