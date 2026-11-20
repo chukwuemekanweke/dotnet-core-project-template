@@ -22,6 +22,7 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/Subscription*.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionLifecyclePersistence.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionAdministrationReadModelRepository.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionAnalyticsReadModelRepository.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/Interceptors/SubscriptionConflictTranslationInterceptor.cs
     - src/BackendProjectTemplate.Infrastructure/Migrations/*_ImplementAdminSubscriptionManagement.cs
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/**
@@ -168,6 +169,36 @@ cancelled, and periods and payments are retained. Activation, renewal, reminder 
 re-check state, so stale commands cannot restore entitlement. Neither mode implies a refund.
 
 ## Access
+
+Administrative subscription analytics is exposed as five independent read-only endpoints under
+`/api/v1/admin/subscriptions/analytics`: `summary`, `timeline`, `renewals`, `plans` and `statuses`.
+The inclusive UTC `DateOnly` range is converted to a half-open database range; summary state is sampled
+at the final instant of the selected end date and timeline state at each bucket's capped final instant.
+Filters support plan, BillingAccount owner type, tenant and currency, and timeline intervals reuse the
+shared `Day`/`Week`/`Month`/`Year` calendar utilities.
+
+Active subscription snapshots require an actually persisted activation period and use the entitlement's
+half-open boundaries, so later cancellation does not erase earlier activity and renewal grace remains
+entitled until the lifecycle ends. New subscriptions use the first persisted activation; churn occurs at
+effective entitlement end only when no replacement entitlement for the BillingAccount is active at that
+instant. Cancellation-pending counts scheduled cancellation decisions that remain entitled. Past-due means
+an entitled subscription whose paid period boundary passed while its renewal is unresolved or exhausted
+during grace; a pending or failed attempt alone is not a terminal renewal failure.
+
+Successful and failed renewal KPIs count distinct terminal `Fulfilled` and `Exhausted` renewals by their
+completion timestamps. `FulfillmentBlocked`, pending, charging, retrying and awaiting-reconciliation states
+do not enter the terminal success-rate denominator; failed payment attempts are reported separately.
+
+MRR uses the latest immutable paid `SubscriptionPeriod` snapshot effective for the subscription at the
+reporting instant. `PaidPurchase` and `PaidRenewal` are eligible regardless of `AutoRenew`; nominal
+`AdministrativeAllocation` prices are excluded. Monthly price maps directly to MRR, yearly price divides by
+12, and ARR is MRR multiplied by 12. Values remain decimal minor-currency units without intermediate
+rounding, and revenue is always grouped by currency with no conversion. The read repository issues bounded,
+no-tracking projections and never one query per timeline bucket. Endpoint-specific cache keys include every
+effective filter and use short TTLs, Redis-failure fallback and keyed single-flight coordination.
+Each Application query handler owns its endpoint's repository orchestration, calculations and response
+mapping; only cache execution plus consistent date/filter and revenue normalization mechanics are shared,
+so handlers remain complete vertical slices rather than pass-through wrappers around an analytics facade.
 
 User-facing plan listing, purchase, current-subscription lookup and scheduled cancellation require the
 active-session policy and derive tenant/stakeholder identity from the authenticated actor. Administrative

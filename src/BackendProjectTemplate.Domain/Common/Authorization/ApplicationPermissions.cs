@@ -25,6 +25,7 @@ public static class ApplicationPermissions
     public static class Subscriptions
     {
         public const string Read = "subscriptions.read";
+        public const string AnalyticsRead = "subscriptions.analytics.read";
         public const string Manage = "subscriptions.manage";
         public const string Allocate = "subscriptions.allocate";
         public const string ManagePlans = "subscriptions.plans.manage";
@@ -46,6 +47,7 @@ public static class ApplicationPermissions
         Payments.Manage,
         Payments.AnalyticsRead,
         Subscriptions.Read,
+        Subscriptions.AnalyticsRead,
         Subscriptions.Manage,
         Subscriptions.Allocate,
         Subscriptions.ManagePlans,

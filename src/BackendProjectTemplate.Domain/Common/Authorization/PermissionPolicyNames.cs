@@ -13,6 +13,7 @@ public static class PermissionPolicyNames
     public const string PaymentsManage = Prefix + ApplicationPermissions.Payments.Manage;
     public const string PaymentAnalyticsRead = Prefix + ApplicationPermissions.Payments.AnalyticsRead;
     public const string SubscriptionsRead = Prefix + ApplicationPermissions.Subscriptions.Read;
+    public const string SubscriptionAnalyticsRead = Prefix + ApplicationPermissions.Subscriptions.AnalyticsRead;
     public const string SubscriptionsManage = Prefix + ApplicationPermissions.Subscriptions.Manage;
     public const string SubscriptionsAllocate = Prefix + ApplicationPermissions.Subscriptions.Allocate;
     public const string SubscriptionPlansManage = Prefix + ApplicationPermissions.Subscriptions.ManagePlans;
