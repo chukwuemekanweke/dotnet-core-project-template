@@ -39,6 +39,13 @@ Matching WebAPI:
 
 - WebAPI request DTOs and request validators live in the matching controller's feature folder at the HTTP edge, not in Application.
 - Feature-specific helper classes live in the same feature folder when only that feature uses them.
+- Application commands, queries, responses, results, validators, and handlers are separate top-level
+  types in dedicated files within the feature folder. Do not nest a request/command/query or response/result
+  contract inside its handler, controller, or another service. Nested types are reserved for private
+  implementation details that do not cross a feature boundary.
+- Public Domain and persistence-boundary contracts follow the same rule: repository filters, requests,
+  rows, items, summaries, and page results are separate top-level types in dedicated files. Do not nest
+  public contract types inside repository interfaces or implementations.
 - Keep one top-level class, record, struct, interface, or enum per source file. Additional types are
   allowed only when they are nested inside their containing type.
 - WebAPI controllers are organized by feature folder and use resource-oriented routes.

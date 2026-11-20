@@ -14,16 +14,6 @@ public sealed record StartKycVerificationResponse(Guid VerificationId, string Pr
 
 public sealed record StartKycVerificationResult(StartKycVerificationStatus Status, StartKycVerificationResponse? Verification = null, string? Error = null);
 
-public enum StartKycVerificationStatus
-{
-    Success = 1,
-    NotAuthenticated = 2,
-    StakeholderNotFound = 3,
-    AlreadyVerified = 4,
-    IncompleteProfile = 5,
-    ProviderUnavailable = 6
-}
-
 public sealed class StartKycVerificationHandler(
     IRepository<Stakeholder> stakeholderRepository,
     IRepository<KycVerification> verificationRepository,

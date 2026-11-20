@@ -17,7 +17,9 @@ public sealed class When_ResolvingRolePermissionMappings_Should
         finance.ShouldNotContain(ApplicationPermissions.Users.Manage);
         finance.ShouldContain(ApplicationPermissions.Subscriptions.Allocate);
         finance.ShouldNotContain(ApplicationPermissions.Subscriptions.ManagePlans);
-        RolePermissionMappings.ForRole(ApplicationRoles.Administrator).ShouldContain(ApplicationPermissions.Subscriptions.ManagePlans);
+        var administrator = RolePermissionMappings.ForRole(ApplicationRoles.Administrator);
+        administrator.ShouldContain(ApplicationPermissions.Subscriptions.ManagePlans);
+        administrator.ShouldContain(ApplicationPermissions.Users.AnalyticsRead);
 
         var support = RolePermissionMappings.ForRole(ApplicationRoles.SupportAgent);
         support.ShouldContain(ApplicationPermissions.Users.Read);
@@ -25,7 +27,10 @@ public sealed class When_ResolvingRolePermissionMappings_Should
         support.ShouldNotContain(ApplicationPermissions.Kyc.Manage);
         support.ShouldNotContain(ApplicationPermissions.Subscriptions.ManagePlans);
         support.ShouldNotContain(ApplicationPermissions.Payments.AnalyticsRead);
+        support.ShouldNotContain(ApplicationPermissions.Users.AnalyticsRead);
         compliance.ShouldNotContain(ApplicationPermissions.Payments.AnalyticsRead);
+        compliance.ShouldNotContain(ApplicationPermissions.Users.AnalyticsRead);
+        finance.ShouldNotContain(ApplicationPermissions.Users.AnalyticsRead);
 
         var combined = RolePermissionMappings.ForRoles(
             [ApplicationRoles.ComplianceOfficer, ApplicationRoles.FinanceOfficer]);

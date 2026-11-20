@@ -1,0 +1,13 @@
+namespace BackendProjectTemplate.Application.Authentication.Features.CompleteTwoFactorChallenge;
+
+public enum CompleteTwoFactorChallengeStatus
+{
+    Success = 1,
+    InvalidCode = 2,
+    InvalidChallenge = 3,
+    ExpiredChallenge = 4,
+    ConsumedChallenge = 5,
+    ExhaustedChallenge = 6,
+    AccountLocked = 7,
+    EmailNotVerified = 8
+}

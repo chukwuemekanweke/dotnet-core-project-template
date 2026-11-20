@@ -17,12 +17,6 @@ public sealed record ReceiveKycCallbackCommand(
     string ProviderStatus,
     bool? Verified);
 
-public enum ReceiveKycCallbackStatus
-{
-    Persisted = 1,
-    Duplicate = 2
-}
-
 public sealed class ReceiveKycCallbackHandler(
     IRepository<KycWebhookInbox> inboxRepository,
     IEventPublisher eventPublisher,

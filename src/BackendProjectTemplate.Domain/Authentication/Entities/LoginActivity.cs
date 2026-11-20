@@ -126,9 +126,3 @@ public sealed class LoginActivity : Entity, IAggregateRoot
         return normalized;
     }
 }
-
-public enum LoginActivityType
-{
-    InitialLogin = 0,
-    TokenRefresh = 1
-}

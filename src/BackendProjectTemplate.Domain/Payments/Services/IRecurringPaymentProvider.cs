@@ -29,11 +29,3 @@ public sealed record RecurringChargeResult(
     string? ProviderReference,
     string? FailureCode,
     string? FailureReason);
-
-public enum RecurringChargeStatus
-{
-    Processing = 1,
-    Succeeded = 2,
-    Failed = 3,
-    Unknown = 4
-}

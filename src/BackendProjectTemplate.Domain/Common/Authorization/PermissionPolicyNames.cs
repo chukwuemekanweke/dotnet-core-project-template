@@ -6,6 +6,7 @@ public static class PermissionPolicyNames
 
     public const string UsersRead = Prefix + ApplicationPermissions.Users.Read;
     public const string UsersManage = Prefix + ApplicationPermissions.Users.Manage;
+    public const string UserAnalyticsRead = Prefix + ApplicationPermissions.Users.AnalyticsRead;
     public const string KycRead = Prefix + ApplicationPermissions.Kyc.Read;
     public const string KycManage = Prefix + ApplicationPermissions.Kyc.Manage;
     public const string PaymentsRead = Prefix + ApplicationPermissions.Payments.Read;

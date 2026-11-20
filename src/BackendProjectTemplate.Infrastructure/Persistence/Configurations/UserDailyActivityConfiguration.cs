@@ -16,5 +16,6 @@ public sealed class UserDailyActivityConfiguration : IEntityTypeConfiguration<Us
         builder.Property(activity => activity.ActivityCount).IsRequired();
         builder.HasIndex(activity => new { activity.TenantId, activity.StakeholderId, activity.ActivityDate })
             .IsUnique();
+        builder.HasIndex(activity => new { activity.TenantId, activity.ActivityDate, activity.StakeholderId });
     }
 }

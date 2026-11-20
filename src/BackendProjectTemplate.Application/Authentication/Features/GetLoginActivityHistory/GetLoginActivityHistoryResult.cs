@@ -4,9 +4,3 @@ public sealed record GetLoginActivityHistoryResult(
     GetLoginActivityHistoryStatus Status,
     IReadOnlyList<GetLoginActivityHistoryResponse> Activities,
     string? NextCursor);
-
-public enum GetLoginActivityHistoryStatus
-{
-    Success = 1,
-    NotAuthenticated = 2
-}

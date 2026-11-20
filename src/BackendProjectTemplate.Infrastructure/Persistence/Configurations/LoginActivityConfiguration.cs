@@ -38,5 +38,12 @@ public sealed class LoginActivityConfiguration : IEntityTypeConfiguration<LoginA
             loginActivity.OccurredAtUtc,
             loginActivity.Id
         });
+        builder.HasIndex(loginActivity => new
+        {
+            loginActivity.TenantId,
+            loginActivity.StakeholderId,
+            loginActivity.ActivityType,
+            loginActivity.OccurredAtUtc
+        }).IsDescending(false, false, false, true);
     }
 }

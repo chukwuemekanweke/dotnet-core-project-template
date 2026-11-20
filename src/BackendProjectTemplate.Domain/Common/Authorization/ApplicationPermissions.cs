@@ -6,6 +6,7 @@ public static class ApplicationPermissions
     {
         public const string Read = "users.read";
         public const string Manage = "users.manage";
+        public const string AnalyticsRead = "users.analytics.read";
     }
 
     public static class Kyc
@@ -38,6 +39,7 @@ public static class ApplicationPermissions
     {
         Users.Read,
         Users.Manage,
+        Users.AnalyticsRead,
         Kyc.Read,
         Kyc.Manage,
         Payments.Read,
