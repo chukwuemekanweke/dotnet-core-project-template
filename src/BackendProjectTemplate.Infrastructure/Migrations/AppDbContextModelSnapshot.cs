@@ -887,9 +887,15 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasIndex("ProviderKey", "ProviderApplicantReference");
 
+                    b.HasIndex("ProviderKey", "ProviderSessionReference")
+                        .HasFilter("\"ProviderSessionReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
+
                     b.HasIndex("ProviderKey", "ProviderVerificationReference")
                         .IsUnique()
                         .HasFilter("\"ProviderVerificationReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
+
+                    b.HasIndex("StartedAtUtc", "Id")
+                        .HasFilter("\"IsDeleted\" = FALSE");
 
                     b.HasIndex("TenantId", "StakeholderId")
                         .IsUnique()
@@ -985,6 +991,12 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("UX_KycWebhookInboxes_ProviderRequest")
                         .HasFilter("\"IsDeleted\" = FALSE");
+
+                    b.HasIndex("ProviderKey", "SessionReference", "ReceivedAtUtc", "Id")
+                        .HasFilter("\"SessionReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
+
+                    b.HasIndex("ProviderKey", "VerificationReference", "ReceivedAtUtc", "Id")
+                        .HasFilter("\"VerificationReference\" IS NOT NULL AND \"IsDeleted\" = FALSE");
 
                     b.ToTable("KycWebhookInboxes", "kyc");
                 });

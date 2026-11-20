@@ -42,7 +42,9 @@ using BackendProjectTemplate.Application.Authentication.Features.VerifyStepUpMfa
 using BackendProjectTemplate.Application.Authentication.Features.VerifyTwoFactorEnrollment;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Application.Common.FileUploads;
+using BackendProjectTemplate.Application.Kyc.Features.GetAdminKycVerificationDetail;
 using BackendProjectTemplate.Application.Kyc.Features.GetCurrentVerification;
+using BackendProjectTemplate.Application.Kyc.Features.ListAdminKycVerifications;
 using BackendProjectTemplate.Application.Kyc.Features.ReceiveVerificationCallback;
 using BackendProjectTemplate.Application.Kyc.Features.ReconcileVerifications;
 using BackendProjectTemplate.Application.Kyc.Features.StartVerification;
@@ -103,6 +105,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<FileUploadService>();
         services.AddScoped<StartKycVerificationHandler>();
         services.AddScoped<GetCurrentKycVerificationHandler>();
+        services.AddScoped<ListAdminKycVerificationsHandler>();
+        services.AddScoped<GetAdminKycVerificationDetailHandler>();
         services.AddScoped<ReceiveKycCallbackHandler>();
         services.AddScoped<KycReconciliationService>();
         services.AddScoped<CheckEmailExistenceHandler>();
