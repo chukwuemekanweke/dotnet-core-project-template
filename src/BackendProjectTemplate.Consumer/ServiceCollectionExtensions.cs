@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Consumer.Analytics;
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Consumer.Kyc;
 using BackendProjectTemplate.Consumer.Notifications;
@@ -17,6 +18,7 @@ using SendEmailConfirmationOtp = BackendProjectTemplate.Contracts.Commands.Authe
 using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications.SendNotificationCommand;
 using SuccessfulPaymentConfirmedEvent = BackendProjectTemplate.Contracts.Events.SuccessfulPaymentConfirmed;
 using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.UserAccessTokenRefreshed;
+using UserActivityObservedEvent = BackendProjectTemplate.Contracts.Events.UserActivityObserved;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 using UserEmailConfirmedEvent = BackendProjectTemplate.Contracts.Events.UserEmailConfirmed;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
@@ -75,6 +77,7 @@ public static class ServiceCollectionExtensions
                 .AddHandler<UserCreatedEvent, UserCreatedHandler>()
                 .AddHandler<UserEmailConfirmedEvent, UserEmailConfirmedHandler>()
                 .AddHandler<UserSignInSuccessfulEvent, UserSignInSuccessfulHandler>()
+                .AddHandler<UserActivityObservedEvent, UserActivityObservedHandler>()
                 .AddHandler<UserAccessTokenRefreshedEvent, UserAccessTokenRefreshedHandler>()
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>()
                 .AddHandler<EmailDeliveryWebhookReceivedEvent, EmailDeliveryWebhookReceivedHandler>()

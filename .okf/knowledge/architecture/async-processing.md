@@ -26,7 +26,7 @@ status: stable
 ---
 ## Shape
 
-- `Contracts` defines the commands and events that cross process boundaries (`BaseCommand`, `BaseEvent`, and concrete types like `UserCreated`, `SuccessfulPaymentConfirmed`, `SendNotificationCommand`).
+- `Contracts` defines the commands and events that cross process boundaries (`BaseCommand`, `BaseEvent`, and concrete types like `UserCreated`, `UserActivityObserved`, `SuccessfulPaymentConfirmed`, `SendNotificationCommand`).
   Application, Infrastructure, Consumer and Jobs all reference `Contracts`; `Contracts` references nothing else in the solution.
 - Application handlers that need to trigger async work write to the transactional outbox (`IOutboxWriter`) in the same database transaction as their domain change — never publish directly to RabbitMQ from a request-handling path.
 - `Jobs.OutboxProcessing.OutboxMessageProcessor` polls/listens (`OutboxNotificationListener`) for pending outbox rows and hands them to `RabbitMqOutboxMessageDispatcher`, which publishes to RabbitMQ and marks the row dispatched.

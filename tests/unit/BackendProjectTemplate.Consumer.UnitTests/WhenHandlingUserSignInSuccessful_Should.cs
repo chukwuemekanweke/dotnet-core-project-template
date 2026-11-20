@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Consumer.Authentication;
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Analytics;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
@@ -18,6 +19,7 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
     public async Task ResetFailedCountAndSendNotification()
     {
         var identityService = Substitute.For<IAuthenticationIdentityService>();
+        var activityPersistence = Substitute.For<IUserDailyActivityPersistence>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var messageContext = Substitute.For<IMessageContext>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
@@ -53,6 +55,7 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
             currentActorAccessor,
             messageContext,
             identityService,
+            activityPersistence,
             stakeholderReadModelRepository,
             commandSender,
             loginActivityIpAddressResolver,
@@ -84,6 +87,14 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
             Arg.Any<CancellationToken>());
         await loginActivityIpAddressResolver.Received(1).ResolveAsync(ipAddress, Arg.Any<CancellationToken>());
         await loginActivityRepository.Received(1).AddAsync(Arg.Any<LoginActivity>(), Arg.Any<CancellationToken>());
+        await activityPersistence.Received(1).ObserveAsync(
+            Arg.Any<Guid>(),
+            tenantId,
+            stakeholderId,
+            Arg.Any<DateOnly>(),
+            Arg.Any<DateTimeOffset>(),
+            UserActivityType.Login,
+            Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

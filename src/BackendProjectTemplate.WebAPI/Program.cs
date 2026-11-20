@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application;
+using BackendProjectTemplate.Infrastructure.Analytics;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
 using BackendProjectTemplate.Infrastructure.Kyc;
@@ -63,6 +64,7 @@ builder.Services.AddApiDocumentation();
 builder.Services.Configure<BackendProjectTemplate.Application.Payments.Analytics.PaymentAnalyticsOptions>(
     builder.Configuration.GetSection(BackendProjectTemplate.Application.Payments.Analytics.PaymentAnalyticsOptions.SectionName));
 builder.Services.AddApplication();
+builder.Services.AddUserActivityAnalytics();
 builder.Services.AddPostgresWritePersistence(builder.Configuration);
 builder.Services.AddPostgresReadPersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
@@ -92,10 +94,11 @@ app.UseAuthentication();
 app.UseMiddleware<CurrentActorMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
+app.UseMiddleware<UserActivityMiddleware>();
 
 app.UseApiDocumentation();
-app.MapPrometheusScrapingEndpoint("/metrics").DisableRateLimiting();
-app.MapHealthChecks("/health").DisableRateLimiting();
+app.MapPrometheusScrapingEndpoint("/metrics").DisableRateLimiting().WithMetadata(new ExcludeFromUserActivityAttribute());
+app.MapHealthChecks("/health").DisableRateLimiting().WithMetadata(new ExcludeFromUserActivityAttribute());
 app.MapControllers();
 app.MapGet("/", () => TypedResults.Ok(new
 {

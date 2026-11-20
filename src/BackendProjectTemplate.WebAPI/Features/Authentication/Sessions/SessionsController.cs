@@ -278,6 +278,7 @@ public sealed class SessionsController(
 
     [HttpPost("refresh")]
     [EnableRateLimiting(RateLimitingPolicyNames.RefreshSessionPolicy)]
+    [ExcludeFromUserActivity]
     [ProducesResponseType<RefreshSessionResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

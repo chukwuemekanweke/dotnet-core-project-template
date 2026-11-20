@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Analytics;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.FileUploads.Entities;
@@ -30,6 +31,8 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     where TContext : DbContext
 {
     public DbSet<Country> Countries => Set<Country>();
+    public DbSet<UserDailyActivity> UserDailyActivities => Set<UserDailyActivity>();
+    public DbSet<UserActivityObservationReceipt> UserActivityObservationReceipts => Set<UserActivityObservationReceipt>();
     public DbSet<Currency> Currencies => Set<Currency>();
     public DbSet<CountryCurrency> CountryCurrencies => Set<CountryCurrency>();
     public DbSet<MessageInbox> MessageInboxes => Set<MessageInbox>();
