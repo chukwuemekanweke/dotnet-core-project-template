@@ -194,6 +194,17 @@ public static class EndpointUrl
         public static readonly string IntentsV1 = $"{V1}/intents";
     }
 
+    public static class AdminSubscriptionAnalytics
+    {
+        public const string Route = $"{AdminSubscriptions.Route}/analytics";
+        public static readonly string V1 = ToV1(Route);
+        public static readonly string SummaryV1 = $"{V1}/summary";
+        public static readonly string TimelineV1 = $"{V1}/timeline";
+        public static readonly string RenewalsV1 = $"{V1}/renewals";
+        public static readonly string PlansV1 = $"{V1}/plans";
+        public static readonly string StatusesV1 = $"{V1}/statuses";
+    }
+
     public static class AdminUsers
     {
         public const string Route = $"api/{Versions.V1Route}/admin/users";

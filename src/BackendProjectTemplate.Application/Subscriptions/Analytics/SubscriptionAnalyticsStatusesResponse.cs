@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.Application.Subscriptions.Analytics;
+
+public sealed record SubscriptionAnalyticsStatusesResponse(IReadOnlyList<SubscriptionAnalyticsStatusResponse> Statuses);

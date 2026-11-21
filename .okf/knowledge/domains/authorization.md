@@ -111,6 +111,11 @@ requires `subscriptions.plans.manage` (Administrator only). These endpoints are 
 the target tenant is an explicit input, and permission policies — not the caller's own tenant — gate
 access. Permissions are applied per action because one controller mixes permission levels.
 
+Administrative subscription analytics requires the dedicated `subscriptions.analytics.read` permission,
+granted only to Administrator and FinanceOfficer. Its five read-only endpoints are cross-tenant by design;
+tenant and owner filters narrow the report but never grant access, and authorization completes before any
+analytics cache lookup.
+
 Every mutation described above also requires its operation-specific step-up proof. The current stable
 operation catalog covers general/payment provider activation, subscription allocation, both
 administrative cancellation forms, fulfillment retry, and plan create/update/activation. A new

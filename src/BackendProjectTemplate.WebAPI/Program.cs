@@ -63,6 +63,8 @@ builder.Services.AddHealthChecks();
 builder.Services.AddApiDocumentation();
 builder.Services.Configure<BackendProjectTemplate.Application.Payments.Analytics.PaymentAnalyticsOptions>(
     builder.Configuration.GetSection(BackendProjectTemplate.Application.Payments.Analytics.PaymentAnalyticsOptions.SectionName));
+builder.Services.Configure<BackendProjectTemplate.Application.Subscriptions.Analytics.SubscriptionAnalyticsOptions>(
+    builder.Configuration.GetSection(BackendProjectTemplate.Application.Subscriptions.Analytics.SubscriptionAnalyticsOptions.SectionName));
 builder.Services.Configure<BackendProjectTemplate.Application.Analytics.AdministrativeAnalyticsOptions>(
     builder.Configuration.GetSection(BackendProjectTemplate.Application.Analytics.AdministrativeAnalyticsOptions.SectionName));
 builder.Services.AddApplication();

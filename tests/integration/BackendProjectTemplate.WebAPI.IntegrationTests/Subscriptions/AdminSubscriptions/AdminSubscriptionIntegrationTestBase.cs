@@ -36,6 +36,7 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
     private string _email = string.Empty;
     private Guid _countryId;
     private readonly List<Guid> _stakeholderTypeIds = [];
+    private readonly List<Guid> _paymentProviderIds = [];
 
     protected Guid AdminUserId { get; private set; }
     protected Guid AdminTenantId { get; private set; }
@@ -86,6 +87,9 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
         await dbContext.SubscriptionPurchases.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();
         await dbContext.Subscriptions.Where(item => subscriptionIds.Contains(item.Id)).ExecuteDeleteAsync();
         await dbContext.PaymentTransactions.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();
+        await dbContext.PaymentProviders.IgnoreQueryFilters()
+            .Where(item => _paymentProviderIds.Contains(item.Id))
+            .ExecuteDeleteAsync();
         await dbContext.BillingAccounts.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();
         await dbContext.SubscriptionPlans.IgnoreQueryFilters().Where(item => item.Code.StartsWith(PlanCodePrefix)).ExecuteDeleteAsync();
         await dbContext.Currencies.Where(item => item.Id == CurrencyId).ExecuteDeleteAsync();
@@ -189,6 +193,9 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
         using var scope = CreateScope();
         return scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
     }
+
+    protected void TrackPaymentProviderForCleanup(Guid paymentProviderId) =>
+        _paymentProviderIds.Add(paymentProviderId);
 
     private async Task SeedAsync()
     {
