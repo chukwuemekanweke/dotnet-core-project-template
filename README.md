@@ -28,7 +28,7 @@ A .NET 10 backend starter organized around DDD boundaries, vertical slices in th
 - Infrastructure contains EF Core persistence, Redis caching, JWT generation, observability, and other implementation details
 - Asynchronous integration messages are persisted through a transactional outbox and dispatched from the Jobs service through RabbitMQ
 - Database changes are applied by a separate migrator service before the other services are deployed
-- The migrator exposes readiness and liveness endpoints so deployment orchestration can distinguish between startup and completed database work
+- The migrator is a one-shot process: it runs the migration pipeline once and exits `0` on success or nonzero on failure, so deployment orchestration gates rollout on its exit code
 - WebAPI is only the presentation host and endpoint mapping layer
 - Schemas are separated by domain using `authentication` and `reference_data`
 - `TimeProvider` is the standard time abstraction used across handlers and infrastructure
@@ -209,14 +209,13 @@ The migrator executes scripts in:
 - `src/BackendProjectTemplate.DatabaseMigrator/Scripts/PreDeploy`
 - `src/BackendProjectTemplate.DatabaseMigrator/Scripts/PostDeploy`
 
-In `docker compose`, the migrator stays running and only becomes healthy after the database work completes. The other services depend on that liveness state and will not start while the migrator is still unhealthy or has failed.
-
-The migrator health endpoints are:
-
-- Readiness: `http://localhost:8080/health/readiness`
-- Liveness: `http://localhost:8080/health/liveness`
-
-`/health/readiness` returns healthy while the migrator is available to execute the deployment work. `/health/liveness` only returns healthy after pre-deploy SQL, EF migrations, seed data, and post-deploy SQL have all completed successfully.
+The migrator runs pre-deploy SQL, EF Core migrations, the authorization seed, and post-deploy SQL in that
+order, then exits: `0` means every stage succeeded; any failure or cancellation exits nonzero. It exposes no
+HTTP endpoints. In the development Compose files the WebAPI, Consumer and Jobs services wait for it with
+`condition: service_completed_successfully`. In `docker-compose.production.yml` it sits in the `migration`
+profile and nothing depends on it; the deployment orchestrator runs it explicitly before rollout. It reads its
+environment from `DOTNET_ENVIRONMENT`. Migration authoring rules (expand/migrate/contract, idempotent scripts)
+and failure recovery are in [docs/architecture/database-migrations.md](docs/architecture/database-migrations.md).
 
 Start the development stack with Neon and Grafana Cloud (the default):
 

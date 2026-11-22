@@ -22,11 +22,30 @@ public static class DatabaseInitializationExtensions
         var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInitialization");
 
-        await EnsureDatabaseExistsAsync(database.Database.GetConnectionString(), cancellationToken);
-        await RunScriptsAsync(database, contentRootPath, "PreDeploy", logger, cancellationToken);
-        await database.Database.MigrateAsync(cancellationToken);
-        await scope.ServiceProvider.GetRequiredService<IApplicationAuthorizationSeeder>().SeedAsync(cancellationToken);
-        await RunScriptsAsync(database, contentRootPath, "PostDeploy", logger, cancellationToken);
+        // Order is part of the deployment contract: PreDeploy scripts -> EF Core migrations -> authorization
+        // seed -> PostDeploy scripts. Each stage commits independently, so a later failure never undoes earlier ones.
+        await RunStageAsync(logger, "EnsureDatabase", () => EnsureDatabaseExistsAsync(database.Database.GetConnectionString(), cancellationToken));
+        await RunStageAsync(logger, "PreDeploy", () => RunScriptsAsync(database, contentRootPath, "PreDeploy", logger, cancellationToken));
+        await RunStageAsync(logger, "EfCoreMigrations", () => database.Database.MigrateAsync(cancellationToken));
+        await RunStageAsync(logger, "AuthorizationSeed", () => scope.ServiceProvider.GetRequiredService<IApplicationAuthorizationSeeder>().SeedAsync(cancellationToken));
+        await RunStageAsync(logger, "PostDeploy", () => RunScriptsAsync(database, contentRootPath, "PostDeploy", logger, cancellationToken));
+    }
+
+    private static async Task RunStageAsync(ILogger logger, string stageName, Func<Task> stage)
+    {
+        logger.LogInformation("Database initialization stage {StageName} started", stageName);
+        try
+        {
+            await stage();
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // Logged here so the failing stage is identified; the exception still propagates unchanged.
+            logger.LogError("Database initialization stage {StageName} failed", stageName);
+            throw;
+        }
+
+        logger.LogInformation("Database initialization stage {StageName} completed", stageName);
     }
 
     private static async Task RunScriptsAsync(
@@ -57,14 +76,22 @@ public static class DatabaseInitializationExtensions
             logger.LogInformation("Executing {StageName} script {ScriptFile}", stageName, Path.GetFileName(scriptFile));
 
             var script = await File.ReadAllTextAsync(scriptFile, cancellationToken);
-            foreach (var batch in SplitSqlBatches(script))
+            try
             {
-                if (string.IsNullOrWhiteSpace(batch))
+                foreach (var batch in SplitSqlBatches(script))
                 {
-                    continue;
-                }
+                    if (string.IsNullOrWhiteSpace(batch))
+                    {
+                        continue;
+                    }
 
-                await database.Database.ExecuteSqlRawAsync(batch, cancellationToken);
+                    await database.Database.ExecuteSqlRawAsync(batch, cancellationToken);
+                }
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogError("{StageName} script {ScriptFile} failed", stageName, Path.GetFileName(scriptFile));
+                throw;
             }
         }
     }

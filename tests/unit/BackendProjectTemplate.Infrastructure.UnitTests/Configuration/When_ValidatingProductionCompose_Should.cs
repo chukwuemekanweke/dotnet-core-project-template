@@ -18,7 +18,40 @@ public sealed class When_ValidatingProductionCompose_Should
         Regex.Matches(compose, "target: /run/secrets/app").Count.ShouldBe(4);
         Regex.Matches(compose, "read_only: true").Count.ShouldBe(4);
         Regex.Matches(compose, "create_host_path: false").Count.ShouldBe(4);
-        Regex.Matches(compose, "ASPNETCORE_ENVIRONMENT: Production").Count.ShouldBe(4);
+        // The web/worker hosts read ASPNETCORE_ENVIRONMENT; the one-shot migrator is a Generic Host (DOTNET_ENVIRONMENT).
+        Regex.Matches(compose, "(ASPNETCORE|DOTNET)_ENVIRONMENT: Production").Count.ShouldBe(4);
+    }
+
+    [Fact]
+    public void RunTheMigratorOnlyAsAnExplicitOneShotService()
+    {
+        var migrator = ReadServiceBlock("database-migrator");
+
+        migrator.ShouldContain("profiles: [\"migration\"]");
+        migrator.ShouldContain("restart: \"no\"");
+        migrator.ShouldContain("no-new-privileges:true");
+        migrator.ShouldNotContain("ports:");
+        migrator.ShouldNotContain("healthcheck:");
+        migrator.ShouldNotContain("image:");
+
+        foreach (var service in new[] { "webapi", "consumer", "jobs" })
+        {
+            ReadServiceBlock(service).ShouldNotContain("database-migrator", customMessage:
+                $"Long-running '{service}' must not depend on the migrator; the deployment orchestrator runs it first.");
+        }
+    }
+
+    [Fact]
+    public void WaitForSuccessfulMigratorCompletionInLocalCompose()
+    {
+        var compose = ReadComposeFile("docker-compose.yml").ReplaceLineEndings("\n");
+        var migrator = Regex.Match(compose, @"^  database-migrator:\n(?<body>(?:(?:    .*)?\n)*)", RegexOptions.Multiline)
+            .Groups["body"].Value;
+
+        migrator.ShouldNotContain("ports:");
+        migrator.ShouldNotContain("healthcheck:");
+        Regex.Matches(compose, @"database-migrator:\n\s+condition: service_completed_successfully").Count.ShouldBe(3);
+        Regex.IsMatch(compose, @"database-migrator:\n\s+condition: service_healthy").ShouldBeFalse();
     }
 
     [Theory]
@@ -30,7 +63,9 @@ public sealed class When_ValidatingProductionCompose_Should
     {
         var block = ReadServiceBlock(service);
 
-        block.ShouldContain("ASPNETCORE_ENVIRONMENT: Production");
+        block.ShouldContain(service == "database-migrator"
+            ? "DOTNET_ENVIRONMENT: Production"
+            : "ASPNETCORE_ENVIRONMENT: Production");
         block.ShouldContain($"/{service}/current");
         block.ShouldContain(groupVariable);
         Regex.Matches(block, @"/(webapi|consumer|jobs|database-migrator)/current").Count.ShouldBe(1);
@@ -70,9 +105,10 @@ public sealed class When_ValidatingProductionCompose_Should
         // Consumer, Jobs and DatabaseMigrator registrations do not currently pass.
         var compose = ReadComposeFile("docker-compose.yml");
 
-        Regex.Matches(compose, "ASPNETCORE_ENVIRONMENT: Container").Count.ShouldBe(4);
-        compose.ShouldNotContain("ASPNETCORE_ENVIRONMENT: Production");
-        compose.ShouldNotContain("ASPNETCORE_ENVIRONMENT: Development");
+        Regex.Matches(compose, "ASPNETCORE_ENVIRONMENT: Container").Count.ShouldBe(3);
+        Regex.Matches(compose, "DOTNET_ENVIRONMENT: Container").Count.ShouldBe(1);
+        compose.ShouldNotContain("_ENVIRONMENT: Production");
+        compose.ShouldNotContain("_ENVIRONMENT: Development");
         compose.ShouldNotContain("/run/secrets/app");
     }
 

@@ -2,10 +2,9 @@
 # See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
+# The migrator is a one-shot console process (no HTTP endpoint or health check, so no curl). It still needs the
+# ASP.NET Core shared framework because Infrastructure uses ASP.NET Core Identity and Data Protection.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
 USER $APP_UID
 WORKDIR /app
 
@@ -42,4 +41,6 @@ RUN dotnet publish "./BackendProjectTemplate.DatabaseMigrator.csproj" -c $BUILD_
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Exec form keeps dotnet as PID 1, so SIGTERM reaches the host and the migration exit code becomes the
+# container exit code (0 = success, nonzero = failure or cancellation).
 ENTRYPOINT ["dotnet", "BackendProjectTemplate.DatabaseMigrator.dll"]

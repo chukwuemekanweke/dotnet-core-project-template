@@ -20,7 +20,7 @@ status: stable
 ---
 ## Projects
 
-Separate unit test projects per production project: `Application.UnitTests`, `Domain.UnitTests`, `Infrastructure.UnitTests`, `WebAPI.UnitTests`, `Consumer.UnitTests`, `Jobs.UnitTests`.
+Separate unit test projects per production project: `Application.UnitTests`, `Domain.UnitTests`, `Infrastructure.UnitTests`, `WebAPI.UnitTests`, `Consumer.UnitTests`, `Jobs.UnitTests`, `DatabaseMigrator.UnitTests`.
 
 ## Layout
 

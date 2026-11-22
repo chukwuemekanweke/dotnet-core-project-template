@@ -35,7 +35,7 @@ status: stable
 - `Consumer` — async message subscriber host (handles `Contracts` events/commands from RabbitMQ).
 - `Jobs` — scheduled/background job host (outbox dispatch processing, reconciliation, health checks).
 - `Contracts` — the shared wire-format project: commands and events exchanged between WebAPI/Application, the outbox, and Consumer/Jobs. Referenced by Application, Infrastructure, Consumer, Jobs — never the other way around.
-- `DatabaseMigrator` — migration and pre/post-deploy SQL script execution only.
+- `DatabaseMigrator` — one-shot migration and pre/post-deploy SQL script execution only; exits `0`/nonzero and exposes no HTTP surface (see [[database-migrations]]).
 
 ## Dependency rules (hard constraints)
 

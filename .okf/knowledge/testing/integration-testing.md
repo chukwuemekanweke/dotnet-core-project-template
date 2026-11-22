@@ -20,7 +20,10 @@ status: stable
 ---
 ## Projects and scope
 
-Separate integration test projects for `WebAPI`, `Consumer`, `Jobs` (plus `Observability` for collector/tracing infra checks). Integration tests cover the **happy path only** — one test per
+Separate integration test projects for `WebAPI`, `Consumer`, `Jobs`, `DatabaseMigrator` (plus `Observability` for
+collector/tracing infra checks). `DatabaseMigrator` integration tests are the exception to happy-path-only: its exit
+code is the deployment contract, so they also cover failure exit codes by launching the built executable as a
+child process (see [[database-migrations]]). Other integration tests cover the **happy path only** — one test per
 endpoint/handler/background-service covering the most meaningful end-to-end path. Additional scenarios beyond the happy path are secondary, not the primary expectation.
 
 ## Layout
