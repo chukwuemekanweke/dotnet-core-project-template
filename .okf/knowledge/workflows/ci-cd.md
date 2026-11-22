@@ -63,8 +63,8 @@ own tests.
 - Secret values here overlap public names (`GH_PKG_USERNAME`/`DOCKERHUB_USERNAME` = `chukwuemekanweke`
   = Docker Hub namespace = repo owner). GitHub drops any job output containing a referenced secret
   ("Skip output … may contain secret"), which emptied the publish matrix at toolkit `4ab2e18`; fixed in
-  toolkit `a7a4f80` (#13). Toolkit `vps-deploy.yml`'s `deploy` job is a known remaining exception —
-  check its outputs when wiring PR 3.
+  toolkit `a7a4f80` (#13). `vps-deploy.yml` outputs moved to a secret-free `report` job in `1891bbf` (#14);
+  callers pin `1891bbf` for all three workflows.
 
 ## Current migration state (DEVOPS-012)
 

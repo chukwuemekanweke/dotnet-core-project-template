@@ -146,7 +146,7 @@ worked around with `pull_request_target`. Runtime application secrets never ente
 ## Toolkit reference pinning
 
 The toolkit has no published release tag yet, so callers pin a reviewed full commit SHA (currently
-`a7a4f80ce3fca5428f172da663e82b342ec050e7`, toolkit `main` after the docker-publish masked-matrix fix, #13). The toolkit checks out
+`1891bbfc7694eb20233cda1bdd1f511319b54959`, toolkit `main` after the masked-output fixes, #13 and #14). The toolkit checks out
 its helper scripts from the exact called commit (`job.workflow_sha`), so the workflow and its scripts
 always match. To upgrade:
 
