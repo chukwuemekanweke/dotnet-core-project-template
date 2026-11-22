@@ -14,6 +14,8 @@ code_refs:
     - .github/workflows/ci.yml
     - .github/workflows/ci-shared-validation.yml
     - .github/scripts/verify-shared-ci-artifacts.py
+    - .github/scripts/verify-release-images.py
+    - .github/docker-images.json
     - nuget.config
 sources:
     - kind: file
@@ -43,13 +45,30 @@ own tests.
   for `nuget.config` and as the same BuildKit secret IDs in all four Dockerfiles.
 - The four deployable component IDs are fixed: `webapi`, `consumer`, `jobs`, `migrator`.
 
+## Release images
+
+- `.github/docker-images.json` (toolkit schema v1) declares exactly `webapi`, `consumer`, `jobs`,
+  `migrator` → `docker.io/chukwuemekanweke/backendprojecttemplate-<component>`, root context, no
+  `buildArgs`. `verify-release-images.py config` enforces this on every PR; keep the script's
+  `EXPECTED_COMPONENTS` in step with the file when the deployment contract intentionally changes.
+- `publish-images` (in `ci-shared-validation.yml`) calls `docker-publish.yml` only on `push` to `main`
+  after `shared-ci`, `parity-check` and `image-config`; `deployment-id: ${{ github.sha }}` → write-once
+  tag `release-<sha>`. All four components are in `package-auth-components` because every Dockerfile
+  mounts BuildKit secrets `GITHUB_USERNAME`/`GITHUB_PAT` for the Mailtrap restore — never build args.
+- `verify-release` checks `manifest-json` equals the `release-manifest-<sha>` artifact, the manifest
+  matches the config (components, repositories, deployment id, source commit) and every `image@digest`
+  resolves. Deployments consume the manifest digests, never tags.
+- A failed/partial publish burns that sha's `release-*` tags; fix and land a new commit. Never delete or
+  move a `release-*` tag.
+
 ## Current migration state (DEVOPS-012)
 
-- `ci.yml` remains authoritative and is the only workflow that publishes images. Do not remove its
-  verification jobs until shared-CI parity is recorded.
-- `ci-shared-validation.yml` is a temporary comparison caller of `dotnet-ci.yml` with a `parity-check`
-  job (`verify-shared-ci-artifacts.py`) asserting the same project set as `ci.yml`'s discovery, zero
-  skipped/failed tests, and parseable coverage. It never publishes or deploys. Retire the script with it.
+- `ci.yml` still runs its own verification and legacy `docker-build-push` matrix (`:latest`/`:<sha>`
+  tags). Retire both only after `publish-images` + `verify-release` succeed on `main`.
+- `ci-shared-validation.yml` calls `dotnet-ci.yml` with a `parity-check` job
+  (`verify-shared-ci-artifacts.py`) asserting the same project set as `ci.yml`'s discovery, zero
+  skipped/failed tests, and parseable coverage; retire that script when `ci.yml` is retired. It never
+  deploys.
 - Integration fixtures must keep failing (not skipping) on `DockerUnavailableException` with a message
   containing "Docker is unavailable" — the toolkit's TRX scan matches that text.
 - Parity was demonstrated on PR #68 (commit `5c260b2`): legacy run 45024354827 and shared run

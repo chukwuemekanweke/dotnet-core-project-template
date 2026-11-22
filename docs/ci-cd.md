@@ -7,8 +7,9 @@ code is removed.
 
 | Stage | Status | What it adds |
 |---|---|---|
-| PR 1: shared .NET CI | **Comparison only** | `ci-shared-validation.yml` calls the toolkit's `dotnet-ci.yml` next to the existing `ci.yml` |
-| PR 2: image publishing | Not started | `.github/docker-images.json` plus a caller for the toolkit's `docker-publish.yml` |
+| PR 1: shared .NET CI | **Merged; parity shown** | `ci-shared-validation.yml` calls the toolkit's `dotnet-ci.yml` next to the existing `ci.yml` |
+| PR 2: image publishing | **In review** | `.github/docker-images.json`, plus `publish-images` and `verify-release` jobs calling the toolkit's `docker-publish.yml` on `main` |
+| Retire legacy jobs | After the first verified release from PR 2 | Remove `ci.yml`'s duplicated verification and its `docker-build-push` matrix |
 | PR 3: VPS deployment | Not started | Production Compose, stack registration, and a caller for the toolkit's `vps-deploy.yml` (deployment off until readiness gates pass) |
 
 ## Who owns what
@@ -31,12 +32,13 @@ tests and release. Don't copy toolkit logic into this repository.
 `ci.yml` is unchanged. It restores, checks `IDE0005`, builds Release, runs unit and integration tests
 with TRX and XPlat coverage, combines coverage with ReportGenerator, and, only on `push` to `main`,
 pushes the four images (`webapi`, `consumer`, `jobs`, `migrator`) to Docker Hub. It stays in place
-until the shared path has demonstrated parity. It is retired in a later change, not in PR 1.
+until the shared path has published and verified a release on `main`. It is then retired in a separate
+change.
 
-### `ci-shared-validation.yml` (temporary comparison)
+### `ci-shared-validation.yml` (shared callers)
 
-This workflow runs on pull requests, pushes to `main`, and manual dispatch. It never publishes images
-and never deploys.
+This workflow runs on pull requests, pushes to `main`, and manual dispatch. It publishes images only
+on `push` to `main` (see [Release images](#release-images)). It never deploys.
 
 - **`shared-ci`** calls `devops-toolkit/.github/workflows/dotnet-ci.yml` pinned to a full commit SHA.
   It passes the solution, .NET 10, Release, `IDE0005`, both test-project globs,
@@ -64,12 +66,77 @@ independent guards stop a missing Docker daemon from producing a green run:
    messages.
 3. `parity-check` rejects any TRX with skipped or not-executed tests.
 
+## Release images
+
+### Declaring images
+
+[`.github/docker-images.json`](../.github/docker-images.json) is the application-owned build intent. It
+follows the toolkit's schema version 1 and lists exactly four components:
+
+| Component | Repository | Dockerfile |
+|---|---|---|
+| `webapi` | `docker.io/chukwuemekanweke/backendprojecttemplate-webapi` | `src/BackendProjectTemplate.WebAPI/Dockerfile` |
+| `consumer` | `docker.io/chukwuemekanweke/backendprojecttemplate-consumer` | `src/BackendProjectTemplate.Consumer/Dockerfile` |
+| `jobs` | `docker.io/chukwuemekanweke/backendprojecttemplate-jobs` | `src/BackendProjectTemplate.Jobs/Dockerfile` |
+| `migrator` | `docker.io/chukwuemekanweke/backendprojecttemplate-migrator` | `src/BackendProjectTemplate.DatabaseMigrator/Dockerfile` |
+
+All four build from the repository root. The file never holds credentials, build args, or
+deployment values. Infrastructure containers (PostgreSQL, Redis, RabbitMQ) are not release components.
+A project created from this template must change the namespace to its own.
+
+On every pull request, the `image-config` job runs `.github/scripts/verify-release-images.py config`.
+It fails if the component set changes, a Dockerfile goes missing, a repository is not a real
+`docker.io/<namespace>/<repository>`, extra keys such as `buildArgs` appear, or a Dockerfile stops
+mounting the `GITHUB_USERNAME`/`GITHUB_PAT` BuildKit secrets.
+
+### Publishing
+
+`publish-images` calls `docker-publish.yml` at the same pinned toolkit SHA as `shared-ci`. It runs only
+for `push` events on `main`, and only after `shared-ci`, `parity-check`, and `image-config` all pass.
+Pull requests and manual dispatches never publish.
+
+- **Deployment id** is `github.sha`. The toolkit tags every image `release-<sha>` and refuses to push a
+  tag that already exists, so a release identity can't be overwritten. These tags don't collide with
+  the legacy `ci.yml` tags (`latest` and `<sha>`).
+- **Package credentials:** all four components are listed in `package-auth-components`. The toolkit
+  mounts `GH_PKG_USERNAME`/`GH_PKG_PAT` as BuildKit secrets `GITHUB_USERNAME`/`GITHUB_PAT` for those
+  builds only. They are never build args. They are read only by the restore `RUN` and never reach the
+  final image, which copies only the publish output and the Pyroscope native libraries.
+- **Registry credentials:** `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` are mapped to `registry-username` and
+  `registry-token`. Use a Docker Hub access token scoped to read and write on these four repositories.
+- **Evidence:** the toolkit publishes SBOM and provenance attestations and runs Trivy against each pushed
+  digest. A CRITICAL finding fails that component; HIGH findings are reported. It assembles the release
+  manifest only if every component succeeded with its scan, SBOM, and provenance evidence. A partial
+  publish never produces a manifest.
+
+### Release manifest
+
+The toolkit's outputs are `deployment-id`, `manifest-json`, `manifest-artifact`
+(`release-manifest-<sha>`), and `published-images`. The manifest lists each component's repository and
+`sha256` digest. Deployments consume this manifest, never tags.
+
+`verify-release` then:
+
+1. checks that the `manifest-json` output matches the canonical artifact;
+2. checks the manifest against `.github/docker-images.json`: the same four components and repositories,
+   with `deployment_id` and `source_commit` both equal to the commit;
+3. resolves every `image@digest` in Docker Hub;
+4. writes the immutable references to the run summary.
+
+### Failed or partial publishes
+
+Images are pushed before they are scanned. If a component fails after another has pushed, its
+`release-<sha>` tag is already taken, and re-running cannot reuse that identity. Investigate the cause,
+then land a new commit on `main` to get a new deployment id. Never delete or move a `release-*` tag to
+retry.
+
 ## Credentials
 
 | Purpose | Repository secrets | Where they go |
 |---|---|---|
 | Private NuGet (Mailtrap on GitHub Packages) | `GH_PKG_USERNAME`, `GH_PKG_PAT` | Mapped explicitly to the toolkit's `nuget-username` / `nuget-token`. The toolkit exposes them as `GITHUB_USERNAME` / `GITHUB_PAT` (referenced by `nuget.config`) only to restore steps |
-| Docker Hub push (legacy `ci.yml` only) | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | Not used by the comparison workflow |
+| Docker Hub push | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | `publish-images` (mapped to `registry-username` / `registry-token`, `main` pushes only) and the legacy `ci.yml` matrix until it is retired |
+| Docker build package restore | `GH_PKG_USERNAME`, `GH_PKG_PAT` | `publish-images` (mapped to `github-packages-username` / `github-packages-token`, mounted as BuildKit secrets) |
 
 Callers map each secret by name and never use `secrets: inherit`. Workflow-level permissions are `{}`,
 and each job is granted only `contents: read`. GitHub withholds secrets from fork pull requests, so

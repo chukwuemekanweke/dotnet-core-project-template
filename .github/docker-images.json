@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "images": [
+    {
+      "component": "webapi",
+      "image": "docker.io/chukwuemekanweke/backendprojecttemplate-webapi",
+      "dockerfile": "src/BackendProjectTemplate.WebAPI/Dockerfile"
+    },
+    {
+      "component": "consumer",
+      "image": "docker.io/chukwuemekanweke/backendprojecttemplate-consumer",
+      "dockerfile": "src/BackendProjectTemplate.Consumer/Dockerfile"
+    },
+    {
+      "component": "jobs",
+      "image": "docker.io/chukwuemekanweke/backendprojecttemplate-jobs",
+      "dockerfile": "src/BackendProjectTemplate.Jobs/Dockerfile"
+    },
+    {
+      "component": "migrator",
+      "image": "docker.io/chukwuemekanweke/backendprojecttemplate-migrator",
+      "dockerfile": "src/BackendProjectTemplate.DatabaseMigrator/Dockerfile"
+    }
+  ]
+}
