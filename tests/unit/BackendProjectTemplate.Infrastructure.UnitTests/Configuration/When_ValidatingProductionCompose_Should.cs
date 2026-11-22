@@ -63,12 +63,27 @@ public sealed class When_ValidatingProductionCompose_Should
         return match.Groups["body"].Value;
     }
 
-    private static string ReadProductionCompose()
+    [Fact]
+    public void KeepLocalComposeOnTheNonProductionContainerEnvironment()
+    {
+        // Production would demand /run/secrets/app locally; Development enables DI ValidateOnBuild, which the
+        // Consumer, Jobs and DatabaseMigrator registrations do not currently pass.
+        var compose = ReadComposeFile("docker-compose.yml");
+
+        Regex.Matches(compose, "ASPNETCORE_ENVIRONMENT: Container").Count.ShouldBe(4);
+        compose.ShouldNotContain("ASPNETCORE_ENVIRONMENT: Production");
+        compose.ShouldNotContain("ASPNETCORE_ENVIRONMENT: Development");
+        compose.ShouldNotContain("/run/secrets/app");
+    }
+
+    private static string ReadProductionCompose() => ReadComposeFile("docker-compose.production.yml");
+
+    private static string ReadComposeFile(string fileName)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var path = Path.Combine(directory.FullName, "docker-compose.production.yml");
+            var path = Path.Combine(directory.FullName, fileName);
             if (File.Exists(path))
             {
                 return File.ReadAllText(path);
@@ -77,6 +92,6 @@ public sealed class When_ValidatingProductionCompose_Should
             directory = directory.Parent;
         }
 
-        throw new FileNotFoundException("Could not locate docker-compose.production.yml from the test output directory.");
+        throw new FileNotFoundException($"Could not locate {fileName} from the test output directory.");
     }
 }

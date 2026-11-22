@@ -46,7 +46,8 @@ unreadable, blank, or invalid required files fail startup before migrations, req
 failure messages must never contain values. Requirement lists are computed before KeyPerFile loads, so
 enablement flags must not live in secret files.
 
-Development skips this bootstrap and retains JSON, Development JSON, user secrets, and local Compose. The
+Every non-Production environment skips this bootstrap; Development keeps JSON, Development JSON and user
+secrets, and local Compose (`Container`) keeps working without secret files. The
 template JWT key exists only in Development JSON and is itself a rejected production placeholder. Never
 reintroduce a `JwtOptions.SigningKey` default or a key in base `appsettings.json`/Compose. WebAPI validates
 `Jwt:SigningKey` (≥32 UTF-8 bytes, HMAC-SHA256) with `ValidateOnStart` in every environment; production keys
@@ -65,8 +66,11 @@ requirement. Jobs requires Redis for readiness but never R2. DatabaseMigrator re
 `docker-compose.production.yml` is standalone, sets Production explicitly, mounts only the matching
 DEVOPS-007 `current` generation read-only at `/run/secrets/app`, uses the service numeric group, disables
 implicit host-path creation, and keeps runtime credentials out of environment variables. GitHub credentials
-remain build secrets only. The ordinary `docker-compose.yml` is Development and must keep working without
-runtime-secret delivery.
+remain build secrets only. The ordinary `docker-compose.yml` runs every host as `Container` and must keep
+working without runtime-secret delivery: never `Production` (it would require `/run/secrets/app`) and never
+`Development` (its DI `ValidateOnBuild` currently fails for Consumer, Jobs and DatabaseMigrator, which register
+unused Application/Identity services). WebAPI gets the dev-only JWT key there via
+`${JWT_SIGNING_KEY:-development-only-signing-key-not-for-production}`.
 
 ## Lifecycle
 

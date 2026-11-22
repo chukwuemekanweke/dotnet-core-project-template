@@ -7,7 +7,7 @@ services:
         - GITHUB_USERNAME
         - GITHUB_PAT
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Container
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__PostgresWrite: ${DATABASE_URL:-}
     ports:
@@ -28,7 +28,7 @@ services:
         - GITHUB_USERNAME
         - GITHUB_PAT
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Container
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__PostgresWrite: ${DATABASE_URL:-}
       ConnectionStrings__PostgresRead: ${DATABASE_URL_POOLED:-${DATABASE_URL:-}}
@@ -45,6 +45,7 @@ services:
       ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-}
       Jwt__Issuer: BackendProjectTemplate
       Jwt__Audience: BackendProjectTemplate.Clients
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-development-only-signing-key-not-for-production}
       Notifications__Email__Mailtrap__WebhookSigningSecret: ${MAILTRAP_WEBHOOK_SIGNING_SECRET}
       OpenTelemetry__ServiceName: BackendProjectTemplate.WebAPI
       OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
@@ -87,7 +88,7 @@ services:
         - GITHUB_USERNAME
         - GITHUB_PAT
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Container
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__PostgresWrite: ${DATABASE_URL:-}
       ConnectionStrings__PostgresRead: ${DATABASE_URL_POOLED:-${DATABASE_URL:-}}
@@ -148,7 +149,7 @@ services:
         - GITHUB_USERNAME
         - GITHUB_PAT
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Container
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__PostgresWrite: ${DATABASE_URL:-}
       ConnectionStrings__PostgresRead: ${DATABASE_URL_POOLED:-${DATABASE_URL:-}}

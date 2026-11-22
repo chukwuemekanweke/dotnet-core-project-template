@@ -25,8 +25,14 @@ files override every other source. A production environment variable cannot sati
 file because required keys are looked up in the KeyPerFile provider, not the merged configuration.
 
 Development does not add KeyPerFile or require `/run/secrets/app`. The checked-in development JWT key is
-loaded only from `appsettings.Development.json`; it cannot become a Production fallback and is rejected as
-a placeholder if it is ever delivered as a production secret file. Independently of environment,
+loaded only from `appsettings.Development.json` (and, for local Compose, from the overridable
+`JWT_SIGNING_KEY` default in `docker-compose.yml`); it cannot become a Production fallback and is rejected as
+a placeholder if it is ever delivered as a production secret file.
+
+Local `docker-compose.yml` runs all hosts as `Container`, a non-Production environment, so it needs neither
+Doppler nor `/run/secrets/app`. It deliberately avoids `Development`: that environment turns on DI
+`ValidateOnBuild`, and Consumer, Jobs and DatabaseMigrator currently register Application/Identity services
+whose dependencies only WebAPI provides. Independently of environment,
 WebAPI validates `Jwt:SigningKey` with `ValidateOnStart` (at least 32 UTF-8 bytes), so a non-Development,
 non-Production environment without a key also fails at startup instead of at the first token operation.
 
