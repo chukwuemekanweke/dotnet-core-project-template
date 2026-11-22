@@ -1,16 +1,8 @@
 # CI/CD
 
-This template is moving from one self-contained GitHub Actions workflow to thin callers of reusable
-workflows owned by [`devops-toolkit`](https://github.com/chukwuemekanweke/devops-toolkit) (DEVOPS-012).
-The migration ships in three PRs so each stage can be checked against the old behaviour before the old
-code is removed.
-
-| Stage | Status | What it adds |
-|---|---|---|
-| PR 1: shared .NET CI | **Merged; parity shown** | `ci-shared-validation.yml` calls the toolkit's `dotnet-ci.yml` next to the existing `ci.yml` |
-| PR 2: image publishing | **In review** | `.github/docker-images.json`, plus `publish-images` and `verify-release` jobs calling the toolkit's `docker-publish.yml` on `main` |
-| Retire legacy jobs | After the first verified release from PR 2 | Remove `ci.yml`'s duplicated verification and its `docker-build-push` matrix |
-| PR 3: VPS deployment | Not started | Production Compose, stack registration, and a caller for the toolkit's `vps-deploy.yml` (deployment off until readiness gates pass) |
+CI/CD for this template is a set of thin callers of reusable workflows owned by
+[`devops-toolkit`](https://github.com/chukwuemekanweke/devops-toolkit) (DEVOPS-012). This repository holds
+configuration; the toolkit holds the automation.
 
 ## Who owns what
 
@@ -25,46 +17,42 @@ records, and restoration.
 Change application configuration here. Change shared workflow behaviour in the toolkit, with its own
 tests and release. Don't copy toolkit logic into this repository.
 
-## Current workflows
+## `ci.yml`
 
-### `ci.yml` (still authoritative)
+`.github/workflows/ci.yml` (**CI/CD (.NET 10)**) runs on pull requests, pushes to `main`, and manual
+dispatch. It never deploys.
 
-`ci.yml` is unchanged. It restores, checks `IDE0005`, builds Release, runs unit and integration tests
-with TRX and XPlat coverage, combines coverage with ReportGenerator, and, only on `push` to `main`,
-pushes the four images (`webapi`, `consumer`, `jobs`, `migrator`) to Docker Hub. It stays in place
-until the shared path has published and verified a release on `main`. It is then retired in a separate
-change.
-
-### `ci-shared-validation.yml` (shared callers)
-
-This workflow runs on pull requests, pushes to `main`, and manual dispatch. It publishes images only
-on `push` to `main` (see [Release images](#release-images)). It never deploys.
-
-- **`shared-ci`** calls `devops-toolkit/.github/workflows/dotnet-ci.yml` pinned to a full commit SHA.
-  It passes the solution, .NET 10, Release, `IDE0005`, both test-project globs,
-  `fail-on-empty-test-set`, coverage, and TRX upload.
-- **`parity-check`** downloads the toolkit's combined TRX and coverage artifacts. It runs
-  `.github/scripts/verify-shared-ci-artifacts.py`, which fails unless all of these hold:
-  - the test projects that ran are exactly the ones `ci.yml`'s `find` would discover;
-  - every TRX parses and reports a non-zero test count;
-  - every test executed (no skipped, failed, errored, or not-executed tests);
-  - the combined `Cobertura.xml` parses.
+| Job | When | What it does |
+|---|---|---|
+| `shared-ci` | Every event | Calls the toolkit's `dotnet-ci.yml`: restore, `IDE0005` format check, Release build, unit and integration tests with TRX and coverage, combined Cobertura/HTML report |
+| `image-config` | Every event | Validates `.github/docker-images.json` and that the deploy files agree with it |
+| `publish-images` | Push to `main` | Calls the toolkit's `docker-publish.yml` (see [Release images](#release-images)) |
+| `verify-release` | After `publish-images` | Checks the release manifest and resolves every digest |
+| `deploy-production` | Push to `main`, **only when `PRODUCTION_DEPLOY_ENABLED` is `true`** | Calls the toolkit's `vps-deploy.yml` (see [Production deployment](#production-deployment)) |
+| `notify-deployment-failure` | When `deploy-production` fails or is cancelled | Posts a sanitized alert to `DEPLOY_ALERT_WEBHOOK_URL` |
 
 Test discovery uses the globs `tests/unit/**/*.UnitTests.csproj` and
 `tests/integration/**/*.IntegrationTests.csproj`. Every matched project runs even after an earlier
-failure. An empty category fails.
+failure, and an empty category fails. The toolkit uploads `dotnet-test-results-<run>-<attempt>` (TRX)
+and `dotnet-coverage-<run>-<attempt>` (combined `Cobertura.xml` and HTML summary).
 
 ### Docker-unavailable protection
 
 Integration tests use Testcontainers fixtures owned by this repository (PostgreSQL, Redis, RabbitMQ,
-Tempo, OpenTelemetry Collector). The shared workflow does not start any Compose stack. Three
-independent guards stop a missing Docker daemon from producing a green run:
+Tempo, OpenTelemetry Collector). The shared workflow does not start any Compose stack. Two independent
+guards stop a missing Docker daemon from producing a green run:
 
 1. The fixtures rethrow Testcontainers' `DockerUnavailableException` as a failure ("Docker is
-   unavailable … never skipped"). They don't skip.
+   unavailable … never skipped"). They don't skip. Keep that message: the toolkit matches it.
 2. The toolkit runs `docker info` before integration tests and scans the TRX for Docker-unavailable
    messages.
-3. `parity-check` rejects any TRX with skipped or not-executed tests.
+
+### Migration history
+
+The shared path replaced a self-contained `ci.yml` in three steps. Parity was shown on PR #68, where both
+workflows ran 7 unit projects (609 tests) and 5 integration projects (104 tests) with nothing skipped.
+The first toolkit release, `4fdbdf5`, was published and verified with all four digests, SBOM, provenance
+and clean Trivy scans before the legacy jobs and the temporary parity check were removed.
 
 ## Release images
 
@@ -92,12 +80,12 @@ mounting the `GITHUB_USERNAME`/`GITHUB_PAT` BuildKit secrets.
 ### Publishing
 
 `publish-images` calls `docker-publish.yml` at the same pinned toolkit SHA as `shared-ci`. It runs only
-for `push` events on `main`, and only after `shared-ci`, `parity-check`, and `image-config` all pass.
+for `push` events on `main`, and only after `shared-ci` and `image-config` pass.
 Pull requests and manual dispatches never publish.
 
 - **Deployment id** is `github.sha`. The toolkit tags every image `release-<sha>` and refuses to push a
-  tag that already exists, so a release identity can't be overwritten. These tags don't collide with
-  the legacy `ci.yml` tags (`latest` and `<sha>`).
+  tag that already exists, so a release identity can't be overwritten. No moving tag such as `latest`
+  is published; anything that runs these images uses the manifest digests.
 - **Package credentials:** all four components are listed in `package-auth-components`. The toolkit
   mounts `GH_PKG_USERNAME`/`GH_PKG_PAT` as BuildKit secrets `GITHUB_USERNAME`/`GITHUB_PAT` for those
   builds only. They are never build args. They are read only by the restore `RUN` and never reach the
@@ -130,29 +118,177 @@ Images are pushed before they are scanned. If a component fails after another ha
 then land a new commit on `main` to get a new deployment id. Never delete or move a `release-*` tag to
 retry.
 
+## Production deployment
+
+> **Status: off.** `deploy-production` is skipped until the repository variable
+> `PRODUCTION_DEPLOY_ENABLED` is set to `true`. Leave it unset until every item in
+> [Activation checklist](#activation-checklist) is done.
+
+### What happens on a deploy
+
+`deploy-production` needs `publish-images` and `verify-release`, so it only ever deploys a release whose four
+digests were verified in the same run. It calls the toolkit's `vps-deploy.yml` at the pinned SHA, which runs
+in the protected `production` GitHub Environment and then, on the VPS:
+
+1. validates the request, the release manifest and the host's stack registration;
+2. stages `deploy/compose.production.yml` plus a generated override that sets each release image by digest;
+3. renders a new runtime-secret generation for every service (DEVOPS-007);
+4. pulls the four images by digest (the VPS never builds);
+5. runs `database-migrator` with `docker compose run` and requires exit `0` within 900 seconds. Any other
+   result stops the deploy before any running service changes;
+6. activates the new secret generations and recreates `webapi`, `consumer` and `jobs`;
+7. waits up to 300 seconds for all three Compose health checks plus the host check
+   `http://127.0.0.1:8080/health` to pass in the same round;
+8. records the release as active only after health passes, and keeps the previous release's manifest and
+   secret generations for restoration.
+
+| Input | Value |
+|---|---|
+| `stack-name` | `backendprojecttemplate-production` |
+| `remote-deployment-path` | `/srv/backendprojecttemplate/production` |
+| `component-service-map` | `migrator` → `database-migrator` (the other components keep their names) |
+| `health-services` | `webapi`, `consumer`, `jobs` |
+| `rollback-on-health-failure` | `true` |
+
+### Files in this repository
+
+- `deploy/compose.production.yml`: the four release services. No images, tags or build sections. Every service
+  runs with a read-only root filesystem (tmpfs for `/tmp` and `$HOME`), `no-new-privileges`, the image's
+  non-root user and `restart: "no"`, and mounts only its own secret generation read-only at `/run/secrets/app`.
+  Only WebAPI publishes a port, on `127.0.0.1:8080`, for the host reverse proxy. PostgreSQL, Redis and RabbitMQ
+  are external managed services reached through the secret connection strings.
+- `deploy/vps-deploy-stack.production.json`: the host stack registration. An operator installs it as
+  `/etc/vps-deploy/stacks/backendprojecttemplate-production.json`. It allows only this repository, the four
+  image repositories and the four runtime-secret instances (`bpt-prd-webapi`, `bpt-prd-consumer`,
+  `bpt-prd-jobs`, and `bpt-prd-migrator`, which does not start at boot). Committing it does not register
+  anything; the copy on the host is what counts.
+- `deploy/runtime-secrets/<service>.keys.json`: the secret keys each service may receive.
+
+The `image-config` job renders the Compose file and fails the pull request if the stack registration, the
+Compose services and the deploy job inputs stop agreeing with `.github/docker-images.json`.
+
+### Health checks
+
+| Service | Check | What it proves |
+|---|---|---|
+| `webapi` | Compose `curl /health`, plus the host check `http://127.0.0.1:8080/health` | The process serves HTTP. `/health` has no dependency checks |
+| `consumer` | Compose `curl /health/readiness` | Its readiness checks pass. Returns 503 when RabbitMQ is down |
+| `jobs` | Compose `curl /health/readiness` | Redis is reachable. RabbitMQ is **not** checked |
+| `database-migrator` | Exit code only | `0` means every migration stage succeeded |
+
+A running container is not counted as healthy until its health check passes. Strengthening WebAPI and Jobs
+readiness is an open application task.
+
+### Rollback and the database
+
+If rollout or health fails and a previous release exists, the toolkit restores the previous image digests
+and secret generations, recreates the services, checks their health again, and still fails the job.
+It does **not** reverse migrations, restore backups or touch the database. A restored release therefore runs
+against the already-migrated schema, which is safe only if the release followed expand → migrate → contract:
+
+- ship additive, backward-compatible schema changes first;
+- move code onto the new structures in a later release;
+- remove old structures only once no release within the rollback window needs them.
+
+A first deployment that fails has nothing to restore and is left for diagnosis. Take regular PostgreSQL
+backups outside this pipeline. See the toolkit's [database compatibility guidance](https://github.com/chukwuemekanweke/devops-toolkit/blob/1891bbfc7694eb20233cda1bdd1f511319b54959/docs/vps-deployment.md#database-compatibility-expand-migrate-contract)
+and the repository's [migration rules](architecture/database-migrations.md).
+
+Data Protection keys are not persisted yet. Each deploy or restoration recreates the containers, which
+invalidates Data-Protection-protected payloads such as Identity tokens and auth cookies. That is an open
+application task.
+
+### When a deploy fails
+
+1. Read the alert, or the job outputs: `deployment-outcome`, `failed-phase`, `migration-status`,
+   `restoration-outcome`.
+2. Download the sanitized `vps-deployment-record-…` artifact from the run.
+3. On the host, inspect `docker compose --project-name backendprojecttemplate-production ps`, the container
+   logs, and the stack's remote state and history.
+4. Fix forward with a new commit. To return to a known good release, redeploy its deployment ID through the
+   workflow. Never move `release-*` tags or edit host state by hand.
+
+The toolkit's [recovery table](https://github.com/chukwuemekanweke/devops-toolkit/blob/1891bbfc7694eb20233cda1bdd1f511319b54959/docs/vps-deployment.md#recovery) covers each outcome.
+
+### GitHub configuration
+
+| Item | Where | Notes |
+|---|---|---|
+| `production` environment | Repository settings → Environments | Required reviewers; deployment branches limited to `main` |
+| `VPS_HOST`, `VPS_DEPLOY_USER`, `VPS_DEPLOY_SSH_KEY`, `VPS_KNOWN_HOSTS` | `production` environment secrets | Dedicated deploy account bound by a forced command to this stack. Known hosts recorded out of band, never with `ssh-keyscan` over the network |
+| `DOCKERHUB_READ_USERNAME`, `DOCKERHUB_READ_TOKEN` | `production` environment secrets | Pull-only Docker Hub token for the four repositories |
+| `DEPLOY_ALERT_WEBHOOK_URL` | Repository secret | Used only by `notify-deployment-failure`. Never sent to the VPS |
+| `PRODUCTION_DEPLOY_ENABLED` | Repository variable | Set to `true` only after the activation checklist passes |
+
+GitHub resolves the environment secrets when the toolkit's environment-scoped job starts. The caller maps
+them by name and never uses `secrets: inherit`. Confirm that resolution on the first rehearsal deploy.
+
+### Host setup
+
+Follow the toolkit's [VPS deployment operations guide](https://github.com/chukwuemekanweke/devops-toolkit/blob/1891bbfc7694eb20233cda1bdd1f511319b54959/docs/vps-deployment.md#initial-vps-preparation) and
+[runtime-secret bootstrap](https://github.com/chukwuemekanweke/devops-toolkit/blob/1891bbfc7694eb20233cda1bdd1f511319b54959/docs/doppler/vps-bootstrap.md). For this stack:
+
+- install the runtime-secrets and vps-deploy helpers from toolkit commit `1891bbf`;
+- create the four DEVOPS-007 instances `bpt-prd-webapi`, `bpt-prd-consumer`, `bpt-prd-jobs` and
+  `bpt-prd-migrator`, each with application `backendprojecttemplate`, environment `prd`, its own Doppler config
+  and service group, `outputDirectory` `/run/runtime-secrets/backendprojecttemplate/prd/<service>`, and the
+  matching `deploy/runtime-secrets/<service>.keys.json` as its key manifest;
+- install `deploy/vps-deploy-stack.production.json` as root-owned
+  `/etc/vps-deploy/stacks/backendprojecttemplate-production.json`;
+- write a root-owned `/srv/backendprojecttemplate/production/stack.env` with `RUNTIME_SECRETS_APPLICATION`,
+  `RUNTIME_SECRETS_ENVIRONMENT`, the four `*_SECRETS_GID` values, and the non-secret settings the services read
+  (for example `RABBITMQ_HOSTNAME`, `OTEL_EXPORTER_OTLP_ENDPOINT`, R2 bucket names and feature flags). Never put
+  secret values in it;
+- put a TLS reverse proxy in front of `127.0.0.1:8080`.
+
+### Activation checklist
+
+Deployment stays off until all of these are true:
+
+- [ ] Host helpers installed, stack registered and `stack.env` written on a **non-production** VPS first.
+- [ ] Runtime-secret instances render for all four services, and sibling and cross-environment access is denied.
+- [ ] `production` environment configured with reviewers, branch rules and the six secrets.
+- [ ] Rehearsal on the non-production VPS, recording the run for each scenario:
+  - a successful deploy;
+  - a migration failure (services unchanged);
+  - a health failure that restores the previous release;
+  - a restoration failure, reported explicitly;
+  - a failed first deploy (no false restoration);
+  - two concurrent deploys (locking);
+  - an interrupted deploy.
+- [ ] `DEPLOY_ALERT_WEBHOOK_URL` set, and an alert received during the rehearsal.
+- [ ] An authorized operator approves activation, then sets `PRODUCTION_DEPLOY_ENABLED=true`.
+
+### New projects from this template
+
+Change the Docker Hub namespace in `.github/docker-images.json`. Then update to your own values: the stack name,
+deployment path, instance IDs and allowed repositories in `deploy/vps-deploy-stack.production.json`, and the
+matching `deploy-production` inputs in `ci.yml`. The `image-config` check fails until these agree.
+
 ## Credentials
 
 | Purpose | Repository secrets | Where they go |
 |---|---|---|
-| Private NuGet (Mailtrap on GitHub Packages) | `GH_PKG_USERNAME`, `GH_PKG_PAT` | Mapped explicitly to the toolkit's `nuget-username` / `nuget-token`. The toolkit exposes them as `GITHUB_USERNAME` / `GITHUB_PAT` (referenced by `nuget.config`) only to restore steps |
-| Docker Hub push | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | `publish-images` (mapped to `registry-username` / `registry-token`, `main` pushes only) and the legacy `ci.yml` matrix until it is retired |
-| Docker build package restore | `GH_PKG_USERNAME`, `GH_PKG_PAT` | `publish-images` (mapped to `github-packages-username` / `github-packages-token`, mounted as BuildKit secrets) |
+| Private NuGet (Mailtrap on GitHub Packages) | `GH_PKG_USERNAME`, `GH_PKG_PAT` | `shared-ci`, mapped to `nuget-username` / `nuget-token`. The toolkit exposes them as `GITHUB_USERNAME` / `GITHUB_PAT` (referenced by `nuget.config`) only to restore steps |
+| Docker build package restore | `GH_PKG_USERNAME`, `GH_PKG_PAT` | `publish-images`, mapped to `github-packages-username` / `github-packages-token` and mounted as BuildKit secrets |
+| Docker Hub push | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | `publish-images`, mapped to `registry-username` / `registry-token`, `main` pushes only |
+| VPS deploy and image pull | `production` environment secrets (see [GitHub configuration](#github-configuration)) | `deploy-production` only |
 
 Callers map each secret by name and never use `secrets: inherit`. Workflow-level permissions are `{}`,
-and each job is granted only `contents: read`. GitHub withholds secrets from fork pull requests, so
-the Mailtrap restore fails for forks in both workflows. This is a known limitation, and it is not
-worked around with `pull_request_target`. Runtime application secrets never enter CI.
+and each job is granted only `contents: read` (the alert job gets none). GitHub withholds secrets from fork pull requests, so
+the Mailtrap restore fails for forks. This is a known limitation, and it is not worked around with
+`pull_request_target`. Runtime application secrets never enter GitHub Actions: they are rendered on the VPS by DEVOPS-007.
 
 ## Toolkit reference pinning
 
 The toolkit has no published release tag yet, so callers pin a reviewed full commit SHA (currently
-`1891bbfc7694eb20233cda1bdd1f511319b54959`, toolkit `main` after the masked-output fixes, #13 and #14). The toolkit checks out
-its helper scripts from the exact called commit (`job.workflow_sha`), so the workflow and its scripts
-always match. To upgrade:
+`1891bbfc7694eb20233cda1bdd1f511319b54959`, toolkit `main` after the masked-output fixes, #13 and #14).
+The toolkit checks out its helper scripts from the exact called commit (`job.workflow_sha`), so the
+workflow and its scripts always match. To upgrade:
 
 1. Review the toolkit diff between the pinned SHA and the candidate.
 2. Update the `uses:` SHA in every caller together, so all callers stay on one coherent baseline.
-3. Confirm the comparison workflow and parity check pass.
+3. Confirm CI passes on the pull request, and that the next push to `main` publishes and verifies.
 4. Switch to an immutable release tag once one is published. Adopt a moving `v1` alias only after it
    is formally published and validated.
 
@@ -167,26 +303,18 @@ workflow … workflow was not found`. The toolkit also checks out its own helper
 caller's `GITHUB_TOKEN`, which works only while the toolkit is public. Do not work around either
 restriction with a personal access token.
 
-## Re-running a failed shared CI run
+## Secrets that overlap public names
+
+`GH_PKG_USERNAME` and `DOCKERHUB_USERNAME` hold the same value as the Docker Hub namespace and the
+repository owner. GitHub drops any job output that contains a secret the job references ("Skip output …
+since it may contain secret"). At toolkit `4ab2e18` this emptied the publish matrix, so no images were
+built. Toolkit `a7a4f80` (#13) and `1891bbf` (#14) keep every output-producing job free of secrets. When
+you change toolkit pins, check the logs for that warning.
+
+## Re-running a failed CI run
 
 Re-run **all jobs**, never only the failed ones. The toolkit names its artifacts by run attempt and
-combines them by that name. A failed-jobs-only re-run leaves the earlier attempt's unit results out of
-the combined TRX artifact, and `parity-check` fails.
-
-## Validating CI parity
-
-For a given commit, compare the `ci.yml` run with the `ci-shared-validation.yml` run:
-
-- the same unit and integration projects ran (`parity-check` asserts this against `ci.yml`'s discovery);
-- format, Release build, unit and integration tests all succeeded;
-- the TRX and combined coverage artifacts exist and parse;
-- no package credential appears in either log (GitHub masks mapped secrets).
-
-Negative scenarios to exercise on throwaway branches with manual dispatch, reverting afterwards:
-
-- a failing unit test;
-- a failing integration test;
-- a test glob that matches nothing;
-- a broken package source (restore failure).
-
-Each should fail `shared-ci`.
+combines them by that name, so a failed-jobs-only re-run leaves the earlier attempt's results out of the
+combined TRX and coverage artifacts. Several WebAPI integration tests are timing-sensitive and fail
+intermittently in any workflow (see the OKF `ci-cd` concept); a full re-run is the expected recovery
+until they are fixed.

@@ -1,7 +1,7 @@
 ---
 type: workflow
 title: CI/CD Ownership and Shared Toolkit Workflows
-description: Application-vs-devops-toolkit responsibility split, pinned reusable-workflow callers, and the DEVOPS-012 migration state
+description: Application-vs-devops-toolkit responsibility split, the SHA-pinned ci.yml callers, release image publishing, gated VPS deployment, and known CI pitfalls
 resource: okf://knowledge/workflows/ci-cd
 tags:
     - constraint
@@ -12,14 +12,14 @@ tags:
 governance: constraint
 code_refs:
     - .github/workflows/ci.yml
-    - .github/workflows/ci-shared-validation.yml
-    - .github/scripts/verify-shared-ci-artifacts.py
     - .github/scripts/verify-release-images.py
     - .github/docker-images.json
+    - deploy/compose.production.yml
+    - deploy/vps-deploy-stack.production.json
     - nuget.config
 sources:
     - kind: file
-      path: .github/workflows/ci-shared-validation.yml
+      path: .github/workflows/ci.yml
 generated:
     at: "2026-11-22T00:00:00Z"
     by: agent
@@ -51,9 +51,9 @@ own tests.
   `migrator` → `docker.io/chukwuemekanweke/backendprojecttemplate-<component>`, root context, no
   `buildArgs`. `verify-release-images.py config` enforces this on every PR; keep the script's
   `EXPECTED_COMPONENTS` in step with the file when the deployment contract intentionally changes.
-- `publish-images` (in `ci-shared-validation.yml`) calls `docker-publish.yml` only on `push` to `main`
-  after `shared-ci`, `parity-check` and `image-config`; `deployment-id: ${{ github.sha }}` → write-once
-  tag `release-<sha>`. All four components are in `package-auth-components` because every Dockerfile
+- `publish-images` (in `ci.yml`) calls `docker-publish.yml` only on `push` to `main` after `shared-ci`
+  and `image-config`; `deployment-id: ${{ github.sha }}` → write-once tag `release-<sha>`. No `latest`
+  or other moving tag is published. All four components are in `package-auth-components` because every Dockerfile
   mounts BuildKit secrets `GITHUB_USERNAME`/`GITHUB_PAT` for the Mailtrap restore — never build args.
 - `verify-release` checks `manifest-json` equals the `release-manifest-<sha>` artifact, the manifest
   matches the config (components, repositories, deployment id, source commit) and every `image@digest`
@@ -66,24 +66,42 @@ own tests.
   toolkit `a7a4f80` (#13). `vps-deploy.yml` outputs moved to a secret-free `report` job in `1891bbf` (#14);
   callers pin `1891bbf` for all three workflows.
 
-## Current migration state (DEVOPS-012)
+## Production deployment
 
-- `ci.yml` still runs its own verification and legacy `docker-build-push` matrix (`:latest`/`:<sha>`
-  tags). Retire both only after `publish-images` + `verify-release` succeed on `main`.
-- `ci-shared-validation.yml` calls `dotnet-ci.yml` with a `parity-check` job
-  (`verify-shared-ci-artifacts.py`) asserting the same project set as `ci.yml`'s discovery, zero
-  skipped/failed tests, and parseable coverage; retire that script when `ci.yml` is retired. It never
-  deploys.
+- `deploy-production` calls `vps-deploy.yml` (same toolkit SHA) after `publish-images` + `verify-release`,
+  only on push to `main` AND `vars.PRODUCTION_DEPLOY_ENABLED == 'true'`. It is deliberately off; do not
+  enable it or weaken the condition — activation needs the non-production rehearsal and operator approval
+  listed in docs/ci-cd.md. It deploys `manifest-artifact` (never reconstructed tags), maps
+  `migrator`→`database-migrator`, runs `migration-service: database-migrator`, and checks
+  `webapi`,`consumer`,`jobs` plus `http://127.0.0.1:8080/health`.
+- VPS/registry credentials are `production` environment secrets mapped by name; the alert webhook
+  (`DEPLOY_ALERT_WEBHOOK_URL`) is a repository secret used only by `notify-deployment-failure`.
+- Keep `deploy/vps-deploy-stack.production.json`, `deploy/compose.production.yml`, the deploy job inputs and
+  `.github/docker-images.json` consistent; `verify-release-images.py deploy` (in `image-config`) enforces
+  stack/path/environment, image allowlist = configured repositories, service map, migration profile,
+  secret-bearing services and health checks. Infrastructure stays external (managed PostgreSQL/Redis/RabbitMQ);
+  adding a non-release service to production Compose fails that check on purpose.
+- Restoration restores images and secret generations only, never the schema: migrations must stay
+  expand → migrate → contract compatible with the previous release.
+
+## CI pitfalls
+
+- `ci.yml` is the only CI workflow; it is a thin caller (`shared-ci`, `image-config`, `publish-images`,
+  `verify-release`). The legacy self-contained jobs and the temporary parity check were retired after
+  parity (PR #68: 7 unit projects/609 tests, 5 integration projects/104 tests, 0 skipped) and the first
+  verified toolkit release (`4fdbdf5`).
 - Integration fixtures must keep failing (not skipping) on `DockerUnavailableException` with a message
   containing "Docker is unavailable" — the toolkit's TRX scan matches that text.
-- Parity was demonstrated on PR #68 (commit `5c260b2`): legacy run 45024354827 and shared run
-  45024355193 attempt 2 both ran 7 unit projects (609 tests) and 5 integration projects (104 tests),
-  with 0 skipped tests in each.
 - `devops-toolkit` must stay public. GitHub rejects a public caller's reference to a private reusable
   workflow ("workflow was not found"), and the toolkit's helper checkout uses the caller's
   `GITHUB_TOKEN`. Do not add a PAT to work around it.
-- Re-run all jobs of a failed shared run, never only the failed ones: the toolkit combines artifacts by
-  run-attempt name, so a partial re-run drops the earlier attempt's unit TRX.
-- `When_GrantingEntitlements_Concurrently_Should.AllowExactlyOneOverlappingEntitlementAndOneAllocationPerIdempotencyKey`
-  is a pre-existing intermittent failure in both workflows (an idempotency-key race). It is not a CI
-  parity difference.
+- Re-run all jobs of a failed run, never only the failed ones: the toolkit combines artifacts by
+  run-attempt name, so a partial re-run drops the earlier attempt's TRX/coverage.
+- Known intermittent WebAPI integration failures (timing/race sensitive, not CI defects):
+  `When_GrantingEntitlements_Concurrently_Should.AllowExactlyOneOverlappingEntitlementAndOneAllocationPerIdempotencyKey`
+  (idempotency-key race) and
+  `When_ReportingAdminSubscriptionAnalytics_Should.AuthorizeFilterAndExcludeComplimentaryAllocationRevenue`
+  (server-defaulted allocation start vs clock: Active/Pending boundary), and the Jobs unit test
+  `When_ProcessingOutboxMessages_WithPendingMessage_Should.MarkMessageAsSent` (fails under full-solution
+  parallel load, passes in isolation). Legacy history also shows
+  admin-payments reporting and passkey-ceremony flakes.

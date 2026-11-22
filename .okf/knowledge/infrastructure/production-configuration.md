@@ -27,7 +27,8 @@ code_refs:
     - src/BackendProjectTemplate.Jobs/Program.cs
     - src/BackendProjectTemplate.DatabaseMigrator/Program.cs
     - deploy/runtime-secrets/**
-    - docker-compose.production.yml
+    - deploy/compose.production.yml
+    - deploy/vps-deploy-stack.production.json
     - src/BackendProjectTemplate.Infrastructure/Authentication/JwtOptions.cs
     - src/BackendProjectTemplate.Infrastructure/Authentication/ServiceCollectionExtensions.cs
     - tests/unit/BackendProjectTemplate.Infrastructure.UnitTests/Configuration/**
@@ -65,7 +66,10 @@ its secret list. Keep `deploy/runtime-secrets/<service>.keys.json` aligned with 
 Conditional secrets follow an existing runtime enablement flag; DI registration alone does not establish a
 requirement. Jobs requires Redis for readiness but never R2. DatabaseMigrator requires only PostgresWrite.
 
-`docker-compose.production.yml` is standalone, sets Production explicitly, mounts only the matching
+`deploy/compose.production.yml` is standalone, names no images or build sections (vps-deploy injects
+release digests), runs every service with a read-only root filesystem (tmpfs `/tmp` and `/home/app`),
+`no-new-privileges`, the image's non-root user and `restart: "no"`, publishes only WebAPI on
+`127.0.0.1:8080`, sets Production explicitly, mounts only the matching
 DEVOPS-007 `current` generation read-only at `/run/secrets/app`, uses the service numeric group, disables
 implicit host-path creation, and keeps runtime credentials out of environment variables. GitHub credentials
 remain build secrets only. The production migrator sets `DOTNET_ENVIRONMENT: Production` (it is a Generic Host),
@@ -83,3 +87,12 @@ files. Activation does not retarget a live bind mount; recreate and health-check
 consume a generation. Production telemetry exports without credentials to a collector; the collector owns
 export credentials. Direct production Pyroscope profiling remains disabled until an agent owns its
 environment-only credentials.
+
+## Known production gaps (verified in the DEVOPS-012 rehearsal with release `4fdbdf5`)
+
+- Data Protection has no `PersistKeysTo`: in containers it logs "Using an ephemeral key repository", so every
+  container recreation (each deploy or restoration) invalidates Data-Protection-protected payloads (Identity
+  tokens, auth cookies/flows). Persisting the key ring (e.g. PostgreSQL or Redis) is an open application task.
+- Health semantics: WebAPI `/health` has no registered checks (process liveness only); Consumer
+  `/health/readiness` returns 503 when RabbitMQ is down; Jobs `/health/readiness` checks Redis but not
+  RabbitMQ, so a deploy can pass health while Jobs cannot publish outbox messages.

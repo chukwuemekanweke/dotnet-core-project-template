@@ -81,8 +81,8 @@ dotnet test
 ```
 
 Local development does not require Doppler or `/run/secrets/app`. Production uses the standalone
-`docker-compose.production.yml` definition and service-isolated KeyPerFile configuration delivered by
-DEVOPS-007. See [Production configuration and runtime secrets](docs/architecture/production-configuration.md)
+`deploy/compose.production.yml` definition, deployed by the devops-toolkit `vps-deploy` workflow (see
+[CI/CD](docs/ci-cd.md)), and service-isolated KeyPerFile configuration delivered by DEVOPS-007. See [Production configuration and runtime secrets](docs/architecture/production-configuration.md)
 for the secret matrix, host prerequisites, rotation lifecycle, and extension workflow.
 
 ## Cloudflare R2 avatar uploads
@@ -212,7 +212,7 @@ The migrator executes scripts in:
 The migrator runs pre-deploy SQL, EF Core migrations, the authorization seed, and post-deploy SQL in that
 order, then exits: `0` means every stage succeeded; any failure or cancellation exits nonzero. It exposes no
 HTTP endpoints. In the development Compose files the WebAPI, Consumer and Jobs services wait for it with
-`condition: service_completed_successfully`. In `docker-compose.production.yml` it sits in the `migration`
+`condition: service_completed_successfully`. In `deploy/compose.production.yml` it sits in the `migration`
 profile and nothing depends on it; the deployment orchestrator runs it explicitly before rollout. It reads its
 environment from `DOTNET_ENVIRONMENT`. Migration authoring rules (expand/migrate/contract, idempotent scripts)
 and failure recovery are in [docs/architecture/database-migrations.md](docs/architecture/database-migrations.md).
