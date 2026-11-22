@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "secrets": [
+    { "name": "CONNECTIONSTRINGS__POSTGRESWRITE", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "CONNECTIONSTRINGS__POSTGRESREAD", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "CONNECTIONSTRINGS__REDIS", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "MESSAGING__RABBITMQ__USERNAME", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "MESSAGING__RABBITMQ__PASSWORD", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "OBJECTSTORAGE__CLOUDFLARER2__ACCESSKEYID", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "OBJECTSTORAGE__CLOUDFLARER2__SECRETACCESSKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "NOTIFICATIONS__EMAIL__MAILTRAP__APITOKEN", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "PAYMENTS__BACHS__APIKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 }
+  ]
+}

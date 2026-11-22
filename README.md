@@ -80,6 +80,11 @@ dotnet build
 dotnet test
 ```
 
+Local development does not require Doppler or `/run/secrets/app`. Production uses the standalone
+`docker-compose.production.yml` definition and service-isolated KeyPerFile configuration delivered by
+DEVOPS-007. See [Production configuration and runtime secrets](docs/architecture/production-configuration.md)
+for the secret matrix, host prerequisites, rotation lifecycle, and extension workflow.
+
 ## Cloudflare R2 avatar uploads
 
 Avatar files are uploaded by the browser directly to the private R2 bucket through a 10-minute presigned `PUT`. The API validates the quarantined object and conditionally copies the exact validated ETag into the public bucket before updating the stakeholder profile.

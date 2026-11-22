@@ -47,7 +47,7 @@ public sealed class CustomWebApplicationFactory(
                 ["Database:InitializeOnStartup"] = "true",
                 ["Jwt:Issuer"] = "integration-tests",
                 ["Jwt:Audience"] = "integration-tests",
-                ["Jwt:SigningKey"] = "super-secret-template-signing-key-change-me",
+                ["Jwt:SigningKey"] = "integration-tests-signing-key-with-at-least-32-bytes",
                 ["Authentication:Google:ClientIds:0"] = "integration-tests-google-client-id",
                 ["Authentication:Google:Enabled"] = "true",
                 ["Payments:Credo:BaseUrl"] = "https://credo.integration.local",

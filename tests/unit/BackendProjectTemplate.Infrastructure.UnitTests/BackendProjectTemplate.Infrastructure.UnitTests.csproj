@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Bogus" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -15,7 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Consumer\\BackendProjectTemplate.Consumer.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.DatabaseMigrator\\BackendProjectTemplate.DatabaseMigrator.csproj" />
     <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Domain\\BackendProjectTemplate.Domain.csproj" />
     <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Infrastructure\\BackendProjectTemplate.Infrastructure.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.Jobs\\BackendProjectTemplate.Jobs.csproj" />
+    <ProjectReference Include="..\\..\\..\\src\\BackendProjectTemplate.WebAPI\\BackendProjectTemplate.WebAPI.csproj" />
   </ItemGroup>
 </Project>

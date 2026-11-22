@@ -1,5 +1,7 @@
+using BackendProjectTemplate.DatabaseMigrator;
 using BackendProjectTemplate.DatabaseMigrator.Healthcheck;
 using BackendProjectTemplate.Infrastructure.Authentication;
+using BackendProjectTemplate.Infrastructure.Configuration;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -7,6 +9,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddProductionSecrets(
+    "BackendProjectTemplate.DatabaseMigrator",
+    ProductionSecrets.GetRequirements());
 
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddPostgresWritePersistence(builder.Configuration);

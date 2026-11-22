@@ -2,6 +2,7 @@ using BackendProjectTemplate.Consumer;
 using BackendProjectTemplate.Infrastructure.Analytics;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
+using BackendProjectTemplate.Infrastructure.Configuration;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Notifications;
 using BackendProjectTemplate.Infrastructure.Observability;
@@ -13,6 +14,9 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddProductionSecrets(
+    "BackendProjectTemplate.Consumer",
+    ProductionSecrets.GetRequirements());
 
 builder.Services.Configure<HostOptions>(options =>
     options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);

@@ -49,6 +49,9 @@ processes holding DLL locks and cause transient build failures.
 ## Always
 
 - Never commit or print secrets, credentials, connection strings, or API keys.
+- Production hosts consume only service-isolated files at `/run/secrets/app`; query the OKF production
+  configuration concept before changing host startup, runtime secrets, JWT defaults, or production Compose.
+  Never reintroduce a default/checked-in production JWT key, runtime secret env vars, or Doppler in the apps.
 - Keep one top-level class, record, struct, interface, or enum per source file. Additional types are
   allowed only when they are nested inside their containing type.
 - Keep this file small — durable rules and explanations belong in `.okf/knowledge/`, not here.

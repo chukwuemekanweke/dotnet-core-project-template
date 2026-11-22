@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "secrets": [
+    { "name": "CONNECTIONSTRINGS__POSTGRESWRITE", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "CONNECTIONSTRINGS__POSTGRESREAD", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "CONNECTIONSTRINGS__REDIS", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "JWT__SIGNINGKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "OBJECTSTORAGE__CLOUDFLARER2__ACCESSKEYID", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "OBJECTSTORAGE__CLOUDFLARER2__SECRETACCESSKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "NOTIFICATIONS__EMAIL__MAILTRAP__WEBHOOKSIGNINGSECRET", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "IPGEOLOCATION__IPINFO__ACCESSTOKEN", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "IPGEOLOCATION__IPWHOIS__APIKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "PAYMENTS__BACHS__APIKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "PAYMENTS__BACHS__WEBHOOKSECRET", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "PAYMENTS__CREDO__SECRETKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "PAYMENTS__SAFEHAVEN__CLIENTID", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "PAYMENTS__SAFEHAVEN__CLIENTASSERTION", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "KYC__KYCAID__APIKEY", "required": false, "allowEmpty": false, "maxBytes": 4096 }
+  ]
+}

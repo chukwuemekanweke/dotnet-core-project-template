@@ -19,7 +19,8 @@ public sealed class WhenGeneratingAccessToken_Should
             Options.Create(new JwtOptions
             {
                 Issuer = "tests",
-                Audience = "tests"
+                Audience = "tests",
+                SigningKey = "unit-test-signing-key-with-at-least-32-bytes"
             }),
             new FakeTimeProvider());
 

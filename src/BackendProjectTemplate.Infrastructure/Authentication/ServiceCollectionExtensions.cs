@@ -167,7 +167,14 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services
+            .AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(options.SigningKey)
+                    && System.Text.Encoding.UTF8.GetByteCount(options.SigningKey) >= JwtOptions.MinimumSigningKeyUtf8ByteCount,
+                $"Configuration key 'Jwt:SigningKey' must be configured with at least {JwtOptions.MinimumSigningKeyUtf8ByteCount} UTF-8 bytes.")
+            .ValidateOnStart();
         services.AddSingleton<IConfigureOptions<JwtBearerOptions>, ConfigureJwtBearerOptions>();
         services.AddScoped<IAuthorizationHandler, ActiveSessionAuthorizationHandler>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();

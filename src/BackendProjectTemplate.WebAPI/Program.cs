@@ -3,6 +3,7 @@ using BackendProjectTemplate.Application;
 using BackendProjectTemplate.Infrastructure.Analytics;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Caching;
+using BackendProjectTemplate.Infrastructure.Configuration;
 using BackendProjectTemplate.Infrastructure.Kyc;
 using BackendProjectTemplate.Infrastructure.Messaging;
 using BackendProjectTemplate.Infrastructure.Notifications;
@@ -10,6 +11,7 @@ using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Payments;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.Infrastructure.Storage;
+using BackendProjectTemplate.WebAPI;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
@@ -19,6 +21,9 @@ using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddProductionSecrets(
+    "BackendProjectTemplate.WebAPI",
+    ProductionSecrets.GetRequirements(builder.Configuration));
 
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddControllers();

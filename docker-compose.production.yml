@@ -1,0 +1,187 @@
+services:
+  database-migrator:
+    build:
+      context: .
+      dockerfile: src/BackendProjectTemplate.DatabaseMigrator/Dockerfile
+      secrets:
+        - GITHUB_USERNAME
+        - GITHUB_PAT
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+    group_add:
+      - "${DATABASE_MIGRATOR_SECRETS_GID:?DATABASE_MIGRATOR_SECRETS_GID is required}"
+    volumes:
+      - type: bind
+        source: ${RUNTIME_SECRETS_ROOT:-/run/runtime-secrets}/${RUNTIME_SECRETS_APPLICATION:?RUNTIME_SECRETS_APPLICATION is required}/${RUNTIME_SECRETS_ENVIRONMENT:?RUNTIME_SECRETS_ENVIRONMENT is required}/database-migrator/current
+        target: /run/secrets/app
+        read_only: true
+        bind:
+          create_host_path: false
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health/readiness || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 5s
+    restart: "no"
+
+  webapi:
+    build:
+      context: .
+      dockerfile: src/BackendProjectTemplate.WebAPI/Dockerfile
+      secrets:
+        - GITHUB_USERNAME
+        - GITHUB_PAT
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Authentication__Google__Enabled: ${GOOGLE_AUTHENTICATION_ENABLED:-false}
+      Authentication__Google__ClientIds__0: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__FlowLifetime: 00:10:00
+      ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-}
+      ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-}
+      ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__PrivateBucketName: ${CLOUDFLARE_R2_PRIVATE_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-}
+      Kyc__Kycaid__Enabled: ${KYCAID_ENABLED:-false}
+      Kyc__Kycaid__FormId: ${KYCAID_FORM_ID:-}
+      Payments__Credo__PublicKey: ${CREDO_PUBLIC_KEY:-}
+      Payments__SafeHaven__SettlementAccountNumber: ${SAFEHAVEN_SETTLEMENT_ACCOUNT_NUMBER:-}
+      Payments__SafeHaven__AutoSweepAccountNumber: ${SAFEHAVEN_AUTO_SWEEP_ACCOUNT_NUMBER:-}
+      Payments__SafeHaven__SettlementBankCode: ${SAFEHAVEN_SETTLEMENT_BANK_CODE:-}
+      OpenTelemetry__ServiceName: BackendProjectTemplate.WebAPI
+      OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      PYROSCOPE_PROFILING_ENABLED: "0"
+      CORECLR_ENABLE_PROFILING: "0"
+      Database__InitializeOnStartup: "false"
+    group_add:
+      - "${WEBAPI_SECRETS_GID:?WEBAPI_SECRETS_GID is required}"
+    volumes:
+      - type: bind
+        source: ${RUNTIME_SECRETS_ROOT:-/run/runtime-secrets}/${RUNTIME_SECRETS_APPLICATION:?RUNTIME_SECRETS_APPLICATION is required}/${RUNTIME_SECRETS_ENVIRONMENT:?RUNTIME_SECRETS_ENVIRONMENT is required}/webapi/current
+        target: /run/secrets/app
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      database-migrator:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: "no"
+
+  consumer:
+    build:
+      context: .
+      dockerfile: src/BackendProjectTemplate.Consumer/Dockerfile
+      secrets:
+        - GITHUB_USERNAME
+        - GITHUB_PAT
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-}
+      ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-}
+      ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__PrivateBucketName: ${CLOUDFLARE_R2_PRIVATE_BUCKET_NAME:-}
+      ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-}
+      Messaging__RabbitMq__ServiceName: BackendProjectTemplate.Consumer
+      Messaging__RabbitMq__HostName: ${RABBITMQ_HOSTNAME:-}
+      Messaging__RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      Messaging__RabbitMq__VirtualHost: ${RABBITMQ_VIRTUAL_HOST:-/}
+      Messaging__RabbitMq__EventsExchange: x.events.backendprojecttemplate
+      Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
+      OpenTelemetry__ServiceName: BackendProjectTemplate.Consumer
+      OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      PYROSCOPE_PROFILING_ENABLED: "0"
+      CORECLR_ENABLE_PROFILING: "0"
+    group_add:
+      - "${CONSUMER_SECRETS_GID:?CONSUMER_SECRETS_GID is required}"
+    volumes:
+      - type: bind
+        source: ${RUNTIME_SECRETS_ROOT:-/run/runtime-secrets}/${RUNTIME_SECRETS_APPLICATION:?RUNTIME_SECRETS_APPLICATION is required}/${RUNTIME_SECRETS_ENVIRONMENT:?RUNTIME_SECRETS_ENVIRONMENT is required}/consumer/current
+        target: /run/secrets/app
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      database-migrator:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: "no"
+
+  jobs:
+    build:
+      context: .
+      dockerfile: src/BackendProjectTemplate.Jobs/Dockerfile
+      secrets:
+        - GITHUB_USERNAME
+        - GITHUB_PAT
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Messaging__RabbitMq__ServiceName: BackendProjectTemplate.Jobs
+      Messaging__RabbitMq__HostName: ${RABBITMQ_HOSTNAME:-}
+      Messaging__RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      Messaging__RabbitMq__VirtualHost: ${RABBITMQ_VIRTUAL_HOST:-/}
+      Messaging__RabbitMq__EventsExchange: x.events.backendprojecttemplate
+      Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
+      Kyc__Kycaid__Enabled: ${KYCAID_ENABLED:-false}
+      Kyc__Kycaid__FormId: ${KYCAID_FORM_ID:-}
+      Payments__Credo__PublicKey: ${CREDO_PUBLIC_KEY:-}
+      Payments__SafeHaven__SettlementAccountNumber: ${SAFEHAVEN_SETTLEMENT_ACCOUNT_NUMBER:-}
+      Payments__SafeHaven__AutoSweepAccountNumber: ${SAFEHAVEN_AUTO_SWEEP_ACCOUNT_NUMBER:-}
+      Payments__SafeHaven__SettlementBankCode: ${SAFEHAVEN_SETTLEMENT_BANK_CODE:-}
+      OpenTelemetry__ServiceName: BackendProjectTemplate.Jobs
+      OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      PYROSCOPE_PROFILING_ENABLED: "0"
+      CORECLR_ENABLE_PROFILING: "0"
+    group_add:
+      - "${JOBS_SECRETS_GID:?JOBS_SECRETS_GID is required}"
+    volumes:
+      - type: bind
+        source: ${RUNTIME_SECRETS_ROOT:-/run/runtime-secrets}/${RUNTIME_SECRETS_APPLICATION:?RUNTIME_SECRETS_APPLICATION is required}/${RUNTIME_SECRETS_ENVIRONMENT:?RUNTIME_SECRETS_ENVIRONMENT is required}/jobs/current
+        target: /run/secrets/app
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      database-migrator:
+        condition: service_healthy
+    ports:
+      - "8083:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: "no"
+
+secrets:
+  GITHUB_USERNAME:
+    environment: GITHUB_USERNAME
+  GITHUB_PAT:
+    environment: GITHUB_PAT
