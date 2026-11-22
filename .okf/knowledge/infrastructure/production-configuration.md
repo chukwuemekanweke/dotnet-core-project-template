@@ -36,7 +36,9 @@ governance: constraint
 ---
 ## Host startup contract
 
-Every deployable host calls `AddProductionSecrets` immediately after `WebApplication.CreateBuilder`. In
+Every deployable host calls `AddProductionSecrets` (generic over `IHostApplicationBuilder`) immediately after
+creating its builder: `WebApplication.CreateBuilder`, or `Host.CreateApplicationBuilder` for the one-shot
+DatabaseMigrator (see [[database-migrations]]). In
 Production, `/run/secrets/app` must exist and be readable; KeyPerFile is added with `reloadOnChange: false`
 and each host-owned `ProductionSecrets.cs` key is then looked up in the KeyPerFile provider only (never the
 merged configuration), so an environment-only value never satisfies file delivery. KeyPerFile is the final
@@ -66,7 +68,9 @@ requirement. Jobs requires Redis for readiness but never R2. DatabaseMigrator re
 `docker-compose.production.yml` is standalone, sets Production explicitly, mounts only the matching
 DEVOPS-007 `current` generation read-only at `/run/secrets/app`, uses the service numeric group, disables
 implicit host-path creation, and keeps runtime credentials out of environment variables. GitHub credentials
-remain build secrets only. The ordinary `docker-compose.yml` runs every host as `Container` and must keep
+remain build secrets only. The production migrator sets `DOTNET_ENVIRONMENT: Production` (it is a Generic Host),
+sits in the `migration` profile, and no service depends on it. The ordinary `docker-compose.yml` runs every
+host as `Container` (the migrator through `DOTNET_ENVIRONMENT`) and must keep
 working without runtime-secret delivery: never `Production` (it would require `/run/secrets/app`) and never
 `Development` (its DI `ValidateOnBuild` currently fails for Consumer, Jobs and DatabaseMigrator, which register
 unused Application/Identity services). WebAPI gets the dev-only JWT key there via

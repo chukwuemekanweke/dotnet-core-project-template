@@ -17,7 +17,7 @@ At startup, each Production host:
 5. Fails before service registration, migrations, request handling, or background work when validation
    fails. Errors name the host and configuration key but never the value.
 6. Re-checks during `IHostedLifecycleService.StartingAsync` — before the HTTP server, background services,
-   or the migration worker start — that no provider was added later in `Program.cs`.
+   or the one-shot migration run start — that no provider was added later in `Program.cs`.
 
 The final provider order is `appsettings.json`, `appsettings.{Environment}.json`, user secrets in
 Development, environment variables, command-line arguments, then KeyPerFile. The last provider wins, so

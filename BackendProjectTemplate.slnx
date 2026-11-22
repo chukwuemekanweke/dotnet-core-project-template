@@ -12,6 +12,7 @@
   <Folder Name="/tests/" />
   <Folder Name="/tests/integration/">
     <Project Path="tests/integration/BackendProjectTemplate.Consumer.IntegrationTests/BackendProjectTemplate.Consumer.IntegrationTests.csproj" />
+    <Project Path="tests/integration/BackendProjectTemplate.DatabaseMigrator.IntegrationTests/BackendProjectTemplate.DatabaseMigrator.IntegrationTests.csproj" />
     <Project Path="tests/integration/BackendProjectTemplate.Jobs.IntegrationTests/BackendProjectTemplate.Jobs.IntegrationTests.csproj" />
     <Project Path="tests/integration/BackendProjectTemplate.Observability.IntegrationTests/BackendProjectTemplate.Observability.IntegrationTests.csproj" />
     <Project Path="tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/BackendProjectTemplate.WebAPI.IntegrationTests.csproj" />
@@ -19,6 +20,7 @@
   <Folder Name="/tests/unit/">
     <Project Path="tests/unit/BackendProjectTemplate.Application.UnitTests/BackendProjectTemplate.Application.UnitTests.csproj" />
     <Project Path="tests/unit/BackendProjectTemplate.Consumer.UnitTests/BackendProjectTemplate.Consumer.UnitTests.csproj" />
+    <Project Path="tests/unit/BackendProjectTemplate.DatabaseMigrator.UnitTests/BackendProjectTemplate.DatabaseMigrator.UnitTests.csproj" />
     <Project Path="tests/unit/BackendProjectTemplate.Domain.UnitTests/BackendProjectTemplate.Domain.UnitTests.csproj" />
     <Project Path="tests/unit/BackendProjectTemplate.Infrastructure.UnitTests/BackendProjectTemplate.Infrastructure.UnitTests.csproj" />
     <Project Path="tests/unit/BackendProjectTemplate.Jobs.UnitTests/BackendProjectTemplate.Jobs.UnitTests.csproj" />

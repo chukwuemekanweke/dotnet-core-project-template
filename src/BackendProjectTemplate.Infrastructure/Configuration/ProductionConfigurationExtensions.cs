@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.KeyPerFile;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,17 +9,19 @@ public static class ProductionConfigurationExtensions
 {
     public const string DefaultSecretsDirectory = "/run/secrets/app";
 
-    public static WebApplicationBuilder AddProductionSecrets(
-        this WebApplicationBuilder builder,
+    public static TBuilder AddProductionSecrets<TBuilder>(
+        this TBuilder builder,
         string applicationName,
-        IEnumerable<ProductionSecretRequirement> requirements) =>
+        IEnumerable<ProductionSecretRequirement> requirements)
+        where TBuilder : IHostApplicationBuilder =>
         builder.AddProductionSecrets(applicationName, requirements, DefaultSecretsDirectory);
 
-    public static WebApplicationBuilder AddProductionSecrets(
-        this WebApplicationBuilder builder,
+    public static TBuilder AddProductionSecrets<TBuilder>(
+        this TBuilder builder,
         string applicationName,
         IEnumerable<ProductionSecretRequirement> requirements,
         string secretsDirectory)
+        where TBuilder : IHostApplicationBuilder
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(applicationName);
         ArgumentException.ThrowIfNullOrWhiteSpace(secretsDirectory);
@@ -92,10 +93,10 @@ public static class ProductionConfigurationExtensions
     }
 
     private static IConfigurationProvider GetSecretFileProvider(
-        IConfigurationRoot configuration,
+        IConfiguration configuration,
         string applicationName)
     {
-        var provider = configuration.Providers.LastOrDefault();
+        var provider = (configuration as IConfigurationRoot)?.Providers.LastOrDefault();
         if (provider is not KeyPerFileConfigurationProvider)
         {
             throw new InvalidOperationException(
