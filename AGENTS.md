@@ -54,4 +54,7 @@ processes holding DLL locks and cause transient build failures.
   Never reintroduce a default/checked-in production JWT key, runtime secret env vars, or Doppler in the apps.
 - Keep one top-level class, record, struct, interface, or enum per source file. Additional types are
   allowed only when they are nested inside their containing type.
+- CI/CD automation is owned by `devops-toolkit`; this repo holds only thin, SHA-pinned callers and
+  application configuration. Query the OKF `ci-cd` concept before changing `.github/`, Dockerfiles, or
+  deployment files, and never put secrets in workflow inputs, Docker build args, or config files.
 - Keep this file small — durable rules and explanations belong in `.okf/knowledge/`, not here.
