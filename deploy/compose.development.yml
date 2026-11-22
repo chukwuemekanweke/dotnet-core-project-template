@@ -9,7 +9,7 @@
 # - WebAPI publishes on 127.0.0.1:8090 because the co-hosted pickly stack already owns 127.0.0.1:8080.
 # - PostgreSQL is the existing pickly-postgres-1 container, reached over the pre-created internal Docker network
 #   "shared-postgres" (alias "postgres"). The host registry allows only that external network.
-# - The private network has a pinned subnet; WebAPI trusts forwarded headers only from its gateway.
+# - The app network has a pinned subnet; WebAPI trusts forwarded headers only from its gateway.
 # - Telemetry export is off unless the host stack.env sets OTEL_EXPORTER_OTLP_ENDPOINT to a real collector.
 services:
   database-migrator:
@@ -19,7 +19,7 @@ services:
       - /tmp
       - /home/app
     networks:
-      - private
+      - app
       - postgres
     environment:
       DOTNET_ENVIRONMENT: Production
@@ -42,7 +42,7 @@ services:
       - /tmp
       - /home/app
     networks:
-      - private
+      - app
       - postgres
     security_opt:
       - no-new-privileges:true
@@ -70,7 +70,7 @@ services:
       PYROSCOPE_PROFILING_ENABLED: "0"
       CORECLR_ENABLE_PROFILING: "0"
       Database__InitializeOnStartup: "false"
-      # Caddy reaches the loopback-published port through Docker, so requests arrive from the private network
+      # Caddy reaches the loopback-published port through Docker, so requests arrive from the app network
       # gateway. Trust only that address for X-Forwarded-For/Proto (see the pinned subnet below).
       ForwardedHeaders__KnownProxies__0: 172.30.231.1
       # Browser origins of the development frontends (DNS -> this VPS, TLS via host Caddy).
@@ -110,7 +110,7 @@ services:
       - /tmp
       - /home/app
     networks:
-      - private
+      - app
       - postgres
     security_opt:
       - no-new-privileges:true
@@ -157,7 +157,7 @@ services:
       - /tmp
       - /home/app
     networks:
-      - private
+      - app
       - postgres
     security_opt:
       - no-new-privileges:true
@@ -200,8 +200,10 @@ services:
     restart: "no"
 
 networks:
-  # Pinned so the gateway (172.30.231.1) that WebAPI trusts as its reverse proxy is deterministic.
-  private:
+  # Pinned so the gateway (172.30.231.1) that WebAPI trusts as its reverse proxy is deterministic. Docker cannot
+  # change an existing network's subnet, so changing this block needs a new network name (it replaced the
+  # unpinned "private" network, which the previous release still uses for restoration).
+  app:
     ipam:
       config:
         - subnet: 172.30.231.0/24
