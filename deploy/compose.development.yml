@@ -9,6 +9,7 @@
 # - WebAPI publishes on 127.0.0.1:8090 because the co-hosted pickly stack already owns 127.0.0.1:8080.
 # - PostgreSQL is the existing pickly-postgres-1 container, reached over the pre-created internal Docker network
 #   "shared-postgres" (alias "postgres"). The host registry allows only that external network.
+# - The private network has a pinned subnet; WebAPI trusts forwarded headers only from its gateway.
 # - Telemetry export is off unless the host stack.env sets OTEL_EXPORTER_OTLP_ENDPOINT to a real collector.
 services:
   database-migrator:
@@ -69,6 +70,9 @@ services:
       PYROSCOPE_PROFILING_ENABLED: "0"
       CORECLR_ENABLE_PROFILING: "0"
       Database__InitializeOnStartup: "false"
+      # Caddy reaches the loopback-published port through Docker, so requests arrive from the private network
+      # gateway. Trust only that address for X-Forwarded-For/Proto (see the pinned subnet below).
+      ForwardedHeaders__KnownProxies__0: 172.30.231.1
     group_add:
       - "${WEBAPI_SECRETS_GID:?WEBAPI_SECRETS_GID is required}"
     volumes:
@@ -185,7 +189,12 @@ services:
     restart: "no"
 
 networks:
-  private: {}
+  # Pinned so the gateway (172.30.231.1) that WebAPI trusts as its reverse proxy is deterministic.
+  private:
+    ipam:
+      config:
+        - subnet: 172.30.231.0/24
+          gateway: 172.30.231.1
   # Pre-created on the host (docker network create --internal shared-postgres) with pickly-postgres-1 attached.
   postgres:
     external: true
