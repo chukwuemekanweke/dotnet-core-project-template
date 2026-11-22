@@ -12,8 +12,9 @@ tags:
 governance: constraint
 code_refs:
     - .github/workflows/ci.yml
-    - .github/scripts/verify-release-images.py
     - .github/docker-images.json
+    - .github/vps-deploy.production.json
+    - deploy/stack.env.example
     - deploy/compose.production.yml
     - deploy/vps-deploy-stack.production.json
     - nuget.config
@@ -47,47 +48,59 @@ own tests.
 
 ## Release images
 
-- `.github/docker-images.json` (toolkit schema v1) declares exactly `webapi`, `consumer`, `jobs`,
+- `.github/docker-images.json` (toolkit schema v1) declares `webapi`, `consumer`, `jobs`,
   `migrator` → `docker.io/chukwuemekanweke/backendprojecttemplate-<component>`, root context, no
-  `buildArgs`. `verify-release-images.py config` enforces this on every PR; keep the script's
-  `EXPECTED_COMPONENTS` in step with the file when the deployment contract intentionally changes.
+  `buildArgs`.
+- `release-config` (in `ci.yml`) calls the toolkit's secret-free `release-config-check.yml` on every event.
+  With the toolkit's own publish/deploy validation code it checks `docker-images.json`,
+  `.github/vps-deploy.production.json`, `deploy/vps-deploy-stack.production.json`, and
+  `deploy/compose.production.yml` rendered with `deploy/stack.env.example` against the host Compose
+  policy. There is no repo-side validation script any more; do not reintroduce one — put generic checks
+  in the toolkit. The toolkit no longer enforces this repo's own rules (exactly four components, no
+  non-release services in production Compose, migrator only in the `migration` profile, health services
+  having a Compose healthcheck); keep those by review.
 - `publish-images` (in `ci.yml`) calls `docker-publish.yml` only on `push` to `main` after `shared-ci`
-  and `image-config`; `deployment-id: ${{ github.sha }}` → write-once tag `release-<sha>`. No `latest`
+  and `release-config`; `deployment-id: ${{ github.sha }}` → write-once tag `release-<sha>`. No `latest`
   or other moving tag is published. All four components are in `package-auth-components` because every Dockerfile
   mounts BuildKit secrets `GITHUB_USERNAME`/`GITHUB_PAT` for the Mailtrap restore — never build args.
-- `verify-release` checks `manifest-json` equals the `release-manifest-<sha>` artifact, the manifest
-  matches the config (components, repositories, deployment id, source commit) and every `image@digest`
-  resolves. Deployments consume the manifest digests, never tags.
+- The toolkit verifies the manifest against the config, records each pushed digest, scans each image by
+  digest, and writes the `image@digest` references to the publish job summary; there is no caller-side
+  re-verification job. Deployments consume the manifest digests, never tags.
 - A failed/partial publish burns that sha's `release-*` tags; fix and land a new commit. Never delete or
   move a `release-*` tag.
 - Secret values here overlap public names (`GH_PKG_USERNAME`/`DOCKERHUB_USERNAME` = `chukwuemekanweke`
   = Docker Hub namespace = repo owner). GitHub drops any job output containing a referenced secret
   ("Skip output … may contain secret"), which emptied the publish matrix at toolkit `4ab2e18`; fixed in
   toolkit `a7a4f80` (#13). `vps-deploy.yml` outputs moved to a secret-free `report` job in `1891bbf` (#14);
-  callers pin `1891bbf` for all three workflows.
+  callers pin `190253e` (release-config-check and the deploy config file, #15) for all four workflows.
 
 ## Production deployment
 
-- `deploy-production` calls `vps-deploy.yml` (same toolkit SHA) after `publish-images` + `verify-release`,
+- `deploy-production` calls `vps-deploy.yml` (same toolkit SHA) after `publish-images`,
   only on push to `main` AND `vars.PRODUCTION_DEPLOY_ENABLED == 'true'`. It is deliberately off; do not
   enable it or weaken the condition — activation needs the non-production rehearsal and operator approval
-  listed in docs/ci-cd.md. It deploys `manifest-artifact` (never reconstructed tags), maps
-  `migrator`→`database-migrator`, runs `migration-service: database-migrator`, and checks
-  `webapi`,`consumer`,`jobs` plus `http://127.0.0.1:8080/health`.
+  listed in docs/ci-cd.md. It deploys `manifest-artifact` (never reconstructed tags). Its topology lives in
+  `.github/vps-deploy.production.json` (`deploy-config-path`): maps `migrator`→`database-migrator`, runs
+  migration service `database-migrator`, and checks `webapi`,`consumer`,`jobs` plus
+  `http://127.0.0.1:8080/health`. Only `environment` and `stack-name` stay inline; `release-config` must
+  pass the same `deploy-config-path`, `environment` and `stack-name`. Never also set a file-owned input
+  (`compose-files`, `health-checks`, …) inline: the toolkit rejects a setting declared in both places.
 - VPS/registry credentials are `production` environment secrets mapped by name; the alert webhook
   (`DEPLOY_ALERT_WEBHOOK_URL`) is a repository secret used only by `notify-deployment-failure`.
-- Keep `deploy/vps-deploy-stack.production.json`, `deploy/compose.production.yml`, the deploy job inputs and
-  `.github/docker-images.json` consistent; `verify-release-images.py deploy` (in `image-config`) enforces
-  stack/path/environment, image allowlist = configured repositories, service map, migration profile,
-  secret-bearing services and health checks. Infrastructure stays external (managed PostgreSQL/Redis/RabbitMQ);
-  adding a non-release service to production Compose fails that check on purpose.
+- `deploy/vps-deploy-stack.production.json` is a repository copy of the host registry; the host file wins,
+  so update both together. `deploy/stack.env.example` must list every variable the production Compose file
+  requires (`${VAR:?…}`) with non-secret placeholders — a new required variable fails `release-config`
+  until it is added there and to the host `stack.env`. Infrastructure stays external (managed
+  PostgreSQL/Redis/RabbitMQ); an added infrastructure service must be digest-pinned and pass the host
+  policy.
 - Restoration restores images and secret generations only, never the schema: migrations must stay
   expand → migrate → contract compatible with the previous release.
 
 ## CI pitfalls
 
-- `ci.yml` is the only CI workflow; it is a thin caller (`shared-ci`, `image-config`, `publish-images`,
-  `verify-release`). The legacy self-contained jobs and the temporary parity check were retired after
+- `ci.yml` is the only CI workflow; it is a thin caller (`shared-ci`, `release-config`, `publish-images`,
+  `deploy-production`) plus the caller-owned `notify-deployment-failure` alert (alerting stays in the
+  caller by toolkit design). The legacy self-contained jobs and the temporary parity check were retired after
   parity (PR #68: 7 unit projects/609 tests, 5 integration projects/104 tests, 0 skipped) and the first
   verified toolkit release (`4fdbdf5`).
 - Integration fixtures must keep failing (not skipping) on `DockerUnavailableException` with a message
