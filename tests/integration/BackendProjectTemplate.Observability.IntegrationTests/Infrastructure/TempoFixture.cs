@@ -2,7 +2,6 @@ using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Networks;
-using Xunit.Sdk;
 
 namespace BackendProjectTemplate.Observability.IntegrationTests.Infrastructure;
 
@@ -43,7 +42,9 @@ public sealed class TempoFixture : IAsyncLifetime
         }
         catch (Exception exception) when (exception.GetType().FullName?.Contains("DockerUnavailableException", StringComparison.Ordinal) == true)
         {
-            throw SkipException.ForSkip("Docker is unavailable. Observability integration tests require Docker to run.");
+            throw new InvalidOperationException(
+                "Docker is unavailable. Observability integration tests require Docker and are never skipped; start Docker and re-run.",
+                exception);
         }
     }
 

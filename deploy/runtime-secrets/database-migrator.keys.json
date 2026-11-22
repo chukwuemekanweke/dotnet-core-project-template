@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "secrets": [
+    { "name": "CONNECTIONSTRINGS__POSTGRESWRITE", "required": true, "allowEmpty": false, "maxBytes": 4096 }
+  ]
+}

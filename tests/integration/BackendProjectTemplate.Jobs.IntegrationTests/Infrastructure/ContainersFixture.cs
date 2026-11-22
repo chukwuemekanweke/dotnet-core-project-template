@@ -1,7 +1,6 @@
 using Testcontainers.PostgreSql;
 using Testcontainers.RabbitMq;
 using Testcontainers.Redis;
-using Xunit.Sdk;
 
 namespace BackendProjectTemplate.Jobs.IntegrationTests.Infrastructure;
 
@@ -49,7 +48,9 @@ public sealed class ContainersFixture : IAsyncLifetime
         }
         catch (Exception exception) when (exception.GetType().FullName?.Contains("DockerUnavailableException", StringComparison.Ordinal) == true)
         {
-            throw SkipException.ForSkip("Docker is unavailable. Jobs integration tests require Docker to run.");
+            throw new InvalidOperationException(
+                "Docker is unavailable. Jobs integration tests require Docker and are never skipped; start Docker and re-run.",
+                exception);
         }
     }
 

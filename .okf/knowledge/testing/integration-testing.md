@@ -40,6 +40,7 @@ endpoint/handler/background-service covering the most meaningful end-to-end path
 ## Current conventions
 
 - Testcontainers back integration dependencies; shared container setup lives in the project fixture, per-test data setup/cleanup lives in the test class.
+- Integration tests fail closed: when Docker is unavailable a fixture throws, so the run fails. Never convert a missing Docker daemon (or any unavailable dependency) into a skipped test.
 - WebAPI auth integration tests delete the authentication records for the email used by the scenario.
 - Passkey workflow tests replace the framework `IPasskeyHandler<AppUser>` boundary while retaining
   real PostgreSQL and Redis containers. They verify credential and session persistence plus
