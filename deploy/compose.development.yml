@@ -73,6 +73,17 @@ services:
       # Caddy reaches the loopback-published port through Docker, so requests arrive from the private network
       # gateway. Trust only that address for X-Forwarded-For/Proto (see the pinned subnet below).
       ForwardedHeaders__KnownProxies__0: 172.30.231.1
+      # Browser origins of the development frontends (DNS -> this VPS, TLS via host Caddy).
+      Cors__AllowedOrigins__0: https://template-user.chidelu.com
+      Cors__AllowedOrigins__1: https://template-admin.chidelu.com
+      Cors__AllowedOrigins__2: https://template-marketing.chidelu.com
+      # WebAuthn: credentials are scoped to chidelu.com so both sign-in frontends can use them. Only user and admin
+      # authenticate with passkeys. Configuration arrays merge by index, so slot 2 must overwrite the base
+      # appsettings.json localhost origin; repeating an origin is harmless (origins are de-duplicated).
+      Authentication__Passkeys__RelyingPartyId: chidelu.com
+      Authentication__Passkeys__AllowedOrigins__0: https://template-user.chidelu.com
+      Authentication__Passkeys__AllowedOrigins__1: https://template-admin.chidelu.com
+      Authentication__Passkeys__AllowedOrigins__2: https://template-user.chidelu.com
     group_add:
       - "${WEBAPI_SECRETS_GID:?WEBAPI_SECRETS_GID is required}"
     volumes:

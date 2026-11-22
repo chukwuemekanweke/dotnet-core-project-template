@@ -15,6 +15,7 @@ using BackendProjectTemplate.WebAPI;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
+using BackendProjectTemplate.WebAPI.Infrastructure.CrossOrigin;
 using BackendProjectTemplate.WebAPI.Infrastructure.ForwardedHeaders;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using BackendProjectTemplate.WebAPI.Infrastructure.StepUpMfa;
@@ -27,25 +28,7 @@ builder.AddProductionSecrets(
 
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddControllers();
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        if (builder.Environment.IsProduction())
-        {
-            policy
-                .WithOrigins("http://localhost:9000", "https://localhost:9000")
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-            return;
-        }
-
-        policy
-            .AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
-});
+builder.Services.AddApiCors(builder.Configuration, builder.Environment);
 builder.Services.AddValidatorsFromAssemblyContaining<SignUpValidator>();
 builder.Services
     .AddApiVersioning(options =>
