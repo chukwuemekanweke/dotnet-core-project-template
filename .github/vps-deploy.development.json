@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "composeFiles": ["deploy/compose.development.yml"],
+  "remoteDeploymentPath": "/srv/backendprojecttemplate/development",
+  "componentServiceMap": { "migrator": "database-migrator" },
+  "migrationService": "database-migrator",
+  "migrationTimeoutSeconds": 900,
+  "healthServices": ["webapi", "consumer", "jobs"],
+  "healthChecks": [{ "name": "webapi", "url": "http://127.0.0.1:8090/health" }],
+  "healthTimeoutSeconds": 300,
+  "rollbackOnHealthFailure": true
+}
