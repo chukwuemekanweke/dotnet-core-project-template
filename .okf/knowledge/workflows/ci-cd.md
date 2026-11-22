@@ -112,9 +112,14 @@ own tests.
   `pickly-postgres-1`; the only entry in the registry's `allowedExternalNetworks`), and the OTLP endpoint
   defaults to empty (exporters off) because there is no local `otel-collector`.
 - The host Caddy (`template-api.chidelu.com` → `127.0.0.1:8090`) reaches WebAPI through Docker's port
-  publishing, so requests arrive from the `private` network gateway. That network is pinned to
+  publishing, so requests arrive from the `app` network gateway. That network is pinned to
   `172.30.231.0/24` and WebAPI sets `ForwardedHeaders__KnownProxies__0: 172.30.231.1`; keep the two in
   step, or client IPs (rate-limit partitions, audit IPs) collapse to the gateway.
+- Docker cannot change an existing network's IPAM (subnet/gateway) or remove it while containers use it; a
+  changed definition fails the deploy at the migration `docker compose run` ("migration container could not
+  be started"). Change network IPAM only under a **new network name**, so Compose creates it and the rollout
+  recreates containers onto it; the old network stays for restoring the previous release. (`private` →
+  `app` for the pinned subnet.)
 - The development *deployment* still runs the .NET hosts as `Production`: only Production loads the
   `/run/secrets/app` KeyPerFile secrets (see [[production-configuration]]). Never switch that stack to
   `Development` without changing the secret bootstrap.
