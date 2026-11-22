@@ -24,6 +24,7 @@ code_refs:
     - src/BackendProjectTemplate.DatabaseMigrator/ProductionSecrets.cs
     - src/BackendProjectTemplate.WebAPI/Program.cs
     - src/BackendProjectTemplate.WebAPI/Infrastructure/ForwardedHeaders/**
+    - src/BackendProjectTemplate.WebAPI/Infrastructure/CrossOrigin/**
     - src/BackendProjectTemplate.Consumer/Program.cs
     - src/BackendProjectTemplate.Jobs/Program.cs
     - src/BackendProjectTemplate.DatabaseMigrator/Program.cs
@@ -97,6 +98,22 @@ WebAPI applies `X-Forwarded-For`/`X-Forwarded-Proto` only from proxies listed in
 loopback-published container port connects from the Docker network gateway, so a deployment must pin its
 network subnet and trust that gateway (development does; `compose.production.yml` does not yet). Never trust
 broad ranges: rate limiting partitions on `RemoteIpAddress`.
+
+## CORS
+
+`Infrastructure/CrossOrigin` builds the default policy. In Production only `Cors:AllowedOrigins`
+(`scheme://host[:port]`, no path; normalized and de-duplicated; invalid entries fail startup) may call the API.
+With none configured it falls back to `localhost:9000` for backward compatibility. Every other environment
+allows any origin. Origins are non-secret: set them in the deployment's Compose environment
+(`Cors__AllowedOrigins__N`), never in base `appsettings.json`. Development allows the `template-user`,
+`template-admin` and `template-marketing` `chidelu.com` frontends.
+
+Passkeys (`Authentication:Passkeys`) are per deployment too: base `appsettings.json` holds localhost values, so
+each deployed Compose file must set `RelyingPartyId` and override *every* `AllowedOrigins` index the base file
+defines (configuration arrays merge by index; leftover base entries stay allowed). Origins are de-duplicated, so
+repeating one to fill a slot is safe. Development uses RP ID `chidelu.com` with the `template-user` and
+`template-admin` origins; production needs its own RP ID, and passkeys registered in development will not
+work there.
 
 ## Known production gaps (verified in the DEVOPS-012 rehearsal with release `4fdbdf5`)
 
