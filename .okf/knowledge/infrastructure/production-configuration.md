@@ -23,6 +23,7 @@ code_refs:
     - src/BackendProjectTemplate.Jobs/ProductionSecrets.cs
     - src/BackendProjectTemplate.DatabaseMigrator/ProductionSecrets.cs
     - src/BackendProjectTemplate.WebAPI/Program.cs
+    - src/BackendProjectTemplate.WebAPI/Infrastructure/ForwardedHeaders/**
     - src/BackendProjectTemplate.Consumer/Program.cs
     - src/BackendProjectTemplate.Jobs/Program.cs
     - src/BackendProjectTemplate.DatabaseMigrator/Program.cs
@@ -87,6 +88,15 @@ files. Activation does not retarget a live bind mount; recreate and health-check
 consume a generation. Production telemetry exports without credentials to a collector; the collector owns
 export credentials. Direct production Pyroscope profiling remains disabled until an agent owns its
 environment-only credentials.
+
+## Reverse proxy trust
+
+WebAPI applies `X-Forwarded-For`/`X-Forwarded-Proto` only from proxies listed in `ForwardedHeaders:KnownProxies`
+(IPs) or `ForwardedHeaders:KnownNetworks` (CIDR), plus the framework's loopback default
+(`Infrastructure/ForwardedHeaders`); invalid entries fail startup. A host proxy in front of a
+loopback-published container port connects from the Docker network gateway, so a deployment must pin its
+network subnet and trust that gateway (development does; `compose.production.yml` does not yet). Never trust
+broad ranges: rate limiting partitions on `RemoteIpAddress`.
 
 ## Known production gaps (verified in the DEVOPS-012 rehearsal with release `4fdbdf5`)
 

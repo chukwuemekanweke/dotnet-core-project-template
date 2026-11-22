@@ -15,10 +15,10 @@ using BackendProjectTemplate.WebAPI;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Registrations;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.ApiDocumentation;
+using BackendProjectTemplate.WebAPI.Infrastructure.ForwardedHeaders;
 using BackendProjectTemplate.WebAPI.Infrastructure.RateLimiting;
 using BackendProjectTemplate.WebAPI.Infrastructure.StepUpMfa;
 using FluentValidation;
-using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddProductionSecrets(
@@ -80,6 +80,7 @@ builder.Services.AddIdentityUserManagement(builder.Configuration);
 builder.Services.AddAuthenticationServices(builder.Configuration);
 builder.Services.AddIpGeolocationServices(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddTrustedForwardedHeaders(builder.Configuration);
 builder.Services.AddRequestRateLimiting(builder.Configuration);
 builder.Services.AddRedisCaching(builder.Configuration);
 builder.Services.AddObjectStorage(builder.Configuration);
@@ -92,10 +93,7 @@ builder.Services.AddBackendTelemetry(builder.Configuration);
 
 var app = builder.Build();
 
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors();
