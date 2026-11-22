@@ -52,5 +52,14 @@ own tests.
   skipped/failed tests, and parseable coverage. It never publishes or deploys. Retire the script with it.
 - Integration fixtures must keep failing (not skipping) on `DockerUnavailableException` with a message
   containing "Docker is unavailable" — the toolkit's TRX scan matches that text.
-- Prerequisite: the toolkit's reusable workflows and helper checkout run under the caller's
-  `GITHUB_TOKEN`, so a public caller requires a public toolkit. Do not add a PAT to work around it.
+- Parity was demonstrated on PR #68 (commit `5c260b2`): legacy run 45024354827 and shared run
+  45024355193 attempt 2 both ran 7 unit projects (609 tests) and 5 integration projects (104 tests),
+  with 0 skipped tests in each.
+- `devops-toolkit` must stay public. GitHub rejects a public caller's reference to a private reusable
+  workflow ("workflow was not found"), and the toolkit's helper checkout uses the caller's
+  `GITHUB_TOKEN`. Do not add a PAT to work around it.
+- Re-run all jobs of a failed shared run, never only the failed ones: the toolkit combines artifacts by
+  run-attempt name, so a partial re-run drops the earlier attempt's unit TRX.
+- `When_GrantingEntitlements_Concurrently_Should.AllowExactlyOneOverlappingEntitlementAndOneAllocationPerIdempotencyKey`
+  is a pre-existing intermittent failure in both workflows (an idempotency-key race). It is not a CI
+  parity difference.

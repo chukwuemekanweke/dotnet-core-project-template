@@ -91,14 +91,20 @@ always match. To upgrade:
 
 Never reference `@main` or an unpublished tag.
 
-## Repository access prerequisite
+## Repository access
 
-The reusable workflow and the helper-script checkout both run under the **caller's** `GITHUB_TOKEN`.
-GitHub lets only private repositories use reusable workflows from another private repository, and a
-caller's `GITHUB_TOKEN` can't read a different private repository. While this template is public and
-`devops-toolkit` is private, the comparison workflow can't start. Resolve this by making
-`devops-toolkit` public (it holds no credentials by design) before relying on the shared workflows. Do
-not work around it with a personal access token.
+`devops-toolkit` must be **public**. This template is public, and GitHub refuses a public caller's
+reference to a private reusable workflow, even with the toolkit's Actions access set to "accessible
+from repositories owned by the user". The run fails before any job starts with `error parsing called
+workflow … workflow was not found`. The toolkit also checks out its own helper scripts using the
+caller's `GITHUB_TOKEN`, which works only while the toolkit is public. Do not work around either
+restriction with a personal access token.
+
+## Re-running a failed shared CI run
+
+Re-run **all jobs**, never only the failed ones. The toolkit names its artifacts by run attempt and
+combines them by that name. A failed-jobs-only re-run leaves the earlier attempt's unit results out of
+the combined TRX artifact, and `parity-check` fails.
 
 ## Validating CI parity
 
