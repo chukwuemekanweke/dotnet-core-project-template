@@ -1,306 +1,137 @@
+# CI/CD: thin callers of the shared devops-toolkit reusable workflows (DEVOPS-012).
+# Every event: shared .NET CI (format, Release build, unit + Testcontainers integration
+# tests, TRX, coverage) and image-config validation.
+# Push to main only: publish release-<sha> images and verify the immutable manifest.
+# This workflow never deploys.
 name: CI/CD (.NET 10)
 
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
+  workflow_dispatch:
 
-env:
-  DOTNET_NOLOGO: true
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-  SOLUTION: BackendProjectTemplate.slnx
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    env:
-      GITHUB_USERNAME: ${{ secrets.GH_PKG_USERNAME }}
-      GITHUB_PAT: ${{ secrets.GH_PKG_PAT }}
+  shared-ci:
+    name: Shared .NET CI
+    permissions:
+      contents: read
+    # Pinned to a reviewed full commit SHA: devops-toolkit has no published release tag yet.
+    # 1891bbf = devops-toolkit main after the masked-output fixes (#13 docker-publish, #14 vps-deploy).
+    uses: chukwuemekanweke/devops-toolkit/.github/workflows/dotnet-ci.yml@1891bbfc7694eb20233cda1bdd1f511319b54959
+    with:
+      solution-path: BackendProjectTemplate.slnx
+      dotnet-version: 10.0.x
+      build-configuration: Release
+      run-format: true
+      format-diagnostics: IDE0005
+      run-unit-tests: true
+      unit-test-projects: tests/unit/**/*.UnitTests.csproj
+      run-integration-tests: true
+      integration-test-projects: tests/integration/**/*.IntegrationTests.csproj
+      fail-on-empty-test-set: true
+      collect-coverage: true
+      upload-test-artifacts: true
+    secrets:
+      # Read-only GitHub Packages credentials for the Mailtrap feed in nuget.config.
+      # GitHub withholds secrets from fork pull requests, so fork restores fail.
+      nuget-username: ${{ secrets.GH_PKG_USERNAME }}
+      nuget-token: ${{ secrets.GH_PKG_PAT }}
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'nuget.config') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
-
-      - name: Restore solution
-        run: dotnet restore "${{ env.SOLUTION }}"
-
-      - name: Check using directives
-        run: dotnet format "${{ env.SOLUTION }}" style --no-restore --verify-no-changes --diagnostics IDE0005
-
-      - name: Build solution (Release)
-        run: dotnet build "${{ env.SOLUTION }}" --configuration Release --no-restore
-
-      - name: Upload build outputs
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          if-no-files-found: warn
-          path: |
-            src/**/bin/Release/**
-            tests/**/bin/Release/**
-
-  test-unit:
-    needs: build
-    runs-on: ubuntu-latest
-    env:
-      GITHUB_USERNAME: ${{ secrets.GH_PKG_USERNAME }}
-      GITHUB_PAT: ${{ secrets.GH_PKG_PAT }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'nuget.config') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
-
-      - name: Download build outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: .
-
-      - name: Restore solution
-        run: dotnet restore "${{ env.SOLUTION }}"
-
-      - name: Run Unit Tests with Coverage
-        id: unit_tests
-        shell: bash
-        run: |
-          RESULTS_ROOT="TestResultsUnit"
-          rm -rf "$RESULTS_ROOT"
-          mkdir -p "$RESULTS_ROOT"
-
-          mapfile -t TEST_PROJECTS < <(find tests/unit -type f -iname "*.UnitTests.csproj")
-          if [ ${#TEST_PROJECTS[@]} -eq 0 ]; then
-            echo "❌ No unit test projects found matching '*.UnitTests.csproj'."
-            exit 1
-          fi
-
-          echo "🧪 Found ${#TEST_PROJECTS[@]} project(s):"
-          printf '%s\n' "${TEST_PROJECTS[@]}"
-
-          for proj in "${TEST_PROJECTS[@]}"; do
-            NAME=$(basename "$proj" .csproj)
-            OUTDIR="$RESULTS_ROOT/$NAME"
-            mkdir -p "$OUTDIR"
-            echo "▶️ dotnet test $proj → $OUTDIR"
-            dotnet test "$proj" \
-              --configuration Release \
-              --no-build \
-              --results-directory "$OUTDIR" \
-              --logger "trx;LogFileName=$NAME-results.trx" \
-              --collect "XPlat Code Coverage"
-          done
-
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-results
-          path: "**/*.trx"
-
-      - name: Upload Unit Coverage (Cobertura XML)
-        if: ${{ steps.unit_tests.outcome == 'success' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-unit-raw
-          path: "TestResultsUnit/**/coverage.cobertura.xml"
-
-  test-integration:
-    needs: build
-    runs-on: ubuntu-latest
-    env:
-      GITHUB_USERNAME: ${{ secrets.GH_PKG_USERNAME }}
-      GITHUB_PAT: ${{ secrets.GH_PKG_PAT }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'nuget.config') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
-
-      - name: Download build outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: .
-
-      - name: Restore solution
-        run: dotnet restore "${{ env.SOLUTION }}"
-
-      - name: Run Integration Tests with Coverage
-        id: integration_tests
-        shell: bash
-        run: |
-          RESULTS_ROOT="TestResultsIntegration"
-          rm -rf "$RESULTS_ROOT"
-          mkdir -p "$RESULTS_ROOT"
-
-          mapfile -t TEST_PROJECTS < <(find tests/integration -type f -iname "*.IntegrationTests.csproj")
-          if [ ${#TEST_PROJECTS[@]} -eq 0 ]; then
-            echo "❌ No integration test projects found matching '*.IntegrationTests.csproj'."
-            exit 1
-          fi
-
-          echo "🧪 Found ${#TEST_PROJECTS[@]} project(s):"
-          printf '%s\n' "${TEST_PROJECTS[@]}"
-
-          for proj in "${TEST_PROJECTS[@]}"; do
-            NAME=$(basename "$proj" .csproj)
-            OUTDIR="$RESULTS_ROOT/$NAME"
-            mkdir -p "$OUTDIR"
-            echo "▶️ dotnet test $proj → $OUTDIR"
-            dotnet test "$proj" \
-              --configuration Release \
-              --no-build \
-              --results-directory "$OUTDIR" \
-              --logger "trx;LogFileName=$NAME-results.trx" \
-              --collect "XPlat Code Coverage"
-          done
-
-      - name: Upload Integration Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: integration-test-results
-          path: "TestResultsIntegration/**/*.trx"
-
-      - name: Upload Integration Coverage (Cobertura XML)
-        if: ${{ steps.integration_tests.outcome == 'success' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-integration-raw
-          path: "TestResultsIntegration/**/coverage.cobertura.xml"
-
-  coverage-report:
-    needs: [test-unit, test-integration]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download Unit Coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-unit-raw
-          path: CoverageRaw/unit
-
-      - name: Download Integration Coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-integration-raw
-          path: CoverageRaw/integration
-
-      - name: Install ReportGenerator
-        run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-      - name: Generate Coverage Report
-        shell: bash
-        run: |
-          COVERAGE_FILES=$(find CoverageRaw -type f -name "coverage.cobertura.xml")
-          if [ -z "$COVERAGE_FILES" ]; then
-            echo "No coverage files found under CoverageRaw."
-            find CoverageRaw -type f -print || true
-            exit 1
-          fi
-
-          echo "Generating combined HTML + Cobertura coverage report..."
-          REPORTS=$(echo "$COVERAGE_FILES" | tr '\n' ';' | sed 's/;\+$//')
-          ~/.dotnet/tools/reportgenerator \
-            -reports:"$REPORTS" \
-            -targetdir:"CoverageReport" \
-            -reporttypes:"HtmlSummary;Cobertura"
-
-      - name: Upload Coverage (HTML)
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: CoverageReport
-
-      - name: Upload Coverage (Cobertura XML)
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-cobertura
-          path: CoverageReport/Cobertura.xml
-
-  docker-build-push:
-    needs: [test-unit, test-integration]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  image-config:
+    name: Validate release image configuration
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      matrix:
-        include:
-          - service: webapi
-            dockerfile: ./src/BackendProjectTemplate.WebAPI/Dockerfile
-            image: backendprojecttemplate-webapi
-          - service: consumer
-            dockerfile: ./src/BackendProjectTemplate.Consumer/Dockerfile
-            image: backendprojecttemplate-consumer
-          - service: jobs
-            dockerfile: ./src/BackendProjectTemplate.Jobs/Dockerfile
-            image: backendprojecttemplate-jobs
-          - service: migrator
-            dockerfile: ./src/BackendProjectTemplate.DatabaseMigrator/Dockerfile
-            image: backendprojecttemplate-migrator
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          persist-credentials: false
 
-      - name: Build and push ${{ matrix.service }}
-        uses: docker/build-push-action@v6
+      - name: Verify .github/docker-images.json
+        run: python3 .github/scripts/verify-release-images.py config
+
+  publish-images:
+    name: Publish release images
+    needs: [shared-ci, image-config]
+    # Trusted path only: never publish from pull requests or manual dispatch on other refs.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    # Same reviewed toolkit revision as shared-ci.
+    uses: chukwuemekanweke/devops-toolkit/.github/workflows/docker-publish.yml@1891bbfc7694eb20233cda1bdd1f511319b54959
+    with:
+      # Write-once release identity: the toolkit tags release-<sha> and refuses existing tags.
+      deployment-id: ${{ github.sha }}
+      image-config-path: .github/docker-images.json
+      # All four Dockerfiles restore Mailtrap from GitHub Packages via BuildKit secrets.
+      package-auth-components: |
+        webapi
+        consumer
+        jobs
+        migrator
+    secrets:
+      registry-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
+      github-packages-username: ${{ secrets.GH_PKG_USERNAME }}
+      github-packages-token: ${{ secrets.GH_PKG_PAT }}
+
+  verify-release:
+    name: Verify published release manifest and digests
+    needs: publish-images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          push: true
-          tags: |
-            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:latest
-            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.sha }}
-          secrets: |
-            GITHUB_USERNAME=${{ secrets.GH_PKG_USERNAME }}
-            GITHUB_PAT=${{ secrets.GH_PKG_PAT }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          persist-credentials: false
+
+      - name: Download release manifest
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.publish-images.outputs.manifest-artifact }}
+          path: ${{ runner.temp }}/release
+
+      - name: Check manifest output matches the canonical artifact
+        env:
+          MANIFEST_JSON: ${{ needs.publish-images.outputs.manifest-json }}
+          DEPLOYMENT_ID: ${{ needs.publish-images.outputs.deployment-id }}
+        run: |
+          test "$DEPLOYMENT_ID" = "$GITHUB_SHA"
+          diff <(jq -S . "$RUNNER_TEMP/release/deployment-manifest.json") <(jq -S . <<< "$MANIFEST_JSON")
+
+      - name: Check manifest against image configuration
+        run: >-
+          python3 .github/scripts/verify-release-images.py manifest
+          --manifest "$RUNNER_TEMP/release/deployment-manifest.json"
+          --deployment-id "$GITHUB_SHA"
+          --source-commit "$GITHUB_SHA"
+          > "$RUNNER_TEMP/release/references.txt"
+
+      - name: Resolve every digest in the registry
+        run: |
+          while read -r reference; do
+            echo "Resolving $reference"
+            docker buildx imagetools inspect "$reference" > /dev/null
+          done < "$RUNNER_TEMP/release/references.txt"
+          test "$(wc -l < "$RUNNER_TEMP/release/references.txt")" -eq 4
+
+      - name: Summarize release
+        run: |
+          {
+            echo "### Release ${GITHUB_SHA}"
+            echo
+            echo "| Component | Immutable reference |"
+            echo "|---|---|"
+            jq -r '.components[] | "| \(.name) | `\(.image)@\(.digest)` |"' "$RUNNER_TEMP/release/deployment-manifest.json"
+          } >> "$GITHUB_STEP_SUMMARY"

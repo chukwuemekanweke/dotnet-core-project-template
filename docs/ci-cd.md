@@ -1,16 +1,8 @@
 # CI/CD
 
-This template is moving from one self-contained GitHub Actions workflow to thin callers of reusable
-workflows owned by [`devops-toolkit`](https://github.com/chukwuemekanweke/devops-toolkit) (DEVOPS-012).
-The migration ships in three PRs so each stage can be checked against the old behaviour before the old
-code is removed.
-
-| Stage | Status | What it adds |
-|---|---|---|
-| PR 1: shared .NET CI | **Merged; parity shown** | `ci-shared-validation.yml` calls the toolkit's `dotnet-ci.yml` next to the existing `ci.yml` |
-| PR 2: image publishing | **In review** | `.github/docker-images.json`, plus `publish-images` and `verify-release` jobs calling the toolkit's `docker-publish.yml` on `main` |
-| Retire legacy jobs | After the first verified release from PR 2 | Remove `ci.yml`'s duplicated verification and its `docker-build-push` matrix |
-| PR 3: VPS deployment | Not started | Production Compose, stack registration, and a caller for the toolkit's `vps-deploy.yml` (deployment off until readiness gates pass) |
+CI/CD for this template is a set of thin callers of reusable workflows owned by
+[`devops-toolkit`](https://github.com/chukwuemekanweke/devops-toolkit) (DEVOPS-012). This repository holds
+configuration; the toolkit holds the automation.
 
 ## Who owns what
 
@@ -25,46 +17,40 @@ records, and restoration.
 Change application configuration here. Change shared workflow behaviour in the toolkit, with its own
 tests and release. Don't copy toolkit logic into this repository.
 
-## Current workflows
+## `ci.yml`
 
-### `ci.yml` (still authoritative)
+`.github/workflows/ci.yml` (**CI/CD (.NET 10)**) runs on pull requests, pushes to `main`, and manual
+dispatch. It never deploys.
 
-`ci.yml` is unchanged. It restores, checks `IDE0005`, builds Release, runs unit and integration tests
-with TRX and XPlat coverage, combines coverage with ReportGenerator, and, only on `push` to `main`,
-pushes the four images (`webapi`, `consumer`, `jobs`, `migrator`) to Docker Hub. It stays in place
-until the shared path has published and verified a release on `main`. It is then retired in a separate
-change.
-
-### `ci-shared-validation.yml` (shared callers)
-
-This workflow runs on pull requests, pushes to `main`, and manual dispatch. It publishes images only
-on `push` to `main` (see [Release images](#release-images)). It never deploys.
-
-- **`shared-ci`** calls `devops-toolkit/.github/workflows/dotnet-ci.yml` pinned to a full commit SHA.
-  It passes the solution, .NET 10, Release, `IDE0005`, both test-project globs,
-  `fail-on-empty-test-set`, coverage, and TRX upload.
-- **`parity-check`** downloads the toolkit's combined TRX and coverage artifacts. It runs
-  `.github/scripts/verify-shared-ci-artifacts.py`, which fails unless all of these hold:
-  - the test projects that ran are exactly the ones `ci.yml`'s `find` would discover;
-  - every TRX parses and reports a non-zero test count;
-  - every test executed (no skipped, failed, errored, or not-executed tests);
-  - the combined `Cobertura.xml` parses.
+| Job | When | What it does |
+|---|---|---|
+| `shared-ci` | Every event | Calls the toolkit's `dotnet-ci.yml`: restore, `IDE0005` format check, Release build, unit and integration tests with TRX and coverage, combined Cobertura/HTML report |
+| `image-config` | Every event | Validates `.github/docker-images.json` |
+| `publish-images` | Push to `main` | Calls the toolkit's `docker-publish.yml` (see [Release images](#release-images)) |
+| `verify-release` | After `publish-images` | Checks the release manifest and resolves every digest |
 
 Test discovery uses the globs `tests/unit/**/*.UnitTests.csproj` and
 `tests/integration/**/*.IntegrationTests.csproj`. Every matched project runs even after an earlier
-failure. An empty category fails.
+failure, and an empty category fails. The toolkit uploads `dotnet-test-results-<run>-<attempt>` (TRX)
+and `dotnet-coverage-<run>-<attempt>` (combined `Cobertura.xml` and HTML summary).
 
 ### Docker-unavailable protection
 
 Integration tests use Testcontainers fixtures owned by this repository (PostgreSQL, Redis, RabbitMQ,
-Tempo, OpenTelemetry Collector). The shared workflow does not start any Compose stack. Three
-independent guards stop a missing Docker daemon from producing a green run:
+Tempo, OpenTelemetry Collector). The shared workflow does not start any Compose stack. Two independent
+guards stop a missing Docker daemon from producing a green run:
 
 1. The fixtures rethrow Testcontainers' `DockerUnavailableException` as a failure ("Docker is
-   unavailable … never skipped"). They don't skip.
+   unavailable … never skipped"). They don't skip. Keep that message: the toolkit matches it.
 2. The toolkit runs `docker info` before integration tests and scans the TRX for Docker-unavailable
    messages.
-3. `parity-check` rejects any TRX with skipped or not-executed tests.
+
+### Migration history
+
+The shared path replaced a self-contained `ci.yml` in three steps. Parity was shown on PR #68, where both
+workflows ran 7 unit projects (609 tests) and 5 integration projects (104 tests) with nothing skipped.
+The first toolkit release, `4fdbdf5`, was published and verified with all four digests, SBOM, provenance
+and clean Trivy scans before the legacy jobs and the temporary parity check were removed.
 
 ## Release images
 
@@ -92,12 +78,12 @@ mounting the `GITHUB_USERNAME`/`GITHUB_PAT` BuildKit secrets.
 ### Publishing
 
 `publish-images` calls `docker-publish.yml` at the same pinned toolkit SHA as `shared-ci`. It runs only
-for `push` events on `main`, and only after `shared-ci`, `parity-check`, and `image-config` all pass.
+for `push` events on `main`, and only after `shared-ci` and `image-config` pass.
 Pull requests and manual dispatches never publish.
 
 - **Deployment id** is `github.sha`. The toolkit tags every image `release-<sha>` and refuses to push a
-  tag that already exists, so a release identity can't be overwritten. These tags don't collide with
-  the legacy `ci.yml` tags (`latest` and `<sha>`).
+  tag that already exists, so a release identity can't be overwritten. No moving tag such as `latest`
+  is published; anything that runs these images uses the manifest digests.
 - **Package credentials:** all four components are listed in `package-auth-components`. The toolkit
   mounts `GH_PKG_USERNAME`/`GH_PKG_PAT` as BuildKit secrets `GITHUB_USERNAME`/`GITHUB_PAT` for those
   builds only. They are never build args. They are read only by the restore `RUN` and never reach the
@@ -134,25 +120,25 @@ retry.
 
 | Purpose | Repository secrets | Where they go |
 |---|---|---|
-| Private NuGet (Mailtrap on GitHub Packages) | `GH_PKG_USERNAME`, `GH_PKG_PAT` | Mapped explicitly to the toolkit's `nuget-username` / `nuget-token`. The toolkit exposes them as `GITHUB_USERNAME` / `GITHUB_PAT` (referenced by `nuget.config`) only to restore steps |
-| Docker Hub push | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | `publish-images` (mapped to `registry-username` / `registry-token`, `main` pushes only) and the legacy `ci.yml` matrix until it is retired |
-| Docker build package restore | `GH_PKG_USERNAME`, `GH_PKG_PAT` | `publish-images` (mapped to `github-packages-username` / `github-packages-token`, mounted as BuildKit secrets) |
+| Private NuGet (Mailtrap on GitHub Packages) | `GH_PKG_USERNAME`, `GH_PKG_PAT` | `shared-ci`, mapped to `nuget-username` / `nuget-token`. The toolkit exposes them as `GITHUB_USERNAME` / `GITHUB_PAT` (referenced by `nuget.config`) only to restore steps |
+| Docker build package restore | `GH_PKG_USERNAME`, `GH_PKG_PAT` | `publish-images`, mapped to `github-packages-username` / `github-packages-token` and mounted as BuildKit secrets |
+| Docker Hub push | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | `publish-images`, mapped to `registry-username` / `registry-token`, `main` pushes only |
 
 Callers map each secret by name and never use `secrets: inherit`. Workflow-level permissions are `{}`,
 and each job is granted only `contents: read`. GitHub withholds secrets from fork pull requests, so
-the Mailtrap restore fails for forks in both workflows. This is a known limitation, and it is not
-worked around with `pull_request_target`. Runtime application secrets never enter CI.
+the Mailtrap restore fails for forks. This is a known limitation, and it is not worked around with
+`pull_request_target`. Runtime application secrets never enter CI.
 
 ## Toolkit reference pinning
 
 The toolkit has no published release tag yet, so callers pin a reviewed full commit SHA (currently
-`1891bbfc7694eb20233cda1bdd1f511319b54959`, toolkit `main` after the masked-output fixes, #13 and #14). The toolkit checks out
-its helper scripts from the exact called commit (`job.workflow_sha`), so the workflow and its scripts
-always match. To upgrade:
+`1891bbfc7694eb20233cda1bdd1f511319b54959`, toolkit `main` after the masked-output fixes, #13 and #14).
+The toolkit checks out its helper scripts from the exact called commit (`job.workflow_sha`), so the
+workflow and its scripts always match. To upgrade:
 
 1. Review the toolkit diff between the pinned SHA and the candidate.
 2. Update the `uses:` SHA in every caller together, so all callers stay on one coherent baseline.
-3. Confirm the comparison workflow and parity check pass.
+3. Confirm CI passes on the pull request, and that the next push to `main` publishes and verifies.
 4. Switch to an immutable release tag once one is published. Adopt a moving `v1` alias only after it
    is formally published and validated.
 
@@ -167,26 +153,18 @@ workflow … workflow was not found`. The toolkit also checks out its own helper
 caller's `GITHUB_TOKEN`, which works only while the toolkit is public. Do not work around either
 restriction with a personal access token.
 
-## Re-running a failed shared CI run
+## Secrets that overlap public names
+
+`GH_PKG_USERNAME` and `DOCKERHUB_USERNAME` hold the same value as the Docker Hub namespace and the
+repository owner. GitHub drops any job output that contains a secret the job references ("Skip output …
+since it may contain secret"). At toolkit `4ab2e18` this emptied the publish matrix, so no images were
+built. Toolkit `a7a4f80` (#13) and `1891bbf` (#14) keep every output-producing job free of secrets. When
+you change toolkit pins, check the logs for that warning.
+
+## Re-running a failed CI run
 
 Re-run **all jobs**, never only the failed ones. The toolkit names its artifacts by run attempt and
-combines them by that name. A failed-jobs-only re-run leaves the earlier attempt's unit results out of
-the combined TRX artifact, and `parity-check` fails.
-
-## Validating CI parity
-
-For a given commit, compare the `ci.yml` run with the `ci-shared-validation.yml` run:
-
-- the same unit and integration projects ran (`parity-check` asserts this against `ci.yml`'s discovery);
-- format, Release build, unit and integration tests all succeeded;
-- the TRX and combined coverage artifacts exist and parse;
-- no package credential appears in either log (GitHub masks mapped secrets).
-
-Negative scenarios to exercise on throwaway branches with manual dispatch, reverting afterwards:
-
-- a failing unit test;
-- a failing integration test;
-- a test glob that matches nothing;
-- a broken package source (restore failure).
-
-Each should fail `shared-ci`.
+combines them by that name, so a failed-jobs-only re-run leaves the earlier attempt's results out of the
+combined TRX and coverage artifacts. Several WebAPI integration tests are timing-sensitive and fail
+intermittently in any workflow (see the OKF `ci-cd` concept); a full re-run is the expected recovery
+until they are fixed.
