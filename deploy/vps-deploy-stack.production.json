@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "stackName": "backendprojecttemplate-production",
+  "environment": "production",
+  "deploymentPath": "/srv/backendprojecttemplate/production",
+  "allowedSourceRepositories": ["chukwuemekanweke/dotnet-core-project-template"],
+  "allowedImageRepositories": [
+    "docker.io/chukwuemekanweke/backendprojecttemplate-webapi",
+    "docker.io/chukwuemekanweke/backendprojecttemplate-consumer",
+    "docker.io/chukwuemekanweke/backendprojecttemplate-jobs",
+    "docker.io/chukwuemekanweke/backendprojecttemplate-migrator"
+  ],
+  "runtimeSecrets": {
+    "services": {
+      "webapi": { "instance": "bpt-prd-webapi" },
+      "consumer": { "instance": "bpt-prd-consumer" },
+      "jobs": { "instance": "bpt-prd-jobs" },
+      "database-migrator": { "instance": "bpt-prd-migrator", "startAtBoot": false }
+    }
+  },
+  "allowedBindSources": [],
+  "lockTimeoutSeconds": 1800
+}

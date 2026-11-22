@@ -16,7 +16,7 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Persistence/DatabaseInitializationExtensions.cs
     - docker-compose.yml
     - docker-compose.local.yml
-    - docker-compose.production.yml
+    - deploy/compose.production.yml
     - tests/unit/BackendProjectTemplate.DatabaseMigrator.UnitTests/**
     - tests/integration/BackendProjectTemplate.DatabaseMigrator.IntegrationTests/**
 sources:
@@ -68,7 +68,7 @@ pipeline (`Database:InitializeOnStartup`), but its content root has no `Scripts/
 
 - `docker-compose.yml` (+ `docker-compose.local.yml`): the migrator has no port or health check. WebAPI, Consumer
   and Jobs use `depends_on: database-migrator: condition: service_completed_successfully`.
-- `docker-compose.production.yml`: `database-migrator` is in the `migration` profile with `restart: "no"`,
+- `deploy/compose.production.yml`: `database-migrator` is in the `migration` profile with `restart: "no"`,
   `no-new-privileges`, no port and no health check. It mounts only its own DEVOPS-007 generation. No service
   depends on it. The DEVOPS-010 `vps-deploy` workflow runs it with `docker compose run`, enforces the timeout,
   and requires exit `0` before rollout. Release images are injected by digest through the toolkit's generated

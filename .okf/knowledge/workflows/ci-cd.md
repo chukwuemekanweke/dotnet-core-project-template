@@ -1,7 +1,7 @@
 ---
 type: workflow
 title: CI/CD Ownership and Shared Toolkit Workflows
-description: Application-vs-devops-toolkit responsibility split, the SHA-pinned ci.yml callers, release image publishing, and known CI pitfalls
+description: Application-vs-devops-toolkit responsibility split, the SHA-pinned ci.yml callers, release image publishing, gated VPS deployment, and known CI pitfalls
 resource: okf://knowledge/workflows/ci-cd
 tags:
     - constraint
@@ -14,6 +14,8 @@ code_refs:
     - .github/workflows/ci.yml
     - .github/scripts/verify-release-images.py
     - .github/docker-images.json
+    - deploy/compose.production.yml
+    - deploy/vps-deploy-stack.production.json
     - nuget.config
 sources:
     - kind: file
@@ -64,6 +66,24 @@ own tests.
   toolkit `a7a4f80` (#13). `vps-deploy.yml` outputs moved to a secret-free `report` job in `1891bbf` (#14);
   callers pin `1891bbf` for all three workflows.
 
+## Production deployment
+
+- `deploy-production` calls `vps-deploy.yml` (same toolkit SHA) after `publish-images` + `verify-release`,
+  only on push to `main` AND `vars.PRODUCTION_DEPLOY_ENABLED == 'true'`. It is deliberately off; do not
+  enable it or weaken the condition — activation needs the non-production rehearsal and operator approval
+  listed in docs/ci-cd.md. It deploys `manifest-artifact` (never reconstructed tags), maps
+  `migrator`→`database-migrator`, runs `migration-service: database-migrator`, and checks
+  `webapi`,`consumer`,`jobs` plus `http://127.0.0.1:8080/health`.
+- VPS/registry credentials are `production` environment secrets mapped by name; the alert webhook
+  (`DEPLOY_ALERT_WEBHOOK_URL`) is a repository secret used only by `notify-deployment-failure`.
+- Keep `deploy/vps-deploy-stack.production.json`, `deploy/compose.production.yml`, the deploy job inputs and
+  `.github/docker-images.json` consistent; `verify-release-images.py deploy` (in `image-config`) enforces
+  stack/path/environment, image allowlist = configured repositories, service map, migration profile,
+  secret-bearing services and health checks. Infrastructure stays external (managed PostgreSQL/Redis/RabbitMQ);
+  adding a non-release service to production Compose fails that check on purpose.
+- Restoration restores images and secret generations only, never the schema: migrations must stay
+  expand → migrate → contract compatible with the previous release.
+
 ## CI pitfalls
 
 - `ci.yml` is the only CI workflow; it is a thin caller (`shared-ci`, `image-config`, `publish-images`,
@@ -81,5 +101,7 @@ own tests.
   `When_GrantingEntitlements_Concurrently_Should.AllowExactlyOneOverlappingEntitlementAndOneAllocationPerIdempotencyKey`
   (idempotency-key race) and
   `When_ReportingAdminSubscriptionAnalytics_Should.AuthorizeFilterAndExcludeComplimentaryAllocationRevenue`
-  (server-defaulted allocation start vs clock: Active/Pending boundary). Legacy history also shows
+  (server-defaulted allocation start vs clock: Active/Pending boundary), and the Jobs unit test
+  `When_ProcessingOutboxMessages_WithPendingMessage_Should.MarkMessageAsSent` (fails under full-solution
+  parallel load, passes in isolation). Legacy history also shows
   admin-payments reporting and passkey-ceremony flakes.

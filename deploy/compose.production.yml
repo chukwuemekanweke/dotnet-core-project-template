@@ -1,15 +1,25 @@
+# Production Compose for the four release components, deployed by devops-toolkit vps-deploy.yml.
+#
+# - Images: the toolkit's generated override injects each release component by sha256 digest from the
+#   release manifest. This file names no image or tag and has no build sections; the VPS never builds.
+# - Migration: database-migrator is a one-shot service in the "migration" profile. vps-deploy runs it with
+#   `docker compose run`, requires exit 0, and only then starts the long-running services. Nothing depends
+#   on it.
+# - Secrets: each service mounts only its own DEVOPS-007 runtime-secret generation, read-only, at
+#   /run/secrets/app. The paths and group ids come from the host-owned <deployment-path>/stack.env.
+# - Hardening: non-root image user, read-only root filesystem with tmpfs for /tmp and $HOME,
+#   no-new-privileges, restart "no" (the host's vps-deploy-stack@ unit starts the stack at boot).
+# - Network: only WebAPI publishes a port, on loopback, for the host reverse proxy. PostgreSQL, Redis and
+#   RabbitMQ are external (managed) services reached through the secret connection strings.
 services:
-  # One-shot migration service (DEVOPS-010 contract). It is in the non-default "migration" profile, so
-  # `docker compose up` never starts it and no long-running service depends on it. The deployment orchestrator
-  # runs it explicitly (`docker compose run database-migrator`) and requires exit code 0 before rollout.
   database-migrator:
     profiles: ["migration"]
-    build:
-      context: .
-      dockerfile: src/BackendProjectTemplate.DatabaseMigrator/Dockerfile
-      secrets:
-        - GITHUB_USERNAME
-        - GITHUB_PAT
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/app
+    networks:
+      - private
     environment:
       DOTNET_ENVIRONMENT: Production
     security_opt:
@@ -26,12 +36,14 @@ services:
     restart: "no"
 
   webapi:
-    build:
-      context: .
-      dockerfile: src/BackendProjectTemplate.WebAPI/Dockerfile
-      secrets:
-        - GITHUB_USERNAME
-        - GITHUB_PAT
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/app
+    networks:
+      - private
+    security_opt:
+      - no-new-privileges:true
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
@@ -66,7 +78,8 @@ services:
         bind:
           create_host_path: false
     ports:
-      - "8080:8080"
+      # Loopback only: the host reverse proxy terminates TLS and forwards here.
+      - "127.0.0.1:8080:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -76,12 +89,14 @@ services:
     restart: "no"
 
   consumer:
-    build:
-      context: .
-      dockerfile: src/BackendProjectTemplate.Consumer/Dockerfile
-      secrets:
-        - GITHUB_USERNAME
-        - GITHUB_PAT
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/app
+    networks:
+      - private
+    security_opt:
+      - no-new-privileges:true
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
@@ -111,8 +126,6 @@ services:
         read_only: true
         bind:
           create_host_path: false
-    ports:
-      - "8082:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health/readiness || exit 1"]
       interval: 10s
@@ -122,12 +135,14 @@ services:
     restart: "no"
 
   jobs:
-    build:
-      context: .
-      dockerfile: src/BackendProjectTemplate.Jobs/Dockerfile
-      secrets:
-        - GITHUB_USERNAME
-        - GITHUB_PAT
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/app
+    networks:
+      - private
+    security_opt:
+      - no-new-privileges:true
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
@@ -158,8 +173,6 @@ services:
         read_only: true
         bind:
           create_host_path: false
-    ports:
-      - "8083:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health/readiness || exit 1"]
       interval: 10s
@@ -168,8 +181,5 @@ services:
       start_period: 5s
     restart: "no"
 
-secrets:
-  GITHUB_USERNAME:
-    environment: GITHUB_USERNAME
-  GITHUB_PAT:
-    environment: GITHUB_PAT
+networks:
+  private: {}

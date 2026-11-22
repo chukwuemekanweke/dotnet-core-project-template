@@ -78,7 +78,7 @@ explicit operator action. The migrator and the toolkit never do it automatically
   `service_completed_successfully`. To run it on its own, use
   `docker compose run --rm database-migrator`, or `dotnet run` with `DOTNET_ENVIRONMENT` set to a
   non-Production environment.
-- Production: `docker-compose.production.yml` puts `database-migrator` in the `migration` profile, so
+- Production: `deploy/compose.production.yml` puts `database-migrator` in the `migration` profile, so
   `docker compose up` never starts it and no service depends on it. The DEVOPS-010 `vps-deploy` workflow
   (`migration-service: database-migrator`) runs it with `docker compose run`, enforces the timeout, and starts
   the rollout only after exit code `0`. It mounts only its own DEVOPS-007 secret generation

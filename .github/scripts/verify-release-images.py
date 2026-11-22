@@ -8,6 +8,12 @@
             same four components and repositories, expected deployment id and
             source commit, sha256 digests. Prints image@digest references, one per
             line, for registry resolution by the caller.
+  deploy    Validate the deployment configuration against the image configuration:
+            deploy/vps-deploy-stack.production.json, the rendered production Compose
+            (docker compose config --format json) and the deploy-production job's
+            inputs (extracted to JSON) must agree on stack, path, environment,
+            image repositories, component-to-service mapping and secret-bearing
+            services.
 
 The toolkit's own validation (schema, completeness, write-once tags) still runs at
 publish time; this catches application misconfiguration on pull requests and
@@ -26,6 +32,8 @@ EXPECTED_COMPONENTS = ["webapi", "consumer", "jobs", "migrator"]
 IMAGE_PATTERN = re.compile(r"^docker\.io/[a-z0-9]+(?:[._-][a-z0-9]+)*/[a-z0-9]+(?:[._-][a-z0-9]+)*$")
 DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 ALLOWED_KEYS = {"component", "image", "dockerfile"}
+EXPECTED_SERVICES = {"webapi": "webapi", "consumer": "consumer", "jobs": "jobs", "migrator": "database-migrator"}
+MIGRATION_SERVICE = "database-migrator"
 
 
 def load_config(repo: Path, config_path: str) -> tuple[list[dict], list[str]]:
@@ -76,14 +84,63 @@ def verify_manifest(images: list[dict], manifest_path: Path, deployment_id: str,
     return references, problems
 
 
+def verify_deploy(images: list[dict], stack_path: Path, compose_path: Path, deploy_path: Path) -> list[str]:
+    problems: list[str] = []
+    stack = json.loads(stack_path.read_text(encoding="utf-8"))
+    compose = json.loads(compose_path.read_text(encoding="utf-8"))
+    deploy = json.loads(deploy_path.read_text(encoding="utf-8"))
+    services = compose.get("services", {})
+
+    configured = sorted(image["image"] for image in images)
+    if sorted(stack.get("allowedImageRepositories", [])) != configured:
+        problems.append("stack allowedImageRepositories must list exactly the configured image repositories")
+    for key, expected in (("stack-name", stack.get("stackName")), ("environment", stack.get("environment")),
+                          ("remote-deployment-path", stack.get("deploymentPath"))):
+        if deploy.get(key) != expected:
+            problems.append(f"deploy-production {key} {deploy.get(key)!r} != stack registration {expected!r}")
+    if deploy.get("compose-files", "").strip() != "deploy/compose.production.yml":
+        problems.append("deploy-production compose-files must be deploy/compose.production.yml")
+
+    mapping = json.loads(deploy.get("component-service-map") or "{}")
+    resolved = {component: mapping.get(component, component) for component in EXPECTED_COMPONENTS}
+    if resolved != EXPECTED_SERVICES:
+        problems.append(f"component-service-map resolves to {resolved}, expected {EXPECTED_SERVICES}")
+    for service in EXPECTED_SERVICES.values():
+        if service not in services:
+            problems.append(f"production Compose has no '{service}' service")
+    extra = sorted(set(services) - set(EXPECTED_SERVICES.values()))
+    if extra:
+        problems.append(f"production Compose defines non-release services {extra}; keep infrastructure external or register it deliberately")
+
+    if deploy.get("migration-service") != MIGRATION_SERVICE:
+        problems.append(f"migration-service must be {MIGRATION_SERVICE}")
+    if services.get(MIGRATION_SERVICE, {}).get("profiles") != ["migration"]:
+        problems.append(f"{MIGRATION_SERVICE} must be only in the 'migration' profile")
+    secret_services = sorted(stack.get("runtimeSecrets", {}).get("services", {}))
+    if secret_services != sorted(EXPECTED_SERVICES.values()):
+        problems.append(f"stack runtimeSecrets services {secret_services} must be exactly {sorted(EXPECTED_SERVICES.values())}")
+    if stack.get("runtimeSecrets", {}).get("services", {}).get(MIGRATION_SERVICE, {}).get("startAtBoot") is not False:
+        problems.append(f"{MIGRATION_SERVICE} runtime secrets must not start at boot")
+    health = [line.strip() for line in deploy.get("health-services", "").splitlines() if line.strip()]
+    if sorted(health) != sorted(service for service in EXPECTED_SERVICES.values() if service != MIGRATION_SERVICE):
+        problems.append(f"health-services {health} must be the three long-running services")
+    for service in health:
+        if "healthcheck" not in services.get(service, {}):
+            problems.append(f"health service '{service}' has no Compose healthcheck")
+    return problems
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("mode", choices=["config", "manifest"])
+    parser.add_argument("mode", choices=["config", "manifest", "deploy"])
     parser.add_argument("--repo", type=Path, default=Path("."))
     parser.add_argument("--config", default=".github/docker-images.json")
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--deployment-id")
     parser.add_argument("--source-commit")
+    parser.add_argument("--stack", type=Path, default=Path("deploy/vps-deploy-stack.production.json"))
+    parser.add_argument("--compose-json", type=Path, help="docker compose config --profile '*' --format json output")
+    parser.add_argument("--deploy-json", type=Path, help="jobs.deploy-production.with as JSON")
     args = parser.parse_args()
 
     images, problems = load_config(args.repo, args.config)
@@ -93,6 +150,10 @@ def main() -> int:
             parser.error("manifest mode requires --manifest, --deployment-id and --source-commit")
         references, manifest_problems = verify_manifest(images, args.manifest, args.deployment_id, args.source_commit)
         problems.extend(manifest_problems)
+    if args.mode == "deploy":
+        if not (args.compose_json and args.deploy_json):
+            parser.error("deploy mode requires --compose-json and --deploy-json")
+        problems.extend(verify_deploy(images, args.repo / args.stack, args.compose_json, args.deploy_json))
 
     if problems:
         print("Release image check FAILED:", file=sys.stderr)

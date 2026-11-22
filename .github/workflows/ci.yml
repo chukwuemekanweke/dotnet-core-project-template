@@ -44,9 +44,8 @@ jobs:
       nuget-username: ${{ secrets.GH_PKG_USERNAME }}
       nuget-token: ${{ secrets.GH_PKG_PAT }}
 
-
   image-config:
-    name: Validate release image configuration
+    name: Validate release and deploy configuration
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,6 +57,31 @@ jobs:
 
       - name: Verify .github/docker-images.json
         run: python3 .github/scripts/verify-release-images.py config
+
+      - name: Render production Compose with fixture host values
+        # Placeholder stack.env values and digests only prove the file renders; at deploy time the
+        # host supplies stack.env and the toolkit injects the release manifest digests.
+        env:
+          RUNTIME_SECRETS_APPLICATION: backendprojecttemplate
+          RUNTIME_SECRETS_ENVIRONMENT: prd
+          WEBAPI_SECRETS_GID: "1"
+          CONSUMER_SECRETS_GID: "1"
+          JOBS_SECRETS_GID: "1"
+          DATABASE_MIGRATOR_SECRETS_GID: "1"
+        run: |
+          jq --arg digest "sha256:$(printf '0%.0s' {1..64})" \
+            '{services: (.images | map({key: (if .component == "migrator" then "database-migrator" else .component end),
+              value: {image: "\(.image)@\($digest)"}}) | from_entries)}' \
+            .github/docker-images.json > "$RUNNER_TEMP/images.fixture.json"
+          docker compose -f deploy/compose.production.yml -f "$RUNNER_TEMP/images.fixture.json" \
+            --profile '*' config --format json > "$RUNNER_TEMP/compose.production.json"
+
+      - name: Verify deployment configuration consistency
+        run: |
+          yq -o=json '.jobs.deploy-production.with' .github/workflows/ci.yml > "$RUNNER_TEMP/deploy-inputs.json"
+          python3 .github/scripts/verify-release-images.py deploy \
+            --compose-json "$RUNNER_TEMP/compose.production.json" \
+            --deploy-json "$RUNNER_TEMP/deploy-inputs.json"
 
   publish-images:
     name: Publish release images
@@ -135,3 +159,71 @@ jobs:
             echo "|---|---|"
             jq -r '.components[] | "| \(.name) | `\(.image)@\(.digest)` |"' "$RUNNER_TEMP/release/deployment-manifest.json"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-production:
+    name: Deploy to production VPS
+    needs: [publish-images, verify-release]
+    # Off until an operator sets the repository variable PRODUCTION_DEPLOY_ENABLED=true after the
+    # readiness gates in docs/ci-cd.md pass. The toolkit job also runs in the protected "production"
+    # GitHub Environment, so its required reviewers and branch rules apply on top of this.
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    permissions:
+      contents: read
+    # Same reviewed toolkit revision as shared-ci and publish-images.
+    uses: chukwuemekanweke/devops-toolkit/.github/workflows/vps-deploy.yml@1891bbfc7694eb20233cda1bdd1f511319b54959
+    with:
+      environment: production
+      deployment-id: ${{ needs.publish-images.outputs.deployment-id }}
+      # The canonical same-run manifest artifact that verify-release checked.
+      manifest-artifact: ${{ needs.publish-images.outputs.manifest-artifact }}
+      compose-files: deploy/compose.production.yml
+      stack-name: backendprojecttemplate-production
+      component-service-map: '{"migrator":"database-migrator"}'
+      remote-deployment-path: /srv/backendprojecttemplate/production
+      migration-service: database-migrator
+      migration-timeout-seconds: 900
+      health-services: |
+        webapi
+        consumer
+        jobs
+      health-checks: '[{"name":"webapi","url":"http://127.0.0.1:8080/health"}]'
+      health-timeout-seconds: 300
+      rollback-on-health-failure: true
+    secrets:
+      # Secrets of the protected "production" GitHub Environment, read when the toolkit's
+      # environment-scoped job starts. Registry credentials are pull-only.
+      ssh-host: ${{ secrets.VPS_HOST }}
+      ssh-user: ${{ secrets.VPS_DEPLOY_USER }}
+      ssh-private-key: ${{ secrets.VPS_DEPLOY_SSH_KEY }}
+      ssh-known-hosts: ${{ secrets.VPS_KNOWN_HOSTS }}
+      registry-username: ${{ secrets.DOCKERHUB_READ_USERNAME }}
+      registry-token: ${{ secrets.DOCKERHUB_READ_TOKEN }}
+
+  notify-deployment-failure:
+    name: Alert on failed production deployment
+    needs: deploy-production
+    if: >-
+      always() &&
+      (needs.deploy-production.result == 'failure' || needs.deploy-production.result == 'cancelled')
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Send sanitized deployment alert
+        env:
+          ALERT_WEBHOOK_URL: ${{ secrets.DEPLOY_ALERT_WEBHOOK_URL }}
+          STACK: backendprojecttemplate-production
+          DEPLOYMENT_ID: ${{ github.sha }}
+          OUTCOME: ${{ needs.deploy-production.outputs.deployment-outcome || 'unknown' }}
+          FAILED_PHASE: ${{ needs.deploy-production.outputs.failed-phase || 'unknown' }}
+          MIGRATION_STATUS: ${{ needs.deploy-production.outputs.migration-status || 'unknown' }}
+          RESTORATION: ${{ needs.deploy-production.outputs.restoration-outcome || 'unknown' }}
+          RECORD: ${{ needs.deploy-production.outputs.deployment-record-artifact || 'none' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          test -n "$ALERT_WEBHOOK_URL" || { echo "DEPLOY_ALERT_WEBHOOK_URL is not configured; no alert was delivered" >&2; exit 1; }
+          jq -n --arg stack "$STACK" --arg id "$DEPLOYMENT_ID" --arg outcome "$OUTCOME" --arg phase "$FAILED_PHASE" \
+            --arg migration "$MIGRATION_STATUS" --arg restoration "$RESTORATION" --arg record "$RECORD" --arg run "$RUN_URL" \
+            '{text: "Production deployment of \($stack) failed (\($outcome)). release=\($id) phase=\($phase) migration=\($migration) restoration=\($restoration) record=\($record) \($run)"}' \
+            | curl --fail --silent --show-error --max-time 30 -H 'Content-Type: application/json' --data @- "$ALERT_WEBHOOK_URL"

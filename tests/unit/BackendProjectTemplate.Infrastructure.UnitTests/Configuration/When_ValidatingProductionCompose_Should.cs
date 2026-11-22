@@ -16,7 +16,8 @@ public sealed class When_ValidatingProductionCompose_Should
         }
 
         Regex.Matches(compose, "target: /run/secrets/app").Count.ShouldBe(4);
-        Regex.Matches(compose, "read_only: true").Count.ShouldBe(4);
+        // Mount-level (8-space indent) read-only secret binds, separate from the service-level read-only root filesystem.
+        Regex.Matches(compose.ReplaceLineEndings("\n"), "^ {8}read_only: true$", RegexOptions.Multiline).Count.ShouldBe(4);
         Regex.Matches(compose, "create_host_path: false").Count.ShouldBe(4);
         // The web/worker hosts read ASPNETCORE_ENVIRONMENT; the one-shot migrator is a Generic Host (DOTNET_ENVIRONMENT).
         Regex.Matches(compose, "(ASPNETCORE|DOTNET)_ENVIRONMENT: Production").Count.ShouldBe(4);
@@ -75,6 +76,47 @@ public sealed class When_ValidatingProductionCompose_Should
     }
 
     [Fact]
+    public void LeaveReleaseImagesToTheDeploymentDigestOverride()
+    {
+        // vps-deploy injects each release component by sha256 digest; the VPS never builds and no tag is deployment authority.
+        var compose = ReadProductionCompose();
+
+        Regex.IsMatch(compose, @"^\s+build:", RegexOptions.Multiline).ShouldBeFalse();
+        Regex.IsMatch(compose, @"^\s+image:", RegexOptions.Multiline).ShouldBeFalse();
+        Regex.IsMatch(compose, @"^secrets:", RegexOptions.Multiline).ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData("webapi")]
+    [InlineData("consumer")]
+    [InlineData("jobs")]
+    [InlineData("database-migrator")]
+    public void HardenEveryServiceForTheDeploymentPolicy(string service)
+    {
+        var block = ReadServiceBlock(service);
+
+        Regex.IsMatch(block, "^ {4}read_only: true$", RegexOptions.Multiline).ShouldBeTrue("root filesystem must be read-only");
+        block.ShouldContain("tmpfs:");
+        block.ShouldContain("no-new-privileges:true");
+        block.ShouldContain("restart: \"no\"");
+        block.ShouldNotContain("privileged");
+        block.ShouldNotContain("user: root");
+    }
+
+    [Fact]
+    public void PublishOnlyTheWebApiPortOnLoopback()
+    {
+        var webapi = ReadServiceBlock("webapi");
+
+        webapi.ShouldContain("- \"127.0.0.1:8080:8080\"");
+        Regex.Matches(webapi, @"^\s+- ""[^""]*:\d+:\d+""", RegexOptions.Multiline).Count.ShouldBe(1);
+        foreach (var service in new[] { "consumer", "jobs", "database-migrator" })
+        {
+            ReadServiceBlock(service).ShouldNotContain("ports:", customMessage: $"'{service}' must not publish ports.");
+        }
+    }
+
+    [Fact]
     public void KeepRuntimeCredentialsOutOfProductionEnvironment()
     {
         var compose = ReadProductionCompose();
@@ -112,7 +154,7 @@ public sealed class When_ValidatingProductionCompose_Should
         compose.ShouldNotContain("/run/secrets/app");
     }
 
-    private static string ReadProductionCompose() => ReadComposeFile("docker-compose.production.yml");
+    private static string ReadProductionCompose() => ReadComposeFile(Path.Combine("deploy", "compose.production.yml"));
 
     private static string ReadComposeFile(string fileName)
     {

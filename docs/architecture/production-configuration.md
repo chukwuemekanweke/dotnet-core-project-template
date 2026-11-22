@@ -57,17 +57,22 @@ a known template placeholder. Token creation and validation continue to bind the
 
 ## Production Compose contract
 
-Use the standalone production definition; do not merge it with the development definition:
+Use the standalone production definition, `deploy/compose.production.yml`; do not merge it with the
+development definition. It names no images and has no build sections: the devops-toolkit `vps-deploy`
+workflow injects each release image by digest from the release manifest and starts the stack on the VPS
+(see [CI/CD](../ci-cd.md#production-deployment)). To check that it renders, supply placeholder host values and
+a digest override:
 
 ```bash
-docker compose -f docker-compose.production.yml config
-docker compose -f docker-compose.production.yml up --build
+docker compose -f deploy/compose.production.yml -f <images-override.json> --profile '*' config
 ```
 
 Set `RUNTIME_SECRETS_APPLICATION`, `RUNTIME_SECRETS_ENVIRONMENT`, and each service's numeric
 `*_SECRETS_GID` to the values in the DEVOPS-007 instance configuration. Compose binds each service's
 `current` generation to `/run/secrets/app`, uses `create_host_path: false`, adds only that service's group,
-and sets `ASPNETCORE_ENVIRONMENT=Production`. Missing source directories therefore fail container creation
+and sets `ASPNETCORE_ENVIRONMENT=Production`. Every service also runs with a read-only root filesystem
+(tmpfs for `/tmp` and `$HOME`), `no-new-privileges`, and the image's non-root user. Only WebAPI publishes a
+port, on `127.0.0.1:8080`, for the host reverse proxy. Missing source directories therefore fail container creation
 instead of being silently created. All services use `restart: "no"` so systemd boot ordering cannot be
 bypassed.
 
