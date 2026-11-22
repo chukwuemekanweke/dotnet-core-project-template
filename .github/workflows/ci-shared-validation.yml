@@ -1,6 +1,10 @@
-# DEVOPS-012 PR 1: temporary comparison workflow for the shared devops-toolkit .NET CI.
-# Runs alongside ci.yml (which stays authoritative and keeps publishing images) until
-# parity is proven. This workflow never publishes images or deploys.
+# DEVOPS-012: thin callers of the shared devops-toolkit workflows.
+# PR 1: shared .NET CI + parity check against ci.yml (runs on every event).
+# PR 2: release image publishing through docker-publish.yml, only on push to main after
+#       verification, tagged release-<sha> so it cannot collide with ci.yml's legacy
+#       :latest/:<sha> tags. ci.yml's verification and publishing jobs are retired in a
+#       follow-up once this path has published and verified a release on main.
+# This workflow never deploys.
 name: CI shared validation (.NET 10)
 
 on:
@@ -85,3 +89,94 @@ jobs:
           --repo "$GITHUB_WORKSPACE"
           --test-results "$RUNNER_TEMP/parity/test-results"
           --coverage "$RUNNER_TEMP/parity/coverage"
+
+  image-config:
+    name: Validate release image configuration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Verify .github/docker-images.json
+        run: python3 .github/scripts/verify-release-images.py config
+
+  publish-images:
+    name: Publish release images
+    needs: [shared-ci, parity-check, image-config]
+    # Trusted path only: never publish from pull requests or manual dispatch on other refs.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    # Same reviewed toolkit revision as shared-ci.
+    uses: chukwuemekanweke/devops-toolkit/.github/workflows/docker-publish.yml@4ab2e18d180fb670dc9d592c917f69760dbe0540
+    with:
+      # Write-once release identity: the toolkit tags release-<sha> and refuses existing tags.
+      deployment-id: ${{ github.sha }}
+      image-config-path: .github/docker-images.json
+      # All four Dockerfiles restore Mailtrap from GitHub Packages via BuildKit secrets.
+      package-auth-components: |
+        webapi
+        consumer
+        jobs
+        migrator
+    secrets:
+      registry-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
+      github-packages-username: ${{ secrets.GH_PKG_USERNAME }}
+      github-packages-token: ${{ secrets.GH_PKG_PAT }}
+
+  verify-release:
+    name: Verify published release manifest and digests
+    needs: publish-images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Download release manifest
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.publish-images.outputs.manifest-artifact }}
+          path: ${{ runner.temp }}/release
+
+      - name: Check manifest output matches the canonical artifact
+        env:
+          MANIFEST_JSON: ${{ needs.publish-images.outputs.manifest-json }}
+          DEPLOYMENT_ID: ${{ needs.publish-images.outputs.deployment-id }}
+        run: |
+          test "$DEPLOYMENT_ID" = "$GITHUB_SHA"
+          diff <(jq -S . "$RUNNER_TEMP/release/deployment-manifest.json") <(jq -S . <<< "$MANIFEST_JSON")
+
+      - name: Check manifest against image configuration
+        run: >-
+          python3 .github/scripts/verify-release-images.py manifest
+          --manifest "$RUNNER_TEMP/release/deployment-manifest.json"
+          --deployment-id "$GITHUB_SHA"
+          --source-commit "$GITHUB_SHA"
+          > "$RUNNER_TEMP/release/references.txt"
+
+      - name: Resolve every digest in the registry
+        run: |
+          while read -r reference; do
+            echo "Resolving $reference"
+            docker buildx imagetools inspect "$reference" > /dev/null
+          done < "$RUNNER_TEMP/release/references.txt"
+          test "$(wc -l < "$RUNNER_TEMP/release/references.txt")" -eq 4
+
+      - name: Summarize release
+        run: |
+          {
+            echo "### Release ${GITHUB_SHA}"
+            echo
+            echo "| Component | Immutable reference |"
+            echo "|---|---|"
+            jq -r '.components[] | "| \(.name) | `\(.image)@\(.digest)` |"' "$RUNNER_TEMP/release/deployment-manifest.json"
+          } >> "$GITHUB_STEP_SUMMARY"
