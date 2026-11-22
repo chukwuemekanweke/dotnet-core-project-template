@@ -20,14 +20,13 @@ tests and release. Don't copy toolkit logic into this repository.
 ## `ci.yml`
 
 `.github/workflows/ci.yml` (**CI/CD (.NET 10)**) runs on pull requests, pushes to `main`, and manual
-dispatch. It never deploys.
+dispatch. It deploys only from `main`, and only once production deployment is enabled.
 
 | Job | When | What it does |
 |---|---|---|
 | `shared-ci` | Every event | Calls the toolkit's `dotnet-ci.yml`: restore, `IDE0005` format check, Release build, unit and integration tests with TRX and coverage, combined Cobertura/HTML report |
-| `image-config` | Every event | Validates `.github/docker-images.json` and that the deploy files agree with it |
+| `release-config` | Every event | Calls the toolkit's `release-config-check.yml` (see [Release configuration check](#release-configuration-check)) |
 | `publish-images` | Push to `main` | Calls the toolkit's `docker-publish.yml` (see [Release images](#release-images)) |
-| `verify-release` | After `publish-images` | Checks the release manifest and resolves every digest |
 | `deploy-production` | Push to `main`, **only when `PRODUCTION_DEPLOY_ENABLED` is `true`** | Calls the toolkit's `vps-deploy.yml` (see [Production deployment](#production-deployment)) |
 | `notify-deployment-failure` | When `deploy-production` fails or is cancelled | Posts a sanitized alert to `DEPLOY_ALERT_WEBHOOK_URL` |
 
@@ -72,15 +71,15 @@ All four build from the repository root. The file never holds credentials, build
 deployment values. Infrastructure containers (PostgreSQL, Redis, RabbitMQ) are not release components.
 A project created from this template must change the namespace to its own.
 
-On every pull request, the `image-config` job runs `.github/scripts/verify-release-images.py config`.
-It fails if the component set changes, a Dockerfile goes missing, a repository is not a real
-`docker.io/<namespace>/<repository>`, extra keys such as `buildArgs` appear, or a Dockerfile stops
-mounting the `GITHUB_USERNAME`/`GITHUB_PAT` BuildKit secrets.
+The `release-config` job validates this file on every pull request (see
+[Release configuration check](#release-configuration-check)). Keeping exactly these four components, and
+keeping every Dockerfile mounting the `GITHUB_USERNAME`/`GITHUB_PAT` BuildKit secrets, are rules of this
+repository that no automated check enforces; keep them by review.
 
 ### Publishing
 
 `publish-images` calls `docker-publish.yml` at the same pinned toolkit SHA as `shared-ci`. It runs only
-for `push` events on `main`, and only after `shared-ci` and `image-config` pass.
+for `push` events on `main`, and only after `shared-ci` and `release-config` pass.
 Pull requests and manual dispatches never publish.
 
 - **Deployment id** is `github.sha`. The toolkit tags every image `release-<sha>` and refuses to push a
@@ -103,13 +102,9 @@ The toolkit's outputs are `deployment-id`, `manifest-json`, `manifest-artifact`
 (`release-manifest-<sha>`), and `published-images`. The manifest lists each component's repository and
 `sha256` digest. Deployments consume this manifest, never tags.
 
-`verify-release` then:
-
-1. checks that the `manifest-json` output matches the canonical artifact;
-2. checks the manifest against `.github/docker-images.json`: the same four components and repositories,
-   with `deployment_id` and `source_commit` both equal to the commit;
-3. resolves every `image@digest` in Docker Hub;
-4. writes the immutable references to the run summary.
+The toolkit checks the manifest against `.github/docker-images.json` before writing it, records each digest
+from the push itself, and scans each image by digest from Docker Hub. It writes the immutable references to
+the publish job's run summary. This repository does not re-verify the manifest.
 
 ### Failed or partial publishes
 
@@ -126,8 +121,8 @@ retry.
 
 ### What happens on a deploy
 
-`deploy-production` needs `publish-images` and `verify-release`, so it only ever deploys a release whose four
-digests were verified in the same run. It calls the toolkit's `vps-deploy.yml` at the pinned SHA, which runs
+`deploy-production` needs `publish-images`, so it only ever deploys a release whose four digests were
+published and verified in the same run. It calls the toolkit's `vps-deploy.yml` at the pinned SHA, which runs
 in the protected `production` GitHub Environment and then, on the VPS:
 
 1. validates the request, the release manifest and the host's stack registration;
@@ -142,13 +137,21 @@ in the protected `production` GitHub Environment and then, on the VPS:
 8. records the release as active only after health passes, and keeps the previous release's manifest and
    secret generations for restoration.
 
-| Input | Value |
+The deploy job passes `environment: production` and `stack-name: backendprojecttemplate-production`
+inline. Everything else comes from [`.github/vps-deploy.production.json`](../.github/vps-deploy.production.json)
+through the toolkit's `deploy-config-path` input:
+
+| Setting | Value |
 |---|---|
-| `stack-name` | `backendprojecttemplate-production` |
-| `remote-deployment-path` | `/srv/backendprojecttemplate/production` |
-| `component-service-map` | `migrator` → `database-migrator` (the other components keep their names) |
-| `health-services` | `webapi`, `consumer`, `jobs` |
-| `rollback-on-health-failure` | `true` |
+| `composeFiles` | `deploy/compose.production.yml` |
+| `remoteDeploymentPath` | `/srv/backendprojecttemplate/production` |
+| `componentServiceMap` | `migrator` → `database-migrator` (the other components keep their names) |
+| `migrationService`, `migrationTimeoutSeconds` | `database-migrator`, `900` |
+| `healthServices` | `webapi`, `consumer`, `jobs` |
+| `healthChecks`, `healthTimeoutSeconds` | `http://127.0.0.1:8080/health`, `300` |
+| `rollbackOnHealthFailure` | `true` |
+
+Change these settings in the file, not in `ci.yml`: the toolkit rejects a setting declared in both places.
 
 ### Files in this repository
 
@@ -163,9 +166,27 @@ in the protected `production` GitHub Environment and then, on the VPS:
   `bpt-prd-jobs`, and `bpt-prd-migrator`, which does not start at boot). Committing it does not register
   anything; the copy on the host is what counts.
 - `deploy/runtime-secrets/<service>.keys.json`: the secret keys each service may receive.
+- `deploy/stack.env.example`: non-secret placeholder values for the variables the Compose file requires,
+  standing in for the host's `stack.env` when CI renders Compose. Add a variable here (and on the host) when
+  the Compose file starts requiring it.
 
-The `image-config` job renders the Compose file and fails the pull request if the stack registration, the
-Compose services and the deploy job inputs stop agreeing with `.github/docker-images.json`.
+### Release configuration check
+
+The `release-config` job calls the toolkit's `release-config-check.yml` on every event. It uses no secrets,
+so it also runs for fork pull requests, and it publishes and deploys nothing. Using the same validation code
+that publishing and deployment run later, it checks:
+
+1. `.github/docker-images.json`: schema, repositories, Dockerfiles and package-auth component names;
+2. the deployment settings in `.github/vps-deploy.production.json` against a release manifest with
+   placeholder digests;
+3. `deploy/vps-deploy-stack.production.json` against the deployment: stack, environment, path, allowed
+   repository and images, health-check hosts;
+4. `deploy/compose.production.yml`, rendered with `deploy/stack.env.example` the way the host renders it,
+   against the host's Compose policy (digest-pinned images, ports, bind mounts, restart rules, the one-shot
+   migrator, and each service mounting its own runtime-secret generation).
+
+A pass does not guarantee a deploy: the host re-checks everything against its own registry, `stack.env` and
+runtime-secret instances.
 
 ### Health checks
 
@@ -191,7 +212,7 @@ against the already-migrated schema, which is safe only if the release followed 
 - remove old structures only once no release within the rollback window needs them.
 
 A first deployment that fails has nothing to restore and is left for diagnosis. Take regular PostgreSQL
-backups outside this pipeline. See the toolkit's [database compatibility guidance](https://github.com/chukwuemekanweke/devops-toolkit/blob/1891bbfc7694eb20233cda1bdd1f511319b54959/docs/vps-deployment.md#database-compatibility-expand-migrate-contract)
+backups outside this pipeline. See the toolkit's [database compatibility guidance](https://github.com/chukwuemekanweke/devops-toolkit/blob/190253ec766e10185629ef3e6e123bf3d603aadf/docs/vps-deployment.md#database-compatibility-expand-migrate-contract)
 and the repository's [migration rules](architecture/database-migrations.md).
 
 Data Protection keys are not persisted yet. Each deploy or restoration recreates the containers, which
@@ -208,7 +229,7 @@ application task.
 4. Fix forward with a new commit. To return to a known good release, redeploy its deployment ID through the
    workflow. Never move `release-*` tags or edit host state by hand.
 
-The toolkit's [recovery table](https://github.com/chukwuemekanweke/devops-toolkit/blob/1891bbfc7694eb20233cda1bdd1f511319b54959/docs/vps-deployment.md#recovery) covers each outcome.
+The toolkit's [recovery table](https://github.com/chukwuemekanweke/devops-toolkit/blob/190253ec766e10185629ef3e6e123bf3d603aadf/docs/vps-deployment.md#recovery) covers each outcome.
 
 ### GitHub configuration
 
@@ -225,10 +246,10 @@ them by name and never uses `secrets: inherit`. Confirm that resolution on the f
 
 ### Host setup
 
-Follow the toolkit's [VPS deployment operations guide](https://github.com/chukwuemekanweke/devops-toolkit/blob/1891bbfc7694eb20233cda1bdd1f511319b54959/docs/vps-deployment.md#initial-vps-preparation) and
-[runtime-secret bootstrap](https://github.com/chukwuemekanweke/devops-toolkit/blob/1891bbfc7694eb20233cda1bdd1f511319b54959/docs/doppler/vps-bootstrap.md). For this stack:
+Follow the toolkit's [VPS deployment operations guide](https://github.com/chukwuemekanweke/devops-toolkit/blob/190253ec766e10185629ef3e6e123bf3d603aadf/docs/vps-deployment.md#initial-vps-preparation) and
+[runtime-secret bootstrap](https://github.com/chukwuemekanweke/devops-toolkit/blob/190253ec766e10185629ef3e6e123bf3d603aadf/docs/doppler/vps-bootstrap.md). For this stack:
 
-- install the runtime-secrets and vps-deploy helpers from toolkit commit `1891bbf`;
+- install the runtime-secrets and vps-deploy helpers from toolkit commit `190253e` (the pinned revision);
 - create the four DEVOPS-007 instances `bpt-prd-webapi`, `bpt-prd-consumer`, `bpt-prd-jobs` and
   `bpt-prd-migrator`, each with application `backendprojecttemplate`, environment `prd`, its own Doppler config
   and service group, `outputDirectory` `/run/runtime-secrets/backendprojecttemplate/prd/<service>`, and the
@@ -262,8 +283,10 @@ Deployment stays off until all of these are true:
 ### New projects from this template
 
 Change the Docker Hub namespace in `.github/docker-images.json`. Then update to your own values: the stack name,
-deployment path, instance IDs and allowed repositories in `deploy/vps-deploy-stack.production.json`, and the
-matching `deploy-production` inputs in `ci.yml`. The `image-config` check fails until these agree.
+deployment path, instance IDs and allowed repositories in `deploy/vps-deploy-stack.production.json`, the
+matching `remoteDeploymentPath` in `.github/vps-deploy.production.json`, the `RUNTIME_SECRETS_APPLICATION`
+value in `deploy/stack.env.example`, and the `stack-name` passed by both `release-config` and
+`deploy-production` in `ci.yml`. The `release-config` check fails until these agree.
 
 ## Credentials
 
@@ -282,7 +305,8 @@ the Mailtrap restore fails for forks. This is a known limitation, and it is not 
 ## Toolkit reference pinning
 
 The toolkit has no published release tag yet, so callers pin a reviewed full commit SHA (currently
-`1891bbfc7694eb20233cda1bdd1f511319b54959`, toolkit `main` after the masked-output fixes, #13 and #14).
+`190253ec766e10185629ef3e6e123bf3d603aadf`, toolkit `main` with `release-config-check.yml` and the
+deployment configuration file, #15).
 The toolkit checks out its helper scripts from the exact called commit (`job.workflow_sha`), so the
 workflow and its scripts always match. To upgrade:
 
