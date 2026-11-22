@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "stackName": "backendprojecttemplate-development",
+  "environment": "development",
+  "deploymentPath": "/srv/backendprojecttemplate/development",
+  "allowedSourceRepositories": ["chukwuemekanweke/dotnet-core-project-template"],
+  "allowedImageRepositories": [
+    "docker.io/chukwuemekanweke/backendprojecttemplate-webapi",
+    "docker.io/chukwuemekanweke/backendprojecttemplate-consumer",
+    "docker.io/chukwuemekanweke/backendprojecttemplate-jobs",
+    "docker.io/chukwuemekanweke/backendprojecttemplate-migrator"
+  ],
+  "runtimeSecrets": {
+    "services": {
+      "webapi": { "instance": "bpt-dev-webapi" },
+      "consumer": { "instance": "bpt-dev-consumer" },
+      "jobs": { "instance": "bpt-dev-jobs" },
+      "database-migrator": { "instance": "bpt-dev-migrator", "startAtBoot": false }
+    }
+  },
+  "allowedBindSources": [],
+  "allowedExternalNetworks": ["shared-postgres"],
+  "lockTimeoutSeconds": 1800
+}

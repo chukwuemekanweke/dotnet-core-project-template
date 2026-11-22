@@ -64,9 +64,29 @@ jobs:
       stack-registry-path: deploy/vps-deploy-stack.production.json
       compose-env-file: deploy/stack.env.example
 
+  release-config-development:
+    name: Check development release configuration
+    permissions:
+      contents: read
+    # Same reviewed toolkit revision and checks as release-config, for the development stack.
+    uses: chukwuemekanweke/devops-toolkit/.github/workflows/release-config-check.yml@190253ec766e10185629ef3e6e123bf3d603aadf
+    with:
+      image-config-path: .github/docker-images.json
+      package-auth-components: |
+        webapi
+        consumer
+        jobs
+        migrator
+      # Must match the deploy-development inputs below.
+      deploy-config-path: .github/vps-deploy.development.json
+      environment: development
+      stack-name: backendprojecttemplate-development
+      stack-registry-path: deploy/vps-deploy-stack.development.json
+      compose-env-file: deploy/stack.development.env.example
+
   publish-images:
     name: Publish release images
-    needs: [shared-ci, release-config]
+    needs: [shared-ci, release-config, release-config-development]
     # Trusted path only: never publish from pull requests or manual dispatch on other refs.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -89,6 +109,34 @@ jobs:
       registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
       github-packages-username: ${{ secrets.GH_PKG_USERNAME }}
       github-packages-token: ${{ secrets.GH_PKG_PAT }}
+
+  deploy-development:
+    name: Deploy to development VPS
+    needs: publish-images
+    # Off until an operator sets the repository variable DEVELOPMENT_DEPLOY_ENABLED=true after the
+    # development host readiness checks pass. Runs in the "development" GitHub Environment.
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      vars.DEVELOPMENT_DEPLOY_ENABLED == 'true'
+    permissions:
+      contents: read
+    uses: chukwuemekanweke/devops-toolkit/.github/workflows/vps-deploy.yml@190253ec766e10185629ef3e6e123bf3d603aadf
+    with:
+      environment: development
+      stack-name: backendprojecttemplate-development
+      # The development VPS runs sshd on a non-default port; VPS_KNOWN_HOSTS must use [host]:35340.
+      ssh-port: 35340
+      deployment-id: ${{ needs.publish-images.outputs.deployment-id }}
+      manifest-artifact: ${{ needs.publish-images.outputs.manifest-artifact }}
+      deploy-config-path: .github/vps-deploy.development.json
+    secrets:
+      # Secrets of the "development" GitHub Environment. Registry credentials are pull-only.
+      ssh-host: ${{ secrets.VPS_HOST }}
+      ssh-user: ${{ secrets.VPS_DEPLOY_USER }}
+      ssh-private-key: ${{ secrets.VPS_DEPLOY_SSH_KEY }}
+      ssh-known-hosts: ${{ secrets.VPS_KNOWN_HOSTS }}
+      registry-username: ${{ secrets.DOCKERHUB_READ_USERNAME }}
+      registry-token: ${{ secrets.DOCKERHUB_READ_TOKEN }}
 
   deploy-production:
     name: Deploy to production VPS

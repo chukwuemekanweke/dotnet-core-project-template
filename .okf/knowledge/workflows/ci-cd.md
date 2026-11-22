@@ -17,6 +17,10 @@ code_refs:
     - deploy/stack.env.example
     - deploy/compose.production.yml
     - deploy/vps-deploy-stack.production.json
+    - .github/vps-deploy.development.json
+    - deploy/compose.development.yml
+    - deploy/vps-deploy-stack.development.json
+    - deploy/stack.development.env.example
     - nuget.config
 sources:
     - kind: file
@@ -95,6 +99,24 @@ own tests.
   policy.
 - Restoration restores images and secret generations only, never the schema: migrations must stay
   expand → migrate → contract compatible with the previous release.
+
+## Development deployment
+
+- `deploy-development` mirrors `deploy-production` for stack `backendprojecttemplate-development`
+  (GitHub Environment `development`, `ssh-port: 35340`), gated by `vars.DEVELOPMENT_DEPLOY_ENABLED == 'true'`.
+  `release-config-development` checks its files on every event and `publish-images` needs it. Keep its
+  `deploy-config-path`/`environment`/`stack-name` identical to `deploy-development`.
+- It shares one VPS with the unrelated `pickly` stack, so `deploy/compose.development.yml` differs from
+  production only where the host forces it: WebAPI on `127.0.0.1:8090` (pickly owns `:8080`), every service
+  also joins the pre-created internal external network `shared-postgres` (alias `postgres` →
+  `pickly-postgres-1`; the only entry in the registry's `allowedExternalNetworks`), and the OTLP endpoint
+  defaults to empty (exporters off) because there is no local `otel-collector`.
+- The development *deployment* still runs the .NET hosts as `Production`: only Production loads the
+  `/run/secrets/app` KeyPerFile secrets (see [[production-configuration]]). Never switch that stack to
+  `Development` without changing the secret bootstrap.
+- Runtime-secret instances `bpt-dev-{webapi,consumer,jobs,migrator}` (Doppler project
+  `backend-project-template`, configs `dev_*`, groups 21001–21004, environment segment `dev`);
+  `deploy/stack.development.env.example` must carry the same group ids as the host `stack.env`.
 
 ## CI pitfalls
 
