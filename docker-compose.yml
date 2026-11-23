@@ -11,6 +11,11 @@ services:
     environment:
       DOTNET_ENVIRONMENT: Container
       ConnectionStrings__PostgresWrite: ${DATABASE_URL:-}
+      OpenTelemetry__ServiceName: BackendProjectTemplate.DatabaseMigrator
+      OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
     restart: "no"
 
   webapi:

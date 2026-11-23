@@ -89,8 +89,11 @@ DEVOPS-007 owns Doppler, render, activation, tmpfs, and rollback. Applications n
 files. Activation does not retarget a live bind mount; recreate and health-check the affected container to
 consume a generation. Deployed hosts export OTLP directly to Grafana Cloud (same model as pickly): endpoint and
 protocol are non-secret `stack.env` values (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_PROTOCOL`), and the
-auth header is the optional runtime secret `OTEL_EXPORTER_OTLP_HEADERS` (key manifests of webapi, consumer and jobs;
-the migrator exports nothing). `OtlpExporterConfigurator` applies it from configuration to every exporter, so a
+auth header is the optional runtime secret `OTEL_EXPORTER_OTLP_HEADERS` (in all four key manifests). The migrator
+calls `AddBackendTelemetry` only when `OpenTelemetry:OtlpEndpoint` is set (it ships no `appsettings.json`, so
+Compose supplies `OpenTelemetry__ServiceName` alongside the endpoint; tests and unconfigured runs wire nothing),
+and disposing its host flushes the exporters before the one-shot process exits.
+`OtlpExporterConfigurator` applies the header from configuration to every exporter, so a
 secret file works where the SDK would otherwise read only the environment variable. Never pass it as an
 environment variable on a deployed host. Adding a Doppler key requires the host manifest copy under
 `/etc/runtime-secrets/manifests/` to list it first, or render rejects the payload. Direct production Pyroscope

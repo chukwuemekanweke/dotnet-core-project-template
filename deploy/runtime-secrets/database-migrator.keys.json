@@ -1,6 +1,7 @@
 {
   "version": 1,
   "secrets": [
-    { "name": "CONNECTIONSTRINGS__POSTGRESWRITE", "required": true, "allowEmpty": false, "maxBytes": 4096 }
+    { "name": "CONNECTIONSTRINGS__POSTGRESWRITE", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "OTEL_EXPORTER_OTLP_HEADERS", "required": false, "allowEmpty": false, "maxBytes": 4096 }
   ]
 }

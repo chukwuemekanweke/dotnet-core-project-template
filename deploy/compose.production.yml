@@ -22,6 +22,10 @@ services:
       - private
     environment:
       DOTNET_ENVIRONMENT: Production
+      OpenTelemetry__ServiceName: BackendProjectTemplate.DatabaseMigrator
+      OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
     security_opt:
       - no-new-privileges:true
     group_add:
