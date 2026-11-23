@@ -42,17 +42,20 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         using var summaryResponse = await Client.GetAsync($"{EndpointUrl.AdminPaymentAnalytics.SummaryV1}?{query}");
         summaryResponse.StatusCode.ShouldBe(HttpStatusCode.OK, await summaryResponse.Content.ReadAsStringAsync());
         var summary = (await summaryResponse.Content.ReadFromJsonAsync<PaymentAnalyticsSummaryResponse>())!;
-        summary.TransactionCount.ShouldBe(12);
+        summary.TransactionCount.ShouldBe(13);
         summary.SuccessfulCount.ShouldBe(4);
-        summary.UnsuccessfulCount.ShouldBe(4);
+        summary.UnsuccessfulCount.ShouldBe(5);
+        summary.UnderpaidCount.ShouldBe(1);
         summary.ProcessingCount.ShouldBe(4);
-        summary.SuccessRate.ShouldBe(50m);
+        summary.SuccessRate.ShouldBe(44.44m);
         summary.Currencies.Count.ShouldBe(2);
-        summary.Currencies.Sum(item => item.TransactionCount).ShouldBe(12);
+        summary.Currencies.Sum(item => item.TransactionCount).ShouldBe(13);
         var ngn = summary.Currencies.Single(item => item.CurrencyId == CurrencyId);
-        ngn.TransactionCount.ShouldBe(9);
-        ngn.AttemptedVolume.ShouldBe(761m);
+        ngn.TransactionCount.ShouldBe(10);
+        ngn.UnderpaidCount.ShouldBe(1);
+        ngn.AttemptedVolume.ShouldBe(786m);
         ngn.SuccessfulVolume.ShouldBe(600m);
+        ngn.UnderpaidVolume.ShouldBe(10m);
         var usd = summary.Currencies.Single(item => item.CurrencyId == _secondCurrencyId);
         usd.TransactionCount.ShouldBe(3);
         usd.AttemptedVolume.ShouldBe(21m);
@@ -64,6 +67,7 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         AssertBucket(day, new DateOnly(2025, 12, 29), _secondCurrencyId, 1, 5m, 5m);
         AssertBucket(day, new DateOnly(2025, 12, 30), CurrencyId, 0, 0m, 0m);
         AssertBucket(day, new DateOnly(2025, 12, 30), _secondCurrencyId, 0, 0m, 0m);
+        AssertBucket(day, new DateOnly(2026, 1, 6), CurrencyId, 1, 25m, 0m, underpaidCount: 1, underpaidVolume: 10m);
         AssertBucket(day, new DateOnly(2026, 4, 30), CurrencyId, 1, 11m, 0m);
         day.Buckets.ShouldAllBe(item => item.PeriodStart == item.PeriodEnd);
 
@@ -71,7 +75,7 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         AssertBucket(week, new DateOnly(2025, 12, 22), CurrencyId, 2, 150m, 100m, new DateOnly(2025, 12, 28));
         AssertBucket(week, new DateOnly(2025, 12, 29), CurrencyId, 4, 100m, 0m, new DateOnly(2026, 1, 4));
         AssertBucket(week, new DateOnly(2025, 12, 29), _secondCurrencyId, 1, 5m, 5m, new DateOnly(2026, 1, 4));
-        AssertBucket(week, new DateOnly(2026, 1, 5), CurrencyId, 1, 200m, 200m, new DateOnly(2026, 1, 11));
+        AssertBucket(week, new DateOnly(2026, 1, 5), CurrencyId, 2, 225m, 200m, new DateOnly(2026, 1, 11), 1, 10m);
         AssertBucket(week, new DateOnly(2026, 1, 5), _secondCurrencyId, 1, 7m, 0m, new DateOnly(2026, 1, 11));
         AssertBucket(week, new DateOnly(2026, 1, 12), CurrencyId, 0, 0m, 0m, new DateOnly(2026, 1, 18));
         AssertBucket(week, new DateOnly(2026, 1, 26), CurrencyId, 1, 300m, 300m, new DateOnly(2026, 2, 1));
@@ -79,7 +83,7 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
 
         var month = await GetTimelineAsync(query, "Month");
         AssertBucket(month, new DateOnly(2025, 12, 1), CurrencyId, 4, 200m, 100m, new DateOnly(2025, 12, 31));
-        AssertBucket(month, new DateOnly(2026, 1, 1), CurrencyId, 3, 250m, 200m, new DateOnly(2026, 1, 31));
+        AssertBucket(month, new DateOnly(2026, 1, 1), CurrencyId, 4, 275m, 200m, new DateOnly(2026, 1, 31), 1, 10m);
         AssertBucket(month, new DateOnly(2026, 2, 1), CurrencyId, 1, 300m, 300m, new DateOnly(2026, 2, 28));
         AssertBucket(month, new DateOnly(2026, 3, 1), CurrencyId, 0, 0m, 0m, new DateOnly(2026, 3, 31));
         AssertBucket(month, new DateOnly(2026, 3, 1), _secondCurrencyId, 0, 0m, 0m, new DateOnly(2026, 3, 31));
@@ -88,7 +92,7 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         var year = await GetTimelineAsync(query, "Year");
         AssertBucket(year, new DateOnly(2025, 1, 1), CurrencyId, 4, 200m, 100m, new DateOnly(2025, 12, 31));
         AssertBucket(year, new DateOnly(2025, 1, 1), _secondCurrencyId, 1, 5m, 5m, new DateOnly(2025, 12, 31));
-        AssertBucket(year, new DateOnly(2026, 1, 1), CurrencyId, 5, 561m, 500m, new DateOnly(2026, 4, 30));
+        AssertBucket(year, new DateOnly(2026, 1, 1), CurrencyId, 6, 586m, 500m, new DateOnly(2026, 4, 30), 1, 10m);
         AssertBucket(year, new DateOnly(2026, 1, 1), _secondCurrencyId, 2, 16m, 0m, new DateOnly(2026, 4, 30));
 
         using var statusesResponse = await Client.GetAsync($"{EndpointUrl.AdminPaymentAnalytics.StatusesV1}?{query}");
@@ -98,16 +102,21 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         AssertStatus(statuses, PaymentStatus.Failed, 2, 57m);
         AssertStatus(statuses, PaymentStatus.Cancelled, 1, 30m);
         AssertStatus(statuses, PaymentStatus.Expired, 1, 20m);
+        AssertStatus(statuses, PaymentStatus.Underpaid, 1, 25m);
         AssertStatus(statuses, PaymentStatus.PendingInitiation, 2, 21m);
         AssertStatus(statuses, PaymentStatus.Initiated, 2, 49m);
 
         using var providersResponse = await Client.GetAsync($"{EndpointUrl.AdminPaymentAnalytics.ProvidersV1}?{query}");
         var providers = (await providersResponse.Content.ReadFromJsonAsync<PaymentAnalyticsProvidersResponse>())!;
         providers.Providers.Sum(item => item.TransactionCount).ShouldBe(summary.TransactionCount);
+        providers.Providers.Sum(item => item.UnderpaidCount).ShouldBe(1);
+        providers.Providers.Sum(item => item.UnderpaidVolume).ShouldBe(10m);
 
         using var intentsResponse = await Client.GetAsync($"{EndpointUrl.AdminPaymentAnalytics.IntentsV1}?{query}");
         var intents = (await intentsResponse.Content.ReadFromJsonAsync<PaymentAnalyticsIntentsResponse>())!;
         intents.Intents.Sum(item => item.TransactionCount).ShouldBe(summary.TransactionCount);
+        intents.Intents.Sum(item => item.UnderpaidCount).ShouldBe(1);
+        intents.Intents.Sum(item => item.UnderpaidVolume).ShouldBe(10m);
 
         await VerifyGeneratedSqlAsync(from, to);
 
@@ -165,6 +174,7 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
             new PaymentDefinition(CurrencyId, 10m, PaymentStatus.PendingInitiation, Utc(2026, 1, 3, 10, 0, 0), "jan-pending"),
             new PaymentDefinition(CurrencyId, 200m, PaymentStatus.Succeeded, Utc(2026, 1, 5, 8, 0, 0), "jan-monday"),
             new PaymentDefinition(_secondCurrencyId, 7m, PaymentStatus.Failed, Utc(2026, 1, 5, 9, 0, 0), "usd-jan"),
+            new PaymentDefinition(CurrencyId, 25m, PaymentStatus.Underpaid, Utc(2026, 1, 6, 9, 0, 0), "jan-underpaid", 10m),
             new PaymentDefinition(CurrencyId, 300m, PaymentStatus.Succeeded, Utc(2026, 2, 1, 11, 0, 0), "feb-success"),
             new PaymentDefinition(_secondCurrencyId, 9m, PaymentStatus.Initiated, Utc(2026, 2, 1, 12, 0, 0), "usd-feb"),
             new PaymentDefinition(CurrencyId, 11m, PaymentStatus.PendingInitiation, Utc(2026, 4, 30, 23, 59, 59), "range-end"),
@@ -191,7 +201,8 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
                 .Where(payment => payment.Id == item.Payment.Id)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(payment => payment.CreatedAtUtc, item.Definition.CreatedAtUtc)
-                    .SetProperty(payment => payment.PaymentStatus, item.Definition.PaymentStatus));
+                    .SetProperty(payment => payment.PaymentStatus, item.Definition.PaymentStatus)
+                    .SetProperty(payment => payment.AmountPaid, item.Definition.AmountPaid));
         }
     }
 
@@ -210,13 +221,17 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         long transactionCount,
         decimal attemptedVolume,
         decimal successfulVolume,
-        DateOnly? periodEnd = null)
+        DateOnly? periodEnd = null,
+        long underpaidCount = 0,
+        decimal underpaidVolume = 0m)
     {
         var bucket = timeline.Buckets.Single(item => item.PeriodStart == periodStart && item.CurrencyId == currencyId);
         bucket.PeriodEnd.ShouldBe(periodEnd ?? periodStart);
         bucket.TransactionCount.ShouldBe(transactionCount);
         bucket.AttemptedVolume.ShouldBe(attemptedVolume);
         bucket.SuccessfulVolume.ShouldBe(successfulVolume);
+        bucket.UnderpaidCount.ShouldBe(underpaidCount);
+        bucket.UnderpaidVolume.ShouldBe(underpaidVolume);
     }
 
     private static void AssertStatus(
@@ -288,7 +303,8 @@ public sealed class When_ReportingAdminPaymentAnalytics_Should(ContainersFixture
         decimal Amount,
         PaymentStatus PaymentStatus,
         DateTimeOffset CreatedAtUtc,
-        string Suffix);
+        string Suffix,
+        decimal? AmountPaid = null);
 
     private sealed class CommandCaptureInterceptor : DbCommandInterceptor
     {

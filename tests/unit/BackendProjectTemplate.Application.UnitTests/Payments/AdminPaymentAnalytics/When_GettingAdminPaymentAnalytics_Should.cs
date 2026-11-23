@@ -22,10 +22,11 @@ public sealed class When_GettingAdminPaymentAnalytics_Should
                 8,
                 3,
                 3,
+                1,
                 2,
                 [
-                    new(ngnId, "NGN", 6, 2, 1_000m, 600m, 100m, 100m, 100m, 100m),
-                    new(usdId, "USD", 2, 1, 50m, 30m, 20m, 0m, 0m, 0m)
+                    new(ngnId, "NGN", 6, 2, 1, 1_000m, 600m, 100m, 100m, 100m, 100m, 40m),
+                    new(usdId, "USD", 2, 1, 0, 50m, 30m, 20m, 0m, 0m, 0m, 0m)
                 ]));
         var cache = new MemoryJsonCache();
         var service = CreateService(repository, cache);
@@ -36,7 +37,9 @@ public sealed class When_GettingAdminPaymentAnalytics_Should
         var second = await service.GetSummaryAsync(query, CancellationToken.None);
 
         first.SuccessRate.ShouldBe(50m);
+        first.UnderpaidCount.ShouldBe(1);
         first.Currencies.Count.ShouldBe(2);
+        first.Currencies.Single(item => item.CurrencyCode == "NGN").UnderpaidVolume.ShouldBe(40m);
         first.Currencies.Single(item => item.CurrencyCode == "NGN").AverageSuccessfulTransactionValue.ShouldBe(300m);
         first.Currencies.Single(item => item.CurrencyCode == "USD").AttemptedVolume.ShouldBe(50m);
         second.ShouldBe(first);
@@ -48,7 +51,7 @@ public sealed class When_GettingAdminPaymentAnalytics_Should
     {
         var repository = Substitute.For<IPaymentAnalyticsReadModelRepository>();
         repository.GetSummaryAsync(Arg.Any<PaymentAnalyticsFilter>(), Arg.Any<CancellationToken>())
-            .Returns(new PaymentAnalyticsSummaryReadModel(0, 0, 0, 0, []));
+            .Returns(new PaymentAnalyticsSummaryReadModel(0, 0, 0, 0, 0, []));
         var service = CreateService(repository, new FailingJsonCache());
 
         var result = await service.GetSummaryAsync(
@@ -68,7 +71,8 @@ public sealed class When_GettingAdminPaymentAnalytics_Should
         repository.GetTimelineAsync(Arg.Any<PaymentAnalyticsFilter>(), Interval.Week, Arg.Any<CancellationToken>())
             .Returns([
                 new PaymentAnalyticsTimelineRow(
-                    new DateOnly(2026, 11, 2), currencyId, "NGN", 1, 1, 0, 0, 10m, 10m, 0m, 0m, 0m, 0m)
+                    new DateOnly(2026, 11, 2), currencyId, "NGN", 1, 1, 0, 0, 0, 10m, 10m, 0m, 0m,
+                    0m, 0m, 0m)
             ]);
         var service = CreateService(repository, new MemoryJsonCache());
 

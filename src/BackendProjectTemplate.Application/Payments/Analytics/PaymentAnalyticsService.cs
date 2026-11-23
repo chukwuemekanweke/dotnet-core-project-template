@@ -30,12 +30,14 @@ public sealed class PaymentAnalyticsService(
                 result.TransactionCount,
                 result.SuccessfulCount,
                 result.UnsuccessfulCount,
+                result.UnderpaidCount,
                 result.ProcessingCount,
                 AnalyticsMath.Percentage(result.SuccessfulCount, result.SuccessfulCount + result.UnsuccessfulCount),
                 result.Currencies.Select(item => new PaymentAnalyticsCurrencyResponse(
-                    item.CurrencyId, item.CurrencyCode, item.TransactionCount, item.AttemptedVolume,
+                    item.CurrencyId, item.CurrencyCode, item.TransactionCount, item.UnderpaidCount, item.AttemptedVolume,
                     item.SuccessfulVolume, item.FailedVolume, item.ProcessingVolume, item.CancelledVolume,
-                    item.ExpiredVolume, AnalyticsMath.Average(item.SuccessfulVolume, item.SuccessfulCount))).ToArray());
+                    item.ExpiredVolume, item.UnderpaidVolume,
+                    AnalyticsMath.Average(item.SuccessfulVolume, item.SuccessfulCount))).ToArray());
         }, cancellationToken);
     }
 
@@ -74,8 +76,9 @@ public sealed class PaymentAnalyticsService(
             return new PaymentAnalyticsProvidersResponse(rows.Select(item => new PaymentAnalyticsProviderResponse(
                 item.PaymentProviderId, item.PaymentProviderName, item.PaymentProviderKey, item.CurrencyId,
                 item.CurrencyCode, item.TransactionCount, item.SuccessfulCount, item.UnsuccessfulCount,
-                item.ProcessingCount, item.AttemptedVolume, item.SuccessfulVolume, item.FailedVolume,
-                item.ProcessingVolume, item.CancelledVolume, item.ExpiredVolume,
+                item.UnderpaidCount, item.ProcessingCount, item.AttemptedVolume, item.SuccessfulVolume,
+                item.FailedVolume, item.ProcessingVolume, item.CancelledVolume, item.ExpiredVolume,
+                item.UnderpaidVolume,
                 AnalyticsMath.Percentage(item.SuccessfulCount, item.SuccessfulCount + item.UnsuccessfulCount),
                 AnalyticsMath.Average(item.SuccessfulVolume, item.SuccessfulCount))).ToArray());
         }, cancellationToken);
@@ -89,9 +92,10 @@ public sealed class PaymentAnalyticsService(
             var rows = await repository.GetIntentsAsync(filter, cancellationToken);
             return new PaymentAnalyticsIntentsResponse(rows.Select(item => new PaymentAnalyticsIntentResponse(
                 item.PaymentIntent.ToString(), item.CurrencyId, item.CurrencyCode, item.TransactionCount,
-                item.SuccessfulCount, item.UnsuccessfulCount, item.ProcessingCount, item.AttemptedVolume,
-                item.SuccessfulVolume, item.FailedVolume, item.ProcessingVolume, item.CancelledVolume,
-                item.ExpiredVolume, AnalyticsMath.Percentage(item.SuccessfulCount, item.SuccessfulCount + item.UnsuccessfulCount),
+                item.SuccessfulCount, item.UnsuccessfulCount, item.UnderpaidCount, item.ProcessingCount,
+                item.AttemptedVolume, item.SuccessfulVolume, item.FailedVolume, item.ProcessingVolume,
+                item.CancelledVolume, item.ExpiredVolume, item.UnderpaidVolume,
+                AnalyticsMath.Percentage(item.SuccessfulCount, item.SuccessfulCount + item.UnsuccessfulCount),
                 AnalyticsMath.Average(item.SuccessfulVolume, item.SuccessfulCount))).ToArray());
         }, cancellationToken);
     }
@@ -188,13 +192,15 @@ public sealed class PaymentAnalyticsService(
                 {
                     buckets.Add(new PaymentAnalyticsTimelineBucketResponse(
                         period, periodEnd, row.CurrencyId, row.CurrencyCode, row.TransactionCount,
-                        row.SuccessfulCount, row.UnsuccessfulCount, row.ProcessingCount, row.AttemptedVolume,
-                        row.SuccessfulVolume, row.FailedVolume, row.ProcessingVolume, row.CancelledVolume, row.ExpiredVolume));
+                        row.SuccessfulCount, row.UnsuccessfulCount, row.UnderpaidCount, row.ProcessingCount,
+                        row.AttemptedVolume, row.SuccessfulVolume, row.FailedVolume, row.ProcessingVolume,
+                        row.CancelledVolume, row.ExpiredVolume, row.UnderpaidVolume));
                 }
                 else
                 {
                     buckets.Add(new PaymentAnalyticsTimelineBucketResponse(
-                        period, periodEnd, currency.CurrencyId, currency.CurrencyCode, 0, 0, 0, 0, 0m, 0m, 0m, 0m, 0m, 0m));
+                        period, periodEnd, currency.CurrencyId, currency.CurrencyCode, 0, 0, 0, 0, 0, 0m,
+                        0m, 0m, 0m, 0m, 0m, 0m));
                 }
             }
         }

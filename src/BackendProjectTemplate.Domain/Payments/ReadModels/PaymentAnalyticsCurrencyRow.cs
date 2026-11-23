@@ -5,9 +5,11 @@ public sealed record PaymentAnalyticsCurrencyRow(
     string CurrencyCode,
     long TransactionCount,
     long SuccessfulCount,
+    long UnderpaidCount,
     decimal AttemptedVolume,
     decimal SuccessfulVolume,
     decimal FailedVolume,
     decimal ProcessingVolume,
     decimal CancelledVolume,
-    decimal ExpiredVolume);
+    decimal ExpiredVolume,
+    decimal UnderpaidVolume);

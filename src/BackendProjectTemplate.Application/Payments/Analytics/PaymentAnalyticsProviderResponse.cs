@@ -9,6 +9,7 @@ public sealed record PaymentAnalyticsProviderResponse(
     long TransactionCount,
     long SuccessfulCount,
     long UnsuccessfulCount,
+    long UnderpaidCount,
     long ProcessingCount,
     decimal AttemptedVolume,
     decimal SuccessfulVolume,
@@ -16,5 +17,6 @@ public sealed record PaymentAnalyticsProviderResponse(
     decimal ProcessingVolume,
     decimal CancelledVolume,
     decimal ExpiredVolume,
+    decimal UnderpaidVolume,
     decimal SuccessRate,
     decimal AverageSuccessfulTransactionValue);

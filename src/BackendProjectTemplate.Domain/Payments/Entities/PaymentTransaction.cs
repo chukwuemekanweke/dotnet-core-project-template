@@ -40,6 +40,7 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
     public PaymentStatus PaymentStatus { get; private set; }
     public Guid PaymentProviderId { get; private set; }
     public decimal Amount { get; private set; }
+    public decimal? AmountPaid { get; private set; }
     public Guid CurrencyId { get; private set; }
     public Guid CountryId { get; private set; }
     public Guid InitiatedByUserId { get; private set; }
@@ -78,7 +79,8 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
             tenantId);
 
     public bool HasReachedTerminalState() =>
-        PaymentStatus is PaymentStatus.Succeeded or PaymentStatus.Failed or PaymentStatus.Cancelled or PaymentStatus.Expired;
+        PaymentStatus is PaymentStatus.Succeeded or PaymentStatus.Failed or PaymentStatus.Cancelled or PaymentStatus.Expired or
+        PaymentStatus.Underpaid;
 
     public void MarkInitiated(
         string providerReference,
@@ -140,6 +142,29 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
         FailureReason = failureReason;
         StatusChangeReason = statusChangeReason;
         CompletedAtUtc = null;
+        FailedAtUtc = null;
+    }
+
+    // Terminal: a partial wallet top-up is credited as paid; anything else is held for manual refund or settlement.
+    public void MarkUnderpaid(
+        string? providerReference,
+        decimal amountPaid,
+        string? statusChangeReason,
+        DateTimeOffset closedAtUtc)
+    {
+        EnsureCanTransitionFrom(PaymentStatus.Initiated);
+        if (amountPaid <= 0 || amountPaid >= Amount)
+        {
+            throw new AggregateStateException(
+                $"Payment transaction '{MerchantReference}' underpayment must be greater than zero and less than the requested amount.");
+        }
+
+        ProviderReference = string.IsNullOrWhiteSpace(providerReference) ? ProviderReference : providerReference.Trim();
+        PaymentStatus = PaymentStatus.Underpaid;
+        AmountPaid = amountPaid;
+        FailureReason = "provider_reported_underpayment";
+        StatusChangeReason = statusChangeReason;
+        CompletedAtUtc = closedAtUtc;
         FailedAtUtc = null;
     }
 
