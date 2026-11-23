@@ -123,6 +123,10 @@ own tests.
 - The development *deployment* still runs the .NET hosts as `Production`: only Production loads the
   `/run/secrets/app` KeyPerFile secrets (see [[production-configuration]]). Never switch that stack to
   `Development` without changing the secret bootstrap.
+- Non-secret R2 settings (endpoint, application folder, bucket names, public base URL) are Compose defaults in
+  `deploy/compose.development.yml` for WebAPI and Consumer, overridable from `stack.env` `CLOUDFLARE_R2_*`. Only
+  the R2 access key pair is a Doppler runtime secret. An empty non-secret value fails every storage call with
+  "Cloudflare R2 configuration is incomplete", because the seeded active `FileStorage` provider is `cloudflare_r2`.
 - Runtime-secret instances `bpt-dev-{webapi,consumer,jobs,migrator}` (Doppler project
   `backend-project-template`, configs `dev_*`, groups 21001–21004, environment segment `dev`);
   `deploy/stack.development.env.example` must carry the same group ids as the host `stack.env`.
@@ -143,9 +147,7 @@ own tests.
   run-attempt name, so a partial re-run drops the earlier attempt's TRX/coverage.
 - Known intermittent WebAPI integration failures (timing/race sensitive, not CI defects):
   `When_GrantingEntitlements_Concurrently_Should.AllowExactlyOneOverlappingEntitlementAndOneAllocationPerIdempotencyKey`
-  (idempotency-key race) and
-  `When_ReportingAdminSubscriptionAnalytics_Should.AuthorizeFilterAndExcludeComplimentaryAllocationRevenue`
-  (server-defaulted allocation start vs clock: Active/Pending boundary), and the Jobs unit test
+  (idempotency-key race), and the Jobs unit test
   `When_ProcessingOutboxMessages_WithPendingMessage_Should.MarkMessageAsSent` (fails under full-solution
   parallel load, passes in isolation). Legacy history also shows
   admin-payments reporting and passkey-ceremony flakes.
