@@ -1,6 +1,8 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Subscriptions.Features.CancelSubscriptionAtPeriodEnd;
+using BackendProjectTemplate.Application.Subscriptions.Features.GetBillingHistory;
 using BackendProjectTemplate.Application.Subscriptions.Features.GetCurrentSubscription;
+using BackendProjectTemplate.Application.Subscriptions.Features.GetSubscriptionPurchaseStatus;
 using BackendProjectTemplate.Application.Subscriptions.Features.PurchaseSubscription;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -19,9 +21,12 @@ namespace BackendProjectTemplate.WebAPI.Features.Subscriptions.Subscriptions;
 public sealed class SubscriptionsController(
     PurchaseSubscriptionHandler purchaseHandler,
     GetCurrentSubscriptionHandler currentHandler,
+    GetSubscriptionPurchaseStatusHandler purchaseStatusHandler,
+    GetBillingHistoryHandler billingHistoryHandler,
     CancelSubscriptionAtPeriodEndHandler cancellationHandler,
     PurchaseSubscriptionValidator purchaseValidator,
     SubscriptionOwnerValidator ownerValidator,
+    BillingHistoryValidator billingHistoryValidator,
     ICurrentActor currentActor) : ControllerBase
 {
     [HttpPost("purchases")]
@@ -31,12 +36,19 @@ public sealed class SubscriptionsController(
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<PurchaseSubscriptionResponse>> Purchase(
         [FromBody] PurchaseSubscriptionRequest request,
+        [FromHeader(Name = "Idempotency-Key")] Guid idempotencyKey,
         CancellationToken cancellationToken)
     {
         var validation = await purchaseValidator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
         {
             return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+        }
+
+        if (idempotencyKey == Guid.Empty)
+        {
+            ModelState.AddModelError("Idempotency-Key", "A non-empty Idempotency-Key header is required.");
+            return BadRequest(new ValidationProblemDetails(ModelState));
         }
 
         _ = Enum.TryParse<BillingAccountOwnerType>(request.BillingAccountOwnerType, true, out var ownerType);
@@ -49,10 +61,15 @@ public sealed class SubscriptionsController(
                     request.PaymentProviderId,
                     ownerType,
                     request.AutoRenew,
+                    idempotencyKey,
                     ActorContext.FromCurrentActor(currentActor)),
                 cancellationToken);
         }
         catch (SubscriptionEntitlementConflictException exception)
+        {
+            return Problem(exception.Message, statusCode: StatusCodes.Status409Conflict);
+        }
+        catch (SubscriptionPurchaseIdempotencyKeyReusedException exception)
         {
             return Problem(exception.Message, statusCode: StatusCodes.Status409Conflict);
         }
@@ -67,6 +84,54 @@ public sealed class SubscriptionsController(
             result.ExpiresAtUtc,
             result.PaymentMethodType.ToString(),
             result.InstructionFields));
+    }
+
+    [HttpGet("purchases/{purchaseId:guid}")]
+    [ProducesResponseType<GetSubscriptionPurchaseStatusResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GetSubscriptionPurchaseStatusResponse>> GetPurchaseStatus(
+        [FromRoute] Guid purchaseId,
+        [FromQuery] SubscriptionOwnerRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validation = await ownerValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+        }
+
+        _ = Enum.TryParse<BillingAccountOwnerType>(request.BillingAccountOwnerType, true, out var ownerType);
+        var result = await purchaseStatusHandler.HandleAsync(
+            new GetSubscriptionPurchaseStatusCommand(
+                purchaseId,
+                ownerType,
+                ActorContext.FromCurrentActor(currentActor)),
+            cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpGet("billing-history")]
+    [ProducesResponseType<GetBillingHistoryResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<GetBillingHistoryResponse>> GetBillingHistory(
+        [FromQuery] BillingHistoryRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validation = await billingHistoryValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+        }
+
+        _ = Enum.TryParse<BillingAccountOwnerType>(request.BillingAccountOwnerType, true, out var ownerType);
+        return Ok(await billingHistoryHandler.HandleAsync(
+            new GetBillingHistoryCommand(
+                ownerType,
+                request.Page,
+                request.PageSize,
+                ActorContext.FromCurrentActor(currentActor)),
+            cancellationToken));
     }
 
     [HttpGet("current")]

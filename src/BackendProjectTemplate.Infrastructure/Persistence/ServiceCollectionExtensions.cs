@@ -67,6 +67,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILoginActivityReadModelRepository, LoginActivityReadModelRepository>();
         services.AddScoped<IActiveSessionReadModelRepository, ActiveSessionReadModelRepository>();
         services.AddScoped<ISubscriptionAdministrationReadModelRepository, SubscriptionAdministrationReadModelRepository>();
+        services.AddScoped<ICustomerSubscriptionReadModelRepository, CustomerSubscriptionReadModelRepository>();
         services.AddScoped<ISubscriptionAnalyticsReadModelRepository, SubscriptionAnalyticsReadModelRepository>();
         services.AddScoped<IAdminUserReadModelRepository, AdminUserReadModelRepository>();
         services.AddScoped<IRegistrationAnalyticsReadModelRepository, RegistrationAnalyticsReadModelRepository>();

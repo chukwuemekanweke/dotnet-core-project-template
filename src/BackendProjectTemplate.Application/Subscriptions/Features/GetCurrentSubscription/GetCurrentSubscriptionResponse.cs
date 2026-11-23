@@ -8,11 +8,14 @@ public sealed record GetCurrentSubscriptionResponse(
     string PlanName,
     decimal PlanPrice,
     Guid CurrencyId,
+    string CurrencyCode,
     string BillingInterval,
     string Status,
+    string LifecycleStatus,
     DateTimeOffset? CurrentPeriodStartUtc,
     DateTimeOffset? CurrentPeriodEndUtc,
     DateTimeOffset? NextBillingAtUtc,
     bool AutoRenew,
     bool CancelAtPeriodEnd,
-    DateTimeOffset? CancellationRequestedAtUtc);
+    DateTimeOffset? CancellationRequestedAtUtc,
+    DateTimeOffset? CancellationEffectiveAtUtc);

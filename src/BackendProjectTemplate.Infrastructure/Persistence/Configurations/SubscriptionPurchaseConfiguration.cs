@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -24,12 +25,18 @@ public sealed class SubscriptionPurchaseConfiguration : IEntityTypeConfiguration
             });
         builder.HasKey(purchase => purchase.Id);
         builder.Property(purchase => purchase.PlanCode).HasMaxLength(SubscriptionPurchase.MaxPlanCodeLength).IsRequired();
+        builder.Property(purchase => purchase.RequestFingerprint)
+            .HasMaxLength(SubscriptionPurchase.MaxRequestFingerprintLength)
+            .IsRequired();
         builder.Property(purchase => purchase.ExpectedAmount).HasPrecision(18, 0).IsRequired();
         builder.Property(purchase => purchase.FulfillmentBlockedReason).HasMaxLength(100);
         builder.Ignore(purchase => purchase.IsFulfillmentBlocked);
         builder.HasIndex(purchase => purchase.PaymentTransactionId).IsUnique();
         builder.HasIndex(purchase => purchase.SubscriptionId).IsUnique();
         builder.HasIndex(purchase => new { purchase.TenantId, purchase.BillingAccountId });
+        builder.HasIndex(purchase => new { purchase.TenantId, purchase.InitiatedByStakeholderId, purchase.OperationId })
+            .IsUnique()
+            .HasDatabaseName(SubscriptionPersistenceConstraints.PurchaseOperationUniqueIndexName);
         builder.HasOne<Tenant>().WithMany().HasForeignKey(purchase => purchase.TenantId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<BillingAccount>()
             .WithMany()

@@ -106,6 +106,14 @@ status: stable
 - The generic payment-initiation endpoint is wallet-top-up only. Subscription checkout goes through
   the dedicated [[subscriptions]] purchase slice so plan price/currency are server-authoritative and a
   durable purchase correlation exists before provider initiation.
+- Authenticated subscription provider discovery reads the existing active `PaymentProvider` and enabled
+  `PaymentProviderConfiguration` records for `PaymentIntent.Subscription`, the selected plan currency and the
+  actor's active country/currency mapping. It exposes provider id/name, initial payment method and whether a
+  registered `IRecurringPaymentProvider` exists; it never returns provider credentials or configuration.
+- Customer purchase responses preserve provider-neutral structured instructions. Hosted Bachs/Credo checkout
+  uses `paymentMethodType: PaymentLink` with `instructionFields.paymentLink`; SafeHaven bank transfer uses
+  `accountNumber`, `bankName`, `accountName` and `providerReference`. Frontends never construct provider URLs
+  and always query authoritative purchase status after returning from a provider.
 - `Subscription` is the entitlement/lifecycle source of truth. `SubscriptionActivation` remains an
   immutable compatibility fulfillment record and links new fulfillments to the subscription and
   period; its new linkage columns are nullable for historical rows and no historical plan data is

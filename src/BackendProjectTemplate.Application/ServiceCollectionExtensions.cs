@@ -87,9 +87,12 @@ using BackendProjectTemplate.Application.Subscriptions.Features.GetAdminSubscrip
 using BackendProjectTemplate.Application.Subscriptions.Features.GetAdminSubscriptionAnalyticsStatuses;
 using BackendProjectTemplate.Application.Subscriptions.Features.GetAdminSubscriptionAnalyticsSummary;
 using BackendProjectTemplate.Application.Subscriptions.Features.GetAdminSubscriptionAnalyticsTimeline;
+using BackendProjectTemplate.Application.Subscriptions.Features.GetBillingHistory;
 using BackendProjectTemplate.Application.Subscriptions.Features.GetCurrentSubscription;
 using BackendProjectTemplate.Application.Subscriptions.Features.GetSubscriptionDetail;
+using BackendProjectTemplate.Application.Subscriptions.Features.GetSubscriptionPurchaseStatus;
 using BackendProjectTemplate.Application.Subscriptions.Features.ListAdminSubscriptionPlans;
+using BackendProjectTemplate.Application.Subscriptions.Features.ListEligiblePaymentProviders;
 using BackendProjectTemplate.Application.Subscriptions.Features.ListSubscriptionPlans;
 using BackendProjectTemplate.Application.Subscriptions.Features.ListSubscriptions;
 using BackendProjectTemplate.Application.Subscriptions.Features.PurchaseSubscription;
@@ -192,7 +195,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ProcessCredoWebhookHandler>();
         services.AddScoped<ProcessBachsWebhookHandler>();
         services.AddScoped<ListSubscriptionPlansHandler>();
+        services.AddScoped<ListEligiblePaymentProvidersHandler>();
         services.AddScoped<PurchaseSubscriptionHandler>();
+        services.AddScoped<GetSubscriptionPurchaseStatusHandler>();
+        services.AddScoped<GetBillingHistoryHandler>();
         services.AddScoped<GetCurrentSubscriptionHandler>();
         services.AddScoped<SubscriptionAnalyticsCache>();
         services.AddScoped<GetAdminSubscriptionAnalyticsSummaryHandler>();

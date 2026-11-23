@@ -11,7 +11,7 @@ namespace BackendProjectTemplate.Infrastructure.Persistence.Interceptors;
 /// Translates the PostgreSQL failures that protect subscription invariants into domain exceptions so
 /// Application and Consumer code can react without depending on EF Core or Npgsql:
 /// the BillingAccount entitlement exclusion constraint, the allocation idempotency key, plan-code
-/// uniqueness and optimistic concurrency on <see cref="Subscription"/>.
+/// purchase idempotency, plan-code uniqueness and optimistic concurrency on <see cref="Subscription"/>.
 /// </summary>
 internal sealed class SubscriptionConflictTranslationInterceptor : SaveChangesInterceptor
 {
@@ -53,6 +53,10 @@ internal sealed class SubscriptionConflictTranslationInterceptor : SaveChangesIn
             case { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: SubscriptionPersistenceConstraints.AllocationOperationUniqueIndexName }:
                 throw new SubscriptionAllocationOperationConflictException(
                     "An allocation with the same idempotency key was committed concurrently.",
+                    exception);
+            case { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: SubscriptionPersistenceConstraints.PurchaseOperationUniqueIndexName }:
+                throw new SubscriptionPurchaseOperationConflictException(
+                    "A subscription purchase with the same idempotency key was committed concurrently.",
                     exception);
             case { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: SubscriptionPersistenceConstraints.PlanCodeUniqueIndexName }:
                 throw new SubscriptionPlanCodeConflictException(
