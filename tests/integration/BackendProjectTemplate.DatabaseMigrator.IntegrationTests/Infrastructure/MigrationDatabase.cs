@@ -63,6 +63,21 @@ public sealed class MigrationDatabase(string serverConnectionString, string data
         return (long)(await command.ExecuteScalarAsync())!;
     }
 
+    public async Task ExecuteAsync(string sql)
+    {
+        await using var connection = await OpenAsync(ConnectionString);
+        await using var command = new NpgsqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    public async Task<T?> ScalarAsync<T>(string sql)
+    {
+        await using var connection = await OpenAsync(ConnectionString);
+        await using var command = new NpgsqlCommand(sql, connection);
+        var value = await command.ExecuteScalarAsync();
+        return value is null or DBNull ? default : (T)value;
+    }
+
     public async Task DropAsync()
     {
         var adminConnectionString = new NpgsqlConnectionStringBuilder(ConnectionString) { Database = "postgres" }.ConnectionString;
