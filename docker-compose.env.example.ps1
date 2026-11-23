@@ -35,6 +35,23 @@ $env:RABBITMQ_USERNAME = "<cloud-rabbitmq-username>"
 $env:RABBITMQ_PASSWORD = "<cloud-rabbitmq-password>"
 $env:RABBITMQ_VIRTUAL_HOST = "/"
 $env:REDIS_CONNECTION_STRING = "<cloud-redis-host>:<port>,password=<password>,ssl=True,abortConnect=False"
+# Payment, KYC and IP-geolocation providers (all optional locally).
+$env:IPINFO_ACCESS_TOKEN = ""
+$env:IPWHOIS_API_KEY = ""
+$env:KYCAID_ENABLED = "false"
+$env:KYCAID_API_KEY = ""
+$env:KYCAID_FORM_ID = ""
+$env:BACHS_API_KEY = ""
+$env:BACHS_WEBHOOK_SECRET = ""
+$env:BACHS_SUCCESS_URL = ""
+$env:BACHS_CANCEL_URL = ""
+$env:CREDO_PUBLIC_KEY = ""
+$env:CREDO_SECRET_KEY = ""
+$env:SAFEHAVEN_CLIENT_ID = ""
+$env:SAFEHAVEN_CLIENT_ASSERTION = ""
+$env:SAFEHAVEN_SETTLEMENT_ACCOUNT_NUMBER = ""
+$env:SAFEHAVEN_AUTO_SWEEP_ACCOUNT_NUMBER = ""
+$env:SAFEHAVEN_SETTLEMENT_BANK_CODE = ""
 
 $composeArguments = @("compose", "-f", "docker-compose.yml")
 

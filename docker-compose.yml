@@ -45,6 +45,22 @@ services:
       Jwt__Audience: BackendProjectTemplate.Clients
       Jwt__SigningKey: ${JWT_SIGNING_KEY:-development-only-signing-key-not-for-production}
       Notifications__Email__Mailtrap__WebhookSigningSecret: ${MAILTRAP_WEBHOOK_SIGNING_SECRET}
+      IpGeolocation__IpInfo__AccessToken: ${IPINFO_ACCESS_TOKEN:-}
+      IpGeolocation__IpWhoIs__ApiKey: ${IPWHOIS_API_KEY:-}
+      Kyc__Kycaid__Enabled: ${KYCAID_ENABLED:-false}
+      Kyc__Kycaid__ApiKey: ${KYCAID_API_KEY:-}
+      Kyc__Kycaid__FormId: ${KYCAID_FORM_ID:-}
+      Payments__Bachs__ApiKey: ${BACHS_API_KEY:-}
+      Payments__Bachs__WebhookSecret: ${BACHS_WEBHOOK_SECRET:-}
+      Payments__Bachs__SuccessUrl: ${BACHS_SUCCESS_URL:-}
+      Payments__Bachs__CancelUrl: ${BACHS_CANCEL_URL:-}
+      Payments__Credo__PublicKey: ${CREDO_PUBLIC_KEY:-}
+      Payments__Credo__SecretKey: ${CREDO_SECRET_KEY:-}
+      Payments__SafeHaven__ClientId: ${SAFEHAVEN_CLIENT_ID:-}
+      Payments__SafeHaven__ClientAssertion: ${SAFEHAVEN_CLIENT_ASSERTION:-}
+      Payments__SafeHaven__SettlementAccountNumber: ${SAFEHAVEN_SETTLEMENT_ACCOUNT_NUMBER:-}
+      Payments__SafeHaven__AutoSweepAccountNumber: ${SAFEHAVEN_AUTO_SWEEP_ACCOUNT_NUMBER:-}
+      Payments__SafeHaven__SettlementBankCode: ${SAFEHAVEN_SETTLEMENT_BANK_CODE:-}
       OpenTelemetry__ServiceName: BackendProjectTemplate.WebAPI
       OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
@@ -107,6 +123,7 @@ services:
       Messaging__RabbitMq__EventsExchange: x.events.backendprojecttemplate
       Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
       Notifications__Email__Mailtrap__ApiToken: ${MAILTRAP_TOKEN}
+      Payments__Bachs__ApiKey: ${BACHS_API_KEY:-}
       OpenTelemetry__ServiceName: BackendProjectTemplate.Consumer
       OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
@@ -160,6 +177,19 @@ services:
       Messaging__RabbitMq__VirtualHost: ${RABBITMQ_VIRTUAL_HOST:-/}
       Messaging__RabbitMq__EventsExchange: x.events.backendprojecttemplate
       Messaging__RabbitMq__CommandsExchange: x.commands.backendprojecttemplate
+      IpGeolocation__IpInfo__AccessToken: ${IPINFO_ACCESS_TOKEN:-}
+      IpGeolocation__IpWhoIs__ApiKey: ${IPWHOIS_API_KEY:-}
+      Kyc__Kycaid__Enabled: ${KYCAID_ENABLED:-false}
+      Kyc__Kycaid__ApiKey: ${KYCAID_API_KEY:-}
+      Kyc__Kycaid__FormId: ${KYCAID_FORM_ID:-}
+      Payments__Bachs__ApiKey: ${BACHS_API_KEY:-}
+      Payments__Credo__PublicKey: ${CREDO_PUBLIC_KEY:-}
+      Payments__Credo__SecretKey: ${CREDO_SECRET_KEY:-}
+      Payments__SafeHaven__ClientId: ${SAFEHAVEN_CLIENT_ID:-}
+      Payments__SafeHaven__ClientAssertion: ${SAFEHAVEN_CLIENT_ASSERTION:-}
+      Payments__SafeHaven__SettlementAccountNumber: ${SAFEHAVEN_SETTLEMENT_ACCOUNT_NUMBER:-}
+      Payments__SafeHaven__AutoSweepAccountNumber: ${SAFEHAVEN_AUTO_SWEEP_ACCOUNT_NUMBER:-}
+      Payments__SafeHaven__SettlementBankCode: ${SAFEHAVEN_SETTLEMENT_BANK_CODE:-}
       OpenTelemetry__ServiceName: BackendProjectTemplate.Jobs
       OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}

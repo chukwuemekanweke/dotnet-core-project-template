@@ -13,6 +13,7 @@ code_refs:
     - docker-compose.yml
     - docker-compose.local.yml
     - docker-compose.env.example.sh
+    - docker-compose.env.example.ps1
 sources:
     - kind: file
       path: docker-compose.yml
@@ -26,7 +27,7 @@ status: stable
 - The default `docker-compose.yml` mode assumes managed cloud infrastructure (Neon PostgreSQL URLs, cloud Redis, cloud RabbitMQ, Grafana Cloud OTLP export for logs/metrics/traces) rather than starting every dependency in Docker.
 - A single `local` Compose profile (services tagged `profiles: [local]`, layered via `docker-compose.local.yml`) restores the full local stack (local Postgres, Redis, RabbitMQ, the local
   Grafana/Loki/Tempo/Prometheus/OTel Collector stack used for [[observability]] tail sampling) for offline development.
-- `docker-compose.env.example.sh` documents required credentials/URLs without committing real secrets.
+- `docker-compose.env.example.sh` / `.ps1` document required credentials/URLs without committing real secrets; developers copy them to the git-ignored `docker-compose.local.sh` / `.ps1`.
 
 ## Constraint
 
@@ -34,3 +35,5 @@ status: stable
   the untracked env file the example script documents.
 - When adding a new infrastructure dependency, wire it into both the cloud-first default path and the `local` profile fallback; don't make a dependency local-only unless it has no cloud equivalent
   (e.g. the local observability stack itself).
+- When a host gains a new `ProductionSecrets` requirement or provider setting (payments, KYC, IP geolocation, ...), also map it in `docker-compose.yml` as an optional `${VAR:-}`
+  passthrough on every host that reads it and add the variable to both example scripts — otherwise local runs silently lack the setting.
