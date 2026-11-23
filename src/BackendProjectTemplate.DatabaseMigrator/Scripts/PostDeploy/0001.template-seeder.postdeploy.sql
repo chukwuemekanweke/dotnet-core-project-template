@@ -284,13 +284,16 @@ SELECT gen_random_uuid(), v."ShortCode", v."Name", v."CallingCode", v."FlagUrl",
 FROM country_values v
 WHERE NOT EXISTS (SELECT 1 FROM countries_existing e WHERE e."ShortCode" = v."ShortCode");
 
+-- Deactivate superseded providers in their own statement before the upsert below activates the
+-- current ones: IX_Providers_ProviderType_IsActive allows one active provider per type, and an
+-- unreferenced data-modifying CTE runs after the main INSERT, so it cannot clear the old row in time.
 UPDATE infrastructure."Providers"
 SET
     "IsActive" = FALSE,
     "UpdatedAtUtc" = NOW()
-WHERE "ProviderType" = 1
-    AND "ProviderKey" <> 'mailtrap'
-    AND "IsActive" = TRUE;
+WHERE "IsActive" = TRUE
+    AND (("ProviderType" = 1 AND "ProviderKey" <> 'mailtrap')
+         OR ("ProviderType" = 2 AND "ProviderKey" <> 'cloudflare_r2'));
 
 UPDATE infrastructure."Providers"
 SET

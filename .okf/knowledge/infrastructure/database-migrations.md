@@ -59,6 +59,10 @@ pipeline (`Database:InitializeOnStartup`), but its content root has no `Scripts/
 
 - PreDeploy/PostDeploy scripts are not journaled. They run on **every** execution, including retries, so they
   must be idempotent (`IF NOT EXISTS`, `CREATE OR REPLACE`, upsert/update-when-distinct seeds, guarded fixes).
+- Seeds that switch which row satisfies a partial unique index (e.g. the active provider per type) must clear the old
+  row in a separate statement first: an unreferenced data-modifying CTE runs after the main `INSERT`, so a combined
+  deactivate-and-insert fails with 23505 on any database seeded with the previous active row. Test such seeds
+  against the legacy state, not only a fresh database.
 - Schema changes follow expand → migrate → contract. Rollout failure restores previous application images, not
   the schema, so the previous release must work against the migrated schema. Never drop, rename or retype
   columns the previous release uses in the same release.
