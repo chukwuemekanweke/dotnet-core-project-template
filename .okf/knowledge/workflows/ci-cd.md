@@ -147,9 +147,7 @@ own tests.
   run-attempt name, so a partial re-run drops the earlier attempt's TRX/coverage.
 - Known intermittent WebAPI integration failures (timing/race sensitive, not CI defects):
   `When_GrantingEntitlements_Concurrently_Should.AllowExactlyOneOverlappingEntitlementAndOneAllocationPerIdempotencyKey`
-  (idempotency-key race) and
-  `When_ReportingAdminSubscriptionAnalytics_Should.AuthorizeFilterAndExcludeComplimentaryAllocationRevenue`
-  (server-defaulted allocation start vs clock: Active/Pending boundary), and the Jobs unit test
+  (idempotency-key race), and the Jobs unit test
   `When_ProcessingOutboxMessages_WithPendingMessage_Should.MarkMessageAsSent` (fails under full-solution
   parallel load, passes in isolation). Legacy history also shows
   admin-payments reporting and passkey-ceremony flakes.

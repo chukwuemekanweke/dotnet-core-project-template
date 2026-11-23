@@ -98,7 +98,7 @@ public sealed class When_ReportingAdminSubscriptionAnalytics_Should(ContainersFi
             account.Id,
             plan.Id,
             autoRenew: false,
-            activatedAtUtc,
+            activatedAtUtc.AddMilliseconds(-1),
             purchaseOperationId,
             stakeholder.Id.ToString());
         var purchase = SubscriptionPurchase.Create(
