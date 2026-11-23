@@ -102,6 +102,7 @@ public sealed class PaymentReconciliationService(
                         verificationResult.FailureReason,
                         verificationResult.StatusChangeReason,
                         now);
+                    await UnsuccessfulPaymentNotification.PublishAsync(transaction, eventPublisher, now, cancellationToken);
                     customTelemetryContext.AddCustomEvent(
                         Observability.EventNames.Payments.ReconciliationFailed,
                         ObservabilityEventProperties.Create(
@@ -118,6 +119,7 @@ public sealed class PaymentReconciliationService(
                         verificationResult.ProviderReference,
                         verificationResult.FailureReason,
                         verificationResult.StatusChangeReason);
+                    await UnsuccessfulPaymentNotification.PublishAsync(transaction, eventPublisher, now, cancellationToken);
                     customTelemetryContext.AddCustomEvent(
                         Observability.EventNames.Payments.ReconciliationFailed,
                         ObservabilityEventProperties.Create(
@@ -136,6 +138,7 @@ public sealed class PaymentReconciliationService(
                         eventPublisher,
                         now,
                         cancellationToken);
+                    await UnsuccessfulPaymentNotification.PublishAsync(transaction, eventPublisher, now, cancellationToken);
                     customTelemetryContext.AddCustomEvent(
                         Observability.EventNames.Payments.ReconciliationFailed,
                         ObservabilityEventProperties.Create(

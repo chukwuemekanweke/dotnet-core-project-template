@@ -454,6 +454,32 @@ public sealed class Subscription : Entity, IAggregateRoot
             null);
     }
 
+    /// <summary>
+    /// Ends a purchase whose initial payment concluded without success (failed, expired or underpaid). The
+    /// subscription never held entitlement, so it moves straight from Pending to Expired and stops being the
+    /// BillingAccount's current subscription. Returns <c>false</c> when it is no longer Pending.
+    /// </summary>
+    public bool ExpireUnpaidPurchase(Guid paymentTransactionId, DateTimeOffset expiredAtUtc, Guid operationId)
+    {
+        if (Status != SubscriptionStatus.Pending)
+        {
+            return false;
+        }
+
+        Status = SubscriptionStatus.Expired;
+        EndedAtUtc = SubscriptionTimestamps.Normalize(expiredAtUtc);
+        NextBillingAtUtc = null;
+        RecordTransition(
+            SubscriptionStatus.Pending,
+            SubscriptionLifecycleReasons.InitialPaymentUnsuccessful,
+            EndedAtUtc.Value,
+            null,
+            operationId,
+            paymentTransactionId,
+            null);
+        return true;
+    }
+
     public void End(DateTimeOffset endedAtUtc, Guid operationId)
     {
         if (Status != SubscriptionStatus.Active || !CurrentPeriodEndUtc.HasValue || endedAtUtc < CurrentPeriodEndUtc.Value)

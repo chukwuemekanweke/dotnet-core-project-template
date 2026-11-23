@@ -17,6 +17,7 @@ using ResetPassword = BackendProjectTemplate.Contracts.Commands.Authentication.R
 using SendEmailConfirmationOtp = BackendProjectTemplate.Contracts.Commands.Authentication.SendEmailConfirmationOtpCommand;
 using SendNotification = BackendProjectTemplate.Contracts.Commands.Notifications.SendNotificationCommand;
 using SuccessfulPaymentConfirmedEvent = BackendProjectTemplate.Contracts.Events.SuccessfulPaymentConfirmed;
+using UnsuccessfulPaymentConcludedEvent = BackendProjectTemplate.Contracts.Events.UnsuccessfulPaymentConcluded;
 using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.UserAccessTokenRefreshed;
 using UserActivityObservedEvent = BackendProjectTemplate.Contracts.Events.UserActivityObserved;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
@@ -82,7 +83,8 @@ public static class ServiceCollectionExtensions
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>()
                 .AddHandler<EmailDeliveryWebhookReceivedEvent, EmailDeliveryWebhookReceivedHandler>()
                 .AddHandler<KycWebhookReceivedEvent, KycWebhookReceivedHandler>()
-                .AddHandler<SuccessfulPaymentConfirmedEvent, SuccessfulPaymentConfirmedHandler>())
+                .AddHandler<SuccessfulPaymentConfirmedEvent, SuccessfulPaymentConfirmedHandler>()
+                .AddHandler<UnsuccessfulPaymentConcludedEvent, UnsuccessfulPaymentConcludedHandler>())
             .AddConsumer(consumerConfig, builder => builder
                 .AddHandler<ResetPassword, ResetPasswordHandler>()
                 .AddHandler<SendEmailConfirmationOtp, SendEmailConfirmationOtpHandler>()
