@@ -110,6 +110,8 @@ status: stable
   `PaymentProviderConfiguration` records for `PaymentIntent.Subscription`, the selected plan currency and the
   actor's active country/currency mapping. It exposes provider id/name, initial payment method and whether a
   registered `IRecurringPaymentProvider` exists; it never returns provider credentials or configuration.
+  A provider is only offered for subscriptions if the post-deploy seed has a `PaymentIntent.Subscription`
+  configuration row for it; Bachs (the only recurring provider) is seeded for NGN subscriptions as `PaymentLink`.
 - Customer purchase responses preserve provider-neutral structured instructions. Hosted Bachs/Credo checkout
   uses `paymentMethodType: PaymentLink` with `instructionFields.paymentLink`; SafeHaven bank transfer uses
   `accountNumber`, `bankName`, `accountName` and `providerReference`. Frontends never construct provider URLs
