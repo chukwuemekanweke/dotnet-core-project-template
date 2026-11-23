@@ -9,6 +9,7 @@
     { "name": "OBJECTSTORAGE__CLOUDFLARER2__ACCESSKEYID", "required": true, "allowEmpty": false, "maxBytes": 4096 },
     { "name": "OBJECTSTORAGE__CLOUDFLARER2__SECRETACCESSKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 },
     { "name": "NOTIFICATIONS__EMAIL__MAILTRAP__APITOKEN", "required": true, "allowEmpty": false, "maxBytes": 4096 },
-    { "name": "PAYMENTS__BACHS__APIKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 }
+    { "name": "PAYMENTS__BACHS__APIKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "OTEL_EXPORTER_OTLP_HEADERS", "required": false, "allowEmpty": false, "maxBytes": 4096 }
   ]
 }

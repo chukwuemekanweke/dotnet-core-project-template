@@ -10,7 +10,8 @@
 # - PostgreSQL is the existing pickly-postgres-1 container, reached over the pre-created internal Docker network
 #   "shared-postgres" (alias "postgres"). The host registry allows only that external network.
 # - The app network has a pinned subnet; WebAPI trusts forwarded headers only from its gateway.
-# - Telemetry export is off unless the host stack.env sets OTEL_EXPORTER_OTLP_ENDPOINT to a real collector.
+# - Telemetry goes to the OTLP endpoint/protocol in the host stack.env (Grafana Cloud's OTLP gateway); export is off
+#   when it is unset. The auth header is the optional OTEL_EXPORTER_OTLP_HEADERS runtime secret, never an env var.
 services:
   database-migrator:
     profiles: ["migration"]

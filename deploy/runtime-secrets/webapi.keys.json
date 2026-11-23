@@ -15,6 +15,7 @@
     { "name": "PAYMENTS__CREDO__SECRETKEY", "required": true, "allowEmpty": false, "maxBytes": 4096 },
     { "name": "PAYMENTS__SAFEHAVEN__CLIENTID", "required": true, "allowEmpty": false, "maxBytes": 4096 },
     { "name": "PAYMENTS__SAFEHAVEN__CLIENTASSERTION", "required": true, "allowEmpty": false, "maxBytes": 4096 },
-    { "name": "KYC__KYCAID__APIKEY", "required": false, "allowEmpty": false, "maxBytes": 4096 }
+    { "name": "KYC__KYCAID__APIKEY", "required": false, "allowEmpty": false, "maxBytes": 4096 },
+    { "name": "OTEL_EXPORTER_OTLP_HEADERS", "required": false, "allowEmpty": false, "maxBytes": 4096 }
   ]
 }
