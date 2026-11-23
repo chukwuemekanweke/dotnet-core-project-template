@@ -12,6 +12,8 @@
 # - The app network has a pinned subnet; WebAPI trusts forwarded headers only from its gateway.
 # - Telemetry goes to the OTLP endpoint/protocol in the host stack.env (Grafana Cloud's OTLP gateway); export is off
 #   when it is unset. The auth header is the optional OTEL_EXPORTER_OTLP_HEADERS runtime secret, never an env var.
+# - Non-secret Cloudflare R2 settings default to the shared R2 buckets; stack.env CLOUDFLARE_R2_* values
+#   override them. The R2 access key pair stays a runtime secret.
 services:
   database-migrator:
     profiles: ["migration"]
@@ -57,11 +59,11 @@ services:
       Authentication__Google__Enabled: ${GOOGLE_AUTHENTICATION_ENABLED:-false}
       Authentication__Google__ClientIds__0: ${GOOGLE_CLIENT_ID:-}
       Authentication__Google__FlowLifetime: 00:10:00
-      ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-}
-      ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-}
-      ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-}
-      ObjectStorage__CloudflareR2__PrivateBucketName: ${CLOUDFLARE_R2_PRIVATE_BUCKET_NAME:-}
-      ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-}
+      ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-https://9cbea96db2a9797d2ae6ec1bc93b4149.r2.cloudflarestorage.com}
+      ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-BackendProjectTemplate}
+      ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-prod-public-weur}
+      ObjectStorage__CloudflareR2__PrivateBucketName: ${CLOUDFLARE_R2_PRIVATE_BUCKET_NAME:-prod-private-weur}
+      ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-https://pub-0c671c99962543c1a440d1d9f1ce3a90.r2.dev}
       Kyc__Kycaid__Enabled: ${KYCAID_ENABLED:-false}
       Kyc__Kycaid__FormId: ${KYCAID_FORM_ID:-}
       Payments__Credo__PublicKey: ${CREDO_PUBLIC_KEY:-}
@@ -122,11 +124,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-}
-      ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-}
-      ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-}
-      ObjectStorage__CloudflareR2__PrivateBucketName: ${CLOUDFLARE_R2_PRIVATE_BUCKET_NAME:-}
-      ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-}
+      ObjectStorage__CloudflareR2__Endpoint: ${CLOUDFLARE_R2_ENDPOINT:-https://9cbea96db2a9797d2ae6ec1bc93b4149.r2.cloudflarestorage.com}
+      ObjectStorage__CloudflareR2__ApplicationFolder: ${CLOUDFLARE_R2_APPLICATION_FOLDER:-BackendProjectTemplate}
+      ObjectStorage__CloudflareR2__PublicBucketName: ${CLOUDFLARE_R2_PUBLIC_BUCKET_NAME:-prod-public-weur}
+      ObjectStorage__CloudflareR2__PrivateBucketName: ${CLOUDFLARE_R2_PRIVATE_BUCKET_NAME:-prod-private-weur}
+      ObjectStorage__CloudflareR2__PublicBaseUrl: ${CLOUDFLARE_R2_PUBLIC_BASE_URL:-https://pub-0c671c99962543c1a440d1d9f1ce3a90.r2.dev}
       Messaging__RabbitMq__ServiceName: BackendProjectTemplate.Consumer
       Messaging__RabbitMq__HostName: ${RABBITMQ_HOSTNAME:-}
       Messaging__RabbitMq__Port: ${RABBITMQ_PORT:-5672}
