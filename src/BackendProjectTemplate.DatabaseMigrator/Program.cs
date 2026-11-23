@@ -1,6 +1,7 @@
 using BackendProjectTemplate.DatabaseMigrator;
 using BackendProjectTemplate.Infrastructure.Authentication;
 using BackendProjectTemplate.Infrastructure.Configuration;
+using BackendProjectTemplate.Infrastructure.Observability;
 using BackendProjectTemplate.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -17,6 +18,13 @@ builder.AddProductionSecrets(
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddPostgresWritePersistence(builder.Configuration);
 builder.Services.AddIdentityUserManagement(builder.Configuration);
+// Telemetry is wired only when an OTLP endpoint is configured (deployments also set OpenTelemetry:ServiceName; this
+// project ships no appsettings.json). Disposing the host below shuts the providers down, which flushes the batch
+// exporters before this short-lived process exits.
+if (!string.IsNullOrWhiteSpace(builder.Configuration["OpenTelemetry:OtlpEndpoint"]))
+{
+    builder.Services.AddBackendTelemetry(builder.Configuration);
+}
 builder.Services.AddSingleton(serviceProvider => new DatabaseMigrationRunner(
     cancellationToken => serviceProvider.InitializeDatabaseAsync(
         serviceProvider.GetRequiredService<IHostEnvironment>().ContentRootPath,

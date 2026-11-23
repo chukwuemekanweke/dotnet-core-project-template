@@ -12,6 +12,7 @@ public static class ServiceCollectionExtensions
     {
         var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
         var otlpProtocol = configuration["OTEL_EXPORTER_OTLP_PROTOCOL"];
+        var otlpHeaders = configuration[OtlpExporterConfigurator.HeadersConfigurationKey];
 
         services
             .AddOpenTelemetry()
@@ -28,7 +29,7 @@ public static class ServiceCollectionExtensions
 
                 if (!string.IsNullOrWhiteSpace(otlpEndpoint))
                 {
-                    tracing.AddOtlpExporter(options => options.Endpoint = OtlpEndpointResolver.Resolve(otlpEndpoint, otlpProtocol, "traces"));
+                    tracing.AddOtlpExporter(options => OtlpExporterConfigurator.Configure(options, otlpEndpoint, otlpProtocol, otlpHeaders, "traces"));
                 }
             })
             .WithMetrics(metrics =>
@@ -39,7 +40,7 @@ public static class ServiceCollectionExtensions
 
                 if (!string.IsNullOrWhiteSpace(otlpEndpoint))
                 {
-                    metrics.AddOtlpExporter(options => options.Endpoint = OtlpEndpointResolver.Resolve(otlpEndpoint, otlpProtocol, "metrics"));
+                    metrics.AddOtlpExporter(options => OtlpExporterConfigurator.Configure(options, otlpEndpoint, otlpProtocol, otlpHeaders, "metrics"));
                 }
             });
 
@@ -55,7 +56,7 @@ public static class ServiceCollectionExtensions
                     options.ParseStateValues = true;
                     options.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName));
                     options.AddOtlpExporter(exporterOptions =>
-                        exporterOptions.Endpoint = OtlpEndpointResolver.Resolve(otlpEndpoint, otlpProtocol, "logs"));
+                        OtlpExporterConfigurator.Configure(exporterOptions, otlpEndpoint, otlpProtocol, otlpHeaders, "logs"));
                 });
             });
         }
