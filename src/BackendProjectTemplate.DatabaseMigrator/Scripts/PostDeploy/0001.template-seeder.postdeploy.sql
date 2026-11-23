@@ -435,6 +435,7 @@ WITH provider_config_source AS (
         cfg."IsEnabled"
     FROM (VALUES
         ('bachs', 'NGN', 1, 1, TRUE),
+        ('bachs', 'NGN', 2, 1, TRUE),
         ('safehaven', 'NGN', 1, 2, TRUE),
         ('safehaven', 'NGN', 2, 2, TRUE),
         ('credo', 'NGN', 1, 1, TRUE),
