@@ -162,7 +162,7 @@ public sealed class When_CoordinatingConcurrentAdminPaymentAnalytics_Should
     private static PaymentAnalyticsQuery Query(Guid tenantId) => new(
         new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 30), null, null, null, null, tenantId);
 
-    private static PaymentAnalyticsSummaryReadModel EmptySummary() => new(0, 0, 0, 0, []);
+    private static PaymentAnalyticsSummaryReadModel EmptySummary() => new(0, 0, 0, 0, 0, []);
 
     private static async Task WaitUntilAsync(Func<bool> condition)
     {

@@ -66,6 +66,7 @@ public sealed record AdminPaymentDetailCoreReadModel(
     string PaymentProviderName,
     string PaymentProviderKey,
     decimal Amount,
+    decimal? AmountPaid,
     Guid CurrencyId,
     string CurrencyCode,
     PaymentIntent PaymentIntent,

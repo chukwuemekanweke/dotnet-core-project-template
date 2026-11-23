@@ -17,7 +17,7 @@ public sealed class When_GettingAdminPaymentDetail_Should
             .Returns(new AdminPaymentDetailReadModel(
                 new AdminPaymentDetailCoreReadModel(
                     id, "merchant-1", "provider-1", Guid.CreateVersion7(), Guid.CreateVersion7(), "Ada Lovelace",
-                    Guid.CreateVersion7(), Guid.CreateVersion7(), "Bachs", "bachs", 125000m, Guid.CreateVersion7(), "NGN",
+                    Guid.CreateVersion7(), Guid.CreateVersion7(), "Bachs", "bachs", 125000m, null, Guid.CreateVersion7(), "NGN",
                     PaymentIntent.Subscription, PaymentMethodType.Card, PaymentStatus.Failed, now, now.AddMinutes(1), null,
                     now.AddMinutes(1), now.AddHours(1), now.AddSeconds(30), "unsafe diagnostic with spaces", "secret provider detail"),
                 [new AdminPaymentWebhookReadModel(

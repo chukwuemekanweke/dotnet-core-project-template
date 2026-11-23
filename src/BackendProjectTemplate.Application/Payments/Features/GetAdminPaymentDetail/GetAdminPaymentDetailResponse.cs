@@ -12,6 +12,7 @@ public sealed record GetAdminPaymentDetailResponse(
     string PaymentProviderName,
     string PaymentProviderKey,
     decimal Amount,
+    decimal? AmountPaid,
     Guid CurrencyId,
     string CurrencyCode,
     string PaymentIntent,

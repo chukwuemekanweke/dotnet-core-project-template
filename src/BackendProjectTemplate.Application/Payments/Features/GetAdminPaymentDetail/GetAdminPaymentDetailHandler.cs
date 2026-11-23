@@ -36,6 +36,7 @@ public sealed class GetAdminPaymentDetailHandler(IPaymentAdministrationReadModel
             payment.PaymentProviderName,
             payment.PaymentProviderKey,
             payment.Amount,
+            payment.AmountPaid,
             payment.CurrencyId,
             payment.CurrencyCode,
             payment.PaymentIntent.ToString(),

@@ -17,4 +17,5 @@ internal sealed record BachsCheckoutCharge(
     [property: JsonPropertyName("payment_id")] string? PaymentId,
     [property: JsonPropertyName("status")] string? Status,
     [property: JsonPropertyName("amount")] string? Amount,
-    [property: JsonPropertyName("currency")] string? Currency);
+    [property: JsonPropertyName("currency")] string? Currency,
+    [property: JsonPropertyName("amount_paid")] string? AmountPaid = null);

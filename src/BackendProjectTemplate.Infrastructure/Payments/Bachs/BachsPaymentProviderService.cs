@@ -203,6 +203,19 @@ internal sealed class BachsPaymentProviderService(
                 KnownPaymentTransactionChangeReasons.ReconciliationConfirmedSuccess);
         }
 
+        if ((EqualsValue(response.Status, BachsCheckoutStatuses.Expired) ||
+             EqualsValue(response.Status, BachsCheckoutStatuses.Cancelled)) &&
+            TryGetUnderpaidAmount(response.Charge, request) is { } amountPaid)
+        {
+            // An underpaid crypto charge stays payable until the checkout closes, so it is only settled here.
+            return new PaymentProviderVerificationResult(
+                PaymentProviderVerificationStatus.Underpaid,
+                providerReference,
+                "provider_reported_underpayment",
+                KnownPaymentTransactionChangeReasons.ReconciliationConfirmedUnderpayment,
+                amountPaid);
+        }
+
         if (EqualsValue(response.Status, BachsCheckoutStatuses.Expired))
         {
             return new PaymentProviderVerificationResult(
@@ -223,6 +236,29 @@ internal sealed class BachsPaymentProviderService(
 
         // A failed collection does not close a Bachs checkout; the buyer may retry until expiry.
         return Processing(providerReference);
+    }
+
+    private static decimal? TryGetUnderpaidAmount(
+        BachsCheckoutCharge? charge,
+        PaymentProviderVerificationRequest request)
+    {
+        if (charge is null ||
+            !EqualsValue(charge.Status, BachsPaymentStatuses.Underpaid) ||
+            string.IsNullOrWhiteSpace(charge.AmountPaid) ||
+            !string.Equals(NormalizeOptional(charge.Currency), request.CurrencyCode, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        try
+        {
+            var amountPaid = BachsAmountConverter.ToMinorUnits(charge.AmountPaid, request.CurrencyCode);
+            return amountPaid > 0 && amountPaid < request.Amount ? amountPaid : null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private static string? ValidateTransactionIdentity(

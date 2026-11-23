@@ -20,7 +20,9 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
                 TransactionCount = group.LongCount(),
                 SuccessfulCount = group.LongCount(item => item.PaymentStatus == PaymentStatus.Succeeded),
                 UnsuccessfulCount = group.LongCount(item => item.PaymentStatus == PaymentStatus.Failed ||
-                    item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired),
+                    item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired ||
+                    item.PaymentStatus == PaymentStatus.Underpaid),
+                UnderpaidCount = group.LongCount(item => item.PaymentStatus == PaymentStatus.Underpaid),
                 ProcessingCount = group.LongCount(item => item.PaymentStatus == PaymentStatus.PendingInitiation ||
                     item.PaymentStatus == PaymentStatus.Initiated)
             })
@@ -36,18 +38,21 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
                     groupItems.Key.CurrencyCode,
                     groupItems.LongCount(),
                     groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Succeeded),
+                    groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Underpaid),
                     groupItems.Sum(item => item.Amount),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Succeeded ? item.Amount : 0m),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Failed ? item.Amount : 0m),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated ? item.Amount : 0m),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Cancelled ? item.Amount : 0m),
-                    groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m)))
+                    groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m),
+                    groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Underpaid ? item.AmountPaid ?? 0m : 0m)))
             .ToListAsync(cancellationToken);
 
         return new PaymentAnalyticsSummaryReadModel(
             totals?.TransactionCount ?? 0,
             totals?.SuccessfulCount ?? 0,
             totals?.UnsuccessfulCount ?? 0,
+            totals?.UnderpaidCount ?? 0,
             totals?.ProcessingCount ?? 0,
             currencies);
     }
@@ -110,14 +115,16 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
                     groupItems.Key.CurrencyCode,
                     groupItems.LongCount(),
                     groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Succeeded),
-                    groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Failed || item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired),
+                    groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Failed || item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired || item.PaymentStatus == PaymentStatus.Underpaid),
+                    groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Underpaid),
                     groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated),
                     groupItems.Sum(item => item.Amount),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Succeeded ? item.Amount : 0m),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Failed ? item.Amount : 0m),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated ? item.Amount : 0m),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Cancelled ? item.Amount : 0m),
-                    groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m)))
+                    groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m),
+                    groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Underpaid ? item.AmountPaid ?? 0m : 0m)))
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<PaymentAnalyticsIntentRow>> GetIntentsAsync(
@@ -135,14 +142,16 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
                     groupItems.Key.CurrencyCode,
                     groupItems.LongCount(),
                     groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Succeeded),
-                    groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Failed || item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired),
+                    groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Failed || item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired || item.PaymentStatus == PaymentStatus.Underpaid),
+                    groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Underpaid),
                     groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated),
                     groupItems.Sum(item => item.Amount),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Succeeded ? item.Amount : 0m),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Failed ? item.Amount : 0m),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated ? item.Amount : 0m),
                     groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Cancelled ? item.Amount : 0m),
-                    groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m)))
+                    groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m),
+                    groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Underpaid ? item.AmountPaid ?? 0m : 0m)))
             .ToListAsync(cancellationToken);
 
     private async Task<IReadOnlyList<PaymentAnalyticsTimelineRow>> GetTimelineByDayAsync(
@@ -200,21 +209,24 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
                     CurrencyCode = groupItems.Key.CurrencyCode,
                     TransactionCount = groupItems.LongCount(),
                     SuccessfulCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Succeeded),
-                    UnsuccessfulCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Failed || item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired),
+                    UnsuccessfulCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Failed || item.PaymentStatus == PaymentStatus.Cancelled || item.PaymentStatus == PaymentStatus.Expired || item.PaymentStatus == PaymentStatus.Underpaid),
+                    UnderpaidCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.Underpaid),
                     ProcessingCount = groupItems.LongCount(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated),
                     AttemptedVolume = groupItems.Sum(item => item.Amount),
                     SuccessfulVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Succeeded ? item.Amount : 0m),
                     FailedVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Failed ? item.Amount : 0m),
                     ProcessingVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.PendingInitiation || item.PaymentStatus == PaymentStatus.Initiated ? item.Amount : 0m),
                     CancelledVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Cancelled ? item.Amount : 0m),
-                    ExpiredVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m)
+                    ExpiredVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Expired ? item.Amount : 0m),
+                    UnderpaidVolume = groupItems.Sum(item => item.PaymentStatus == PaymentStatus.Underpaid ? item.AmountPaid ?? 0m : 0m)
                 })
             .ToListAsync(cancellationToken);
 
         return rows.Select(row => new PaymentAnalyticsTimelineRow(
                 DateOnly.FromDateTime(row.PeriodStart), row.CurrencyId, row.CurrencyCode, row.TransactionCount,
-                row.SuccessfulCount, row.UnsuccessfulCount, row.ProcessingCount, row.AttemptedVolume,
-                row.SuccessfulVolume, row.FailedVolume, row.ProcessingVolume, row.CancelledVolume, row.ExpiredVolume))
+                row.SuccessfulCount, row.UnsuccessfulCount, row.UnderpaidCount, row.ProcessingCount,
+                row.AttemptedVolume, row.SuccessfulVolume, row.FailedVolume, row.ProcessingVolume,
+                row.CancelledVolume, row.ExpiredVolume, row.UnderpaidVolume))
             .ToArray();
     }
 
@@ -244,6 +256,7 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
         public long TransactionCount { get; init; }
         public long SuccessfulCount { get; init; }
         public long UnsuccessfulCount { get; init; }
+        public long UnderpaidCount { get; init; }
         public long ProcessingCount { get; init; }
         public decimal AttemptedVolume { get; init; }
         public decimal SuccessfulVolume { get; init; }
@@ -251,6 +264,7 @@ public sealed class PaymentAnalyticsReadModelRepository(AppReadDbContext dbConte
         public decimal ProcessingVolume { get; init; }
         public decimal CancelledVolume { get; init; }
         public decimal ExpiredVolume { get; init; }
+        public decimal UnderpaidVolume { get; init; }
     }
 
     private sealed class TimelineSource

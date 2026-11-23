@@ -5,5 +5,6 @@ public enum PaymentProviderVerificationStatus
     Failed = 1,
     Succeeded = 2,
     Processing = 3,
-    Expired = 4
+    Expired = 4,
+    Underpaid = 5
 }

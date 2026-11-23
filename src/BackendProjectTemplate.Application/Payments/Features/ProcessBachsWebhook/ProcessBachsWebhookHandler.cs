@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Payments.Common;
 using BackendProjectTemplate.Application.Payments.Features.ProcessPaymentWebhook;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Contracts.Payments;
@@ -205,6 +206,14 @@ public sealed class ProcessBachsWebhookHandler(
                     verification.FailureReason,
                     verification.StatusChangeReason);
                 break;
+            case PaymentProviderVerificationStatus.Underpaid:
+                await UnderpaidPaymentSettlement.ApplyAsync(
+                    paymentTransaction,
+                    verification,
+                    eventPublisher,
+                    now,
+                    cancellationToken);
+                break;
             case PaymentProviderVerificationStatus.Processing:
                 paymentTransaction.RecordStatusCheck(now);
                 break;
@@ -237,6 +246,8 @@ public sealed class ProcessBachsWebhookHandler(
     private static bool IsSupportedEvent(string eventName) =>
         eventName is BachsWebhookEvents.CollectionSucceeded or
             BachsWebhookEvents.CollectionFailed or
+            BachsWebhookEvents.CollectionUnderpaid or
+            BachsWebhookEvents.CheckoutCompleted or
             BachsWebhookEvents.CheckoutExpired or
             BachsWebhookEvents.PaymentMethodSaved;
 

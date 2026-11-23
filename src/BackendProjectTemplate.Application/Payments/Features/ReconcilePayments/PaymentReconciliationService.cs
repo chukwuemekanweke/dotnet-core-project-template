@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Application.Payments.Common;
 using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Exceptions;
@@ -127,6 +128,24 @@ public sealed class PaymentReconciliationService(
                                 paymentProvider.ProviderKey,
                                 transaction.MerchantReference,
                                 Contracts.Payments.PaymentStatus.Expired.ToString())));
+                    break;
+                case PaymentProviderVerificationStatus.Underpaid:
+                    await UnderpaidPaymentSettlement.ApplyAsync(
+                        transaction,
+                        verificationResult,
+                        eventPublisher,
+                        now,
+                        cancellationToken);
+                    customTelemetryContext.AddCustomEvent(
+                        Observability.EventNames.Payments.ReconciliationFailed,
+                        ObservabilityEventProperties.Create(
+                            AnonymousActorContext,
+                            transaction.StakeholderId,
+                            verificationResult.FailureReason,
+                            CreateReconciliationProperties(
+                                paymentProvider.ProviderKey,
+                                transaction.MerchantReference,
+                                Contracts.Payments.PaymentStatus.Underpaid.ToString())));
                     break;
                 case PaymentProviderVerificationStatus.Processing:
                     break;

@@ -5,4 +5,5 @@ internal static class BachsPaymentStatuses
     public const string Succeeded = "succeeded";
     public const string Failed = "failed";
     public const string Canceled = "canceled";
+    public const string Underpaid = "underpaid";
 }

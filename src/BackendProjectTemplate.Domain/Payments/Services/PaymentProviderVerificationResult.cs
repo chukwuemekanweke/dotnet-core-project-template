@@ -4,4 +4,5 @@ public sealed record PaymentProviderVerificationResult(
     PaymentProviderVerificationStatus VerificationStatus,
     string? ProviderReference,
     string? FailureReason,
-    string? StatusChangeReason);
+    string? StatusChangeReason,
+    decimal? AmountPaid = null);

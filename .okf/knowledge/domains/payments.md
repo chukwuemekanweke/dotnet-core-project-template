@@ -47,6 +47,16 @@ status: stable
   exact major-unit decimal strings and verifies merchant reference, currency and amount before success.
   Bachs webhook signatures cover the timestamp plus original raw request bytes, prefer the V2
   multi-signature header, and enforce a five-minute default tolerance.
+- Bachs webhooks are only triggers: every supported event (`collection.succeeded|failed|underpaid`,
+  `checkout.completed|expired`, plus `payment_method.saved`) re-verifies the checkout through
+  `GET /v1/checkout-sessions/{id}`; others are recorded and ignored. Webhook bodies use different status
+  vocabularies (e.g. `paid`, uppercase charge statuses) from the API object, so never derive state from them.
+- Underpayment (Bachs documents it for crypto) stays payable while the checkout is open, so it is settled only
+  when the checkout is `expired`/`cancelled` with an `underpaid` charge whose `amount_paid` is a true partial
+  amount. The transaction becomes terminal `PaymentStatus.Underpaid` with `AmountPaid`.
+  `UnderpaidPaymentSettlement` (shared by the webhook handler and reconciliation) credits wallet top-ups with
+  the collected amount and never fulfils subscriptions: those stay `Underpaid` for administrators (admin
+  payments filter/detail) to refund or settle with the provider by hand.
 - Wallet: `InitiatePayment`, wallet transactions, wallet top-up transaction detail, `CreditWallet` (triggered async, see below).
 - Billing ownership: `BillingAccount` is the tenant-scoped commercial ownership aggregate. Each tenant
   owner and each tenant/stakeholder owner pair has one retained account, enforced by PostgreSQL partial
@@ -78,8 +88,11 @@ status: stable
   inclusive UTC `DateOnly` range is translated to an index-friendly half-open `CreatedAtUtc` predicate.
   `IPaymentAnalyticsReadModelRepository` performs conditional counts/sums and grouping in PostgreSQL;
   Application fills bounded missing timeline buckets. Monetary results always remain grouped by
-  currency. Success rate uses only terminal outcomes (succeeded, failed, cancelled, expired), while
-  pending/initiated payments are processing. Endpoint-specific `IJsonCache` entries include every
+  currency. Success rate uses only terminal outcomes: succeeded is successful, while failed, cancelled,
+  expired and underpaid are unsuccessful; pending/initiated payments are processing. Underpaid counts are
+  exposed explicitly as a subset of unsuccessful counts, and underpaid volume uses the collected
+  `AmountPaid` while attempted volume continues to use the requested `Amount`. Endpoint-specific
+  `IJsonCache` entries include every
   effective filter and tenant/global scope, use short configurable TTLs, fall back to PostgreSQL on
   Redis failure, and use a reference-counted per-process keyed lock for identical misses. Lock entries
   remain registered while held or awaited and are removed by the final releaser, preventing parallel

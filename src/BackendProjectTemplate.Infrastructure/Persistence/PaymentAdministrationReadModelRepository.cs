@@ -73,6 +73,7 @@ public sealed class PaymentAdministrationReadModelRepository(AppReadDbContext db
                 item.PaymentProviderName,
                 item.PaymentProviderKey,
                 item.Amount,
+                item.AmountPaid,
                 item.CurrencyId,
                 item.CurrencyCode,
                 item.PaymentIntent,
@@ -207,6 +208,7 @@ public sealed class PaymentAdministrationReadModelRepository(AppReadDbContext db
             PaymentProviderName = provider.ProviderName,
             PaymentProviderKey = provider.ProviderKey,
             Amount = payment.Amount,
+            AmountPaid = payment.AmountPaid,
             CurrencyId = payment.CurrencyId,
             CurrencyCode = currency.CurrencyCode,
             PaymentIntent = payment.PaymentIntent,
@@ -306,6 +308,7 @@ public sealed class PaymentAdministrationReadModelRepository(AppReadDbContext db
         public string PaymentProviderName { get; init; } = string.Empty;
         public string PaymentProviderKey { get; init; } = string.Empty;
         public decimal Amount { get; init; }
+        public decimal? AmountPaid { get; init; }
         public Guid CurrencyId { get; init; }
         public string CurrencyCode { get; init; } = string.Empty;
         public PaymentIntent PaymentIntent { get; init; }
