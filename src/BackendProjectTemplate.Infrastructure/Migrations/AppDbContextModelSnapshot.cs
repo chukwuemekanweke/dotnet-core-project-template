@@ -3003,6 +3003,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("PaymentTransactionId")
                         .HasColumnType("uuid");
 
@@ -3013,6 +3016,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.Property<Guid>("PlanId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<Guid>("SubscriptionId")
                         .HasColumnType("uuid");
@@ -3041,7 +3049,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "BillingAccountId");
 
-                    b.HasIndex("TenantId", "InitiatedByStakeholderId");
+                    b.HasIndex("TenantId", "InitiatedByStakeholderId", "OperationId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_SubscriptionPurchases_TenantId_InitiatedByStakeholderId_OperationId");
 
                     b.ToTable("SubscriptionPurchases", "payments", t =>
                         {

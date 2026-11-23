@@ -3,6 +3,7 @@ using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
+using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using BackendProjectTemplate.Domain.Subscriptions.Exceptions;
 using BackendProjectTemplate.Domain.Subscriptions.Specifications;
@@ -14,9 +15,12 @@ public sealed class PurchaseSubscriptionHandler(
     IRepository<SubscriptionPlan> planRepository,
     IRepository<SubscriptionAggregate> subscriptionRepository,
     IRepository<SubscriptionPurchase> purchaseRepository,
+    IRepository<PaymentTransaction> paymentRepository,
+    IRepository<PaymentProvider> paymentProviderRepository,
     IBillingAccountResolver billingAccountResolver,
     PaymentInitiationService paymentInitiationService,
     ICustomTelemetryContext customTelemetryContext,
+    IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
     public async Task<PurchaseSubscriptionResult> HandleAsync(
@@ -27,6 +31,12 @@ public sealed class PurchaseSubscriptionHandler(
             ?? throw new InvalidOperationException("Authenticated tenant id is required to purchase a subscription.");
         var stakeholderId = command.ActorContext.StakeholderId
             ?? throw new InvalidOperationException("Authenticated stakeholder id is required to purchase a subscription.");
+        if (command.IdempotencyKey == Guid.Empty)
+        {
+            throw new ArgumentException("A non-empty idempotency key is required.", nameof(command));
+        }
+
+        var requestFingerprint = PurchaseSubscriptionRequestFingerprint.Compute(command);
         var plan = await planRepository.FirstOrDefaultAsync(
             new ActiveSubscriptionPlanByIdSpecification(command.PlanId),
             cancellationToken)
@@ -45,6 +55,14 @@ public sealed class PurchaseSubscriptionHandler(
             ownerStakeholderId,
             cancellationToken);
 
+        var existingPurchase = await purchaseRepository.FirstOrDefaultAsync(
+            new SubscriptionPurchaseByOperationIdSpecification(tenantId, stakeholderId, command.IdempotencyKey),
+            cancellationToken);
+        if (existingPurchase is not null)
+        {
+            return await CreateReplayResultAsync(existingPurchase, requestFingerprint, cancellationToken);
+        }
+
         // One active entitlement per BillingAccount: do not take money for a purchase that could never be
         // fulfilled because the account already holds a current or scheduled entitlement. Fulfillment
         // re-checks this at payment confirmation, where the PostgreSQL exclusion constraint is authoritative.
@@ -58,39 +76,58 @@ public sealed class PurchaseSubscriptionHandler(
 
         SubscriptionAggregate? subscription = null;
         SubscriptionPurchase? purchase = null;
-        var paymentResult = await paymentInitiationService.InitiateAsync(
-            new InitiatePaymentCommand(
-                plan.Price,
-                plan.CurrencyId,
-                PaymentIntent.Subscription,
-                command.PaymentProviderId,
-                command.ActorContext,
-                new TrustedSubscriptionPaymentContext(
-                    billingAccount.Id,
-                    command.AutoRenew,
-                    command.AutoRenew ? timeProvider.GetUtcNow() : null)),
-            async (paymentTransaction, token) =>
+        InitiatePaymentResult paymentResult;
+        try
+        {
+            paymentResult = await paymentInitiationService.InitiateAsync(
+                new InitiatePaymentCommand(
+                    plan.Price,
+                    plan.CurrencyId,
+                    PaymentIntent.Subscription,
+                    command.PaymentProviderId,
+                    command.ActorContext,
+                    new TrustedSubscriptionPaymentContext(
+                        billingAccount.Id,
+                        command.AutoRenew,
+                        command.AutoRenew ? timeProvider.GetUtcNow() : null)),
+                async (paymentTransaction, token) =>
+                {
+                    var operationId = Guid.CreateVersion7();
+                    subscription = SubscriptionAggregate.CreatePending(
+                        tenantId,
+                        billingAccount.Id,
+                        plan.Id,
+                        command.AutoRenew,
+                        timeProvider.GetUtcNow(),
+                        operationId,
+                        stakeholderId.ToString());
+                    purchase = SubscriptionPurchase.Create(
+                        tenantId,
+                        billingAccount.Id,
+                        subscription.Id,
+                        plan,
+                        paymentTransaction.Id,
+                        stakeholderId,
+                        command.IdempotencyKey,
+                        requestFingerprint);
+                    await subscriptionRepository.AddAsync(subscription, token);
+                    await purchaseRepository.AddAsync(purchase, token);
+                },
+                cancellationToken);
+        }
+        catch (SubscriptionPurchaseOperationConflictException)
+        {
+            unitOfWork.DiscardChanges();
+            existingPurchase = await purchaseRepository.FirstOrDefaultAsync(
+                new SubscriptionPurchaseByOperationIdSpecification(tenantId, stakeholderId, command.IdempotencyKey),
+                cancellationToken);
+            if (existingPurchase is null)
             {
-                var operationId = Guid.CreateVersion7();
-                subscription = SubscriptionAggregate.CreatePending(
-                    tenantId,
-                    billingAccount.Id,
-                    plan.Id,
-                    command.AutoRenew,
-                    timeProvider.GetUtcNow(),
-                    operationId,
-                    stakeholderId.ToString());
-                purchase = SubscriptionPurchase.Create(
-                    tenantId,
-                    billingAccount.Id,
-                    subscription.Id,
-                    plan,
-                    paymentTransaction.Id,
-                    stakeholderId);
-                await subscriptionRepository.AddAsync(subscription, token);
-                await purchaseRepository.AddAsync(purchase, token);
-            },
-            cancellationToken);
+                throw;
+            }
+
+            return await CreateReplayResultAsync(existingPurchase, requestFingerprint, cancellationToken);
+        }
 
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Subscriptions.PurchaseInitiated,
@@ -115,5 +152,32 @@ public sealed class PurchaseSubscriptionHandler(
             paymentResult.ExpiresAtUtc,
             paymentResult.PaymentMethodType,
             paymentResult.InstructionFields);
+    }
+
+    private async Task<PurchaseSubscriptionResult> CreateReplayResultAsync(
+        SubscriptionPurchase purchase,
+        string requestFingerprint,
+        CancellationToken cancellationToken)
+    {
+        if (!string.Equals(purchase.RequestFingerprint, requestFingerprint, StringComparison.Ordinal))
+        {
+            throw new SubscriptionPurchaseIdempotencyKeyReusedException(
+                "The idempotency key was already used for a different subscription purchase request.");
+        }
+
+        var payment = await paymentRepository.GetByIdAsync(purchase.PaymentTransactionId, cancellationToken)
+            ?? throw new InvalidOperationException($"Payment '{purchase.PaymentTransactionId}' was not found.");
+        var provider = await paymentProviderRepository.GetByIdAsync(payment.PaymentProviderId, cancellationToken)
+            ?? throw new InvalidOperationException($"Payment provider '{payment.PaymentProviderId}' was not found.");
+        return new PurchaseSubscriptionResult(
+            purchase.SubscriptionId,
+            purchase.Id,
+            payment.MerchantReference,
+            payment.PaymentStatus,
+            provider.Id,
+            provider.ProviderName,
+            payment.ExpiresAtUtc,
+            payment.PaymentMethodType,
+            payment.ProviderPayloadMetadata);
     }
 }

@@ -8,4 +8,5 @@ public sealed record PurchaseSubscriptionCommand(
     Guid PaymentProviderId,
     BillingAccountOwnerType BillingAccountOwnerType,
     bool AutoRenew,
+    Guid IdempotencyKey,
     ActorContext ActorContext);

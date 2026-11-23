@@ -102,9 +102,12 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
             planRepository,
             subscriptionRepository,
             purchaseRepository,
+            paymentRepository,
+            providerRepository,
             billingAccountResolver,
             paymentInitiationService,
             telemetry,
+            unitOfWork,
             new FakeTimeProvider());
 
         await handler.HandleAsync(
@@ -113,6 +116,7 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
                 provider.Id,
                 BillingAccountOwnerType.Stakeholder,
                 true,
+                Guid.CreateVersion7(),
                 new ActorContext(stakeholder.Id, tenantId, "correlation", "flow")),
             CancellationToken.None);
 

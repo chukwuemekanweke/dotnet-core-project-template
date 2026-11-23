@@ -1,6 +1,9 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
 using BackendProjectTemplate.Application.Subscriptions.Features.CancelSubscriptionAtPeriodEnd;
+using BackendProjectTemplate.Application.Subscriptions.Features.GetBillingHistory;
 using BackendProjectTemplate.Application.Subscriptions.Features.GetCurrentSubscription;
+using BackendProjectTemplate.Application.Subscriptions.Features.GetSubscriptionPurchaseStatus;
+using BackendProjectTemplate.Application.Subscriptions.Features.ListEligiblePaymentProviders;
 using BackendProjectTemplate.Application.Subscriptions.Features.ListSubscriptionPlans;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
@@ -22,6 +25,7 @@ using Shouldly;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace BackendProjectTemplate.WebAPI.IntegrationTests.Subscriptions;
 
@@ -44,10 +48,14 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
     private Guid _countryCurrencyId;
     private Guid _providerId;
     private Guid _providerConfigurationId;
+    private Guid _ineligibleProviderId;
+    private Guid _ineligibleProviderConfigurationId;
     private Guid _planId;
+    private Guid _inactivePlanId;
     private Guid _subscriptionId;
     private Guid _purchaseId;
     private Guid _paymentTransactionId;
+    private Guid _purchaseIdempotencyKey;
 
     public async Task InitializeAsync()
     {
@@ -68,11 +76,32 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
     [Fact]
     public async Task ListPurchaseQueryAndCancelSubscription()
     {
+        await ThenPlansCanBeListedAnonymously();
         await ThenPlanCanBeListed();
+        await ThenEligiblePaymentProvidersCanBeListed();
         await WhenPurchasingPlan();
+        await ThenPurchaseRetriesAreIdempotent();
+        await ThenPurchaseIsPending();
         await ThenPendingSubscriptionCanBeQueried();
         await GivenPurchaseIsFulfilled();
+        await ThenPurchaseIsActiveAndBillingHistoryIsAvailable();
         await ThenCancellationCanBeScheduled();
+    }
+
+    private async Task ThenPlansCanBeListedAnonymously()
+    {
+        using var anonymousClient = _factory.CreateClient();
+        anonymousClient.DefaultRequestHeaders.Add("X-Tenant-Id", _tenantId.ToString());
+        using var response = await anonymousClient.GetAsync(EndpointUrl.SubscriptionPlans.V1);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var content = await response.Content.ReadAsStringAsync();
+        var plans = JsonSerializer.Deserialize<IReadOnlyList<ListSubscriptionPlansResponse>>(
+            content,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        plans.ShouldNotBeNull();
+        plans.ShouldContain(plan => plan.Id == _planId);
+        plans.ShouldNotContain(plan => plan.Id == _inactivePlanId);
+        content.ShouldNotContain("isActive", Case.Insensitive);
     }
 
     private async Task ThenPlanCanBeListed()
@@ -86,9 +115,13 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
 
     private async Task WhenPurchasingPlan()
     {
-        using var response = await _client.PostAsJsonAsync(
-            EndpointUrl.Subscriptions.PurchasesV1,
-            new PurchaseSubscriptionRequest(_planId, _providerId, "Stakeholder", true));
+        using var request = new HttpRequestMessage(HttpMethod.Post, EndpointUrl.Subscriptions.PurchasesV1)
+        {
+            Content = JsonContent.Create(new PurchaseSubscriptionRequest(_planId, _providerId, "Stakeholder", true))
+        };
+        _purchaseIdempotencyKey = Guid.CreateVersion7();
+        request.Headers.Add("Idempotency-Key", _purchaseIdempotencyKey.ToString());
+        using var response = await _client.SendAsync(request);
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var payload = await response.Content.ReadFromJsonAsync<PurchaseSubscriptionResponse>();
         payload.ShouldNotBeNull();
@@ -108,6 +141,58 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         payment.CurrencyId.ShouldBe(_currencyId);
     }
 
+    private async Task ThenPurchaseRetriesAreIdempotent()
+    {
+        using var replayRequest = new HttpRequestMessage(HttpMethod.Post, EndpointUrl.Subscriptions.PurchasesV1)
+        {
+            Content = JsonContent.Create(new PurchaseSubscriptionRequest(_planId, _providerId, "Stakeholder", true))
+        };
+        replayRequest.Headers.Add("Idempotency-Key", _purchaseIdempotencyKey.ToString());
+        using var replayResponse = await _client.SendAsync(replayRequest);
+        replayResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var replay = await replayResponse.Content.ReadFromJsonAsync<PurchaseSubscriptionResponse>();
+        replay.ShouldNotBeNull();
+        replay.PurchaseId.ShouldBe(_purchaseId);
+        replay.SubscriptionId.ShouldBe(_subscriptionId);
+
+        using var changedRequest = new HttpRequestMessage(HttpMethod.Post, EndpointUrl.Subscriptions.PurchasesV1)
+        {
+            Content = JsonContent.Create(new PurchaseSubscriptionRequest(_planId, _providerId, "Stakeholder", false))
+        };
+        changedRequest.Headers.Add("Idempotency-Key", _purchaseIdempotencyKey.ToString());
+        using var changedResponse = await _client.SendAsync(changedRequest);
+        changedResponse.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    private async Task ThenEligiblePaymentProvidersCanBeListed()
+    {
+        using var response = await _client.GetAsync(
+            $"{EndpointUrl.SubscriptionPlans.V1}/{_planId}/payment-providers?BillingAccountOwnerType=Stakeholder");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var providers = await response.Content.ReadFromJsonAsync<IReadOnlyList<EligiblePaymentProviderResponse>>();
+        providers.ShouldNotBeNull();
+        providers.ShouldContain(provider =>
+            provider.Id == _providerId &&
+            provider.PaymentMethodType == Contracts.Payments.PaymentMethodType.PaymentLink.ToString() &&
+            provider.SupportsRecurringPayments);
+        providers.ShouldNotContain(provider => provider.Id == _ineligibleProviderId);
+    }
+
+    private async Task ThenPurchaseIsPending()
+    {
+        using var response = await _client.GetAsync(
+            $"{EndpointUrl.Subscriptions.PurchaseStatusV1(_purchaseId)}?BillingAccountOwnerType=Stakeholder");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var status = await response.Content.ReadFromJsonAsync<GetSubscriptionPurchaseStatusResponse>();
+        status.ShouldNotBeNull();
+        status.Status.ShouldBe("PaymentPending");
+        status.ShouldContinuePolling.ShouldBeTrue();
+
+        using var unauthorizedResponse = await _client.GetAsync(
+            $"{EndpointUrl.Subscriptions.PurchaseStatusV1(_purchaseId)}?BillingAccountOwnerType=Tenant");
+        unauthorizedResponse.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
     private async Task ThenPendingSubscriptionCanBeQueried()
     {
         using var response = await _client.GetAsync(
@@ -117,6 +202,7 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         current.ShouldNotBeNull();
         current.Id.ShouldBe(_subscriptionId);
         current.Status.ShouldBe(SubscriptionStatus.Pending.ToString());
+        current.LifecycleStatus.ShouldBe(SubscriptionStatus.Pending.ToString());
         current.PlanPrice.ShouldBe(750000m);
     }
 
@@ -167,6 +253,30 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         subscription.NextBillingAtUtc.ShouldBeNull();
     }
 
+    private async Task ThenPurchaseIsActiveAndBillingHistoryIsAvailable()
+    {
+        using (var response = await _client.GetAsync(
+                   $"{EndpointUrl.Subscriptions.PurchaseStatusV1(_purchaseId)}?BillingAccountOwnerType=Stakeholder"))
+        {
+            response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            var status = await response.Content.ReadFromJsonAsync<GetSubscriptionPurchaseStatusResponse>();
+            status.ShouldNotBeNull();
+            status.Status.ShouldBe("SubscriptionActive");
+            status.IsTerminal.ShouldBeTrue();
+        }
+
+        using (var response = await _client.GetAsync(
+                   $"{EndpointUrl.Subscriptions.BillingHistoryV1}?BillingAccountOwnerType=Stakeholder&Page=1&PageSize=20"))
+        {
+            response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            var history = await response.Content.ReadFromJsonAsync<GetBillingHistoryResponse>();
+            history.ShouldNotBeNull();
+            history.TotalCount.ShouldBe(1);
+            history.Items.Single().PaymentTransactionId.ShouldBe(_paymentTransactionId);
+            history.Items.Single().Amount.ShouldBe(750000m);
+        }
+    }
+
     private async Task AuthenticateAsync()
     {
         using var response = await _client.PostAsJsonAsync(EndpointUrl.Sessions.V1, new SignInRequest(_email, Password));
@@ -195,6 +305,12 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         var countryCurrency = CountryCurrency.Create(country.Id, currency.Id, true, true);
         var provider = PaymentProvider.Create("Bachs", PaymentProviderKeys.Bachs, true);
         provider.SetConfiguration(currency.Id, Contracts.Payments.PaymentIntent.Subscription, Contracts.Payments.PaymentMethodType.PaymentLink, true);
+        var ineligibleProvider = PaymentProvider.Create("Disabled Provider", "disabled-provider", true);
+        ineligibleProvider.SetConfiguration(
+            currency.Id,
+            Contracts.Payments.PaymentIntent.Subscription,
+            Contracts.Payments.PaymentMethodType.Card,
+            false);
         var plan = SubscriptionPlan.Create(
             $"API_{Guid.CreateVersion7():N}",
             "API Monthly",
@@ -202,6 +318,13 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
             currency.Id,
             BillingInterval.Monthly,
             true);
+        var inactivePlan = SubscriptionPlan.Create(
+            $"INACTIVE_{Guid.CreateVersion7():N}",
+            "Inactive API Monthly",
+            500000m,
+            currency.Id,
+            BillingInterval.Monthly,
+            false);
 
         dbContext.Tenants.Add(tenant);
         dbContext.Countries.Add(country);
@@ -210,7 +333,9 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         dbContext.Currencies.Add(currency);
         dbContext.CountryCurrencies.Add(countryCurrency);
         dbContext.PaymentProviders.Add(provider);
+        dbContext.PaymentProviders.Add(ineligibleProvider);
         dbContext.SubscriptionPlans.Add(plan);
+        dbContext.SubscriptionPlans.Add(inactivePlan);
         await dbContext.SaveChangesAsync();
 
         _userId = user.Id;
@@ -221,7 +346,10 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         _countryCurrencyId = countryCurrency.Id;
         _providerId = provider.Id;
         _providerConfigurationId = provider.Configurations.Single().Id;
+        _ineligibleProviderId = ineligibleProvider.Id;
+        _ineligibleProviderConfigurationId = ineligibleProvider.Configurations.Single().Id;
         _planId = plan.Id;
+        _inactivePlanId = inactivePlan.Id;
     }
 
     private async Task DeleteSeedDataAsync()
@@ -237,8 +365,11 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         await dbContext.PaymentTransactions.Where(item => item.Id == _paymentTransactionId).ExecuteDeleteAsync();
         await dbContext.BillingAccounts.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
         await dbContext.SubscriptionPlans.Where(item => item.Id == _planId).ExecuteDeleteAsync();
+        await dbContext.SubscriptionPlans.Where(item => item.Id == _inactivePlanId).ExecuteDeleteAsync();
         await dbContext.PaymentProviderConfigurations.Where(item => item.Id == _providerConfigurationId).ExecuteDeleteAsync();
+        await dbContext.PaymentProviderConfigurations.Where(item => item.Id == _ineligibleProviderConfigurationId).ExecuteDeleteAsync();
         await dbContext.PaymentProviders.Where(item => item.Id == _providerId).ExecuteDeleteAsync();
+        await dbContext.PaymentProviders.Where(item => item.Id == _ineligibleProviderId).ExecuteDeleteAsync();
         await dbContext.CountryCurrencies.Where(item => item.Id == _countryCurrencyId).ExecuteDeleteAsync();
         await dbContext.Currencies.Where(item => item.Id == _currencyId).ExecuteDeleteAsync();
         await dbContext.Stakeholders.Where(item => item.Id == _stakeholderId).ExecuteDeleteAsync();

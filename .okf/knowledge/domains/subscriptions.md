@@ -126,6 +126,12 @@ purchase-fulfillment retry endpoint, which re-enqueues `ActivateSubscriptionComm
 renewal `FulfillmentBlocked` instead of extending entitlement. Non-renewing paid activations schedule
 `ExpireSubscriptionCommand` at period end.
 
+Customer purchase requests require a caller-stable UUID idempotency key. `SubscriptionPurchase.OperationId`
+is unique per tenant and initiating stakeholder, while `RequestFingerprint` binds the key to plan, provider,
+BillingAccount owner type and auto-renewal choice. Exact replays return the original payment instructions;
+different payloads return 409, and the database constraint closes concurrent duplicate races before a second
+provider call. Existing rows are backfilled with their purchase ids by the idempotency migration.
+
 ## Administrative allocation
 
 `AllocateSubscription` grants a complimentary subscription to a tenant- or stakeholder-owned
@@ -200,8 +206,20 @@ Each Application query handler owns its endpoint's repository orchestration, cal
 mapping; only cache execution plus consistent date/filter and revenue normalization mechanics are shared,
 so handlers remain complete vertical slices rather than pass-through wrappers around an analytics facade.
 
-User-facing plan listing, purchase, current-subscription lookup and scheduled cancellation require the
-active-session policy and derive tenant/stakeholder identity from the authenticated actor. Administrative
+User-facing plan listing is anonymous (the host still resolves `X-Tenant-Id`) and exposes only active plans
+and safe pricing fields. Provider discovery, purchase, purchase-status lookup, current-subscription lookup,
+scheduled cancellation and paginated billing history require the active-session policy and derive
+tenant/stakeholder identity from the authenticated actor. Provider discovery is scoped to the selected active
+plan's currency, the actor's active country/currency mapping, enabled subscription configurations and active
+providers; recurring capability is reported separately from initial-payment eligibility. Purchase status joins
+payment settlement, purchase fulfillment and subscription lifecycle into a read-only normalized status without
+adding domain states, and returns 404 outside the selected BillingAccount ownership context. Billing history
+combines initial-purchase and renewal-attempt payments and applies the same ownership isolation.
+
+`GET /subscriptions/current` retains 404 for no pending/active subscription and now returns currency code, a
+read-model `LifecycleStatus` (`PastDue` when an active entitlement crossed its paid boundary with a non-terminal
+renewal), plus an explicit cancellation effective timestamp. `CurrentPeriodEndUtc` remains the entitlement boundary and
+`NextBillingAtUtc` remains only the next charge-attempt date. Administrative
 endpoints live under `api/v1/admin/subscriptions` and `api/v1/admin/subscription-plans`, target explicit
 tenant/subscription ids, read the acting administrator only from the authenticated actor, and are
 permission-guarded (see [[authorization]]). Listing uses `(CreatedAtUtc, Id)` cursor pagination over

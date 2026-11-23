@@ -161,6 +161,8 @@ public static class EndpointUrl
         public const string Route = $"api/{Versions.V1Route}/subscriptions";
         public static readonly string V1 = ToV1(Route);
         public static readonly string PurchasesV1 = $"{V1}/purchases";
+        public static string PurchaseStatusV1(Guid purchaseId) => $"{PurchasesV1}/{purchaseId}";
+        public static readonly string BillingHistoryV1 = $"{V1}/billing-history";
         public static readonly string CurrentV1 = $"{V1}/current";
         public static readonly string CurrentCancellationV1 = $"{CurrentV1}/cancellation-at-period-end";
     }

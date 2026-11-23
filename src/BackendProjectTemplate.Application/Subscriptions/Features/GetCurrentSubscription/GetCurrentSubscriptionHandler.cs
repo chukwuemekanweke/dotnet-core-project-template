@@ -2,6 +2,7 @@ using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.Specifications;
+using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using BackendProjectTemplate.Domain.Subscriptions.Specifications;
 using SubscriptionAggregate = BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription;
@@ -11,7 +12,10 @@ namespace BackendProjectTemplate.Application.Subscriptions.Features.GetCurrentSu
 public sealed class GetCurrentSubscriptionHandler(
     IReadRepository<BillingAccount> billingAccountRepository,
     IReadRepository<SubscriptionAggregate> subscriptionRepository,
-    IReadRepository<SubscriptionPlan> planRepository)
+    IReadRepository<SubscriptionPlan> planRepository,
+    IReadRepository<Currency> currencyRepository,
+    IReadRepository<SubscriptionRenewal> renewalRepository,
+    TimeProvider timeProvider)
 {
     public async Task<GetCurrentSubscriptionResponse?> HandleAsync(
         GetCurrentSubscriptionCommand command,
@@ -44,6 +48,16 @@ public sealed class GetCurrentSubscriptionHandler(
             new SubscriptionPlanByIdSpecification(subscription.PlanId),
             cancellationToken)
             ?? throw new InvalidOperationException($"Plan '{subscription.PlanId}' was not found.");
+        var currency = await currencyRepository.GetByIdAsync(plan.CurrencyId, cancellationToken)
+            ?? throw new InvalidOperationException($"Currency '{plan.CurrencyId}' was not found.");
+        var isPastDue = subscription.Status == SubscriptionStatus.Active &&
+            subscription.CurrentPeriodEndUtc.HasValue &&
+            subscription.CurrentPeriodEndUtc.Value <= timeProvider.GetUtcNow() &&
+            await renewalRepository.AnyAsync(
+                new UnsettledSubscriptionRenewalByPeriodSpecification(
+                    subscription.Id,
+                    subscription.CurrentPeriodEndUtc.Value),
+                cancellationToken);
 
         return new GetCurrentSubscriptionResponse(
             subscription.Id,
@@ -53,13 +67,16 @@ public sealed class GetCurrentSubscriptionHandler(
             plan.Name,
             plan.Price,
             plan.CurrencyId,
+            currency.CurrencyCode,
             plan.BillingInterval.ToString(),
             subscription.Status.ToString(),
+            isPastDue ? "PastDue" : subscription.Status.ToString(),
             subscription.CurrentPeriodStartUtc,
             subscription.CurrentPeriodEndUtc,
             subscription.NextBillingAtUtc,
             subscription.AutoRenew,
             subscription.CancelAtPeriodEnd,
-            subscription.CancellationRequestedAtUtc);
+            subscription.CancellationRequestedAtUtc,
+            subscription.CancelAtPeriodEnd ? subscription.CurrentPeriodEndUtc : null);
     }
 }

@@ -6,6 +6,7 @@ namespace BackendProjectTemplate.Domain.Subscriptions.Entities;
 public sealed class SubscriptionPurchase : Entity, IAggregateRoot
 {
     public const int MaxPlanCodeLength = SubscriptionPlan.MaxCodeLength;
+    public const int MaxRequestFingerprintLength = 64;
 
     private SubscriptionPurchase()
     {
@@ -21,7 +22,9 @@ public sealed class SubscriptionPurchase : Entity, IAggregateRoot
         Guid expectedCurrencyId,
         BillingInterval billingInterval,
         Guid paymentTransactionId,
-        Guid initiatedByStakeholderId)
+        Guid initiatedByStakeholderId,
+        Guid operationId,
+        string requestFingerprint)
     {
         TenantId = tenantId;
         BillingAccountId = billingAccountId;
@@ -33,6 +36,8 @@ public sealed class SubscriptionPurchase : Entity, IAggregateRoot
         BillingInterval = billingInterval;
         PaymentTransactionId = paymentTransactionId;
         InitiatedByStakeholderId = initiatedByStakeholderId;
+        OperationId = operationId;
+        RequestFingerprint = requestFingerprint;
     }
 
     public Guid TenantId { get; private set; }
@@ -45,6 +50,8 @@ public sealed class SubscriptionPurchase : Entity, IAggregateRoot
     public BillingInterval BillingInterval { get; private set; }
     public Guid PaymentTransactionId { get; private set; }
     public Guid InitiatedByStakeholderId { get; private set; }
+    public Guid OperationId { get; private set; }
+    public string RequestFingerprint { get; private set; } = string.Empty;
     public DateTimeOffset? FulfilledAtUtc { get; private set; }
 
     /// <summary>
@@ -63,7 +70,9 @@ public sealed class SubscriptionPurchase : Entity, IAggregateRoot
         Guid subscriptionId,
         SubscriptionPlan plan,
         Guid paymentTransactionId,
-        Guid initiatedByStakeholderId) =>
+        Guid initiatedByStakeholderId,
+        Guid? operationId = null,
+        string? requestFingerprint = null) =>
         new(
             tenantId,
             billingAccountId,
@@ -74,7 +83,21 @@ public sealed class SubscriptionPurchase : Entity, IAggregateRoot
             plan.CurrencyId,
             plan.BillingInterval,
             paymentTransactionId,
-            initiatedByStakeholderId);
+            initiatedByStakeholderId,
+            operationId ?? Guid.CreateVersion7(),
+            NormalizeFingerprint(requestFingerprint, operationId));
+
+    private static string NormalizeFingerprint(string? requestFingerprint, Guid? operationId)
+    {
+        var normalized = string.IsNullOrWhiteSpace(requestFingerprint)
+            ? (operationId ?? Guid.Empty).ToString("N")
+            : requestFingerprint.Trim();
+        return normalized.Length <= MaxRequestFingerprintLength
+            ? normalized
+            : throw new ArgumentException(
+                $"Request fingerprint must not exceed {MaxRequestFingerprintLength} characters.",
+                nameof(requestFingerprint));
+    }
 
     public bool MarkFulfilled(DateTimeOffset fulfilledAtUtc)
     {
