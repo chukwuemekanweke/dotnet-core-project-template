@@ -127,6 +127,10 @@ own tests.
   `deploy/compose.development.yml` for WebAPI and Consumer, overridable from `stack.env` `CLOUDFLARE_R2_*`. Only
   the R2 access key pair is a Doppler runtime secret. An empty non-secret value fails every storage call with
   "Cloudflare R2 configuration is incomplete", because the seeded active `FileStorage` provider is `cloudflare_r2`.
+- Bachs checkout return URLs (`Payments__Bachs__SuccessUrl`/`CancelUrl`) are non-secret WebAPI settings: the
+  development stack defaults them to the user portal's `/billing/checkout/success` and `/cancelled` pages on
+  `template-user.chidelu.com`, and production reads optional `BACHS_SUCCESS_URL`/`BACHS_CANCEL_URL` from
+  `stack.env` (empty = no return URL sent). Bachs rejects localhost/private-network URLs.
 - Runtime-secret instances `bpt-dev-{webapi,consumer,jobs,migrator}` (Doppler project
   `backend-project-template`, configs `dev_*`, groups 21001–21004, environment segment `dev`);
   `deploy/stack.development.env.example` must carry the same group ids as the host `stack.env`.
