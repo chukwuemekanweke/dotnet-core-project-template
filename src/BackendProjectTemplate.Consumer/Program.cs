@@ -33,7 +33,7 @@ builder.Services.AddTransactionalOutbox();
 builder.Services.AddNotificationServices(builder.Configuration);
 builder.Services.AddPaymentServices(builder.Configuration);
 builder.Services.AddObjectStorage(builder.Configuration);
-builder.Services.AddSubscribers(builder.Configuration);
+builder.Services.AddSubscribers(builder.Configuration, builder.Environment.EnvironmentName);
 builder.Services.AddCustomTelemetryContext();
 builder.Services
     .AddHealthChecks()

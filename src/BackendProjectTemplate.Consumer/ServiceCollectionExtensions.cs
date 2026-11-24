@@ -30,7 +30,10 @@ namespace BackendProjectTemplate.Consumer;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSubscribers(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSubscribers(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string hostEnvironmentName)
     {
         services.AddScoped<ISecurityActivityIpAddressResolver, SecurityActivityIpAddressResolver>();
         services.AddScoped<EmailConfirmationOtpSender>();
@@ -43,6 +46,8 @@ public static class ServiceCollectionExtensions
             ?? throw new InvalidOperationException($"Configuration section '{RabbitMqMessagingOptions.SectionName}' is required.");
 
         options.Validate();
+        var topology = RabbitMqTopology.Create(options, hostEnvironmentName);
+        services.AddSingleton(topology);
 
         var subscriberConfig = new SubscriberConfig
         {
@@ -52,8 +57,8 @@ public static class ServiceCollectionExtensions
             UserName = options.UserName,
             Password = options.Password,
             VirtualHost = options.VirtualHost,
-            SubscriptionName = $"{options.ServiceName}.events",
-            ExchangeName = options.EventsExchange,
+            SubscriptionName = topology.EventsSubscriptionName,
+            ExchangeName = topology.EventsExchange,
             PrefetchCount = 5,
             MaxRetryCount = 10,
             ConcurrentMessageCount = 1
@@ -67,8 +72,8 @@ public static class ServiceCollectionExtensions
             UserName = options.UserName,
             Password = options.Password,
             VirtualHost = options.VirtualHost,
-            QueueName = $"{options.ServiceName}.commands",
-            ExchangeName = options.CommandsExchange,
+            QueueName = topology.CommandsQueueName,
+            ExchangeName = topology.CommandsExchange,
             PrefetchCount = 5,
             MaxRetryCount = 10,
             ConcurrentMessageCount = 1

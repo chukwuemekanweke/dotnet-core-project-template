@@ -39,9 +39,15 @@ status: stable
 - New cross-process command/event types belong in `Contracts`, not defined ad hoc inside Application or Consumer.
 - Consumer handlers must be idempotent-safe against redelivery (see the message inbox pattern already used) and must mark their `Activity` as errored on failure — see [[observability]].
 
-- Consumer queue names use the configured `Messaging:RabbitMq:ServiceName` followed by the neutral
-  role `events` or `commands`. Queue names are scoped to the RabbitMQ virtual host rather than to an
-  exchange, so application-specific exchanges alone do not prevent unrelated applications on a
-  shared broker from becoming competing consumers.
+- All RabbitMQ names are scoped by the hosting environment (`DOTNET_ENVIRONMENT`/`ASPNETCORE_ENVIRONMENT`,
+  lower-cased) through `Infrastructure.Messaging.RabbitMqTopology`: exchanges are
+  `{EventsExchange|CommandsExchange}.{environment}` and Consumer queues are
+  `{ServiceName}.{environment}.events|commands`. Both the Jobs publisher and the Consumer subscriber must
+  build names from `RabbitMqTopology.Create(options, hostEnvironmentName)`, never from raw options.
+  Queue names are scoped to the virtual host rather than to an exchange, so without this segment hosts of
+  the same application in different environments on a shared broker/vhost become competing consumers.
+  Hosts that should not share queues must therefore run under different hosting environment names; the
+  publisher declares exchanges without the mandatory flag, so publishing before the Consumer binds its
+  queue drops the message. Environment names must be letters, digits and hyphens.
 
 See [[persistence]] for how the outbox table itself is persisted, and [[unit-testing]]/[[integration-testing]] for handler/background-service test coverage requirements.

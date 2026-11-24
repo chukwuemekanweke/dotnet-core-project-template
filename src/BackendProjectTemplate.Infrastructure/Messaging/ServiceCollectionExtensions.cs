@@ -18,7 +18,8 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddRabbitMqOutboxDispatching(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        string hostEnvironmentName)
     {
         var options = configuration
             .GetSection(RabbitMqMessagingOptions.SectionName)
@@ -26,6 +27,8 @@ public static class ServiceCollectionExtensions
             ?? throw new InvalidOperationException($"Configuration section '{RabbitMqMessagingOptions.SectionName}' is required.");
 
         options.Validate();
+        var topology = RabbitMqTopology.Create(options, hostEnvironmentName);
+        services.AddSingleton(topology);
 
         services.AddPublisher(
             new PublisherConfig
@@ -36,7 +39,7 @@ public static class ServiceCollectionExtensions
                 UserName = options.UserName,
                 Password = options.Password,
                 VirtualHost = options.VirtualHost,
-                EventsExchange = options.EventsExchange
+                EventsExchange = topology.EventsExchange
             },
             RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey);
 
@@ -49,7 +52,7 @@ public static class ServiceCollectionExtensions
                 UserName = options.UserName,
                 Password = options.Password,
                 VirtualHost = options.VirtualHost,
-                CommandsExchange = options.CommandsExchange
+                CommandsExchange = topology.CommandsExchange
             },
             RabbitMqOutboxMessageDispatcherConstants.DependencyInjectionKey);
 
