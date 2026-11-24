@@ -4,6 +4,7 @@ public static class SubscriptionLifecycleReasons
 {
     public const string PurchaseInitiated = "purchase_initiated";
     public const string InitialPaymentConfirmed = "initial_payment_confirmed";
+    public const string InitialPaymentUnsuccessful = "initial_payment_unsuccessful";
     public const string AdministrativeAllocation = "administrative_allocation";
     public const string AllocationScheduled = "allocation_scheduled";
     public const string ScheduledAllocationActivated = "scheduled_allocation_activated";

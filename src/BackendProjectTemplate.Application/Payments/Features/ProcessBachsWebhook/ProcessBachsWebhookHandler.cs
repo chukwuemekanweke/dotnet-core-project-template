@@ -199,12 +199,14 @@ public sealed class ProcessBachsWebhookHandler(
                     verification.FailureReason,
                     verification.StatusChangeReason,
                     now);
+                await UnsuccessfulPaymentNotification.PublishAsync(paymentTransaction, eventPublisher, now, cancellationToken);
                 break;
             case PaymentProviderVerificationStatus.Expired:
                 paymentTransaction.MarkExpired(
                     verification.ProviderReference,
                     verification.FailureReason,
                     verification.StatusChangeReason);
+                await UnsuccessfulPaymentNotification.PublishAsync(paymentTransaction, eventPublisher, now, cancellationToken);
                 break;
             case PaymentProviderVerificationStatus.Underpaid:
                 await UnderpaidPaymentSettlement.ApplyAsync(
@@ -213,6 +215,7 @@ public sealed class ProcessBachsWebhookHandler(
                     eventPublisher,
                     now,
                     cancellationToken);
+                await UnsuccessfulPaymentNotification.PublishAsync(paymentTransaction, eventPublisher, now, cancellationToken);
                 break;
             case PaymentProviderVerificationStatus.Processing:
                 paymentTransaction.RecordStatusCheck(now);
