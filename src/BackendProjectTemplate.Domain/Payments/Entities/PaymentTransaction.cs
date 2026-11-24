@@ -98,6 +98,19 @@ public sealed class PaymentTransaction : Entity, IAggregateRoot
         FailedAtUtc = null;
     }
 
+    // Terminal: the provider never accepted the payment, so the customer has nothing to pay and it can never succeed.
+    public void MarkInitiationFailed(
+        string failureReason,
+        string statusChangeReason,
+        DateTimeOffset failedAtUtc)
+    {
+        EnsureCanTransitionFrom(PaymentStatus.PendingInitiation);
+        PaymentStatus = PaymentStatus.Failed;
+        FailureReason = failureReason;
+        StatusChangeReason = statusChangeReason;
+        FailedAtUtc = failedAtUtc;
+    }
+
     public void SetPaymentMethodType(PaymentMethodType paymentMethodType)
     {
         PaymentMethodType = paymentMethodType;

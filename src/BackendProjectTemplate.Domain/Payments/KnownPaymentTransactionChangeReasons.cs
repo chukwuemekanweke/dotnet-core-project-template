@@ -3,6 +3,7 @@ namespace BackendProjectTemplate.Domain.Payments;
 public static class KnownPaymentTransactionChangeReasons
 {
     public const string PaymentInitiated = "payment_initiated";
+    public const string ProviderInitiationFailed = "provider_initiation_failed";
     public const string ReconciliationConfirmedSuccess = "reconciliation_confirmed_success";
     public const string ReconciliationConfirmedFailure = "reconciliation_confirmed_failure";
     public const string ReconciliationConfirmedCustomerCancellation = "reconciliation_confirmed_customer_cancellation";

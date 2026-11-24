@@ -1,4 +1,7 @@
+using BackendProjectTemplate.Application.Payments.Common;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Exceptions;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments;
@@ -18,8 +21,10 @@ public sealed class PaymentInitiationService(
     IRepository<PaymentTransaction> paymentTransactionRepository,
     IRepository<RecurringPaymentAuthorization> recurringAuthorizationRepository,
     IEnumerable<IPaymentProviderService> paymentProviderServices,
+    IEventPublisher eventPublisher,
     ICustomTelemetryContext customTelemetryContext,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider)
 {
     public async Task<InitiatePaymentResult> InitiateAsync(
         InitiatePaymentCommand command,
@@ -85,18 +90,30 @@ public sealed class PaymentInitiationService(
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        var initiationResult = await paymentProviderService.InitiatePaymentAsync(
-            new PaymentProviderInitiationRequest(
-                paymentTransaction.MerchantReference,
-                command.Amount,
-                currency.CurrencyCode,
-                command.PaymentIntent,
-                stakeholder.Id,
-                stakeholder.TenantId,
-                stakeholder.CountryId,
-                command.TrustedSubscriptionContext is not null,
-                command.TrustedSubscriptionContext?.SavePaymentMethod == true),
-            cancellationToken);
+        PaymentProviderInitiationResult initiationResult;
+        try
+        {
+            initiationResult = await paymentProviderService.InitiatePaymentAsync(
+                new PaymentProviderInitiationRequest(
+                    paymentTransaction.MerchantReference,
+                    command.Amount,
+                    currency.CurrencyCode,
+                    command.PaymentIntent,
+                    stakeholder.Id,
+                    stakeholder.TenantId,
+                    stakeholder.CountryId,
+                    command.TrustedSubscriptionContext is not null,
+                    command.TrustedSubscriptionContext?.SavePaymentMethod == true),
+                cancellationToken);
+        }
+        catch (Exception exception) when (persistCorrelation is not null)
+        {
+            // The payment and its correlation are already committed, so an idempotent replay would otherwise
+            // return a payment with no checkout that never concludes. The customer was given nothing to pay, so
+            // the payment can never succeed: fail it so the correlated purchase is released.
+            await FailUninitiatedPaymentAsync(paymentTransaction, paymentProvider, command.ActorContext, exception);
+            throw;
+        }
 
         if (initiationResult.RecurringPaymentSetup is not null)
         {
@@ -152,5 +169,45 @@ public sealed class PaymentInitiationService(
             paymentTransaction.ExpiresAtUtc,
             paymentTransaction.PaymentMethodType,
             initiationResult.InstructionFields);
+    }
+
+    private async Task FailUninitiatedPaymentAsync(
+        PaymentTransaction paymentTransaction,
+        PaymentProvider paymentProvider,
+        ActorContext actorContext,
+        Exception providerException)
+    {
+        // Uses CancellationToken.None so a cancelled request still records the failure instead of leaving the
+        // committed payment PendingInitiation.
+        try
+        {
+            var now = timeProvider.GetUtcNow();
+            paymentTransaction.MarkInitiationFailed(
+                KnownPaymentTransactionChangeReasons.ProviderInitiationFailed,
+                KnownPaymentTransactionChangeReasons.ProviderInitiationFailed,
+                now);
+            await UnsuccessfulPaymentNotification.PublishAsync(paymentTransaction, eventPublisher, now, CancellationToken.None);
+            await unitOfWork.SaveChangesAsync(CancellationToken.None);
+        }
+        catch (Exception cleanupException)
+        {
+            throw new AggregateException(
+                $"Payment '{paymentTransaction.MerchantReference}' could not be initiated and could not be marked failed.",
+                providerException,
+                cleanupException);
+        }
+
+        customTelemetryContext.AddCustomEvent(
+            Observability.EventNames.Payments.InitiationFailed,
+            ObservabilityEventProperties.Create(
+                actorContext,
+                paymentTransaction.StakeholderId,
+                failureReason: providerException.GetType().Name,
+                additionalProperties: new Dictionary<string, string>
+                {
+                    [Observability.PropertyNames.Payments.Provider] = paymentProvider.ProviderKey,
+                    [Observability.PropertyNames.Payments.PaymentIntent] = paymentTransaction.PaymentIntent.ToString(),
+                    [Observability.PropertyNames.Payments.MerchantReference] = paymentTransaction.MerchantReference
+                }));
     }
 }

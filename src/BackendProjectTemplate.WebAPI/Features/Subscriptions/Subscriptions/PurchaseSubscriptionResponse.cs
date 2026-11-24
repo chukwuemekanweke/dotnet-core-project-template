@@ -8,5 +8,5 @@ public sealed record PurchaseSubscriptionResponse(
     Guid PaymentProviderId,
     string PaymentProviderName,
     DateTimeOffset? ExpiresAtUtc,
-    string PaymentMethodType,
+    string? PaymentMethodType,
     IReadOnlyDictionary<string, string> InstructionFields);

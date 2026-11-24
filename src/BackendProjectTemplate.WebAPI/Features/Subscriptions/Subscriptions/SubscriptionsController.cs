@@ -84,7 +84,8 @@ public sealed class SubscriptionsController(
             result.PaymentProviderId,
             result.PaymentProviderName,
             result.ExpiresAtUtc,
-            result.PaymentMethodType.ToString(),
+            // A replayed purchase whose payment the provider never accepted has no method type yet.
+            Enum.IsDefined(result.PaymentMethodType) ? result.PaymentMethodType.ToString() : null,
             result.InstructionFields));
     }
 

@@ -31,6 +31,7 @@ code_refs:
     - src/BackendProjectTemplate.Consumer/Payments/ActivateSubscriptionHandler.cs
     - src/BackendProjectTemplate.Consumer/Payments/UnsuccessfulPaymentConcludedHandler.cs
     - src/BackendProjectTemplate.DatabaseMigrator/Scripts/PostDeploy/0003.expire-unpaid-subscription-purchases.postdeploy.sql
+    - src/BackendProjectTemplate.DatabaseMigrator/Scripts/PostDeploy/0004.fail-uninitiated-subscription-purchase-payments.postdeploy.sql
     - src/BackendProjectTemplate.Consumer/Subscriptions/**
     - src/BackendProjectTemplate.Contracts/Commands/Subscriptions/**
     - tests/unit/BackendProjectTemplate.Domain.UnitTests/Subscriptions/**
@@ -89,7 +90,11 @@ uncredited Underpaid), payments publish `UnsuccessfulPaymentConcluded` and `Unsu
 re-reads the payment and moves the still-Pending subscription straight to `Expired`
 (`initial_payment_unsuccessful` history, no period, never entitled). Without this the abandoned Pending row stays
 the BillingAccount's current subscription and blocks a new purchase. The idempotent
-`0003.expire-unpaid-subscription-purchases` post-deploy script backfills rows that predate or missed the event. Administrative allocation creates no fake payment reference. Cancellation at period end
+`0003.expire-unpaid-subscription-purchases` post-deploy script backfills rows that predate or missed the event.
+`0004.fail-uninitiated-subscription-purchase-payments` fails purchase payments that are still `PendingInitiation` with
+no provider reference an hour after creation (the request died before it could record the provider failure). It also
+expires their subscriptions itself, because 0003 has already run in that deploy. Renewal payments have no purchase row
+and are never touched. Administrative allocation creates no fake payment reference. Cancellation at period end
 keeps the subscription active and entitlement intact through `CurrentPeriodEndUtc`, disables renewal,
 clears `NextBillingAtUtc`, records an auditable lifecycle decision, and atomically schedules a
 state-checked `ExpireSubscriptionCommand`. `NextBillingAtUtc` is the next charge-attempt date, not a
@@ -146,7 +151,9 @@ renewal `FulfillmentBlocked` instead of extending entitlement. Non-renewing paid
 
 Customer purchase requests require a caller-stable UUID idempotency key. `SubscriptionPurchase.OperationId`
 is unique per tenant and initiating stakeholder, while `RequestFingerprint` binds the key to plan, billing interval, provider,
-BillingAccount owner type and auto-renewal choice. Exact replays return the original payment instructions;
+BillingAccount owner type and auto-renewal choice. Exact replays return the original payment instructions, or
+the `Failed` payment status (with a null `paymentMethodType` and no instruction fields) when the provider never
+accepted the payment. The client must then drop the key and start a new purchase;
 different payloads return 409, and the database constraint closes concurrent duplicate races before a second
 provider call. Existing rows are backfilled with their purchase ids by the idempotency migration.
 

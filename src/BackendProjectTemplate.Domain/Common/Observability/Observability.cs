@@ -138,6 +138,7 @@ public static class Observability
         public static class Payments
         {
             public const string Initiated = "payment.initiated";
+            public const string InitiationFailed = "payment.initiation_failed";
             public const string WebhookReceived = "payment.webhook.received";
             public const string WebhookPersisted = "payment.webhook.persisted";
             public const string WebhookPersistenceFailed = "payment.webhook.persistence_failed";
