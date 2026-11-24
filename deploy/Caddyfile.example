@@ -1,0 +1,29 @@
+# Host reverse proxy for the backend WebAPI. Caddy runs on the host (or as a container with network_mode: host),
+# terminates TLS, and forwards to the loopback-published WebAPI port. The Caddyfile itself is host-owned; this
+# file is the reference to copy from when setting up a server.
+#
+# Replace the placeholders:
+#   api.example.com   -> the API's public host name
+#   127.0.0.1:8080    -> WebAPI's loopback port (8080 in compose.production.yml, 8090 in compose.development.yml)
+#   172.30.232.0/24   -> the frontend portals' PORTALS_SUBNET on this host (one entry per portal stack)
+#
+# trusted_proxies is a global server option. For requests from these ranges (the portals' server-side calls to
+# the API), Caddy appends to X-Forwarded-For ("client, portal") instead of replacing it; requests from anywhere
+# else still get X-Forwarded-For overwritten with their real address, so clients cannot spoof it. WebAPI must
+# trust the same ranges (ForwardedHeaders__KnownNetworks__*, ForwardedHeaders__ForwardLimit: 2). Keep the two in
+# step whenever a portal subnet changes.
+{
+	servers {
+		trusted_proxies static 172.30.232.0/24
+	}
+}
+
+api.example.com {
+	encode zstd gzip
+
+	# Prometheus metrics stay internal.
+	@metrics path /metrics
+	respond @metrics 404
+
+	reverse_proxy 127.0.0.1:8080
+}

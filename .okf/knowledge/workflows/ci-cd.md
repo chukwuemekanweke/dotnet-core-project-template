@@ -93,7 +93,8 @@ own tests.
   (`DEPLOY_ALERT_WEBHOOK_URL`) is a repository secret used only by `notify-deployment-failure`.
 - `deploy/vps-deploy-stack.production.json` is a repository copy of the host registry; the host file wins,
   so update both together. `deploy/stack.env.example` must list every variable the production Compose file
-  requires (`${VAR:?…}`) with non-secret placeholders — a new required variable fails `release-config`
+  requires (`${VAR:?…}`) with non-secret placeholders (including `APP_NETWORK_SUBNET`/`APP_NETWORK_GATEWAY` for
+  the pinned `app` network; subnets must not overlap other stacks on the host) — a new required variable fails `release-config`
   until it is added there and to the host `stack.env`. Infrastructure stays external (managed
   PostgreSQL/Redis/RabbitMQ); an added infrastructure service must be digest-pinned and pass the host
   policy.

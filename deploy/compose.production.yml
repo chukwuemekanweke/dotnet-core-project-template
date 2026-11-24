@@ -10,7 +10,9 @@
 # - Hardening: non-root image user, read-only root filesystem with tmpfs for /tmp and $HOME,
 #   no-new-privileges, restart "no" (the host's vps-deploy-stack@ unit starts the stack at boot).
 # - Network: only WebAPI publishes a port, on loopback, for the host reverse proxy. PostgreSQL, Redis and
-#   RabbitMQ are external (managed) services reached through the secret connection strings.
+#   RabbitMQ are external (managed) services reached through the secret connection strings. The "app" network
+#   is pinned (APP_NETWORK_SUBNET/APP_NETWORK_GATEWAY in stack.env) because the host proxy reaches WebAPI from
+#   its gateway, which WebAPI trusts for X-Forwarded-For. Each stack on a host needs its own subnet.
 services:
   database-migrator:
     profiles: ["migration"]
@@ -19,7 +21,7 @@ services:
       - /tmp
       - /home/app
     networks:
-      - private
+      - app
     environment:
       DOTNET_ENVIRONMENT: Production
       OpenTelemetry__ServiceName: BackendProjectTemplate.DatabaseMigrator
@@ -45,12 +47,19 @@ services:
       - /tmp
       - /home/app
     networks:
-      - private
+      - app
     security_opt:
       - no-new-privileges:true
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      # The host proxy reaches the loopback-published port through the app network gateway, so trust only that
+      # address. Frontend portal server-side calls arrive through the same proxy as "client, portal": trusting the
+      # frontend's PORTALS_SUBNET (when the portals share this host) with a limit of 2 records the browser's IP.
+      # The host proxy must also list PORTALS_SUBNET in trusted_proxies (see deploy/Caddyfile.example).
+      ForwardedHeaders__KnownProxies__0: ${APP_NETWORK_GATEWAY:?APP_NETWORK_GATEWAY is required in stack.env}
+      ForwardedHeaders__KnownNetworks__0: ${PORTALS_SUBNET:-}
+      ForwardedHeaders__ForwardLimit: 2
       Authentication__Google__Enabled: ${GOOGLE_AUTHENTICATION_ENABLED:-false}
       Authentication__Google__ClientIds__0: ${GOOGLE_CLIENT_ID:-}
       Authentication__Google__FlowLifetime: 00:10:00
@@ -98,7 +107,7 @@ services:
       - /tmp
       - /home/app
     networks:
-      - private
+      - app
     security_opt:
       - no-new-privileges:true
     environment:
@@ -144,7 +153,7 @@ services:
       - /tmp
       - /home/app
     networks:
-      - private
+      - app
     security_opt:
       - no-new-privileges:true
     environment:
@@ -186,4 +195,11 @@ services:
     restart: "no"
 
 networks:
-  private: {}
+  # Pinned so the gateway WebAPI trusts as its reverse proxy is deterministic. Docker cannot change an existing
+  # network's subnet, so changing this block needs a new network name (it replaced the unpinned "private"
+  # network, which the previous release still uses for restoration).
+  app:
+    ipam:
+      config:
+        - subnet: ${APP_NETWORK_SUBNET:?APP_NETWORK_SUBNET is required in stack.env}
+          gateway: ${APP_NETWORK_GATEWAY:?APP_NETWORK_GATEWAY is required in stack.env}
