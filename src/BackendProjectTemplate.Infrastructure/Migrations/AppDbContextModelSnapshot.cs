@@ -2580,6 +2580,9 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Property<Guid>("BillingAccountId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("BillingInterval")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("CancelAtPeriodEnd")
                         .HasColumnType("boolean");
 
@@ -2667,6 +2670,8 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.ToTable("Subscriptions", "payments", t =>
                         {
+                            t.HasCheckConstraint("CK_Subscriptions_BillingInterval", "\"BillingInterval\" IN (1, 2)");
+
                             t.HasCheckConstraint("CK_Subscriptions_CurrentPeriod", "\"CurrentPeriodStartUtc\" IS NULL OR \"CurrentPeriodEndUtc\" > \"CurrentPeriodStartUtc\"");
 
                             t.HasCheckConstraint("CK_Subscriptions_EntitlementWindow", "(\"Status\" NOT IN (2, 5) OR \"EntitlementStartUtc\" IS NOT NULL) AND (\"EntitlementStartUtc\" IS NULL OR \"EntitlementEndUtc\" IS NULL OR \"EntitlementEndUtc\" >= \"EntitlementStartUtc\")");
@@ -2889,9 +2894,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("BillingInterval")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2914,6 +2916,14 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.PrimitiveCollection<string[]>("Features")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -2924,10 +2934,6 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
-
-                    b.Property<decimal>("Price")
-                        .HasPrecision(18)
-                        .HasColumnType("numeric(18,0)");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -2946,11 +2952,59 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
 
                     b.HasIndex("IsActive");
 
-                    b.ToTable("SubscriptionPlans", "payments", t =>
-                        {
-                            t.HasCheckConstraint("CK_SubscriptionPlans_BillingInterval", "\"BillingInterval\" IN (1, 2)");
+                    b.ToTable("SubscriptionPlans", "payments");
+                });
 
-                            t.HasCheckConstraint("CK_SubscriptionPlans_Price", "\"Price\" >= 0 AND \"Price\" = trunc(\"Price\")");
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPlanPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BillingInterval")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18)
+                        .HasColumnType("numeric(18,0)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId", "BillingInterval")
+                        .IsUnique();
+
+                    b.ToTable("SubscriptionPlanPrices", "payments", t =>
+                        {
+                            t.HasCheckConstraint("CK_SubscriptionPlanPrices_BillingInterval", "\"BillingInterval\" IN (1, 2)");
+
+                            t.HasCheckConstraint("CK_SubscriptionPlanPrices_Price", "\"Price\" >= 0 AND \"Price\" = trunc(\"Price\")");
                         });
                 });
 
@@ -3765,6 +3819,15 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPlanPrice", b =>
+                {
+                    b.HasOne("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPlan", null)
+                        .WithMany("Prices")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPurchase", b =>
                 {
                     b.HasOne("BackendProjectTemplate.Domain.Payments.Entities.Currency", null)
@@ -3954,6 +4017,11 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Navigation("Periods");
 
                     b.Navigation("StatusHistory");
+                });
+
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionPlan", b =>
+                {
+                    b.Navigation("Prices");
                 });
 
             modelBuilder.Entity("BackendProjectTemplate.Domain.Subscriptions.Entities.SubscriptionRenewal", b =>

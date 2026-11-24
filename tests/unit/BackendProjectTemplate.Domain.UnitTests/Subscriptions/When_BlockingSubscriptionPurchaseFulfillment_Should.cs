@@ -11,7 +11,7 @@ public sealed class When_BlockingSubscriptionPurchaseFulfillment_Should
     {
         var plan = SubscriptionAllocationTestData.CreatePlan();
         var purchase = SubscriptionPurchase.Create(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), plan, Guid.CreateVersion7(), Guid.CreateVersion7());
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), plan, plan.Prices.Single().BillingInterval, Guid.CreateVersion7(), Guid.CreateVersion7());
 
         purchase.MarkFulfillmentBlocked(SubscriptionFulfillmentBlockReasons.EntitlementConflict, SubscriptionAllocationTestData.Now);
 

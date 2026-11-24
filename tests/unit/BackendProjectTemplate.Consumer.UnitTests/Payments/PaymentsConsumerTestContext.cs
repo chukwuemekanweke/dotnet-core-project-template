@@ -111,6 +111,7 @@ internal sealed class PaymentsConsumerTestContext
             command.TenantId,
             billingAccountId,
             plan.Id,
+            plan.Prices.Single().BillingInterval,
             true,
             Clock.GetUtcNow(),
             Guid.CreateVersion7(),
@@ -120,6 +121,7 @@ internal sealed class PaymentsConsumerTestContext
             billingAccountId,
             subscription.Id,
             plan,
+            plan.Prices.Single().BillingInterval,
             payment.Id,
             command.StakeholderId.Value);
 

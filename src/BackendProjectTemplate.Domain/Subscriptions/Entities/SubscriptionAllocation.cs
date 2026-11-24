@@ -52,9 +52,9 @@ public sealed class SubscriptionAllocation : Entity, IAggregateRoot
         BillingAccountId = subscription.BillingAccountId;
         PlanId = plan.Id;
         PlanCode = plan.Code;
-        NominalPrice = plan.Price;
+        NominalPrice = plan.GetPrice(subscription.BillingInterval);
         CurrencyId = plan.CurrencyId;
-        BillingInterval = plan.BillingInterval;
+        BillingInterval = subscription.BillingInterval;
         StartAtUtc = subscription.EntitlementStartUtc.Value;
         EndAtUtc = subscription.EntitlementEndUtc.Value;
         AllocationSource = allocationSource;

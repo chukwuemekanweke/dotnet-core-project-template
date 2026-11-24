@@ -10,5 +10,6 @@ public enum AllocateSubscriptionStatus
     OwnerTenantMismatch = 6,
     InvalidPeriod = 7,
     EntitlementConflict = 8,
-    IdempotencyKeyReused = 9
+    IdempotencyKeyReused = 9,
+    BillingIntervalNotOffered = 10
 }

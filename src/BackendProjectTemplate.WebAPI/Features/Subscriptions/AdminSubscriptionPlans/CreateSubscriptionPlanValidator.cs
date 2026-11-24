@@ -1,4 +1,3 @@
-using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using FluentValidation;
 
@@ -14,13 +13,17 @@ public sealed class CreateSubscriptionPlanValidator : AbstractValidator<CreateSu
             .Matches("^[A-Za-z0-9_-]+$")
             .WithMessage("Code may contain only letters, digits, underscores and hyphens.");
         RuleFor(request => request.Name).NotEmpty().MaximumLength(SubscriptionPlan.MaxNameLength);
-        RuleFor(request => request.Price)
-            .GreaterThanOrEqualTo(0)
-            .Must(price => decimal.Truncate(price) == price)
-            .WithMessage("Price must be a whole number of minor currency units.");
+        RuleFor(request => request.Prices)
+            .NotNull()
+            .WithMessage("At least one billing interval price is required.")
+            .SetValidator(new SubscriptionPlanPricesValidator());
         RuleFor(request => request.CurrencyId).NotEmpty();
-        RuleFor(request => request.BillingInterval)
-            .Must(StrictEnumParser.IsValid<BillingInterval>)
-            .WithMessage("BillingInterval must be Monthly or Yearly.");
+        RuleFor(request => request.Description).MaximumLength(SubscriptionPlan.MaxDescriptionLength);
+        RuleFor(request => request.Features)
+            .Must(features => features is null || features.Count <= SubscriptionPlan.MaxFeatureCount)
+            .WithMessage($"A plan may list at most {SubscriptionPlan.MaxFeatureCount} features.");
+        RuleForEach(request => request.Features)
+            .NotEmpty()
+            .MaximumLength(SubscriptionPlan.MaxFeatureLength);
     }
 }

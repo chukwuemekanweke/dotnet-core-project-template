@@ -8,7 +8,9 @@ using BackendProjectTemplate.Domain.Subscriptions.Specifications;
 namespace BackendProjectTemplate.Application.Subscriptions.Features.UpdateSubscriptionPlan;
 
 /// <summary>
-/// Updates the mutable plan terms (name and price). The code, currency and billing interval are immutable.
+/// Updates the mutable plan terms: the name, description, features, prices of offered intervals, and newly offered
+/// intervals. The code
+/// and currency are immutable and an offered interval cannot be withdrawn.
 /// Existing purchase, period, renewal and allocation snapshots keep their original terms.
 /// </summary>
 public sealed class UpdateSubscriptionPlanHandler(
@@ -30,7 +32,7 @@ public sealed class UpdateSubscriptionPlanHandler(
         bool changed;
         try
         {
-            changed = plan.UpdateTerms(command.Name, command.Price);
+            changed = plan.UpdateTerms(command.Name, command.Prices, command.Description, command.Features);
         }
         catch (ArgumentException exception)
         {

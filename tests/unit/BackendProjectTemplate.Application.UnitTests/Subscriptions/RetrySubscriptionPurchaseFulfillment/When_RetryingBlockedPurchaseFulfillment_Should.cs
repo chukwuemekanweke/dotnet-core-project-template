@@ -23,7 +23,7 @@ public sealed class When_RetryingBlockedPurchaseFulfillment_Should
         payment.MarkInitiated("ref", null, null, "initiated");
         payment.MarkSucceeded("ref", "ok", AdminSubscriptionTestContext.Now);
         var plan = SubscriptionPlan.Create("RETRY", "Retry", 5000m, payment.CurrencyId, BillingInterval.Monthly, true);
-        var purchase = SubscriptionPurchase.Create(tenantId, Guid.CreateVersion7(), Guid.CreateVersion7(), plan, payment.Id, stakeholderId);
+        var purchase = SubscriptionPurchase.Create(tenantId, Guid.CreateVersion7(), Guid.CreateVersion7(), plan, plan.Prices.Single().BillingInterval, payment.Id, stakeholderId);
         var purchaseRepository = Substitute.For<IRepository<SubscriptionPurchase>>();
         var paymentRepository = Substitute.For<IRepository<PaymentTransaction>>();
         var commandSender = Substitute.For<ICommandSender>();

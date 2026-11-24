@@ -8,7 +8,7 @@ public sealed class ActiveSubscriptionPlansSpecification : Specification<Subscri
     public ActiveSubscriptionPlansSpecification()
     {
         Where(plan => plan.IsActive);
-        ApplyOrderBy(plan => plan.Price);
+        ApplyOrderBy(plan => plan.Prices.Min(price => price.Price));
         ApplyThenBy(plan => plan.Code);
     }
 }

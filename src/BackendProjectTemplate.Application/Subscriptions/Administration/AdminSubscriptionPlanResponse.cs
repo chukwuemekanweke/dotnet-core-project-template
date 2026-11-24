@@ -4,10 +4,11 @@ public sealed record AdminSubscriptionPlanResponse(
     Guid Id,
     string Code,
     string Name,
-    decimal Price,
+    string? Description,
+    IReadOnlyList<string> Features,
+    IReadOnlyList<SubscriptionPlanPriceResponse> Prices,
     Guid CurrencyId,
     string CurrencyCode,
-    string BillingInterval,
     bool IsActive,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);

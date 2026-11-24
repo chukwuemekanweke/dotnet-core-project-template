@@ -14,7 +14,7 @@ public sealed class When_AllocatingSubscription_WithConcurrentDuplicateKey_Shoul
         var context = new AdminSubscriptionTestContext();
         var command = context.CreateAllocation();
         var winner = SubscriptionAggregate.CreateAllocated(
-            context.TenantId, context.TenantBillingAccount.Id, context.Plan, AdminSubscriptionTestContext.Now, AdminSubscriptionTestContext.Now.AddDays(10),
+            context.TenantId, context.TenantBillingAccount.Id, context.Plan, context.Plan.Prices.Single().BillingInterval, AdminSubscriptionTestContext.Now, AdminSubscriptionTestContext.Now.AddDays(10),
             AdminSubscriptionTestContext.Now, command.IdempotencyKey, context.AdministratorId.ToString(), command.Reason);
         var winningAllocation = SubscriptionAllocation.Create(
             winner, context.Plan, command.AllocationSource, command.Reason, context.AdministratorId.ToString(), command.IdempotencyKey, AllocateSubscriptionRequestFingerprint.Compute(command));

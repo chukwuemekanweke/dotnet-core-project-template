@@ -41,7 +41,14 @@ public sealed class PurchaseSubscriptionHandler(
             new ActiveSubscriptionPlanByIdSpecification(command.PlanId),
             cancellationToken)
             ?? throw new InvalidOperationException($"Subscription plan '{command.PlanId}' is not active.");
-        if (plan.Price <= 0)
+        if (!plan.Offers(command.BillingInterval))
+        {
+            throw new InvalidOperationException(
+                $"Subscription plan '{command.PlanId}' is not offered with a {command.BillingInterval} billing interval.");
+        }
+
+        var price = plan.GetPrice(command.BillingInterval);
+        if (price <= 0)
         {
             throw new InvalidOperationException("Free plans do not require payment initiation.");
         }
@@ -81,7 +88,7 @@ public sealed class PurchaseSubscriptionHandler(
         {
             paymentResult = await paymentInitiationService.InitiateAsync(
                 new InitiatePaymentCommand(
-                    plan.Price,
+                    price,
                     plan.CurrencyId,
                     PaymentIntent.Subscription,
                     command.PaymentProviderId,
@@ -97,6 +104,7 @@ public sealed class PurchaseSubscriptionHandler(
                         tenantId,
                         billingAccount.Id,
                         plan.Id,
+                        command.BillingInterval,
                         command.AutoRenew,
                         timeProvider.GetUtcNow(),
                         operationId,
@@ -106,6 +114,7 @@ public sealed class PurchaseSubscriptionHandler(
                         billingAccount.Id,
                         subscription.Id,
                         plan,
+                        command.BillingInterval,
                         paymentTransaction.Id,
                         stakeholderId,
                         command.IdempotencyKey,

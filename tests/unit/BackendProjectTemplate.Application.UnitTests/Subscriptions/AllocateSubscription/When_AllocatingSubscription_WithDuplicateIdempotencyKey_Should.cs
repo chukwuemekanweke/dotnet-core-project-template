@@ -15,7 +15,7 @@ public sealed class When_AllocatingSubscription_WithDuplicateIdempotencyKey_Shou
         var context = new AdminSubscriptionTestContext();
         var command = context.CreateAllocation();
         var original = SubscriptionAggregate.CreateAllocated(
-            context.TenantId, context.TenantBillingAccount.Id, context.Plan, AdminSubscriptionTestContext.Now, AdminSubscriptionTestContext.Now.AddDays(10),
+            context.TenantId, context.TenantBillingAccount.Id, context.Plan, context.Plan.Prices.Single().BillingInterval, AdminSubscriptionTestContext.Now, AdminSubscriptionTestContext.Now.AddDays(10),
             AdminSubscriptionTestContext.Now, command.IdempotencyKey, context.AdministratorId.ToString(), command.Reason);
         var allocation = SubscriptionAllocation.Create(
             original, context.Plan, command.AllocationSource, command.Reason, context.AdministratorId.ToString(), command.IdempotencyKey, AllocateSubscriptionRequestFingerprint.Compute(command));

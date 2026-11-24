@@ -85,7 +85,7 @@ public sealed class When_ReportingAdminSubscriptionAnalytics_Should(ContainersFi
             $"analytics-{Guid.CreateVersion7():N}",
             PaymentIntent.Subscription,
             provider.Id,
-            plan.Price,
+            plan.Prices.Single().Price,
             plan.CurrencyId,
             stakeholder.CountryId,
             stakeholder.AppUserId,
@@ -97,6 +97,7 @@ public sealed class When_ReportingAdminSubscriptionAnalytics_Should(ContainersFi
             TargetTenantId,
             account.Id,
             plan.Id,
+            plan.Prices.Single().BillingInterval,
             autoRenew: false,
             activatedAtUtc.AddMilliseconds(-1),
             purchaseOperationId,
@@ -106,6 +107,7 @@ public sealed class When_ReportingAdminSubscriptionAnalytics_Should(ContainersFi
             account.Id,
             subscription.Id,
             plan,
+            plan.Prices.Single().BillingInterval,
             payment.Id,
             stakeholder.Id);
         subscription.ActivateFromPayment(purchase, payment.Id, activatedAtUtc, activationOperationId);

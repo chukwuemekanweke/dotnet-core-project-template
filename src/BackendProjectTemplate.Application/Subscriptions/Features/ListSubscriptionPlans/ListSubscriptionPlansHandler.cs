@@ -21,10 +21,11 @@ public sealed class ListSubscriptionPlansHandler(
                 plan.Id,
                 plan.Code,
                 plan.Name,
-                plan.Price,
+                plan.Description,
+                plan.Features,
+                SubscriptionPlanPriceResponse.From(plan.Prices),
                 plan.CurrencyId,
-                currency.CurrencyCode,
-                plan.BillingInterval.ToString()));
+                currency.CurrencyCode));
         }
 
         return result;

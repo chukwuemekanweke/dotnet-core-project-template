@@ -19,6 +19,7 @@ public sealed class When_SchedulingSubscriptionCancellation_Should
             tenantId,
             billingAccountId,
             plan.Id,
+            plan.Prices.Single().BillingInterval,
             true,
             now,
             Guid.CreateVersion7(),
@@ -28,6 +29,7 @@ public sealed class When_SchedulingSubscriptionCancellation_Should
             billingAccountId,
             subscription.Id,
             plan,
+            plan.Prices.Single().BillingInterval,
             paymentId,
             stakeholderId);
         subscription.ActivateFromPayment(purchase, paymentId, now, purchase.Id);

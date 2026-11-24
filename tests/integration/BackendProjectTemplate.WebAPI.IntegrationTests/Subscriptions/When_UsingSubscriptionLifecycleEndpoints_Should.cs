@@ -110,14 +110,19 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var plans = await response.Content.ReadFromJsonAsync<IReadOnlyList<ListSubscriptionPlansResponse>>();
         plans.ShouldNotBeNull();
-        plans.ShouldContain(plan => plan.Id == _planId && plan.Price == 750000m && plan.CurrencyId == _currencyId);
+        var listed = plans.Single(plan => plan.Id == _planId);
+        listed.CurrencyId.ShouldBe(_currencyId);
+        listed.Prices.Select(price => (price.BillingInterval, price.Price)).ShouldBe([("Monthly", 750000m), ("Yearly", 7500000m)]);
+        listed.Description.ShouldBe("API test plan.");
+        listed.Features.ShouldBe(["Core features"]);
+        plans.ShouldNotContain(plan => plan.Id == _inactivePlanId);
     }
 
     private async Task WhenPurchasingPlan()
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, EndpointUrl.Subscriptions.PurchasesV1)
         {
-            Content = JsonContent.Create(new PurchaseSubscriptionRequest(_planId, _providerId, "Stakeholder", true))
+            Content = JsonContent.Create(new PurchaseSubscriptionRequest(_planId, "Monthly", _providerId, "Stakeholder", true))
         };
         _purchaseIdempotencyKey = Guid.CreateVersion7();
         request.Headers.Add("Idempotency-Key", _purchaseIdempotencyKey.ToString());
@@ -145,7 +150,7 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
     {
         using var replayRequest = new HttpRequestMessage(HttpMethod.Post, EndpointUrl.Subscriptions.PurchasesV1)
         {
-            Content = JsonContent.Create(new PurchaseSubscriptionRequest(_planId, _providerId, "Stakeholder", true))
+            Content = JsonContent.Create(new PurchaseSubscriptionRequest(_planId, "Monthly", _providerId, "Stakeholder", true))
         };
         replayRequest.Headers.Add("Idempotency-Key", _purchaseIdempotencyKey.ToString());
         using var replayResponse = await _client.SendAsync(replayRequest);
@@ -157,7 +162,7 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
 
         using var changedRequest = new HttpRequestMessage(HttpMethod.Post, EndpointUrl.Subscriptions.PurchasesV1)
         {
-            Content = JsonContent.Create(new PurchaseSubscriptionRequest(_planId, _providerId, "Stakeholder", false))
+            Content = JsonContent.Create(new PurchaseSubscriptionRequest(_planId, "Yearly", _providerId, "Stakeholder", true))
         };
         changedRequest.Headers.Add("Idempotency-Key", _purchaseIdempotencyKey.ToString());
         using var changedResponse = await _client.SendAsync(changedRequest);
@@ -204,6 +209,7 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         current.Status.ShouldBe(SubscriptionStatus.Pending.ToString());
         current.LifecycleStatus.ShouldBe(SubscriptionStatus.Pending.ToString());
         current.PlanPrice.ShouldBe(750000m);
+        current.BillingInterval.ShouldBe(nameof(BillingInterval.Monthly));
     }
 
     private async Task GivenPurchaseIsFulfilled()
@@ -313,11 +319,12 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
             false);
         var plan = SubscriptionPlan.Create(
             $"API_{Guid.CreateVersion7():N}",
-            "API Monthly",
-            750000m,
+            "API Plan",
             currency.Id,
-            BillingInterval.Monthly,
-            true);
+            new Dictionary<BillingInterval, decimal> { [BillingInterval.Monthly] = 750000m, [BillingInterval.Yearly] = 7500000m },
+            true,
+            "API test plan.",
+            ["Core features"]);
         var inactivePlan = SubscriptionPlan.Create(
             $"INACTIVE_{Guid.CreateVersion7():N}",
             "Inactive API Monthly",
@@ -364,6 +371,7 @@ public sealed class When_UsingSubscriptionLifecycleEndpoints_Should(ContainersFi
         await dbContext.Subscriptions.Where(item => item.Id == _subscriptionId).ExecuteDeleteAsync();
         await dbContext.PaymentTransactions.Where(item => item.Id == _paymentTransactionId).ExecuteDeleteAsync();
         await dbContext.BillingAccounts.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
+        await dbContext.SubscriptionPlanPrices.Where(item => item.PlanId == _planId || item.PlanId == _inactivePlanId).ExecuteDeleteAsync();
         await dbContext.SubscriptionPlans.Where(item => item.Id == _planId).ExecuteDeleteAsync();
         await dbContext.SubscriptionPlans.Where(item => item.Id == _inactivePlanId).ExecuteDeleteAsync();
         await dbContext.PaymentProviderConfigurations.Where(item => item.Id == _providerConfigurationId).ExecuteDeleteAsync();

@@ -7,7 +7,6 @@ using BackendProjectTemplate.Application.Subscriptions.Features.UpdateSubscripti
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Authorization;
-using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.StepUpMfa;
 using Microsoft.AspNetCore.Authorization;
@@ -64,10 +63,11 @@ public sealed class AdminSubscriptionPlansController(
             new CreateSubscriptionPlanCommand(
                 request.Code,
                 request.Name,
-                request.Price,
+                SubscriptionPlanPricesValidator.ToPriceMap(request.Prices),
                 request.CurrencyId,
-                StrictEnumParser.Parse<BillingInterval>(request.BillingInterval),
                 request.IsActive,
+                request.Description,
+                request.Features ?? [],
                 ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
         return result.Status switch
@@ -99,7 +99,13 @@ public sealed class AdminSubscriptionPlansController(
         }
 
         var result = await updateSubscriptionPlanHandler.HandleAsync(
-            new UpdateSubscriptionPlanCommand(id, request.Name, request.Price, ActorContext.FromCurrentActor(currentActor)),
+            new UpdateSubscriptionPlanCommand(
+                id,
+                request.Name,
+                SubscriptionPlanPricesValidator.ToPriceMap(request.Prices),
+                request.Description,
+                request.Features ?? [],
+                ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
         return result.Status switch
         {

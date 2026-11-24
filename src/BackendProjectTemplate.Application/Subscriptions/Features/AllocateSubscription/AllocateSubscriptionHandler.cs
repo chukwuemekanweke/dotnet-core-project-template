@@ -60,6 +60,18 @@ public sealed class AllocateSubscriptionHandler(
             return AllocateSubscriptionResult.Failed(AllocateSubscriptionStatus.PlanInactive, $"Subscription plan '{plan.Code}' is not active.");
         }
 
+        // A plan offered on a single interval needs no choice; a plan with several requires an explicit one.
+        var billingInterval = command.BillingInterval
+            ?? (plan.Prices.Count == 1 ? plan.Prices.Single().BillingInterval : (BillingInterval?)null);
+        if (billingInterval is null || !plan.Offers(billingInterval.Value))
+        {
+            return AllocateSubscriptionResult.Failed(
+                AllocateSubscriptionStatus.BillingIntervalNotOffered,
+                billingInterval is null
+                    ? $"Subscription plan '{plan.Code}' offers several billing intervals; BillingInterval is required."
+                    : $"Subscription plan '{plan.Code}' is not offered with a {billingInterval} billing interval.");
+        }
+
         var now = SubscriptionTimestamps.Normalize(timeProvider.GetUtcNow());
         var requestedStartUtc = command.StartAtUtc.HasValue ? SubscriptionTimestamps.Normalize(command.StartAtUtc.Value) : (DateTimeOffset?)null;
         if (requestedStartUtc.HasValue && requestedStartUtc.Value < now - StartClockSkewTolerance)
@@ -72,7 +84,7 @@ public sealed class AllocateSubscriptionHandler(
         var startUtc = requestedStartUtc.HasValue && requestedStartUtc.Value > now ? requestedStartUtc.Value : now;
         var endUtc = command.EndAtUtc.HasValue
             ? SubscriptionTimestamps.Normalize(command.EndAtUtc.Value)
-            : plan.CalculatePeriodEnd(startUtc);
+            : plan.CalculatePeriodEnd(billingInterval.Value, startUtc);
         if (endUtc <= startUtc)
         {
             return AllocateSubscriptionResult.Failed(AllocateSubscriptionStatus.InvalidPeriod, "EndAtUtc must be later than the entitlement start.");
@@ -118,6 +130,7 @@ public sealed class AllocateSubscriptionHandler(
             command.TenantId,
             billingAccount.Id,
             plan,
+            billingInterval.Value,
             startUtc,
             endUtc,
             now,

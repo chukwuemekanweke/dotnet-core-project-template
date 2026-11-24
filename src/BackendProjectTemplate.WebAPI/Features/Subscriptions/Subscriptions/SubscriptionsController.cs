@@ -7,6 +7,7 @@ using BackendProjectTemplate.Application.Subscriptions.Features.PurchaseSubscrip
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Payments;
+using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.Exceptions;
 using BackendProjectTemplate.WebAPI.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
@@ -58,6 +59,7 @@ public sealed class SubscriptionsController(
             result = await purchaseHandler.HandleAsync(
                 new PurchaseSubscriptionCommand(
                     request.PlanId,
+                    StrictEnumParser.Parse<BillingInterval>(request.BillingInterval),
                     request.PaymentProviderId,
                     ownerType,
                     request.AutoRenew,

@@ -4,7 +4,8 @@ public sealed record ListSubscriptionPlansResponse(
     Guid Id,
     string Code,
     string Name,
-    decimal Price,
+    string? Description,
+    IReadOnlyList<string> Features,
+    IReadOnlyList<SubscriptionPlanPriceResponse> Prices,
     Guid CurrencyId,
-    string CurrencyCode,
-    string BillingInterval);
+    string CurrencyCode);

@@ -47,6 +47,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<SubscriptionActivation> SubscriptionActivations => Set<SubscriptionActivation>();
     public DbSet<BillingAccount> BillingAccounts => Set<BillingAccount>();
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
+    public DbSet<SubscriptionPlanPrice> SubscriptionPlanPrices => Set<SubscriptionPlanPrice>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<SubscriptionPeriod> SubscriptionPeriods => Set<SubscriptionPeriod>();
     public DbSet<SubscriptionStatusHistory> SubscriptionStatusHistory => Set<SubscriptionStatusHistory>();

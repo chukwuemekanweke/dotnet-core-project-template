@@ -41,6 +41,7 @@ public sealed class When_ExpiringUnpaidSubscriptionPurchase_Should
             subscription.BillingAccountId,
             subscription.Id,
             plan,
+            plan.Prices.Single().BillingInterval,
             paidPaymentId,
             Guid.CreateVersion7());
         subscription.ActivateFromPayment(purchase, paidPaymentId, InitiatedAt, purchase.Id);
@@ -71,6 +72,7 @@ public sealed class When_ExpiringUnpaidSubscriptionPurchase_Should
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             planId ?? Guid.CreateVersion7(),
+            BillingInterval.Monthly,
             false,
             InitiatedAt,
             Guid.CreateVersion7(),

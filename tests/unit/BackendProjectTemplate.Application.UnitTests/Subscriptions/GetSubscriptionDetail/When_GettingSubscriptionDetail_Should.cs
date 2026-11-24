@@ -23,7 +23,7 @@ public sealed class When_GettingSubscriptionDetail_Should
         repository.GetSubscriptionDetailAsync(subscriptionId, GetSubscriptionDetailHandler.MaxHistoryLimit, Arg.Any<CancellationToken>())
             .Returns(new AdminSubscriptionDetailReadModel(
                 summary, null, null, null, null, Guid.CreateVersion7(), null,
-                new AdminSubscriptionPlanReadModel(summary.PlanId, "GOLD", "Gold", 5000m, Guid.CreateVersion7(), "NGN", BillingInterval.Monthly, true, now, now),
+                new AdminSubscriptionPlanReadModel(summary.PlanId, "GOLD", "Gold", "Gold plan", ["Feature"], [new SubscriptionPlanPriceReadModel(BillingInterval.Monthly, 5000m)], Guid.CreateVersion7(), "NGN", true, now, now),
                 new AdminSubscriptionPurchaseReadModel(Guid.CreateVersion7(), Guid.CreateVersion7(), 5000m, Guid.CreateVersion7(), Guid.CreateVersion7(), now, now, null, null),
                 [new AdminSubscriptionPeriodReadModel(Guid.CreateVersion7(), now, now.AddMonths(1), "GOLD", 5000m, Guid.CreateVersion7(), BillingInterval.Monthly, SubscriptionActivationSource.PaidPurchase, Guid.CreateVersion7(), Guid.CreateVersion7())],
                 [new AdminSubscriptionPaymentReadModel(Guid.CreateVersion7(), "pay_1", 5000m, Guid.CreateVersion7(), "NGN", PaymentStatus.Succeeded, renewalId, now, now, null)],

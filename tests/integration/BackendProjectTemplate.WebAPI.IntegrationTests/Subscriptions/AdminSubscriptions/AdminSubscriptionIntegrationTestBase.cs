@@ -91,6 +91,10 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
             .Where(item => _paymentProviderIds.Contains(item.Id))
             .ExecuteDeleteAsync();
         await dbContext.BillingAccounts.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();
+        await dbContext.SubscriptionPlanPrices.IgnoreQueryFilters()
+            .Where(price => dbContext.SubscriptionPlans.IgnoreQueryFilters()
+                .Any(plan => plan.Id == price.PlanId && plan.Code.StartsWith(PlanCodePrefix)))
+            .ExecuteDeleteAsync();
         await dbContext.SubscriptionPlans.IgnoreQueryFilters().Where(item => item.Code.StartsWith(PlanCodePrefix)).ExecuteDeleteAsync();
         await dbContext.Currencies.Where(item => item.Id == CurrencyId).ExecuteDeleteAsync();
         await dbContext.Stakeholders.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();

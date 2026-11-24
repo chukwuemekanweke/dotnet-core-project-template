@@ -26,7 +26,7 @@ public sealed class When_CancellingSubscriptionImmediately_WithUnmatchedOrInvali
             .Status.ShouldBe(CancelSubscriptionImmediatelyStatus.AlreadyCancelled);
 
         var pending = SubscriptionAggregate.CreatePending(
-            context.TenantId, context.TenantBillingAccount.Id, context.Plan.Id, true, AdminSubscriptionTestContext.Now, Guid.CreateVersion7(), null);
+            context.TenantId, context.TenantBillingAccount.Id, context.Plan.Id, context.Plan.Prices.Single().BillingInterval, true, AdminSubscriptionTestContext.Now, Guid.CreateVersion7(), null);
         context.ReturnSubscription(pending);
         (await handler.HandleAsync(new CancelSubscriptionImmediatelyCommand(pending.Id, context.TenantId, "x", context.Actor), CancellationToken.None))
             .Status.ShouldBe(CancelSubscriptionImmediatelyStatus.InvalidState);

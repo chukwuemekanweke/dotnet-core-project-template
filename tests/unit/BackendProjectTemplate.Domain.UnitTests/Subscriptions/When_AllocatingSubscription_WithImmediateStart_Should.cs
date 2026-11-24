@@ -26,7 +26,7 @@ public sealed class When_AllocatingSubscription_WithImmediateStart_Should
         period.PaymentTransactionId.ShouldBeNull();
         period.ActivationSource.ShouldBe(SubscriptionActivationSource.AdministrativeAllocation);
         period.OperationId.ShouldBe(operationId);
-        period.Price.ShouldBe(plan.Price);
+        period.Price.ShouldBe(plan.Prices.Single().Price);
         var history = subscription.StatusHistory.ShouldHaveSingleItem();
         history.PreviousStatus.ShouldBeNull();
         history.NewStatus.ShouldBe(SubscriptionStatus.Active);
