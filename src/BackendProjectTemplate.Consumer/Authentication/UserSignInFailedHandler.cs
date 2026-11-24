@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Notifications;
 using BackendProjectTemplate.Contracts.Events;
+using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -21,6 +22,9 @@ public sealed class UserSignInFailedHandler(
     IAuthenticationSessionService sessionService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
+    ISecurityActivityIpAddressResolver securityActivityIpAddressResolver,
+    IRepository<SecurityActivity> securityActivityRepository,
+    IUserAgentParserService userAgentParserService,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     ILogger<UserSignInFailedHandler> logger,
@@ -57,6 +61,7 @@ public sealed class UserSignInFailedHandler(
         if (stakeholder is not null)
         {
             CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
+            await RecordFailedSignInAsync(message, stakeholder, cancellationToken);
         }
 
         if (message.FailureReason == UserSignInFailureReasons.InvalidCredentials &&
@@ -98,6 +103,29 @@ public sealed class UserSignInFailedHandler(
                 CurrentActorAccessor,
                 stakeholder?.StakeholderId,
                 message.FailureReason));
+    }
+
+    private async Task RecordFailedSignInAsync(
+        UserSignInFailed message,
+        StakeholderReadModel stakeholder,
+        CancellationToken cancellationToken)
+    {
+        var userAgentInfo = userAgentParserService.Parse(message.UserAgent);
+        var ipAddressResolution = await securityActivityIpAddressResolver.ResolveAsync(message.IpAddress, cancellationToken);
+
+        var securityActivity = SecurityActivity.CreateFailedSignIn(
+            stakeholder.StakeholderId,
+            stakeholder.TenantId,
+            ipAddressResolution.IpAddressId,
+            ipAddressResolution.IpAddressLocationId,
+            message.UserAgent,
+            userAgentInfo.DeviceName,
+            userAgentInfo.DevicePlatform,
+            userAgentInfo.BrowserName,
+            message.OccuredAt,
+            message.FailureReason);
+
+        await securityActivityRepository.AddAsync(securityActivity, cancellationToken);
     }
 
     protected override IEnumerable<(string Key, string Value)> GetTelemetryParameters(UserSignInFailed message)

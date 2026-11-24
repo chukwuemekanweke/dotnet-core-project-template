@@ -84,10 +84,10 @@ public sealed class RegistrationAnalyticsReadModelRepository(AppReadDbContext db
                     stakeholder.FirstName + " " + stakeholder.LastName,
                     user.Email ?? string.Empty,
                     stakeholder.CreatedAtUtc,
-                    dbContext.LoginActivities.AsNoTracking()
+                    dbContext.SecurityActivities.AsNoTracking()
                         .Where(login => login.TenantId == stakeholder.TenantId &&
                             login.StakeholderId == stakeholder.Id &&
-                            login.ActivityType == LoginActivityType.InitialLogin)
+                            login.ActivityType == SecurityActivityType.InitialLogin)
                         .Select(login => (DateTimeOffset?)login.OccurredAtUtc)
                         .Max()))
             .Skip((request.Page - 1) * request.PageSize)

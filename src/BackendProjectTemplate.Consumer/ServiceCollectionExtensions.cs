@@ -22,6 +22,7 @@ using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.Us
 using UserActivityObservedEvent = BackendProjectTemplate.Contracts.Events.UserActivityObserved;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 using UserEmailConfirmedEvent = BackendProjectTemplate.Contracts.Events.UserEmailConfirmed;
+using UserSecurityActivityOccurredEvent = BackendProjectTemplate.Contracts.Events.UserSecurityActivityOccurred;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
 using UserSignInSuccessfulEvent = BackendProjectTemplate.Contracts.Events.UserSignInSuccessful;
 
@@ -31,7 +32,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSubscribers(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddScoped<ILoginActivityIpAddressResolver, LoginActivityIpAddressResolver>();
+        services.AddScoped<ISecurityActivityIpAddressResolver, SecurityActivityIpAddressResolver>();
         services.AddScoped<EmailConfirmationOtpSender>();
         services.Configure<SubscriptionRenewalOptions>(configuration.GetSection(SubscriptionRenewalOptions.SectionName));
         services.AddScoped<SubscriptionRenewalCharger>();
@@ -81,6 +82,7 @@ public static class ServiceCollectionExtensions
                 .AddHandler<UserActivityObservedEvent, UserActivityObservedHandler>()
                 .AddHandler<UserAccessTokenRefreshedEvent, UserAccessTokenRefreshedHandler>()
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>()
+                .AddHandler<UserSecurityActivityOccurredEvent, UserSecurityActivityOccurredHandler>()
                 .AddHandler<EmailDeliveryWebhookReceivedEvent, EmailDeliveryWebhookReceivedHandler>()
                 .AddHandler<KycWebhookReceivedEvent, KycWebhookReceivedHandler>()
                 .AddHandler<SuccessfulPaymentConfirmedEvent, SuccessfulPaymentConfirmedHandler>()

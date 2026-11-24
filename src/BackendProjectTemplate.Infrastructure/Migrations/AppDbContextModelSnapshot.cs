@@ -580,7 +580,7 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.ToTable("IpAddressLocations", "authentication");
                 });
 
-            modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.LoginActivity", b =>
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.SecurityActivity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -612,6 +612,10 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<string>("DevicePlatform")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FailureReason")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -3595,7 +3599,7 @@ namespace BackendProjectTemplate.Infrastructure.Migrations
                     b.Navigation("IpAddress");
                 });
 
-            modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.LoginActivity", b =>
+            modelBuilder.Entity("BackendProjectTemplate.Domain.Authentication.Entities.SecurityActivity", b =>
                 {
                     b.HasOne("BackendProjectTemplate.Domain.Authentication.Entities.IpAddress", "IpAddress")
                         .WithMany()

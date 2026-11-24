@@ -1,5 +1,7 @@
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using Microsoft.Extensions.Options;
@@ -13,6 +15,8 @@ public sealed class RegenerateTwoFactorRecoveryCodesHandler(
     IAuthenticationSessionService sessionService,
     IOptions<TwoFactorAuthenticationOptions> options,
     ICustomTelemetryContext telemetryContext,
+    IEventPublisher eventPublisher,
+    TimeProvider timeProvider,
     IUnitOfWork unitOfWork)
 {
     public async Task<RegenerateTwoFactorRecoveryCodesResult> HandleAsync(
@@ -36,6 +40,14 @@ public sealed class RegenerateTwoFactorRecoveryCodesHandler(
             return new RegenerateTwoFactorRecoveryCodesResult(RegenerateTwoFactorRecoveryCodesStatus.Failed);
 
         await sessionService.RevokeOthersAsync(command.CurrentSessionId, actor.StakeholderId, cancellationToken);
+        await eventPublisher.PublishAsync(
+            new UserSecurityActivityOccurred(UserSecurityActivityTypes.TwoFactorRecoveryCodesRegenerated, command.IpAddress, command.UserAgent)
+            {
+                StakeholderId = actor.StakeholderId,
+                FlowId = command.ActorContext.FlowId,
+                OccuredAt = timeProvider.GetUtcNow()
+            },
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         telemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.TwoFactorRecoveryCodesRegenerated,

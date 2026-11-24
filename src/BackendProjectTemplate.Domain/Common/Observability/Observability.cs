@@ -106,6 +106,7 @@ public static class Observability
             public const string SignOutCompleted = "SignOutCompleted";
             public const string SessionRefreshCompleted = "SessionRefreshCompleted";
             public const string SessionRefreshPostProcessingCompleted = "SessionRefreshPostProcessingCompleted";
+            public const string SecurityActivityPostProcessingCompleted = "SecurityActivityPostProcessingCompleted";
             public const string TwoFactorChallengeRequired = "TwoFactorChallengeRequired";
             public const string TwoFactorVerificationCompleted = "TwoFactorVerificationCompleted";
             public const string TwoFactorVerificationFailed = "TwoFactorVerificationFailed";

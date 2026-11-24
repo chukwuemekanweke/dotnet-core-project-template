@@ -6,4 +6,5 @@ public static class UserSignInFailureReasons
     public const string InvalidCredentials = "invalid_credentials";
     public const string EmailNotVerified = "email_not_verified";
     public const string LockedOut = "locked_out";
+    public const string InvalidTwoFactorCode = "invalid_two_factor_code";
 }

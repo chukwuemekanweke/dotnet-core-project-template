@@ -24,8 +24,8 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutStakeholderActorId_Sh
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
-        var loginActivityIpAddressResolver = Substitute.For<ILoginActivityIpAddressResolver>();
-        var loginActivityRepository = Substitute.For<IRepository<LoginActivity>>();
+        var securityActivityIpAddressResolver = Substitute.For<ISecurityActivityIpAddressResolver>();
+        var securityActivityRepository = Substitute.For<IRepository<SecurityActivity>>();
         var userAgentParserService = Substitute.For<IUserAgentParserService>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
@@ -43,8 +43,8 @@ public sealed class WhenHandlingUserSignInSuccessfulWithoutStakeholderActorId_Sh
             Substitute.For<IUserDailyActivityPersistence>(),
             stakeholderReadModelRepository,
             commandSender,
-            loginActivityIpAddressResolver,
-            loginActivityRepository,
+            securityActivityIpAddressResolver,
+            securityActivityRepository,
             unitOfWork,
             userAgentParserService,
             TimeProvider.System,

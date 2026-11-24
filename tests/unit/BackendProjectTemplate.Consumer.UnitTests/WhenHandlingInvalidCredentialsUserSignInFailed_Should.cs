@@ -26,6 +26,7 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         var logger = Substitute.For<ILogger<UserSignInFailedHandler>>();
+        var securityActivityRepository = Substitute.For<IRepository<SecurityActivity>>();
         var email = ConsumerTestData.Email();
         var ipAddress = ConsumerTestData.IpAddress();
         var userAgent = ConsumerTestData.UserAgent();
@@ -47,6 +48,9 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
             Substitute.For<IAuthenticationSessionService>(),
             stakeholderReadModelRepository,
             commandSender,
+            Substitute.For<ISecurityActivityIpAddressResolver>(),
+            securityActivityRepository,
+            Substitute.For<IUserAgentParserService>(),
             unitOfWork,
             TimeProvider.System,
             logger,
@@ -66,6 +70,7 @@ public sealed class WhenHandlingInvalidCredentialsUserSignInFailed_Should
             Arg.Any<SendNotificationCommand>(),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await securityActivityRepository.DidNotReceive().AddAsync(Arg.Any<SecurityActivity>(), Arg.Any<CancellationToken>());
     }
 }
 

@@ -1,5 +1,7 @@
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 
@@ -11,6 +13,8 @@ public sealed class DisableTwoFactorHandler(
     IAuthenticationIdentityService identityService,
     IAuthenticationSessionService sessionService,
     ICustomTelemetryContext telemetryContext,
+    IEventPublisher eventPublisher,
+    TimeProvider timeProvider,
     IUnitOfWork unitOfWork)
 {
     public async Task<DisableTwoFactorResult> HandleAsync(
@@ -32,6 +36,14 @@ public sealed class DisableTwoFactorHandler(
         if (!(await identityService.ResetAuthenticatorKeyAsync(actor.User)).Succeeded)
             return DisableTwoFactorResult.Failed;
         await sessionService.RevokeOthersAsync(command.CurrentSessionId, actor.StakeholderId, cancellationToken);
+        await eventPublisher.PublishAsync(
+            new UserSecurityActivityOccurred(UserSecurityActivityTypes.TwoFactorDisabled, command.IpAddress, command.UserAgent)
+            {
+                StakeholderId = actor.StakeholderId,
+                FlowId = command.ActorContext.FlowId,
+                OccuredAt = timeProvider.GetUtcNow()
+            },
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         telemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.TwoFactorDisabled,

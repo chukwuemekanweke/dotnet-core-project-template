@@ -71,10 +71,10 @@ public sealed class ActiveUserAnalyticsReadModelRepository(AppReadDbContext dbCo
                 row.activity.FirstActivityAtUtc,
                 row.activity.LastActivityAtUtc,
                 row.activity.ActivityCount,
-                dbContext.LoginActivities.AsNoTracking()
+                dbContext.SecurityActivities.AsNoTracking()
                     .Where(login => login.TenantId == row.activity.TenantId &&
                         login.StakeholderId == row.stakeholder.Id &&
-                        login.ActivityType == LoginActivityType.InitialLogin)
+                        login.ActivityType == SecurityActivityType.InitialLogin)
                     .Select(login => (DateTimeOffset?)login.OccurredAtUtc)
                     .Max()))
             .Skip((request.Page - 1) * request.PageSize)

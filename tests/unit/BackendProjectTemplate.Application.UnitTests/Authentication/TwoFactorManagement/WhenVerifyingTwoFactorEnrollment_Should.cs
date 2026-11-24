@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication;
 using BackendProjectTemplate.Application.Authentication.Features.VerifyTwoFactorEnrollment;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
@@ -36,13 +37,22 @@ public sealed class WhenVerifyingTwoFactorEnrollment_Should
             Options.Create(new TwoFactorAuthenticationOptions()),
             context.CustomTelemetryContext,
             context.SessionService,
+            context.EventPublisher,
+            context.Clock,
             context.UnitOfWork);
 
         var result = await handler.HandleAsync(
-            new VerifyTwoFactorEnrollmentCommand("123456", sessionId, actorContext), CancellationToken.None);
+            new VerifyTwoFactorEnrollmentCommand("123456", sessionId, "203.0.113.10", "Mozilla/5.0", actorContext), CancellationToken.None);
 
         result.Status.ShouldBe(VerifyTwoFactorEnrollmentStatus.Success);
         result.RecoveryCodes.ShouldBe(["recovery-one", "recovery-two"]);
+        await context.EventPublisher.Received(1).PublishAsync(
+            Arg.Is<UserSecurityActivityOccurred>(message =>
+                message.ActivityType == UserSecurityActivityTypes.TwoFactorEnabled &&
+                message.StakeholderId == stakeholderId &&
+                message.IpAddress == "203.0.113.10" &&
+                message.UserAgent == "Mozilla/5.0"),
+            Arg.Any<CancellationToken>());
         await context.SessionService.Received(1)
             .RevokeOthersAsync(sessionId, stakeholderId, Arg.Any<CancellationToken>());
         await context.IdentityService.Received(1).UpdateSecurityStampAsync(user);
@@ -67,12 +77,17 @@ public sealed class WhenVerifyingTwoFactorEnrollment_Should
             Options.Create(new TwoFactorAuthenticationOptions()),
             context.CustomTelemetryContext,
             context.SessionService,
+            context.EventPublisher,
+            context.Clock,
             context.UnitOfWork);
 
         var result = await handler.HandleAsync(
-            new VerifyTwoFactorEnrollmentCommand("000000", sessionId, actorContext), CancellationToken.None);
+            new VerifyTwoFactorEnrollmentCommand("000000", sessionId, "203.0.113.10", "Mozilla/5.0", actorContext), CancellationToken.None);
 
         result.Status.ShouldBe(VerifyTwoFactorEnrollmentStatus.InvalidCode);
+        await context.EventPublisher.DidNotReceive().PublishAsync(
+            Arg.Any<UserSecurityActivityOccurred>(),
+            Arg.Any<CancellationToken>());
         await context.IdentityService.DidNotReceiveWithAnyArgs().SetTwoFactorEnabledAsync(default!, default);
     }
 }

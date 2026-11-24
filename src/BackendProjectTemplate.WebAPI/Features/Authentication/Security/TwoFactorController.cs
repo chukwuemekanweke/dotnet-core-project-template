@@ -78,6 +78,8 @@ public sealed class TwoFactorController(
             new VerifyTwoFactorEnrollmentCommand(
                 request.Code,
                 currentSessionId,
+                HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                HttpContext?.Request.Headers.UserAgent.ToString() ?? string.Empty,
                 ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
         return result.Status switch
@@ -106,6 +108,8 @@ public sealed class TwoFactorController(
                 ParseMethod(request.VerificationMethod),
                 request.Code,
                 currentSessionId,
+                HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                HttpContext?.Request.Headers.UserAgent.ToString() ?? string.Empty,
                 ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
         return result.Status switch
@@ -134,6 +138,8 @@ public sealed class TwoFactorController(
                 ParseMethod(request.VerificationMethod),
                 request.Code,
                 currentSessionId,
+                HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                HttpContext?.Request.Headers.UserAgent.ToString() ?? string.Empty,
                 ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
         return result switch

@@ -1,5 +1,7 @@
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Services;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using Microsoft.Extensions.Options;
@@ -12,6 +14,8 @@ public sealed class VerifyTwoFactorEnrollmentHandler(
     IOptions<TwoFactorAuthenticationOptions> options,
     ICustomTelemetryContext telemetryContext,
     IAuthenticationSessionService sessionService,
+    IEventPublisher eventPublisher,
+    TimeProvider timeProvider,
     IUnitOfWork unitOfWork)
 {
     public async Task<VerifyTwoFactorEnrollmentResult> HandleAsync(
@@ -37,6 +41,14 @@ public sealed class VerifyTwoFactorEnrollmentHandler(
         if (codes is null || codes.Length == 0)
             return new VerifyTwoFactorEnrollmentResult(VerifyTwoFactorEnrollmentStatus.Failed);
         await sessionService.RevokeOthersAsync(command.CurrentSessionId, actor.StakeholderId, cancellationToken);
+        await eventPublisher.PublishAsync(
+            new UserSecurityActivityOccurred(UserSecurityActivityTypes.TwoFactorEnabled, command.IpAddress, command.UserAgent)
+            {
+                StakeholderId = actor.StakeholderId,
+                FlowId = command.ActorContext.FlowId,
+                OccuredAt = timeProvider.GetUtcNow()
+            },
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         telemetryContext.AddCustomEvent(

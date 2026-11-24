@@ -37,7 +37,7 @@ nonqualifying endpoints. Refresh, health, metrics, documentation, webhook, and t
 qualify.
 
 Successful password, Google, passkey, and completed MFA sign-ins reuse `UserSignInSuccessful` and are
-persisted as login activity. Failed credentials, incomplete challenges, and refreshes never count. Do
+persisted as `InitialLogin` security activity. Failed credentials, incomplete challenges, and refreshes never count. Do
 not publish a second login observation from the HTTP middleware.
 
 ## Request throttling and delivery

@@ -13,7 +13,7 @@ using BackendProjectTemplate.Application.Authentication.Features.CreatePasskeyRe
 using BackendProjectTemplate.Application.Authentication.Features.DisableTwoFactor;
 using BackendProjectTemplate.Application.Authentication.Features.GetAdminUserDetail;
 using BackendProjectTemplate.Application.Authentication.Features.GetAdminUserRoles;
-using BackendProjectTemplate.Application.Authentication.Features.GetLoginActivityHistory;
+using BackendProjectTemplate.Application.Authentication.Features.GetSecurityActivityHistory;
 using BackendProjectTemplate.Application.Authentication.Features.GetTwoFactorStatus;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignIn;
 using BackendProjectTemplate.Application.Authentication.Features.GoogleSignUp;
@@ -140,7 +140,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetTwoFactorStatusHandler>();
         services.AddScoped<LinkGoogleAccountHandler>();
         services.AddScoped<StartGoogleAuthenticationFlowHandler>();
-        services.AddScoped<GetLoginActivityHistoryHandler>();
+        services.AddScoped<GetSecurityActivityHistoryHandler>();
         services.AddScoped<CompletePasswordResetHandler>();
         services.AddScoped<LogoutSessionHandler>();
         services.AddScoped<ListSessionsHandler>();

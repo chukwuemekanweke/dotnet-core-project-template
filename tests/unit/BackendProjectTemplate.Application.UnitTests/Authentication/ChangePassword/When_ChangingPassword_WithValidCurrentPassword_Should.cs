@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Features.ChangePassword;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Microsoft.AspNetCore.Identity;
 using Shouldly;
@@ -26,6 +27,14 @@ public sealed class When_ChangingPassword_WithValidCurrentPassword_Should
 
         result.Status.ShouldBe(ChangePasswordStatus.Success);
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.EventPublisher.Received(1).PublishAsync(
+            Arg.Is<UserSecurityActivityOccurred>(message =>
+                message.ActivityType == UserSecurityActivityTypes.PasswordChanged &&
+                message.StakeholderId == stakeholderId &&
+                message.IpAddress == command.IpAddress &&
+                message.UserAgent == command.UserAgent &&
+                message.OccuredAt == context.Clock.GetUtcNow()),
+            Arg.Any<CancellationToken>());
     }
 
     private static StakeholderReadModel CreateStakeholder(

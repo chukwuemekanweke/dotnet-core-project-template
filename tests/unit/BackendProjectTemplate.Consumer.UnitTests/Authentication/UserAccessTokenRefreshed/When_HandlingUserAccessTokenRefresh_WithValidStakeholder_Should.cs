@@ -12,14 +12,14 @@ namespace BackendProjectTemplate.Consumer.UnitTests.Authentication;
 public sealed class When_HandlingUserAccessTokenRefresh_WithValidStakeholder_Should
 {
     [Fact]
-    public async Task PersistLoginActivity()
+    public async Task PersistSecurityActivity()
     {
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
         var currentActorAccessor = Substitute.For<ICurrentActorAccessor>();
         var messageContext = Substitute.For<IMessageContext>();
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
-        var loginActivityIpAddressResolver = Substitute.For<ILoginActivityIpAddressResolver>();
-        var loginActivityRepository = Substitute.For<IRepository<LoginActivity>>();
+        var securityActivityIpAddressResolver = Substitute.For<ISecurityActivityIpAddressResolver>();
+        var securityActivityRepository = Substitute.For<IRepository<SecurityActivity>>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
         var userAgentParserService = Substitute.For<IUserAgentParserService>();
@@ -45,8 +45,8 @@ public sealed class When_HandlingUserAccessTokenRefresh_WithValidStakeholder_Sho
                 ConsumerTestData.LastName(),
                 null,
                 true));
-        loginActivityIpAddressResolver.ResolveAsync(message.IpAddress, Arg.Any<CancellationToken>())
-            .Returns(new LoginActivityIpAddressResolution(Guid.CreateVersion7(), Guid.CreateVersion7()));
+        securityActivityIpAddressResolver.ResolveAsync(message.IpAddress, Arg.Any<CancellationToken>())
+            .Returns(new SecurityActivityIpAddressResolution(Guid.CreateVersion7(), Guid.CreateVersion7()));
         userAgentParserService.Parse(message.UserAgent)
             .Returns(new UserAgentInfo("Phone", "Android", "Chrome"));
 
@@ -55,8 +55,8 @@ public sealed class When_HandlingUserAccessTokenRefresh_WithValidStakeholder_Sho
             currentActorAccessor,
             messageContext,
             stakeholderReadModelRepository,
-            loginActivityIpAddressResolver,
-            loginActivityRepository,
+            securityActivityIpAddressResolver,
+            securityActivityRepository,
             unitOfWork,
             userAgentParserService,
             timeProvider,
@@ -65,11 +65,11 @@ public sealed class When_HandlingUserAccessTokenRefresh_WithValidStakeholder_Sho
 
         await sut.HandleAsync(message, CancellationToken.None);
 
-        await loginActivityRepository.Received(1).AddAsync(
-            Arg.Is<LoginActivity>(activity =>
+        await securityActivityRepository.Received(1).AddAsync(
+            Arg.Is<SecurityActivity>(activity =>
                 activity.StakeholderId == stakeholderId &&
                 activity.TenantId == tenantId &&
-                activity.ActivityType == LoginActivityType.TokenRefresh),
+                activity.ActivityType == SecurityActivityType.TokenRefresh),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

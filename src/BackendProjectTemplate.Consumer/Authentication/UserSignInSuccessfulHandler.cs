@@ -22,8 +22,8 @@ public sealed class UserSignInSuccessfulHandler(
     IUserDailyActivityPersistence activityPersistence,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICommandSender commandSender,
-    ILoginActivityIpAddressResolver loginActivityIpAddressResolver,
-    IRepository<LoginActivity> loginActivityRepository,
+    ISecurityActivityIpAddressResolver securityActivityIpAddressResolver,
+    IRepository<SecurityActivity> securityActivityRepository,
     IUnitOfWork unitOfWork,
     IUserAgentParserService userAgentParserService,
     TimeProvider timeProvider,
@@ -69,9 +69,9 @@ public sealed class UserSignInSuccessfulHandler(
         }
 
         var userAgentInfo = userAgentParserService.Parse(message.UserAgent);
-        var ipAddressResolution = await loginActivityIpAddressResolver.ResolveAsync(message.IpAddress, cancellationToken);
+        var ipAddressResolution = await securityActivityIpAddressResolver.ResolveAsync(message.IpAddress, cancellationToken);
 
-        var loginActivity = LoginActivity.CreateInitialLogin(
+        var securityActivity = SecurityActivity.CreateInitialLogin(
             stakeholder.StakeholderId,
             stakeholder.TenantId,
             ipAddressResolution.IpAddressId,
@@ -82,7 +82,7 @@ public sealed class UserSignInSuccessfulHandler(
             userAgentInfo.BrowserName,
             Clock.GetUtcNow());
 
-        await loginActivityRepository.AddAsync(loginActivity, cancellationToken);
+        await securityActivityRepository.AddAsync(securityActivity, cancellationToken);
 
         await commandSender.SendAsync(
             new SendNotificationCommand(

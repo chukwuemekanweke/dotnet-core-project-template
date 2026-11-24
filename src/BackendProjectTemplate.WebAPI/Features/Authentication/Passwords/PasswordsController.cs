@@ -38,6 +38,8 @@ public sealed class PasswordsController(
                 request.CurrentPassword,
                 request.NewPassword,
                 request.ConfirmNewPassword,
+                HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                HttpContext?.Request.Headers.UserAgent.ToString() ?? string.Empty,
                 ActorContext.FromCurrentActor(currentActor)),
             cancellationToken);
 

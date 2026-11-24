@@ -51,7 +51,8 @@ activity.
 
 Historical counts bypass the stakeholder soft-delete filter where required and must not join stakeholder
 profiles, so later deletion does not erase history. Detailed lists respect soft deletion. Last login is the
-latest tenant-and-stakeholder-scoped `LoginActivityType.InitialLogin`; token refreshes never qualify.
+latest tenant-and-stakeholder-scoped `SecurityActivityType.InitialLogin`; token refreshes, failed sign-ins and
+account-security changes in the same table never qualify.
 
 All four endpoints require `users.analytics.read`, initially granted only to Administrator. The platform
 administrative model is cross-tenant; an optional tenant identifier narrows results and is never an
@@ -66,4 +67,4 @@ minute, cache failure falls back to PostgreSQL, and lists are not cached.
 Read paths use `AppReadDbContext`, `AsNoTracking`, projected fields, database aggregation, server-side
 pagination, and correlated last-login subqueries. Reporting indexes are tenant/date/stakeholder for daily
 activity, tenant/created/id for stakeholders, and tenant/stakeholder/activity-type/descending occurrence
-for login activity.
+for security activity.
