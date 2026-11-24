@@ -102,7 +102,10 @@ status: stable
 - Payment status-transition history and reconciliation-attempt history are not currently persisted.
   Administrative detail therefore returns the current status plus its latest safe reason and
   `LastStatusCheckAtUtc`; it must not infer or manufacture historical transitions or reconciliation outcomes.
-- `SuccessfulPaymentConfirmed`, `ActivateSubscriptionCommand`, `CreditWalletCommand` cross into `Consumer`/`Jobs` via `Contracts` and the outbox — see [[async-processing]].
+- `SuccessfulPaymentConfirmed`, `UnsuccessfulPaymentConcluded`, `ActivateSubscriptionCommand`, `CreditWalletCommand` cross into `Consumer`/`Jobs` via `Contracts` and the outbox — see [[async-processing]].
+  Every path that moves a subscription-intent payment to a terminal non-success state (webhook and reconciliation
+  Failed/Expired/Underpaid) must call `UnsuccessfulPaymentNotification.PublishAsync`, or the Pending subscription is
+  never released (see [[subscriptions]]).
 - The generic payment-initiation endpoint is wallet-top-up only. Subscription checkout goes through
   the dedicated [[subscriptions]] purchase slice so plan price/currency are server-authoritative and a
   durable purchase correlation exists before provider initiation.

@@ -29,6 +29,8 @@ code_refs:
     - src/BackendProjectTemplate.Infrastructure/Migrations/*_ImplementAdminSubscriptionManagement.cs
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/**
     - src/BackendProjectTemplate.Consumer/Payments/ActivateSubscriptionHandler.cs
+    - src/BackendProjectTemplate.Consumer/Payments/UnsuccessfulPaymentConcludedHandler.cs
+    - src/BackendProjectTemplate.DatabaseMigrator/Scripts/PostDeploy/0003.expire-unpaid-subscription-purchases.postdeploy.sql
     - src/BackendProjectTemplate.Consumer/Subscriptions/**
     - src/BackendProjectTemplate.Contracts/Commands/Subscriptions/**
     - tests/unit/BackendProjectTemplate.Domain.UnitTests/Subscriptions/**
@@ -82,7 +84,12 @@ time), marks the attempt/renewal fulfilled and schedules the next renewal.
 ## Lifecycle semantics
 
 New purchases begin `Pending`; a paid or explicitly administrative activation transitions them to
-`Active`. Administrative allocation creates no fake payment reference. Cancellation at period end
+`Active`. When the initial payment instead reaches a terminal non-success state (Failed, Cancelled, Expired, or an
+uncredited Underpaid), payments publish `UnsuccessfulPaymentConcluded` and `UnsuccessfulPaymentConcludedHandler`
+re-reads the payment and moves the still-Pending subscription straight to `Expired`
+(`initial_payment_unsuccessful` history, no period, never entitled). Without this the abandoned Pending row stays
+the BillingAccount's current subscription and blocks a new purchase. The idempotent
+`0003.expire-unpaid-subscription-purchases` post-deploy script backfills rows that predate or missed the event. Administrative allocation creates no fake payment reference. Cancellation at period end
 keeps the subscription active and entitlement intact through `CurrentPeriodEndUtc`, disables renewal,
 clears `NextBillingAtUtc`, records an auditable lifecycle decision, and atomically schedules a
 state-checked `ExpireSubscriptionCommand`. `NextBillingAtUtc` is the next charge-attempt date, not a

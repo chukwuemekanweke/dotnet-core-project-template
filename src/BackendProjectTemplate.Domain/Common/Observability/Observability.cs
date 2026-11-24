@@ -164,6 +164,7 @@ public static class Observability
             public const string CancelledImmediately = "subscription.cancelled_immediately";
             public const string AdministrativeCancellationScheduled = "subscription.cancellation.administratively_scheduled";
             public const string PurchaseFulfillmentBlocked = "subscription.purchase.fulfillment_blocked";
+            public const string PurchaseExpiredUnpaid = "subscription.purchase.expired_unpaid";
             public const string PurchaseFulfillmentRetryRequested = "subscription.purchase.fulfillment_retry_requested";
             public const string RenewalFulfillmentBlocked = "subscription.renewal.fulfillment_blocked";
             public const string PlanCreated = "subscription.plan.created";
