@@ -97,14 +97,14 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
                 ["ConnectionStrings:PostgresWrite"] = _fixture.PostgresConnectionString,
                 ["ConnectionStrings:PostgresRead"] = _fixture.PostgresConnectionString,
                 ["ConnectionStrings:Redis"] = _fixture.RedisConnectionString,
-                ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
+                ["Messaging:RabbitMq:ServiceName"] = "BackendProjectTemplate.Consumer",
                 ["Messaging:RabbitMq:HostName"] = _fixture.RabbitMqHostName,
                 ["Messaging:RabbitMq:Port"] = _fixture.RabbitMqPort.ToString(),
                 ["Messaging:RabbitMq:UserName"] = _fixture.RabbitMqUserName,
                 ["Messaging:RabbitMq:Password"] = _fixture.RabbitMqPassword,
                 ["Messaging:RabbitMq:VirtualHost"] = _fixture.RabbitMqVirtualHost,
-                ["Messaging:RabbitMq:EventsExchange"] = "x.events.backendprojecttemplate.integrationtests",
-                ["Messaging:RabbitMq:CommandsExchange"] = "x.commands.backendprojecttemplate.integrationtests",
+                ["Messaging:RabbitMq:EventsExchange"] = "x.events.backendprojecttemplate",
+                ["Messaging:RabbitMq:CommandsExchange"] = "x.commands.backendprojecttemplate",
                 ["Notifications:Email:FromAddress"] = "no-reply@integrationtests.local",
                 ["Notifications:Email:FromName"] = "BackendProjectTemplate Integration Tests",
                 ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Consumer.IntegrationTests",
@@ -119,7 +119,10 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
             .AddInMemoryCollection(configurationValues)
             .Build();
 
-        var builder = Host.CreateApplicationBuilder();
+        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            EnvironmentName = "IntegrationTests"
+        });
         builder.Configuration.AddConfiguration(configuration);
         builder.Services.AddLogging();
         builder.Services.AddDataProtection();
@@ -135,7 +138,7 @@ public abstract class ConsumerWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddObjectStorage(configuration);
         builder.Services.AddCustomTelemetryContext();
         builder.Services.AddBackendTelemetry(configuration);
-        builder.Services.AddSubscribers(configuration);
+        builder.Services.AddSubscribers(configuration, builder.Environment.EnvironmentName);
         RegisterTestServices(builder.Services);
 
         _host = builder.Build();

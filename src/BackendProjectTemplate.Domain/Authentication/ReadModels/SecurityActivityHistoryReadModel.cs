@@ -1,0 +1,16 @@
+using BackendProjectTemplate.Domain.Authentication.Entities;
+
+namespace BackendProjectTemplate.Domain.Authentication.ReadModels;
+
+public sealed record SecurityActivityHistoryReadModel(
+    Guid SecurityActivityId,
+    SecurityActivityType ActivityType,
+    DateTimeOffset OccurredAtUtc,
+    string IpAddress,
+    string? DeviceName,
+    string? DevicePlatform,
+    string? BrowserName,
+    string? City,
+    string? State,
+    string? Country,
+    string? FailureReason);

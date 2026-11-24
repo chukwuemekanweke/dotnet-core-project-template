@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Features.CompleteTwoFactorChallenge;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -41,6 +42,17 @@ public sealed class WhenCompletingChallengeWithInvalidCode_Should
         result.Status.ShouldBe(expected);
         await context.TwoFactorChallengeService.Received(1).RestoreAsync(
             Arg.Is<TwoFactorChallenge>(value => value.RemainingAttempts == attempts - 1),
+            Arg.Any<CancellationToken>());
+        await context.EventPublisher.Received(1).PublishAsync(
+            Arg.Is<UserSignInFailed>(message =>
+                message.FailureReason == UserSignInFailureReasons.InvalidTwoFactorCode &&
+                message.EmailAddress == user.Email &&
+                message.StakeholderId == stakeholder.Id &&
+                message.IpAddress == challenge.IpAddress &&
+                message.UserAgent == challenge.UserAgent),
+            Arg.Any<CancellationToken>());
+        await context.EventPublisher.DidNotReceive().PublishAsync(
+            Arg.Any<UserSignInSuccessful>(),
             Arg.Any<CancellationToken>());
         await context.SessionService.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default!, default, default);
     }

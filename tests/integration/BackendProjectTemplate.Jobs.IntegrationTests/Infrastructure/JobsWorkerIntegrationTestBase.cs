@@ -24,7 +24,10 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
     private void InitializeWorkerHost(Action<IServiceCollection, IConfiguration> registerWorkers)
     {
         var configuration = BuildConfiguration();
-        var builder = Host.CreateApplicationBuilder();
+        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            EnvironmentName = CustomJobsApplicationFactory.HostEnvironmentName
+        });
 
         builder.Configuration.AddConfiguration(configuration);
         builder.Services.AddLogging();
@@ -32,7 +35,7 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
         builder.Services.AddBackgroundServiceReadinessTracking();
         builder.Services.AddCustomTelemetryContext();
         builder.Services.AddPostgresPersistence(configuration);
-        builder.Services.AddRabbitMqOutboxDispatching(configuration);
+        builder.Services.AddRabbitMqOutboxDispatching(configuration, builder.Environment.EnvironmentName);
         registerWorkers(builder.Services, configuration);
 
         _workerHost = builder.Build();
@@ -141,8 +144,8 @@ public abstract class JobsWorkerIntegrationTestBase : IAsyncLifetime
             ["Messaging:RabbitMq:UserName"] = _fixture.RabbitMqUserName,
             ["Messaging:RabbitMq:Password"] = _fixture.RabbitMqPassword,
             ["Messaging:RabbitMq:VirtualHost"] = _fixture.RabbitMqVirtualHost,
-            ["Messaging:RabbitMq:EventsExchange"] = CustomJobsApplicationFactory.EventsExchange,
-            ["Messaging:RabbitMq:CommandsExchange"] = CustomJobsApplicationFactory.CommandsExchange,
+            ["Messaging:RabbitMq:EventsExchange"] = CustomJobsApplicationFactory.BaseEventsExchange,
+            ["Messaging:RabbitMq:CommandsExchange"] = CustomJobsApplicationFactory.BaseCommandsExchange,
             ["OpenTelemetry:ServiceName"] = "BackendProjectTemplate.Jobs.IntegrationTests",
             ["OpenTelemetry:OtlpEndpoint"] = "http://localhost:4317"
         };

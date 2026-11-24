@@ -32,7 +32,7 @@ builder.Services.AddPostgresWritePersistence(builder.Configuration);
 builder.Services.AddPostgresReadPersistence(builder.Configuration);
 builder.Services.AddPaymentServices(builder.Configuration);
 builder.Services.AddTransactionalOutbox();
-builder.Services.AddRabbitMqOutboxDispatching(builder.Configuration);
+builder.Services.AddRabbitMqOutboxDispatching(builder.Configuration, builder.Environment.EnvironmentName);
 builder.Services.AddOutboxMessageProcessing(builder.Configuration);
 builder.Services.AddIpAddressLocationEnrichment(builder.Configuration);
 builder.Services.AddPaymentReconciliation(builder.Configuration);

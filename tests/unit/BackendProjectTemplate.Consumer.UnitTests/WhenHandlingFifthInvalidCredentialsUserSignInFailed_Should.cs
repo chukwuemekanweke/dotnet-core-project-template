@@ -47,8 +47,16 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(stakeholderId, Guid.CreateVersion7(), email, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
 
+        var securityActivityIpAddressResolver = Substitute.For<ISecurityActivityIpAddressResolver>();
+        var securityActivityRepository = Substitute.For<IRepository<SecurityActivity>>();
+        var userAgentParserService = Substitute.For<IUserAgentParserService>();
+        var ipAddressId = Guid.CreateVersion7();
+        userAgentParserService.Parse(userAgent).Returns(new UserAgentInfo("Desktop", "Windows", "Chrome"));
+        securityActivityIpAddressResolver.ResolveAsync(ipAddress, Arg.Any<CancellationToken>())
+            .Returns(new SecurityActivityIpAddressResolution(ipAddressId, null));
+
         var sessionService = Substitute.For<IAuthenticationSessionService>();
-        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, sessionService, stakeholderReadModelRepository, commandSender, unitOfWork, timeProvider, logger, messageInboxRepository).HandleAsync(
+        await new UserSignInFailedHandler(customTelemetryContext, currentActorAccessor, messageContext, identityService, sessionService, stakeholderReadModelRepository, commandSender, securityActivityIpAddressResolver, securityActivityRepository, userAgentParserService, unitOfWork, timeProvider, logger, messageInboxRepository).HandleAsync(
             new UserSignInFailed(
                 email,
                 ipAddress,
@@ -60,6 +68,15 @@ public sealed class WhenHandlingFifthInvalidCredentialsUserSignInFailed_Should
             },
             CancellationToken.None);
 
+        await securityActivityRepository.Received(1).AddAsync(
+            Arg.Is<SecurityActivity>(activity =>
+                activity.ActivityType == SecurityActivityType.FailedSignIn &&
+                activity.FailureReason == UserSignInFailureReasons.InvalidCredentials &&
+                activity.StakeholderId == stakeholderId &&
+                activity.TenantId == tenantId &&
+                activity.IpAddressId == ipAddressId &&
+                activity.BrowserName == "Chrome"),
+            Arg.Any<CancellationToken>());
         await commandSender.Received(1).SendAsync(
             Arg.Is<SendNotificationCommand>(command =>
                 command.TenantId == tenantId &&

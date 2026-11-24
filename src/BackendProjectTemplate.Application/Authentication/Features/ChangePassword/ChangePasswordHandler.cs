@@ -1,4 +1,6 @@
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Authentication;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
@@ -10,6 +12,8 @@ public sealed class ChangePasswordHandler(
     IAuthenticationIdentityService identityService,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
     ICustomTelemetryContext customTelemetryContext,
+    IEventPublisher eventPublisher,
+    TimeProvider timeProvider,
     IUnitOfWork unitOfWork)
 {
     public async Task<ChangePasswordResult> HandleAsync(
@@ -61,6 +65,14 @@ public sealed class ChangePasswordHandler(
                     result.ToValidationDictionary());
         }
 
+        await eventPublisher.PublishAsync(
+            new UserSecurityActivityOccurred(UserSecurityActivityTypes.PasswordChanged, command.IpAddress, command.UserAgent)
+            {
+                StakeholderId = stakeholderId,
+                FlowId = command.ActorContext.FlowId,
+                OccuredAt = timeProvider.GetUtcNow()
+            },
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         customTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.PasswordChangeCompleted,

@@ -5,4 +5,6 @@ public sealed record CompletePasskeyRegistrationCommand(
     Guid StakeholderId,
     Guid TenantId,
     string FlowToken,
-    string CredentialJson);
+    string CredentialJson,
+    string IpAddress,
+    string UserAgent);

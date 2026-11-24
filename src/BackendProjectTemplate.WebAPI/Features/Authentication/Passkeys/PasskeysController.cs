@@ -78,7 +78,9 @@ public sealed class PasskeysController(
 
         var result = await completeRegistrationHandler.HandleAsync(
             new CompletePasskeyRegistrationCommand(
-                appUserId, stakeholderId, tenantId, request.FlowToken, request.Credential.GetRawText()),
+                appUserId, stakeholderId, tenantId, request.FlowToken, request.Credential.GetRawText(),
+                HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                HttpContext?.Request.Headers.UserAgent.ToString() ?? string.Empty),
             cancellationToken);
 
         return result.Status switch
@@ -209,7 +211,14 @@ public sealed class PasskeysController(
         if (!TryGetAuthenticatedIdentity(out var appUserId, out var stakeholderId, out var tenantId))
             return Unauthorized();
         var result = await removeHandler.HandleAsync(
-            new RemovePasskeyCommand(appUserId, stakeholderId, tenantId, credentialId), cancellationToken);
+            new RemovePasskeyCommand(
+                appUserId,
+                stakeholderId,
+                tenantId,
+                credentialId,
+                HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                HttpContext?.Request.Headers.UserAgent.ToString() ?? string.Empty),
+            cancellationToken);
         return result switch
         {
             PasskeyOperationStatus.Success => NoContent(),

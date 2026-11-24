@@ -67,7 +67,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<AuthenticationSession> AuthenticationSessions => Set<AuthenticationSession>();
     public DbSet<IpAddress> IpAddresses => Set<IpAddress>();
     public DbSet<IpAddressLocation> IpAddressLocations => Set<IpAddressLocation>();
-    public DbSet<LoginActivity> LoginActivities => Set<LoginActivity>();
+    public DbSet<SecurityActivity> SecurityActivities => Set<SecurityActivity>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<KycVerification> KycVerifications => Set<KycVerification>();
     public DbSet<KycWebhookInbox> KycWebhookInboxes => Set<KycWebhookInbox>();

@@ -16,8 +16,8 @@ public sealed class UserAccessTokenRefreshedHandler(
     ICurrentActorAccessor currentActorAccessor,
     IMessageContext messageContext,
     IStakeholderReadModelRepository stakeholderReadModelRepository,
-    ILoginActivityIpAddressResolver loginActivityIpAddressResolver,
-    IRepository<LoginActivity> loginActivityRepository,
+    ISecurityActivityIpAddressResolver securityActivityIpAddressResolver,
+    IRepository<SecurityActivity> securityActivityRepository,
     IUnitOfWork unitOfWork,
     IUserAgentParserService userAgentParserService,
     TimeProvider timeProvider,
@@ -41,9 +41,9 @@ public sealed class UserAccessTokenRefreshedHandler(
         }
 
         var userAgentInfo = userAgentParserService.Parse(message.UserAgent);
-        var ipAddressResolution = await loginActivityIpAddressResolver.ResolveAsync(message.IpAddress, cancellationToken);
+        var ipAddressResolution = await securityActivityIpAddressResolver.ResolveAsync(message.IpAddress, cancellationToken);
 
-        var loginActivity = LoginActivity.CreateTokenRefresh(
+        var securityActivity = SecurityActivity.CreateTokenRefresh(
             stakeholder.StakeholderId,
             stakeholder.TenantId,
             ipAddressResolution.IpAddressId,
@@ -54,7 +54,7 @@ public sealed class UserAccessTokenRefreshedHandler(
             userAgentInfo.BrowserName,
             Clock.GetUtcNow());
 
-        await loginActivityRepository.AddAsync(loginActivity, cancellationToken);
+        await securityActivityRepository.AddAsync(securityActivity, cancellationToken);
         CustomTelemetryContext.SetProperty(Observability.PropertyNames.Common.StakeholderId, stakeholder.StakeholderId.ToString());
         CustomTelemetryContext.AddCustomEvent(
             Observability.EventNames.Authentication.SessionRefreshPostProcessingCompleted,

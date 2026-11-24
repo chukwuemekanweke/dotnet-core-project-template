@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication;
 using BackendProjectTemplate.Application.Authentication.Features.RegenerateTwoFactorRecoveryCodes;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
@@ -37,15 +38,24 @@ public sealed class WhenRegeneratingRecoveryCodes_Should
             context.SessionService,
             Options.Create(new TwoFactorAuthenticationOptions()),
             context.CustomTelemetryContext,
+            context.EventPublisher,
+            context.Clock,
             context.UnitOfWork);
 
         var result = await handler.HandleAsync(
             new RegenerateTwoFactorRecoveryCodesCommand(
-                TwoFactorVerificationMethod.Authenticator, "123456", sessionId, actorContext),
+                TwoFactorVerificationMethod.Authenticator, "123456", sessionId, "203.0.113.10", "Mozilla/5.0", actorContext),
             CancellationToken.None);
 
         result.Status.ShouldBe(RegenerateTwoFactorRecoveryCodesStatus.Success);
         result.RecoveryCodes.ShouldBe(["new-code-one", "new-code-two"]);
+        await context.EventPublisher.Received(1).PublishAsync(
+            Arg.Is<UserSecurityActivityOccurred>(message =>
+                message.ActivityType == UserSecurityActivityTypes.TwoFactorRecoveryCodesRegenerated &&
+                message.StakeholderId == stakeholderId &&
+                message.IpAddress == "203.0.113.10" &&
+                message.UserAgent == "Mozilla/5.0"),
+            Arg.Any<CancellationToken>());
         await context.IdentityService.Received(1).UpdateSecurityStampAsync(user);
         await context.SessionService.Received(1)
             .RevokeOthersAsync(sessionId, stakeholderId, Arg.Any<CancellationToken>());
@@ -77,11 +87,13 @@ public sealed class WhenRegeneratingRecoveryCodes_Should
             context.SessionService,
             Options.Create(new TwoFactorAuthenticationOptions()),
             context.CustomTelemetryContext,
+            context.EventPublisher,
+            context.Clock,
             context.UnitOfWork);
 
         var result = await handler.HandleAsync(
             new RegenerateTwoFactorRecoveryCodesCommand(
-                TwoFactorVerificationMethod.RecoveryCode, "ABCDE-FGHIJ", sessionId, actorContext),
+                TwoFactorVerificationMethod.RecoveryCode, "ABCDE-FGHIJ", sessionId, "203.0.113.10", "Mozilla/5.0", actorContext),
             CancellationToken.None);
 
         result.Status.ShouldBe(RegenerateTwoFactorRecoveryCodesStatus.Success);

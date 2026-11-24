@@ -195,6 +195,8 @@ internal sealed class AuthenticationControllerTestContext
         IdentityService,
         StakeholderReadModelRepository,
         CustomTelemetryContext,
+        EventPublisher,
+        Clock,
         UnitOfWork);
 
     public SignUpOtpHandler CreateSignUpOtpHandler() => new(

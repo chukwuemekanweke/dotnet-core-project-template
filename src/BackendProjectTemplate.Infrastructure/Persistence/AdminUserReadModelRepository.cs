@@ -187,8 +187,8 @@ public sealed class AdminUserReadModelRepository(AppReadDbContext dbContext, Tim
         var activeSessionCount = await dbContext.AuthenticationSessions.AsNoTracking()
             .CountAsync(session => session.StakeholderId == stakeholderId &&
                 session.RevokedAtUtc == null && session.ExpiresAtUtc > now, cancellationToken);
-        var latestLogin = await dbContext.LoginActivities.AsNoTracking()
-            .Where(activity => activity.StakeholderId == stakeholderId && activity.ActivityType == LoginActivityType.InitialLogin)
+        var latestLogin = await dbContext.SecurityActivities.AsNoTracking()
+            .Where(activity => activity.StakeholderId == stakeholderId && activity.ActivityType == SecurityActivityType.InitialLogin)
             .OrderByDescending(activity => activity.OccurredAtUtc)
             .ThenByDescending(activity => activity.Id)
             .Select(activity => new AdminLoginSummary(

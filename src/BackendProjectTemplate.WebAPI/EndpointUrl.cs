@@ -102,7 +102,7 @@ public static class EndpointUrl
     {
         public const string Route = $"api/{Versions.V1Route}/stakeholders";
         public static readonly string V1 = ToV1(Route);
-        public static readonly string LoginActivityV1 = $"{V1}/me/login-activity";
+        public static readonly string SecurityActivityV1 = $"{V1}/me/security-activity";
     }
 
     public static class Providers

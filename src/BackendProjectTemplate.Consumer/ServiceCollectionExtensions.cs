@@ -22,6 +22,7 @@ using UserAccessTokenRefreshedEvent = BackendProjectTemplate.Contracts.Events.Us
 using UserActivityObservedEvent = BackendProjectTemplate.Contracts.Events.UserActivityObserved;
 using UserCreatedEvent = BackendProjectTemplate.Contracts.Events.UserCreated;
 using UserEmailConfirmedEvent = BackendProjectTemplate.Contracts.Events.UserEmailConfirmed;
+using UserSecurityActivityOccurredEvent = BackendProjectTemplate.Contracts.Events.UserSecurityActivityOccurred;
 using UserSignInFailedEvent = BackendProjectTemplate.Contracts.Events.UserSignInFailed;
 using UserSignInSuccessfulEvent = BackendProjectTemplate.Contracts.Events.UserSignInSuccessful;
 
@@ -29,9 +30,12 @@ namespace BackendProjectTemplate.Consumer;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSubscribers(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSubscribers(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string hostEnvironmentName)
     {
-        services.AddScoped<ILoginActivityIpAddressResolver, LoginActivityIpAddressResolver>();
+        services.AddScoped<ISecurityActivityIpAddressResolver, SecurityActivityIpAddressResolver>();
         services.AddScoped<EmailConfirmationOtpSender>();
         services.Configure<SubscriptionRenewalOptions>(configuration.GetSection(SubscriptionRenewalOptions.SectionName));
         services.AddScoped<SubscriptionRenewalCharger>();
@@ -42,6 +46,8 @@ public static class ServiceCollectionExtensions
             ?? throw new InvalidOperationException($"Configuration section '{RabbitMqMessagingOptions.SectionName}' is required.");
 
         options.Validate();
+        var topology = RabbitMqTopology.Create(options, hostEnvironmentName);
+        services.AddSingleton(topology);
 
         var subscriberConfig = new SubscriberConfig
         {
@@ -51,8 +57,8 @@ public static class ServiceCollectionExtensions
             UserName = options.UserName,
             Password = options.Password,
             VirtualHost = options.VirtualHost,
-            SubscriptionName = $"{options.ServiceName}.events",
-            ExchangeName = options.EventsExchange,
+            SubscriptionName = topology.EventsSubscriptionName,
+            ExchangeName = topology.EventsExchange,
             PrefetchCount = 5,
             MaxRetryCount = 10,
             ConcurrentMessageCount = 1
@@ -66,8 +72,8 @@ public static class ServiceCollectionExtensions
             UserName = options.UserName,
             Password = options.Password,
             VirtualHost = options.VirtualHost,
-            QueueName = $"{options.ServiceName}.commands",
-            ExchangeName = options.CommandsExchange,
+            QueueName = topology.CommandsQueueName,
+            ExchangeName = topology.CommandsExchange,
             PrefetchCount = 5,
             MaxRetryCount = 10,
             ConcurrentMessageCount = 1
@@ -81,6 +87,7 @@ public static class ServiceCollectionExtensions
                 .AddHandler<UserActivityObservedEvent, UserActivityObservedHandler>()
                 .AddHandler<UserAccessTokenRefreshedEvent, UserAccessTokenRefreshedHandler>()
                 .AddHandler<UserSignInFailedEvent, UserSignInFailedHandler>()
+                .AddHandler<UserSecurityActivityOccurredEvent, UserSecurityActivityOccurredHandler>()
                 .AddHandler<EmailDeliveryWebhookReceivedEvent, EmailDeliveryWebhookReceivedHandler>()
                 .AddHandler<KycWebhookReceivedEvent, KycWebhookReceivedHandler>()
                 .AddHandler<SuccessfulPaymentConfirmedEvent, SuccessfulPaymentConfirmedHandler>()

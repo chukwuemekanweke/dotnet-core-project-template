@@ -20,17 +20,17 @@ code_refs:
     - src/BackendProjectTemplate.Domain/Common/Authentication/**
     - src/BackendProjectTemplate.Infrastructure/Authentication/**
     - src/BackendProjectTemplate.Infrastructure/Persistence/AppDbContextBase.cs
-    - src/BackendProjectTemplate.Infrastructure/Persistence/LoginActivityReadModelRepository.cs
+    - src/BackendProjectTemplate.Infrastructure/Persistence/SecurityActivityReadModelRepository.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/ActiveSessionReadModelRepository.cs
     - src/BackendProjectTemplate.WebAPI/Features/Authentication/**
-    - src/BackendProjectTemplate.WebAPI/Features/Stakeholders/LoginActivity/**
+    - src/BackendProjectTemplate.WebAPI/Features/Stakeholders/SecurityActivity/**
     - src/BackendProjectTemplate.Consumer/Authentication/**
     - src/BackendProjectTemplate.Jobs/Authentication/**
     - src/BackendProjectTemplate.Contracts/Commands/Authentication/**
     - tests/unit/BackendProjectTemplate.Application.UnitTests/Authentication/**
-    - tests/unit/BackendProjectTemplate.WebAPI.UnitTests/Features/Stakeholders/LoginActivity/**
+    - tests/unit/BackendProjectTemplate.WebAPI.UnitTests/Features/Stakeholders/SecurityActivity/**
     - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Authentication/**
-    - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Stakeholders/LoginActivity/**
+    - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Stakeholders/SecurityActivity/**
 sources:
     - kind: file
       path: src/BackendProjectTemplate.Domain/Authentication/Entities/AuthenticationSession.cs
@@ -46,7 +46,7 @@ status: stable
 Sign-up (with email OTP confirmation), sign-in (including Google and passkey sign-in), session
 lifecycle (list/refresh/logout/revoke-other/revoke-single sessions), password change/reset,
 email-existence checks, authenticator-app MFA and recovery codes, passkey management,
-login-activity recording/history and IP-address-location enrichment, and active-session/device management.
+security-activity recording/history and IP-address-location enrichment, and active-session/device management.
 
 ## Foundation
 
@@ -118,16 +118,16 @@ For that non-authoritative-email registration path, the `email_verification_requ
 Details response includes the server-side flow `email` and the confirmation expiry as `retryAtUtc`;
 clients must use this continuation metadata instead of asking the user to re-enter the Google email.
 
-## Active-session and login-activity location display
+## Active-session and security-activity location display
 
-Both `GET /sessions` (active sessions) and login-activity history expose the relevant IP address plus
+Both `GET /sessions` (active sessions) and security-activity history expose the relevant IP address plus
 coarse `City`/`State`/`Country` fields, but neither endpoint calls a geolocation provider itself.
 Location is resolved centrally per unique IP value and periodically refreshed when stale by
 `Jobs.Authentication.IpAddressLocationEnrichmentProcessor` (batched, via
 `IIpGeolocationService`/`IIpGeolocationProvider`), and persisted on the shared `IpAddress`/
 `IpAddressLocation` aggregate (`IsCurrentLocation` marks the live row; see [[persistence]]). Both
 read endpoints are dedicated `AppReadDbContext`-backed read-model repositories
-(`ILoginActivityReadModelRepository`/`LoginActivityReadModelRepository`,
+(`ISecurityActivityReadModelRepository`/`SecurityActivityReadModelRepository`,
 `IActiveSessionReadModelRepository`/`ActiveSessionReadModelRepository`) that LEFT JOIN against that
 shared location data in a single query — never re-resolving or re-calling a provider per request, and
 never per-row (no N+1). `ActiveSessionReadModelRepository` joins on `AuthenticationSession.LastIpAddressId`
@@ -137,15 +137,29 @@ specification-backed listing used by session revocation) is untouched by this an
 the read-model path used for display.
 An IP that fails to resolve (private/loopback/local, or an unresponsive provider) degrades to
 `null` City/State/Country on the affected sessions/activities; it never fails the request.
-The user-facing login-activity history returns successful initial sign-ins only. Token-refresh
-activity may remain persisted for internal audit and telemetry purposes, but the read-model query
-filters it before ordering and cursor pagination.
+## Security activity
+
+`SecurityActivity` (CLR rename of the former `LoginActivity`; the table intentionally stays
+`authentication.LoginActivities` per expand/contract) records per-stakeholder security events with IP,
+location and parsed device: `InitialLogin`, `TokenRefresh`, `FailedSignIn` (with `FailureReason`), and the
+account-security changes `PasskeyAdded`, `PasskeyRemoved`, `TwoFactorEnabled`, `TwoFactorDisabled`,
+`TwoFactorRecoveryCodesRegenerated`, `PasswordChanged`. Rows are only written by Consumer handlers:
+`UserSignInSuccessful`, `UserAccessTokenRefreshed`, `UserSignInFailed` (only when the failure resolves to a
+known stakeholder) and `UserSecurityActivityOccurred` (string `UserSecurityActivityTypes` mapped to the
+enum; unknown types are non-transient failures). Application handlers for passkey add/remove, MFA
+enable/disable/regeneration and password change publish `UserSecurityActivityOccurred` through the outbox
+after success, so their commands carry the request IP address and user agent. A wrong MFA/recovery code at
+the challenge step publishes `UserSignInFailed` with `invalid_two_factor_code`; the Consumer must not
+increment Identity failed access for that reason because the request path already did.
+
+`GET /api/v1/stakeholders/me/security-activity` returns every type except `TokenRefresh`, which stays
+persisted for internal audit/telemetry and is filtered before ordering and cursor pagination.
 
 ## Shared authentication architecture
 
 - Password, Google, and passkey primary authentication all resolve the same `AppUser` and `Stakeholder` and issue credentials only through `AuthenticationSessionIssuer`.
 - Successful primary authentication publishes `UserSignInSuccessful`; failed account eligibility checks
-  publish `UserSignInFailed`. The Consumer remains responsible for login-activity post-processing and
+  publish `UserSignInFailed`. The Consumer remains responsible for security-activity post-processing and
   records the successful sign-in as qualifying daily user activity through [[user-activity]].
 - TOTP MFA is an independent second factor. Primary methods start `ITwoFactorChallengeService` with their `AuthenticationMethod`; `CompleteTwoFactorChallengeHandler` is the only continuation that issues the session after MFA succeeds.
 - Account eligibility is consistent across primary methods: reject deleted, locked, unverified, and
@@ -181,6 +195,6 @@ filters it before ordering and cursor pagination.
 
 ## Cross-cutting
 
-- Sign-up, email confirmation, and access-token refresh publish `Contracts` events (`UserCreated`, `UserEmailConfirmed`, `UserAccessTokenRefreshed`, `UserSignInSuccessful`, `UserSignInFailed`) through
+- Sign-up, email confirmation, and access-token refresh publish `Contracts` events (`UserCreated`, `UserEmailConfirmed`, `UserAccessTokenRefreshed`, `UserSignInSuccessful`, `UserSignInFailed`, `UserSecurityActivityOccurred`) through
   the outbox — see [[async-processing]]. `Consumer` handlers react to these (e.g. IP-location enrichment, welcome email).
 - Follows the standard [[vertical-slices]] feature-folder shape and the [[unit-testing]]/[[integration-testing]] conventions.

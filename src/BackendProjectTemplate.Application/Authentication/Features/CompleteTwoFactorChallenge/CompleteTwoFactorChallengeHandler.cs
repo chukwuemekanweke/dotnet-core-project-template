@@ -54,6 +54,18 @@ public sealed class CompleteTwoFactorChallengeHandler(
         if (!verified)
         {
             await identityService.AccessFailedAsync(user);
+            await eventPublisher.PublishAsync(
+                new UserSignInFailed(
+                    user.Email ?? string.Empty,
+                    challenge.IpAddress,
+                    challenge.UserAgent,
+                    UserSignInFailureReasons.InvalidTwoFactorCode)
+                {
+                    StakeholderId = stakeholder.Id,
+                    FlowId = challenge.ActorContext.FlowId,
+                    OccuredAt = timeProvider.GetUtcNow()
+                },
+                cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             var next = challenge with { RemainingAttempts = challenge.RemainingAttempts - 1 };
             var locked = await identityService.IsLockedOutAsync(user);

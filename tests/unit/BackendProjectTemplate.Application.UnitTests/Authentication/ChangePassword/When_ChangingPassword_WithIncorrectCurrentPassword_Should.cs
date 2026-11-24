@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Features.ChangePassword;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
 using Microsoft.AspNetCore.Identity;
 using Shouldly;
@@ -40,5 +41,8 @@ public sealed class When_ChangingPassword_WithIncorrectCurrentPassword_Should
 
         result.Status.ShouldBe(ChangePasswordStatus.IncorrectCurrentPassword);
         await context.UnitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.EventPublisher.DidNotReceive().PublishAsync(
+            Arg.Any<UserSecurityActivityOccurred>(),
+            Arg.Any<CancellationToken>());
     }
 }

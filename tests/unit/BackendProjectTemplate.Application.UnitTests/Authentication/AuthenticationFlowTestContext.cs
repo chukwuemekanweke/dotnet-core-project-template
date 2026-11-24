@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication;
 using BackendProjectTemplate.Application.Authentication.Features.ChangePassword;
 using BackendProjectTemplate.Application.Authentication.Features.CheckEmailExistence;
+using BackendProjectTemplate.Application.Authentication.Features.CompletePasskeyRegistration;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasskeySignIn;
 using BackendProjectTemplate.Application.Authentication.Features.CompletePasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.CompleteTwoFactorChallenge;
@@ -11,6 +12,7 @@ using BackendProjectTemplate.Application.Authentication.Features.LinkGoogleAccou
 using BackendProjectTemplate.Application.Authentication.Features.ListSessions;
 using BackendProjectTemplate.Application.Authentication.Features.LogoutSession;
 using BackendProjectTemplate.Application.Authentication.Features.RefreshSession;
+using BackendProjectTemplate.Application.Authentication.Features.RemovePasskey;
 using BackendProjectTemplate.Application.Authentication.Features.RequestEmailConfirmationOtp;
 using BackendProjectTemplate.Application.Authentication.Features.RequestPasswordReset;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
@@ -40,6 +42,7 @@ internal sealed class AuthenticationFlowTestContext
     public IGoogleAuthenticationFlowService GoogleAuthenticationFlowService { get; } = Substitute.For<IGoogleAuthenticationFlowService>();
     public ITwoFactorChallengeService TwoFactorChallengeService { get; } = Substitute.For<ITwoFactorChallengeService>();
     public IPasskeyService PasskeyService { get; } = Substitute.For<IPasskeyService>();
+    public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
     public IRefreshTokenService RefreshTokenService { get; } = Substitute.For<IRefreshTokenService>();
     public IAuthenticationSessionService SessionService { get; } = Substitute.For<IAuthenticationSessionService>();
     public IActiveSessionReadModelRepository ActiveSessionReadModelRepository { get; } = Substitute.For<IActiveSessionReadModelRepository>();
@@ -157,6 +160,24 @@ internal sealed class AuthenticationFlowTestContext
         UnitOfWork,
         Clock);
     public CreatePasskeyAuthenticationOptionsHandler CreatePasskeyAuthenticationOptionsHandler() => new(PasskeyService);
+    public CompletePasskeyRegistrationHandler CreateCompletePasskeyRegistrationHandler() => new(
+        IdentityService,
+        PasskeyService,
+        StakeholderResolver,
+        CustomTelemetryContext,
+        CurrentActor,
+        EventPublisher,
+        Clock,
+        UnitOfWork);
+    public RemovePasskeyHandler CreateRemovePasskeyHandler() => new(
+        IdentityService,
+        PasskeyService,
+        StakeholderResolver,
+        CustomTelemetryContext,
+        CurrentActor,
+        EventPublisher,
+        Clock,
+        UnitOfWork);
     public CompletePasskeySignInHandler CreateCompletePasskeySignInHandler() => new(
         PasskeyService,
         IdentityService,
@@ -228,6 +249,8 @@ internal sealed class AuthenticationFlowTestContext
         IdentityService,
         StakeholderReadModelRepository,
         CustomTelemetryContext,
+        EventPublisher,
+        Clock,
         UnitOfWork);
     public LogoutSessionHandler CreateLogoutSessionHandler() => new(
         AccessTokenRevocationService,
@@ -342,6 +365,8 @@ internal sealed class AuthenticationFlowTestContext
             currentPassword ?? AuthenticationTestData.StrongPassword(),
             resolvedNewPassword,
             resolvedNewPassword,
+            "203.0.113.10",
+            "Mozilla/5.0",
             actorContext ?? TestActorContext());
     }
 

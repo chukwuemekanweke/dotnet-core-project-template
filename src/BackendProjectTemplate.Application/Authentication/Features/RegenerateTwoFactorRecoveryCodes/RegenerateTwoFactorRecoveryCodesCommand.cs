@@ -7,4 +7,6 @@ public sealed record RegenerateTwoFactorRecoveryCodesCommand(
     TwoFactorVerificationMethod VerificationMethod,
     string Code,
     Guid CurrentSessionId,
+    string IpAddress,
+    string UserAgent,
     ActorContext ActorContext);

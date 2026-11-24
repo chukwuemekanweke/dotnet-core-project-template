@@ -25,8 +25,8 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
         var stakeholderReadModelRepository = Substitute.For<IStakeholderReadModelRepository>();
         var commandSender = Substitute.For<ICommandSender>();
         var customTelemetryContext = Substitute.For<ICustomTelemetryContext>();
-        var loginActivityIpAddressResolver = Substitute.For<ILoginActivityIpAddressResolver>();
-        var loginActivityRepository = Substitute.For<IRepository<LoginActivity>>();
+        var securityActivityIpAddressResolver = Substitute.For<ISecurityActivityIpAddressResolver>();
+        var securityActivityRepository = Substitute.For<IRepository<SecurityActivity>>();
         var userAgentParserService = Substitute.For<IUserAgentParserService>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var messageInboxRepository = Substitute.For<IRepository<MessageInbox>>();
@@ -47,8 +47,8 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
         stakeholderReadModelRepository.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>())
             .Returns(new StakeholderReadModel(stakeholderId, appUserId, email, tenantId, countryId, Guid.CreateVersion7(), "Ada", "Lovelace", null, false));
         userAgentParserService.Parse(userAgent).Returns(new UserAgentInfo("Desktop", "Windows", "Chrome"));
-        loginActivityIpAddressResolver.ResolveAsync(ipAddress, Arg.Any<CancellationToken>())
-            .Returns(new LoginActivityIpAddressResolution(Guid.CreateVersion7(), null));
+        securityActivityIpAddressResolver.ResolveAsync(ipAddress, Arg.Any<CancellationToken>())
+            .Returns(new SecurityActivityIpAddressResolution(Guid.CreateVersion7(), null));
 
         await new UserSignInSuccessfulHandler(
             customTelemetryContext,
@@ -58,8 +58,8 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
             activityPersistence,
             stakeholderReadModelRepository,
             commandSender,
-            loginActivityIpAddressResolver,
-            loginActivityRepository,
+            securityActivityIpAddressResolver,
+            securityActivityRepository,
             unitOfWork,
             userAgentParserService,
             TimeProvider.System,
@@ -85,8 +85,8 @@ public sealed class WhenHandlingUserSignInSuccessful_Should
                 ((EmailNotificationContent)command.NotificationContent).Content["IpAddress"] == ipAddress &&
                 ((EmailNotificationContent)command.NotificationContent).Content["UserAgent"] == userAgent),
             Arg.Any<CancellationToken>());
-        await loginActivityIpAddressResolver.Received(1).ResolveAsync(ipAddress, Arg.Any<CancellationToken>());
-        await loginActivityRepository.Received(1).AddAsync(Arg.Any<LoginActivity>(), Arg.Any<CancellationToken>());
+        await securityActivityIpAddressResolver.Received(1).ResolveAsync(ipAddress, Arg.Any<CancellationToken>());
+        await securityActivityRepository.Received(1).AddAsync(Arg.Any<SecurityActivity>(), Arg.Any<CancellationToken>());
         await activityPersistence.Received(1).ObserveAsync(
             Arg.Any<Guid>(),
             tenantId,

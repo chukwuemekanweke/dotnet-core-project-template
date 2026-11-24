@@ -5,4 +5,6 @@ namespace BackendProjectTemplate.Application.Authentication.Features.VerifyTwoFa
 public sealed record VerifyTwoFactorEnrollmentCommand(
     string Code,
     Guid CurrentSessionId,
+    string IpAddress,
+    string UserAgent,
     ActorContext ActorContext);

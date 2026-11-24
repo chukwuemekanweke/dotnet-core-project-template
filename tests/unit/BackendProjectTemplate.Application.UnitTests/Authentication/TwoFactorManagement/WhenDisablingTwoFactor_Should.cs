@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Authentication;
 using BackendProjectTemplate.Application.Authentication.Features.DisableTwoFactor;
 using BackendProjectTemplate.Application.UnitTests.Authentication;
+using BackendProjectTemplate.Contracts.Events;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Stakeholders.ReadModels;
@@ -35,11 +36,13 @@ public sealed class WhenDisablingTwoFactor_Should
             context.IdentityService,
             context.SessionService,
             context.CustomTelemetryContext,
+            context.EventPublisher,
+            context.Clock,
             context.UnitOfWork);
 
         var result = await handler.HandleAsync(
             new DisableTwoFactorCommand(
-                TwoFactorVerificationMethod.Authenticator, "123456", sessionId, actorContext),
+                TwoFactorVerificationMethod.Authenticator, "123456", sessionId, "203.0.113.10", "Mozilla/5.0", actorContext),
             CancellationToken.None);
 
         result.ShouldBe(DisableTwoFactorResult.Success);
@@ -47,5 +50,12 @@ public sealed class WhenDisablingTwoFactor_Should
         await context.IdentityService.Received(1).UpdateSecurityStampAsync(user);
         await context.SessionService.Received(1)
             .RevokeOthersAsync(sessionId, stakeholderId, Arg.Any<CancellationToken>());
+        await context.EventPublisher.Received(1).PublishAsync(
+            Arg.Is<UserSecurityActivityOccurred>(message =>
+                message.ActivityType == UserSecurityActivityTypes.TwoFactorDisabled &&
+                message.StakeholderId == stakeholderId &&
+                message.IpAddress == "203.0.113.10" &&
+                message.UserAgent == "Mozilla/5.0"),
+            Arg.Any<CancellationToken>());
     }
 }
