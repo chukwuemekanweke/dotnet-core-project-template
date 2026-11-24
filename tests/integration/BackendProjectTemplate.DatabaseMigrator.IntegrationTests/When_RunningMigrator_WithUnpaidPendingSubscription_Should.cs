@@ -30,11 +30,11 @@ public sealed class When_RunningMigrator_WithUnpaidPendingSubscription_Should(Po
                 ('019a9a00-0000-7000-8000-0000000000a2', 500000, gen_random_uuid(), NOW(), gen_random_uuid(), gen_random_uuid(), FALSE,
                  'pay_initiated', 2, 0, gen_random_uuid(), 2, jsonb_build_object(), gen_random_uuid(), gen_random_uuid(), NOW());
             INSERT INTO payments."Subscriptions" (
-                "Id", "AutoRenew", "BillingAccountId", "CancelAtPeriodEnd", "CreatedAtUtc", "IsDeleted", "PlanId",
-                "Status", "TenantId", "UpdatedAtUtc")
+                "Id", "AutoRenew", "BillingAccountId", "BillingInterval", "CancelAtPeriodEnd", "CreatedAtUtc", "IsDeleted",
+                "PlanId", "Status", "TenantId", "UpdatedAtUtc")
             VALUES
-                ('{ExpiredPaymentSubscriptionId}', FALSE, gen_random_uuid(), FALSE, NOW(), FALSE, gen_random_uuid(), 1, gen_random_uuid(), NOW()),
-                ('{InFlightPaymentSubscriptionId}', FALSE, gen_random_uuid(), FALSE, NOW(), FALSE, gen_random_uuid(), 1, gen_random_uuid(), NOW());
+                ('{ExpiredPaymentSubscriptionId}', FALSE, gen_random_uuid(), 1, FALSE, NOW(), FALSE, gen_random_uuid(), 1, gen_random_uuid(), NOW()),
+                ('{InFlightPaymentSubscriptionId}', FALSE, gen_random_uuid(), 1, FALSE, NOW(), FALSE, gen_random_uuid(), 1, gen_random_uuid(), NOW());
             INSERT INTO payments."SubscriptionPurchases" (
                 "Id", "BillingAccountId", "BillingInterval", "CreatedAtUtc", "ExpectedAmount", "ExpectedCurrencyId",
                 "InitiatedByStakeholderId", "IsDeleted", "OperationId", "PaymentTransactionId", "PlanCode", "PlanId",
