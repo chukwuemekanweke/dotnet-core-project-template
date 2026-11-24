@@ -16,7 +16,7 @@ public sealed class When_AllocatingSubscription_WithReusedKeyAndDifferentPayload
             AdminSubscriptionTestContext.Now.AddDays(1).AddTicks(3),
             AdminSubscriptionTestContext.Now.AddDays(5));
         var subscription = SubscriptionAggregate.CreateAllocated(
-            context.TenantId, context.TenantBillingAccount.Id, context.Plan, original.StartAtUtc!.Value, original.EndAtUtc!.Value,
+            context.TenantId, context.TenantBillingAccount.Id, context.Plan, context.Plan.Prices.Single().BillingInterval, original.StartAtUtc!.Value, original.EndAtUtc!.Value,
             AdminSubscriptionTestContext.Now, original.IdempotencyKey, context.AdministratorId.ToString(), original.Reason);
         var allocation = SubscriptionAllocation.Create(
             subscription, context.Plan, original.AllocationSource, original.Reason, context.AdministratorId.ToString(),

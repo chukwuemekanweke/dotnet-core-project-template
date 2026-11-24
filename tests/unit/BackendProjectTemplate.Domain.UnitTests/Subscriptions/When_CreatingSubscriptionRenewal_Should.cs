@@ -15,6 +15,7 @@ public sealed class When_CreatingSubscriptionRenewal_Should
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             plan.Id,
+            plan.Prices.Single().BillingInterval,
             true,
             now,
             Guid.CreateVersion7(),
@@ -24,6 +25,7 @@ public sealed class When_CreatingSubscriptionRenewal_Should
             subscription.BillingAccountId,
             subscription.Id,
             plan,
+            plan.Prices.Single().BillingInterval,
             Guid.CreateVersion7(),
             Guid.CreateVersion7());
         var period = subscription.ActivateFromPayment(purchase, purchase.PaymentTransactionId, now, purchase.Id);

@@ -20,6 +20,8 @@ code_refs:
     - src/BackendProjectTemplate.Domain/Subscriptions/**
     - src/BackendProjectTemplate.Application/Subscriptions/**
     - src/BackendProjectTemplate.Infrastructure/Persistence/Configurations/Subscription*.cs
+    - src/BackendProjectTemplate.Infrastructure/Migrations/*_AddSubscriptionPlanPricesAndContent.cs
+    - src/BackendProjectTemplate.DatabaseMigrator/Scripts/PostDeploy/0002.subscription-plans.postdeploy.sql
     - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionLifecyclePersistence.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionAdministrationReadModelRepository.cs
     - src/BackendProjectTemplate.Infrastructure/Persistence/SubscriptionAnalyticsReadModelRepository.cs
@@ -47,16 +49,25 @@ accounts can each own multiple subscriptions.
 
 ## Plans and money
 
-`SubscriptionPlan` codes are normalized, stable and globally unique. Prices are positive whole minor
+A `SubscriptionPlan` is a package (for example Basic, Standard, Premium) in one currency. It offers one
+`SubscriptionPlanPrice` per billing interval (unique `(PlanId, BillingInterval)`), so monthly and annual
+pricing are the same plan, not separate plans; the price collection is auto-included whenever a plan loads.
+Offered intervals can be added and repriced but never withdrawn, so existing subscriptions always resolve the
+terms of their interval. `Subscription.BillingInterval` records the interval the subscription was bought or
+granted on. Plans also carry optional card content (`Description`, ordered `Features` stored as `text[]`) that
+never affects billing. Plan codes are normalized, stable and globally unique. Prices are positive whole minor
 currency units for paid purchases, matching `PaymentTransaction.Amount`; floating-point money is not
-used. Monthly and yearly periods use calendar arithmetic. The post-deploy plan seed is deterministic
-and idempotent. Updating a plan changes future purchases only: `SubscriptionPurchase` and
+used. Monthly and yearly periods use calendar arithmetic. The `0002.subscription-plans` post-deploy seed is
+deterministic, idempotent and authoritative for the packages it lists (Basic, Standard, Premium with monthly
+and annual prices); it deactivates the legacy single-interval `STARTER_MONTHLY`/`STARTER_YEARLY` plans without
+deleting them. Updating a plan changes future purchases only: `SubscriptionPurchase` and
 `SubscriptionPeriod` retain immutable code, amount, currency and interval snapshots.
 
 ## Purchase and fulfillment
 
 The generic `/payments/initiate` flow accepts wallet top-ups only. Subscription purchases go through
-`POST /subscriptions/purchases`, which resolves an active plan and BillingAccount, derives price and
+`POST /subscriptions/purchases`, which takes a required `billingInterval`, resolves an active plan offering that
+interval and the BillingAccount, derives price and
 currency server-side, and saves the pending `PaymentTransaction`, pending `Subscription`, and
 `SubscriptionPurchase` correlation before invoking the provider.
 
@@ -127,7 +138,7 @@ renewal `FulfillmentBlocked` instead of extending entitlement. Non-renewing paid
 `ExpireSubscriptionCommand` at period end.
 
 Customer purchase requests require a caller-stable UUID idempotency key. `SubscriptionPurchase.OperationId`
-is unique per tenant and initiating stakeholder, while `RequestFingerprint` binds the key to plan, provider,
+is unique per tenant and initiating stakeholder, while `RequestFingerprint` binds the key to plan, billing interval, provider,
 BillingAccount owner type and auto-renewal choice. Exact replays return the original payment instructions;
 different payloads return 409, and the database constraint closes concurrent duplicate races before a second
 provider call. Existing rows are backfilled with their purchase ids by the idempotency migration.
@@ -140,7 +151,8 @@ the target tenant and may commit a new account before the allocation transaction
 subscription state is tracked). Allocations always have `AutoRenew = false` (a request with
 `AutoRenew: true` is rejected), carry no `PaymentTransaction`, `SubscriptionPurchase`, payment reference or
 renewal, and record a period whose price is a nominal plan snapshot, not money collected. The allocation
-window defaults to the plan's calendar billing interval from the start; an explicit `EndAtUtc` must be
+window defaults to the chosen billing interval's calendar period from the start. `billingInterval` is optional
+on allocation only when the plan offers a single interval; a multi-interval plan requires it (400 otherwise); an explicit `EndAtUtc` must be
 later than the start; a start more than five minutes in the past is rejected.
 
 `SubscriptionAllocation` is the immutable audit record (business `AllocationSource`: AdminAllocation,
@@ -207,7 +219,7 @@ mapping; only cache execution plus consistent date/filter and revenue normalizat
 so handlers remain complete vertical slices rather than pass-through wrappers around an analytics facade.
 
 User-facing plan listing is anonymous (the host still resolves `X-Tenant-Id`) and exposes only active plans
-and safe pricing fields. Provider discovery, purchase, purchase-status lookup, current-subscription lookup,
+with their per-interval `prices`, description and features. Provider discovery, purchase, purchase-status lookup, current-subscription lookup,
 scheduled cancellation and paginated billing history require the active-session policy and derive
 tenant/stakeholder identity from the authenticated actor. Provider discovery is scoped to the selected active
 plan's currency, the actor's active country/currency mapping, enabled subscription configurations and active
@@ -225,6 +237,7 @@ tenant/subscription ids, read the acting administrator only from the authenticat
 permission-guarded (see [[authorization]]). Listing uses `(CreatedAtUtc, Id)` cursor pagination over
 projections; detail issues a fixed set of bounded queries and keeps financial history (purchase, payments,
 renewals/attempts) separate from entitlement history (periods, status history, allocations). Plans are
-never deleted; code, currency and billing interval are immutable after creation, while name and price may
-change without affecting purchase, period, renewal or allocation snapshots. Deactivating a plan blocks new
+never deleted; code and currency are immutable after creation, while name, description, features, interval
+prices and newly offered intervals may change (a PUT replaces them and must keep every offered interval)
+without affecting purchase, period, renewal or allocation snapshots. Deactivating a plan blocks new
 purchases and allocations only.

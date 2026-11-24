@@ -16,8 +16,8 @@ public sealed class When_ActivatingSubscription_FromPaymentEntitlementWindow_Sho
         var stakeholderId = Guid.CreateVersion7();
         var plan = SubscriptionAllocationTestData.CreatePlan();
         var subscription = SubscriptionAggregate.CreatePending(
-            tenantId, billingAccountId, plan.Id, autoRenew, SubscriptionAllocationTestData.Now, Guid.CreateVersion7(), stakeholderId.ToString());
-        var purchase = SubscriptionPurchase.Create(tenantId, billingAccountId, subscription.Id, plan, paymentId, stakeholderId);
+            tenantId, billingAccountId, plan.Id, plan.Prices.Single().BillingInterval, autoRenew, SubscriptionAllocationTestData.Now, Guid.CreateVersion7(), stakeholderId.ToString());
+        var purchase = SubscriptionPurchase.Create(tenantId, billingAccountId, subscription.Id, plan, plan.Prices.Single().BillingInterval, paymentId, stakeholderId);
         var projected = subscription.ProjectPaidEntitlement(purchase, SubscriptionAllocationTestData.Now);
 
         subscription.ActivateFromPayment(purchase, paymentId, SubscriptionAllocationTestData.Now, purchase.Id);

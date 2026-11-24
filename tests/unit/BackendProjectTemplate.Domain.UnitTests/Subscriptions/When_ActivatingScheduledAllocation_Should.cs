@@ -16,7 +16,7 @@ public sealed class When_ActivatingScheduledAllocation_Should
         var allocation = SubscriptionAllocation.Create(
             subscription, plan, SubscriptionAllocationSource.Trial, SubscriptionAllocationTestData.Reason, SubscriptionAllocationTestData.ActorId, operationId, new string('f', 64));
         plan.SetActive(false);
-        plan.UpdateTerms("Repriced", 900000m);
+        plan.UpdateTerms("Repriced", new Dictionary<BillingInterval, decimal> { [BillingInterval.Monthly] = 900000m }, null, []);
         var lateDelivery = start.AddHours(6);
         var activationOperationId = Guid.CreateVersion7();
 

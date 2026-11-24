@@ -14,10 +14,10 @@ public sealed class When_AllocatingSubscription_WithInvalidWindow_Should
         Should.Throw<ArgumentException>(() => SubscriptionAllocationTestData.Allocate(plan, now.AddDays(2), now.AddDays(1)));
         Should.Throw<ArgumentException>(() => SubscriptionAllocationTestData.Allocate(plan, now.AddDays(-10), now.AddDays(-1)));
         Should.Throw<ArgumentException>(() => SubscriptionAggregate.CreateAllocated(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), plan, now, now.AddDays(1), now, Guid.CreateVersion7(), SubscriptionAllocationTestData.ActorId, "  "));
+            Guid.CreateVersion7(), Guid.CreateVersion7(), plan, plan.Prices.Single().BillingInterval, now, now.AddDays(1), now, Guid.CreateVersion7(), SubscriptionAllocationTestData.ActorId, "  "));
         Should.Throw<ArgumentException>(() => SubscriptionAggregate.CreateAllocated(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), plan, now, now.AddDays(1), now, Guid.CreateVersion7(), " ", SubscriptionAllocationTestData.Reason));
+            Guid.CreateVersion7(), Guid.CreateVersion7(), plan, plan.Prices.Single().BillingInterval, now, now.AddDays(1), now, Guid.CreateVersion7(), " ", SubscriptionAllocationTestData.Reason));
         Should.Throw<ArgumentException>(() => SubscriptionAggregate.CreateAllocated(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), plan, now, now.AddDays(1), now, Guid.Empty, SubscriptionAllocationTestData.ActorId, SubscriptionAllocationTestData.Reason));
+            Guid.CreateVersion7(), Guid.CreateVersion7(), plan, plan.Prices.Single().BillingInterval, now, now.AddDays(1), now, Guid.Empty, SubscriptionAllocationTestData.ActorId, SubscriptionAllocationTestData.Reason));
     }
 }

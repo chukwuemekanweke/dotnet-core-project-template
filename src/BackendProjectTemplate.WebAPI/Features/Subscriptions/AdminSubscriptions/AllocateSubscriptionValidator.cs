@@ -11,6 +11,9 @@ public sealed class AllocateSubscriptionValidator : AbstractValidator<AllocateSu
     {
         RuleFor(request => request.TenantId).NotEmpty();
         RuleFor(request => request.PlanId).NotEmpty();
+        RuleFor(request => request.BillingInterval)
+            .Must(StrictEnumParser.IsValidOrEmpty<BillingInterval>)
+            .WithMessage("BillingInterval must be Monthly or Yearly.");
         RuleFor(request => request.IdempotencyKey).NotEmpty();
         RuleFor(request => request.BillingAccountOwnerType)
             .Must(StrictEnumParser.IsValid<BillingAccountOwnerType>)

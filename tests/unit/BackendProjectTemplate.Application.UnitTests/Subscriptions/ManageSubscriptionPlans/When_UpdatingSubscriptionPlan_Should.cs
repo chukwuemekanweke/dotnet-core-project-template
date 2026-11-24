@@ -26,25 +26,30 @@ public sealed class When_UpdatingSubscriptionPlan_Should
         var update = new UpdateSubscriptionPlanHandler(planRepository, currencyRepository, telemetry, unitOfWork);
         var activation = new SetSubscriptionPlanActivationHandler(planRepository, currencyRepository, telemetry, unitOfWork);
 
-        (await update.HandleAsync(new UpdateSubscriptionPlanCommand(plan.Id, "Basic Plus", 1500m, actor), CancellationToken.None))
+        (await update.HandleAsync(new UpdateSubscriptionPlanCommand(plan.Id, "Basic Plus", Monthly(1500m), "Basic, plus.", ["Email support"], actor), CancellationToken.None))
             .Status.ShouldBe(UpdateSubscriptionPlanStatus.Updated);
-        (await update.HandleAsync(new UpdateSubscriptionPlanCommand(plan.Id, "Basic Plus", 1500m, actor), CancellationToken.None))
+        (await update.HandleAsync(new UpdateSubscriptionPlanCommand(plan.Id, "Basic Plus", Monthly(1500m), "Basic, plus.", ["Email support"], actor), CancellationToken.None))
             .Status.ShouldBe(UpdateSubscriptionPlanStatus.Unchanged);
-        (await update.HandleAsync(new UpdateSubscriptionPlanCommand(plan.Id, "", 1500m, actor), CancellationToken.None))
+        (await update.HandleAsync(new UpdateSubscriptionPlanCommand(plan.Id, "", Monthly(1500m), null, [], actor), CancellationToken.None))
             .Status.ShouldBe(UpdateSubscriptionPlanStatus.Invalid);
         (await activation.HandleAsync(new SetSubscriptionPlanActivationCommand(plan.Id, false, actor), CancellationToken.None))
             .Status.ShouldBe(SetSubscriptionPlanActivationStatus.Updated);
         (await activation.HandleAsync(new SetSubscriptionPlanActivationCommand(plan.Id, false, actor), CancellationToken.None))
             .Status.ShouldBe(SetSubscriptionPlanActivationStatus.Unchanged);
         plan.Code.ShouldBe("BASIC");
-        plan.Price.ShouldBe(1500m);
+        plan.GetPrice(BillingInterval.Monthly).ShouldBe(1500m);
+        plan.Description.ShouldBe("Basic, plus.");
+        plan.Features.ShouldBe(["Email support"]);
         plan.IsActive.ShouldBeFalse();
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
 
         planRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<SubscriptionPlan>>(), Arg.Any<CancellationToken>()).Returns((SubscriptionPlan?)null);
-        (await update.HandleAsync(new UpdateSubscriptionPlanCommand(plan.Id, "x", 1m, actor), CancellationToken.None))
+        (await update.HandleAsync(new UpdateSubscriptionPlanCommand(plan.Id, "x", Monthly(1m), null, [], actor), CancellationToken.None))
             .Status.ShouldBe(UpdateSubscriptionPlanStatus.NotFound);
         (await activation.HandleAsync(new SetSubscriptionPlanActivationCommand(plan.Id, true, actor), CancellationToken.None))
             .Status.ShouldBe(SetSubscriptionPlanActivationStatus.NotFound);
     }
+
+    private static Dictionary<BillingInterval, decimal> Monthly(decimal price) =>
+        new() { [BillingInterval.Monthly] = price };
 }

@@ -95,6 +95,7 @@ internal sealed class AdminSubscriptionTestContext
             TenantId,
             TenantBillingAccount.Id,
             Plan,
+            Plan.Prices.Single().BillingInterval,
             Now.AddDays(-1),
             Now.AddDays(days),
             Now.AddDays(-1),

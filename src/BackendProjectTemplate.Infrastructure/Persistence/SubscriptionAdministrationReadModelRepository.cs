@@ -330,10 +330,14 @@ public sealed class SubscriptionAdministrationReadModelRepository(AppReadDbConte
             plan.Id,
             plan.Code,
             plan.Name,
-            plan.Price,
+            plan.Description,
+            plan.Features,
+            plan.Prices
+                .OrderBy(price => price.BillingInterval)
+                .Select(price => new SubscriptionPlanPriceReadModel(price.BillingInterval, price.Price))
+                .ToList(),
             plan.CurrencyId,
             currency.CurrencyCode,
-            plan.BillingInterval,
             plan.IsActive,
             plan.CreatedAtUtc,
             plan.UpdatedAtUtc);

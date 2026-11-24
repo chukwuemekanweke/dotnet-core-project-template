@@ -69,7 +69,7 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should(Cont
             "merchant-ref",
             PaymentIntent.Subscription,
             Guid.CreateVersion7(),
-            plan.Price,
+            plan.Prices.Single().Price,
             currency.Id,
             stakeholder.CountryId,
             user.Id,
@@ -84,6 +84,7 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should(Cont
             _tenantId,
             billingAccount.Id,
             plan.Id,
+            plan.Prices.Single().BillingInterval,
             true,
             now,
             Guid.CreateVersion7(),
@@ -93,6 +94,7 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should(Cont
             billingAccount.Id,
             subscription.Id,
             plan,
+            plan.Prices.Single().BillingInterval,
             payment.Id,
             stakeholder.Id);
 
@@ -137,6 +139,9 @@ public sealed class When_HandlingActivateSubscription_WithNewPayment_Should(Cont
             .ExecuteDeleteAsync();
         await scope.DbContext.PaymentTransactions
             .Where(item => item.Id == _paymentTransactionId)
+            .ExecuteDeleteAsync();
+        await scope.DbContext.SubscriptionPlanPrices
+            .Where(item => item.PlanId == _planId)
             .ExecuteDeleteAsync();
         await scope.DbContext.SubscriptionPlans
             .Where(item => item.Id == _planId)

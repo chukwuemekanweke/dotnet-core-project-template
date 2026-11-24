@@ -26,6 +26,9 @@ public sealed class SubscriptionConfiguration : IEntityTypeConfiguration<Subscri
                 tableBuilder.HasCheckConstraint(
                     "CK_Subscriptions_CurrentPeriod",
                     "\"CurrentPeriodStartUtc\" IS NULL OR \"CurrentPeriodEndUtc\" > \"CurrentPeriodStartUtc\"");
+                tableBuilder.HasCheckConstraint(
+                    "CK_Subscriptions_BillingInterval",
+                    $"\"BillingInterval\" IN ({(int)BillingInterval.Monthly}, {(int)BillingInterval.Yearly})");
             });
 
         builder.HasKey(subscription => subscription.Id);
@@ -33,6 +36,7 @@ public sealed class SubscriptionConfiguration : IEntityTypeConfiguration<Subscri
         builder.Property(subscription => subscription.TenantId).IsRequired();
         builder.Property(subscription => subscription.BillingAccountId).IsRequired();
         builder.Property(subscription => subscription.PlanId).IsRequired();
+        builder.Property(subscription => subscription.BillingInterval).IsRequired();
         builder.Property(subscription => subscription.Status).IsRequired();
         builder.Property(subscription => subscription.CancellationReason).HasMaxLength(Subscription.MaxCancellationReasonLength);
         builder.Property(subscription => subscription.RowVersion).IsRowVersion();

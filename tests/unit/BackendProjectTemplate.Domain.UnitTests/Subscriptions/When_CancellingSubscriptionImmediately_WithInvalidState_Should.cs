@@ -11,7 +11,7 @@ public sealed class When_CancellingSubscriptionImmediately_WithInvalidState_Shou
     {
         var plan = SubscriptionAllocationTestData.CreatePlan();
         var pending = SubscriptionAggregate.CreatePending(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), plan.Id, true, SubscriptionAllocationTestData.Now, Guid.CreateVersion7(), SubscriptionAllocationTestData.ActorId);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), plan.Id, plan.Prices.Single().BillingInterval, true, SubscriptionAllocationTestData.Now, Guid.CreateVersion7(), SubscriptionAllocationTestData.ActorId);
         var expired = SubscriptionAllocationTestData.Allocate(plan, SubscriptionAllocationTestData.Now, SubscriptionAllocationTestData.Now.AddDays(1));
         expired.End(SubscriptionAllocationTestData.Now.AddDays(1), Guid.CreateVersion7());
         var active = SubscriptionAllocationTestData.Allocate(plan, SubscriptionAllocationTestData.Now, SubscriptionAllocationTestData.Now.AddDays(1));

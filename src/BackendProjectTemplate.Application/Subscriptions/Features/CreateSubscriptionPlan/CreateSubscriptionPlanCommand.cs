@@ -6,8 +6,9 @@ namespace BackendProjectTemplate.Application.Subscriptions.Features.CreateSubscr
 public sealed record CreateSubscriptionPlanCommand(
     string Code,
     string Name,
-    decimal Price,
+    IReadOnlyDictionary<BillingInterval, decimal> Prices,
     Guid CurrencyId,
-    BillingInterval BillingInterval,
     bool IsActive,
+    string? Description,
+    IReadOnlyList<string> Features,
     ActorContext ActorContext);

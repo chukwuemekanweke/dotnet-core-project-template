@@ -130,7 +130,8 @@ public sealed class AdminSubscriptionsController(
                 StrictEnumParser.Parse<SubscriptionAllocationSource>(request.AllocationSource),
                 request.Reason,
                 request.IdempotencyKey,
-                ActorContext.FromCurrentActor(currentActor)),
+                ActorContext.FromCurrentActor(currentActor),
+                StrictEnumParser.ParseOptional<BillingInterval>(request.BillingInterval)),
             cancellationToken);
 
         return result.Status switch
@@ -143,6 +144,8 @@ public sealed class AdminSubscriptionsController(
                 Problem(result.Error, statusCode: StatusCodes.Status404NotFound),
             AllocateSubscriptionStatus.InvalidPeriod => BadRequest(new ValidationProblemDetails(
                 new Dictionary<string, string[]> { [nameof(request.EndAtUtc)] = [result.Error!] })),
+            AllocateSubscriptionStatus.BillingIntervalNotOffered => BadRequest(new ValidationProblemDetails(
+                new Dictionary<string, string[]> { [nameof(request.BillingInterval)] = [result.Error!] })),
             AllocateSubscriptionStatus.PlanInactive or AllocateSubscriptionStatus.OwnerTenantMismatch =>
                 Problem(result.Error, statusCode: StatusCodes.Status422UnprocessableEntity),
             _ => Problem(result.Error, statusCode: StatusCodes.Status409Conflict)

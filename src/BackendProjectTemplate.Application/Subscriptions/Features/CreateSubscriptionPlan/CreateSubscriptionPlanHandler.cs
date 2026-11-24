@@ -25,10 +25,11 @@ public sealed class CreateSubscriptionPlanHandler(
             plan = SubscriptionPlan.Create(
                 command.Code,
                 command.Name,
-                command.Price,
                 command.CurrencyId,
-                command.BillingInterval,
-                command.IsActive);
+                command.Prices,
+                command.IsActive,
+                command.Description,
+                command.Features);
         }
         catch (ArgumentException exception)
         {

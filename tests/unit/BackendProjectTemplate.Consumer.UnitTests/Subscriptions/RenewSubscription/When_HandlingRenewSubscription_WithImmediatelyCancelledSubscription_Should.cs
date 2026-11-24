@@ -16,8 +16,8 @@ public sealed class When_HandlingRenewSubscription_WithImmediatelyCancelledSubsc
         var stakeholderId = Guid.CreateVersion7();
         var paymentId = Guid.CreateVersion7();
         var subscription = SubscriptionAggregate.CreatePending(
-            context.TenantId, context.BillingAccountId, context.Plan.Id, true, now, Guid.CreateVersion7(), stakeholderId.ToString());
-        var purchase = SubscriptionPurchase.Create(context.TenantId, context.BillingAccountId, subscription.Id, context.Plan, paymentId, stakeholderId);
+            context.TenantId, context.BillingAccountId, context.Plan.Id, context.Plan.Prices.Single().BillingInterval, true, now, Guid.CreateVersion7(), stakeholderId.ToString());
+        var purchase = SubscriptionPurchase.Create(context.TenantId, context.BillingAccountId, subscription.Id, context.Plan, context.Plan.Prices.Single().BillingInterval, paymentId, stakeholderId);
         subscription.ActivateFromPayment(purchase, paymentId, now, purchase.Id);
         var renewalBoundary = subscription.CurrentPeriodEndUtc!.Value;
         subscription.CancelImmediately(now.AddDays(5), Guid.CreateVersion7(), context.ActorId, "Chargeback");

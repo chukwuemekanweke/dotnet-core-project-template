@@ -10,4 +10,5 @@ public sealed record AllocateSubscriptionRequest(
     string AllocationSource,
     string Reason,
     Guid IdempotencyKey,
-    bool? AutoRenew = null);
+    bool? AutoRenew = null,
+    string? BillingInterval = null);

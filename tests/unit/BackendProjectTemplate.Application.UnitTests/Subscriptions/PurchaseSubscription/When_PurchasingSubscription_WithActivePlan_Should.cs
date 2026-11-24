@@ -28,7 +28,12 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
             "Ada",
             "Lovelace");
         var currency = Currency.Create("NGN", "Naira", true);
-        var plan = SubscriptionPlan.Create("PREMIUM", "Premium", 900000m, currency.Id, BillingInterval.Monthly, true);
+        var plan = SubscriptionPlan.Create(
+            "PREMIUM",
+            "Premium",
+            currency.Id,
+            new Dictionary<BillingInterval, decimal> { [BillingInterval.Monthly] = 900000m, [BillingInterval.Yearly] = 9000000m },
+            true);
         var provider = PaymentProvider.Create("Provider", "provider", true);
         provider.SetConfiguration(currency.Id, PaymentIntent.Subscription, PaymentMethodType.PaymentLink, true);
         var billingAccount = BillingAccount.Create(
@@ -113,6 +118,7 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
         await handler.HandleAsync(
             new PurchaseSubscriptionCommand(
                 plan.Id,
+                BillingInterval.Yearly,
                 provider.Id,
                 BillingAccountOwnerType.Stakeholder,
                 true,
@@ -121,13 +127,28 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
             CancellationToken.None);
 
         providerRequest.ShouldNotBeNull();
-        providerRequest.Amount.ShouldBe(plan.Price);
+        providerRequest.Amount.ShouldBe(9000000m);
         providerRequest.CurrencyCode.ShouldBe(currency.CurrencyCode);
         providerRequest.IsTrustedSubscriptionPurchase.ShouldBeTrue();
         providerRequest.SavePaymentMethod.ShouldBeTrue();
         capturedPurchase.ShouldNotBeNull();
-        capturedPurchase.ExpectedAmount.ShouldBe(plan.Price);
+        capturedPurchase.ExpectedAmount.ShouldBe(9000000m);
+        capturedPurchase.BillingInterval.ShouldBe(BillingInterval.Yearly);
         capturedPurchase.ExpectedCurrencyId.ShouldBe(plan.CurrencyId);
+        await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
+
+        var monthlyOnly = SubscriptionPlan.Create("BASIC", "Basic", 500000m, currency.Id, BillingInterval.Monthly, true);
+        planRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<SubscriptionPlan>>(), Arg.Any<CancellationToken>()).Returns(monthlyOnly);
+        await Should.ThrowAsync<InvalidOperationException>(() => handler.HandleAsync(
+            new PurchaseSubscriptionCommand(
+                monthlyOnly.Id,
+                BillingInterval.Yearly,
+                provider.Id,
+                BillingAccountOwnerType.Stakeholder,
+                true,
+                Guid.CreateVersion7(),
+                new ActorContext(stakeholder.Id, tenantId, "correlation", "flow")),
+            CancellationToken.None));
         await unitOfWork.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

@@ -20,7 +20,7 @@ public sealed class When_CreatingSubscriptionAllocation_Should
             $"  {SubscriptionAllocationTestData.Reason}  ",
             SubscriptionAllocationTestData.ActorId,
             operationId, new string('f', 64));
-        plan.UpdateTerms("Renamed", 1500000m);
+        plan.UpdateTerms("Renamed", new Dictionary<BillingInterval, decimal> { [BillingInterval.Yearly] = 1500000m }, null, []);
 
         allocation.SubscriptionId.ShouldBe(subscription.Id);
         allocation.TenantId.ShouldBe(subscription.TenantId);

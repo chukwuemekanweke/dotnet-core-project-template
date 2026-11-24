@@ -14,4 +14,5 @@ public sealed record AllocateSubscriptionCommand(
     SubscriptionAllocationSource AllocationSource,
     string Reason,
     Guid IdempotencyKey,
-    ActorContext ActorContext);
+    ActorContext ActorContext,
+    BillingInterval? BillingInterval = null);

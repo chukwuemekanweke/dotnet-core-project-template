@@ -3,7 +3,8 @@ namespace BackendProjectTemplate.WebAPI.Features.Subscriptions.AdminSubscription
 public sealed record CreateSubscriptionPlanRequest(
     string Code,
     string Name,
-    decimal Price,
+    IReadOnlyList<SubscriptionPlanPriceRequest> Prices,
     Guid CurrencyId,
-    string BillingInterval,
-    bool IsActive = true);
+    bool IsActive = true,
+    string? Description = null,
+    IReadOnlyList<string>? Features = null);

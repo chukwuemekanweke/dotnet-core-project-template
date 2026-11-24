@@ -18,17 +18,24 @@ public sealed class Subscription : Entity, IAggregateRoot
         Guid tenantId,
         Guid billingAccountId,
         Guid planId,
+        BillingInterval billingInterval,
         bool autoRenew)
     {
         TenantId = RequireId(tenantId, nameof(tenantId));
         BillingAccountId = RequireId(billingAccountId, nameof(billingAccountId));
         PlanId = RequireId(planId, nameof(planId));
+        BillingInterval = Enum.IsDefined(billingInterval)
+            ? billingInterval
+            : throw new ArgumentOutOfRangeException(nameof(billingInterval), billingInterval, "Billing interval is invalid.");
         AutoRenew = autoRenew;
     }
 
     public Guid TenantId { get; private set; }
     public Guid BillingAccountId { get; private set; }
     public Guid PlanId { get; private set; }
+
+    /// <summary>The billing interval of the plan price this subscription was bought or granted on.</summary>
+    public BillingInterval BillingInterval { get; private set; }
     public SubscriptionStatus Status { get; private set; }
     public DateTimeOffset? CurrentPeriodStartUtc { get; private set; }
     public DateTimeOffset? CurrentPeriodEndUtc { get; private set; }
@@ -62,12 +69,13 @@ public sealed class Subscription : Entity, IAggregateRoot
         Guid tenantId,
         Guid billingAccountId,
         Guid planId,
+        BillingInterval billingInterval,
         bool autoRenew,
         DateTimeOffset createdAtUtc,
         Guid operationId,
         string? actorId)
     {
-        var subscription = new Subscription(tenantId, billingAccountId, planId, autoRenew)
+        var subscription = new Subscription(tenantId, billingAccountId, planId, billingInterval, autoRenew)
         {
             Status = SubscriptionStatus.Pending
         };
@@ -92,6 +100,7 @@ public sealed class Subscription : Entity, IAggregateRoot
         Guid tenantId,
         Guid billingAccountId,
         SubscriptionPlan plan,
+        BillingInterval billingInterval,
         DateTimeOffset entitlementStartUtc,
         DateTimeOffset entitlementEndUtc,
         DateTimeOffset allocatedAtUtc,
@@ -102,6 +111,7 @@ public sealed class Subscription : Entity, IAggregateRoot
         ArgumentNullException.ThrowIfNull(plan);
         RequireActor(actorId);
         reason = NormalizeRequiredReason(reason);
+        var nominalPrice = plan.GetPrice(billingInterval);
         entitlementStartUtc = SubscriptionTimestamps.Normalize(entitlementStartUtc);
         entitlementEndUtc = SubscriptionTimestamps.Normalize(entitlementEndUtc);
         if (operationId == Guid.Empty)
@@ -119,7 +129,7 @@ public sealed class Subscription : Entity, IAggregateRoot
             throw new ArgumentException("Entitlement end must be in the future.", nameof(entitlementEndUtc));
         }
 
-        var subscription = new Subscription(tenantId, billingAccountId, plan.Id, autoRenew: false)
+        var subscription = new Subscription(tenantId, billingAccountId, plan.Id, billingInterval, autoRenew: false)
         {
             EntitlementStartUtc = entitlementStartUtc,
             EntitlementEndUtc = entitlementEndUtc
@@ -145,9 +155,9 @@ public sealed class Subscription : Entity, IAggregateRoot
             entitlementEndUtc,
             plan.Id,
             plan.Code,
-            plan.Price,
+            nominalPrice,
             plan.CurrencyId,
-            plan.BillingInterval,
+            billingInterval,
             operationId,
             allocatedAtUtc,
             operationId,
@@ -179,7 +189,7 @@ public sealed class Subscription : Entity, IAggregateRoot
             throw new AggregateStateException($"Subscription '{Id}' cannot activate from status '{Status}'.");
         }
 
-        if (purchase.PlanId != PlanId || purchase.SubscriptionId != Id)
+        if (purchase.PlanId != PlanId || purchase.SubscriptionId != Id || purchase.BillingInterval != BillingInterval)
         {
             throw new AggregateStateException($"Purchase '{purchase.Id}' does not match subscription '{Id}'.");
         }

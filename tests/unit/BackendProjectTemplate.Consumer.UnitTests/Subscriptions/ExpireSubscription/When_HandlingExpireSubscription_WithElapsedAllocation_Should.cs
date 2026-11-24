@@ -14,7 +14,7 @@ public sealed class When_HandlingExpireSubscription_WithElapsedAllocation_Should
         var end = start.AddDays(10);
         var context = new SubscriptionsConsumerTestContext(end.AddMinutes(-1));
         var subscription = Domain.Subscriptions.Entities.Subscription.CreateAllocated(
-            context.TenantId, context.BillingAccountId, context.Plan, start, end, start, Guid.CreateVersion7(), context.ActorId, "Grant");
+            context.TenantId, context.BillingAccountId, context.Plan, context.Plan.Prices.Single().BillingInterval, start, end, start, Guid.CreateVersion7(), context.ActorId, "Grant");
         context.SubscriptionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Domain.Subscriptions.Entities.Subscription>>(), Arg.Any<CancellationToken>())
             .Returns(subscription);
         var handler = context.CreateExpireHandler();

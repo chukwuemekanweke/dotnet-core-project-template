@@ -20,6 +20,7 @@ public sealed class When_ActivatingSubscription_FromPayment_Should
             tenantId,
             billingAccountId,
             plan.Id,
+            plan.Prices.Single().BillingInterval,
             true,
             initiatedAt,
             Guid.CreateVersion7(),
@@ -29,10 +30,11 @@ public sealed class When_ActivatingSubscription_FromPayment_Should
             billingAccountId,
             subscription.Id,
             plan,
+            plan.Prices.Single().BillingInterval,
             paymentId,
             stakeholderId);
 
-        plan.ChangePrice(300000m);
+        plan.UpdateTerms(plan.Name, new Dictionary<BillingInterval, decimal> { [BillingInterval.Monthly] = 300000m }, null, []);
         var period = subscription.ActivateFromPayment(purchase, paymentId, initiatedAt, purchase.Id);
 
         subscription.Status.ShouldBe(SubscriptionStatus.Active);

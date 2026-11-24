@@ -10,6 +10,7 @@ public static class PurchaseSubscriptionRequestFingerprint
         var canonical = string.Join(
             '|',
             command.PlanId.ToString("N"),
+            ((int)command.BillingInterval).ToString(System.Globalization.CultureInfo.InvariantCulture),
             command.PaymentProviderId.ToString("N"),
             ((int)command.BillingAccountOwnerType).ToString(System.Globalization.CultureInfo.InvariantCulture),
             command.AutoRenew ? "1" : "0");

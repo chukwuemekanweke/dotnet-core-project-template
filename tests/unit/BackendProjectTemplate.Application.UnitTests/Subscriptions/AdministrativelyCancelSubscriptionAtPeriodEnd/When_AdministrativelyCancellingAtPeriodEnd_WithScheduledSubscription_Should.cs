@@ -10,7 +10,7 @@ public sealed class When_AdministrativelyCancellingAtPeriodEnd_WithScheduledSubs
     {
         var context = new AdminSubscriptionTestContext();
         var scheduled = Domain.Subscriptions.Entities.Subscription.CreateAllocated(
-            context.TenantId, context.TenantBillingAccount.Id, context.Plan, AdminSubscriptionTestContext.Now.AddDays(3), AdminSubscriptionTestContext.Now.AddDays(10),
+            context.TenantId, context.TenantBillingAccount.Id, context.Plan, context.Plan.Prices.Single().BillingInterval, AdminSubscriptionTestContext.Now.AddDays(3), AdminSubscriptionTestContext.Now.AddDays(10),
             AdminSubscriptionTestContext.Now, Guid.CreateVersion7(), context.AdministratorId.ToString(), "future");
         context.ReturnSubscription(scheduled);
 

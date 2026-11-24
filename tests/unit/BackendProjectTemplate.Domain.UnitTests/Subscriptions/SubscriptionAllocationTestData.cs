@@ -22,6 +22,7 @@ internal static class SubscriptionAllocationTestData
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             plan,
+            plan.Prices.Single().BillingInterval,
             startUtc,
             endUtc,
             Now,

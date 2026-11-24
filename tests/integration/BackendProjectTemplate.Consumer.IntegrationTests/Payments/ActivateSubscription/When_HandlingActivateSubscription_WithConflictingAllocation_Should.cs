@@ -62,12 +62,12 @@ public sealed class When_HandlingActivateSubscription_WithConflictingAllocation_
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         _merchantReference = $"pay_{Guid.CreateVersion7():N}";
         var payment = PaymentTransaction.Create(
-            _merchantReference, PaymentIntent.Subscription, Guid.CreateVersion7(), plan.Price, currency.Id, stakeholder.CountryId, user.Id, stakeholder.Id, _tenantId);
+            _merchantReference, PaymentIntent.Subscription, Guid.CreateVersion7(), plan.Prices.Single().Price, currency.Id, stakeholder.CountryId, user.Id, stakeholder.Id, _tenantId);
         payment.MarkInitiated("provider-ref", null, null, "initiated");
         payment.MarkSucceeded("provider-ref", "confirmed", now);
         var paid = Domain.Subscriptions.Entities.Subscription.CreatePending(
-            _tenantId, billingAccount.Id, plan.Id, true, now, Guid.CreateVersion7(), stakeholder.Id.ToString());
-        var purchase = SubscriptionPurchase.Create(_tenantId, billingAccount.Id, paid.Id, plan, payment.Id, stakeholder.Id);
+            _tenantId, billingAccount.Id, plan.Id, plan.Prices.Single().BillingInterval, true, now, Guid.CreateVersion7(), stakeholder.Id.ToString());
+        var purchase = SubscriptionPurchase.Create(_tenantId, billingAccount.Id, paid.Id, plan, plan.Prices.Single().BillingInterval, payment.Id, stakeholder.Id);
         dbContext.PaymentTransactions.Add(payment);
         dbContext.Subscriptions.Add(paid);
         dbContext.SubscriptionPurchases.Add(purchase);
@@ -94,6 +94,7 @@ public sealed class When_HandlingActivateSubscription_WithConflictingAllocation_
         await db.Subscriptions.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
         await db.PaymentTransactions.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
         await db.BillingAccounts.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
+        await db.SubscriptionPlanPrices.Where(item => item.PlanId == _planId).ExecuteDeleteAsync();
         await db.SubscriptionPlans.Where(item => item.Id == _planId).ExecuteDeleteAsync();
         await db.Currencies.Where(item => item.Id == _currencyId).ExecuteDeleteAsync();
         await db.Stakeholders.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
@@ -136,7 +137,7 @@ public sealed class When_HandlingActivateSubscription_WithConflictingAllocation_
         using var scope = CreateScope();
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         return Domain.Subscriptions.Entities.Subscription.CreateAllocated(
-            _tenantId, _billingAccountId, _plan, now, now.AddDays(30), now, Guid.CreateVersion7(), Guid.CreateVersion7().ToString(), "Manual grant");
+            _tenantId, _billingAccountId, _plan, _plan.Prices.Single().BillingInterval, now, now.AddDays(30), now, Guid.CreateVersion7(), Guid.CreateVersion7().ToString(), "Manual grant");
     }
 
     private async Task CommitManualAllocationAsync()

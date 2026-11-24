@@ -21,6 +21,7 @@ public sealed class When_HandlingActivateSubscription_WithConcurrentEntitlementC
             seeded.BillingAccountId,
             seeded.SubscriptionId,
             SubscriptionPlan.Create(seeded.PlanCode, "Reloaded", seeded.ExpectedAmount, currencyId, seeded.BillingInterval, true),
+            SubscriptionPlan.Create(seeded.PlanCode, "Reloaded", seeded.ExpectedAmount, currencyId, seeded.BillingInterval, true).Prices.Single().BillingInterval,
             seeded.PaymentTransactionId,
             seeded.InitiatedByStakeholderId);
         context.SubscriptionPurchaseRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<SubscriptionPurchase>>(), Arg.Any<CancellationToken>())

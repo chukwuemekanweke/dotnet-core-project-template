@@ -10,26 +10,25 @@ public sealed class SubscriptionPlanConfiguration : IEntityTypeConfiguration<Sub
 {
     public void Configure(EntityTypeBuilder<SubscriptionPlan> builder)
     {
-        builder.ToTable(
-            "SubscriptionPlans",
-            SchemaNames.Payments,
-            tableBuilder =>
-            {
-                tableBuilder.HasCheckConstraint("CK_SubscriptionPlans_Price", "\"Price\" >= 0 AND \"Price\" = trunc(\"Price\")");
-                tableBuilder.HasCheckConstraint(
-                    "CK_SubscriptionPlans_BillingInterval",
-                    $"\"BillingInterval\" IN ({(int)BillingInterval.Monthly}, {(int)BillingInterval.Yearly})");
-            });
+        builder.ToTable("SubscriptionPlans", SchemaNames.Payments);
 
         builder.HasKey(plan => plan.Id);
         builder.Property(plan => plan.Code).HasMaxLength(SubscriptionPlan.MaxCodeLength).IsRequired();
         builder.Property(plan => plan.Name).HasMaxLength(SubscriptionPlan.MaxNameLength).IsRequired();
-        builder.Property(plan => plan.Price).HasPrecision(18, 0).IsRequired();
         builder.Property(plan => plan.CurrencyId).IsRequired();
-        builder.Property(plan => plan.BillingInterval).IsRequired();
         builder.Property(plan => plan.IsActive).IsRequired();
+        builder.Property(plan => plan.Description).HasMaxLength(SubscriptionPlan.MaxDescriptionLength);
+        builder.PrimitiveCollection(plan => plan.Features)
+            .HasField("_features")
+            .UsePropertyAccessMode(PropertyAccessMode.Field)
+            .IsRequired();
         builder.HasIndex(plan => plan.Code).IsUnique().HasDatabaseName(SubscriptionPersistenceConstraints.PlanCodeUniqueIndexName);
         builder.HasIndex(plan => plan.IsActive);
         builder.HasOne<Currency>().WithMany().HasForeignKey(plan => plan.CurrencyId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(plan => plan.Prices)
+            .WithOne()
+            .HasForeignKey(price => price.PlanId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Navigation(plan => plan.Prices).AutoInclude();
     }
 }

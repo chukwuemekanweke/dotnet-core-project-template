@@ -44,7 +44,7 @@ internal sealed class SubscriptionsConsumerTestContext
     {
         var operationId = Guid.CreateVersion7();
         var subscription = SubscriptionAggregate.CreateAllocated(
-            TenantId, BillingAccountId, Plan, start, end, AllocatedAt, operationId, ActorId, "Scheduled grant");
+            TenantId, BillingAccountId, Plan, Plan.Prices.Single().BillingInterval, start, end, AllocatedAt, operationId, ActorId, "Scheduled grant");
         var allocation = SubscriptionAllocation.Create(
             subscription, Plan, SubscriptionAllocationSource.Promotion, "Scheduled grant", ActorId, operationId, new string('f', 64));
         SubscriptionRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<SubscriptionAggregate>>(), Arg.Any<CancellationToken>())

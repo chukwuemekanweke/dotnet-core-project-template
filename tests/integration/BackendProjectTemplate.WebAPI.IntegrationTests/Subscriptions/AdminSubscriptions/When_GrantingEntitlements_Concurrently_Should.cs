@@ -77,17 +77,17 @@ public sealed class When_GrantingEntitlements_Concurrently_Should(ContainersFixt
         var actor = AdminStakeholderId.ToString();
 
         var first = Domain.Subscriptions.Entities.Subscription.CreateAllocated(
-            TargetTenantId, account.Id, plan, now.AddDays(1), now.AddDays(11), now, Guid.CreateVersion7(), actor, "first");
+            TargetTenantId, account.Id, plan, plan.Prices.Single().BillingInterval, now.AddDays(1), now.AddDays(11), now, Guid.CreateVersion7(), actor, "first");
         dbContext.Subscriptions.Add(first);
         await dbContext.SaveChangesAsync();
 
         var adjacent = Domain.Subscriptions.Entities.Subscription.CreateAllocated(
-            TargetTenantId, account.Id, plan, now.AddDays(11), now.AddDays(12), now, Guid.CreateVersion7(), actor, "adjacent");
+            TargetTenantId, account.Id, plan, plan.Prices.Single().BillingInterval, now.AddDays(11), now.AddDays(12), now, Guid.CreateVersion7(), actor, "adjacent");
         dbContext.Subscriptions.Add(adjacent);
         await dbContext.SaveChangesAsync();
 
         var overlapping = Domain.Subscriptions.Entities.Subscription.CreateAllocated(
-            TargetTenantId, account.Id, plan, now.AddDays(5), now.AddDays(6), now, Guid.CreateVersion7(), actor, "overlap");
+            TargetTenantId, account.Id, plan, plan.Prices.Single().BillingInterval, now.AddDays(5), now.AddDays(6), now, Guid.CreateVersion7(), actor, "overlap");
         dbContext.Subscriptions.Add(overlapping);
         await Should.ThrowAsync<Domain.Subscriptions.Exceptions.SubscriptionEntitlementConflictException>(() => dbContext.SaveChangesAsync());
         dbContext.Entry(overlapping).State = EntityState.Detached;
@@ -100,7 +100,7 @@ public sealed class When_GrantingEntitlements_Concurrently_Should(ContainersFixt
             $"pay_{Guid.CreateVersion7():N}",
             Contracts.Payments.PaymentIntent.Subscription,
             Guid.CreateVersion7(),
-            plan.Price,
+            plan.Prices.Single().Price,
             plan.CurrencyId,
             Guid.CreateVersion7(),
             AdminUserId,
@@ -109,12 +109,12 @@ public sealed class When_GrantingEntitlements_Concurrently_Should(ContainersFixt
         payment.MarkInitiated("provider", null, null, "initiated");
         payment.MarkSucceeded("provider", "confirmed", now);
         var paid = Domain.Subscriptions.Entities.Subscription.CreatePending(
-            TargetTenantId, account.Id, plan.Id, true, now, Guid.CreateVersion7(), TargetStakeholderId.ToString());
+            TargetTenantId, account.Id, plan.Id, plan.Prices.Single().BillingInterval, true, now, Guid.CreateVersion7(), TargetStakeholderId.ToString());
         dbContext.PaymentTransactions.Add(payment);
         dbContext.Subscriptions.Add(paid);
         await dbContext.SaveChangesAsync();
         var purchase = Domain.Subscriptions.Entities.SubscriptionPurchase.Create(
-            TargetTenantId, account.Id, paid.Id, plan, payment.Id, TargetStakeholderId);
+            TargetTenantId, account.Id, paid.Id, plan, plan.Prices.Single().BillingInterval, payment.Id, TargetStakeholderId);
         var period = paid.ActivateFromPayment(purchase, payment.Id, now, purchase.Id);
         dbContext.SubscriptionPeriods.Add(period);
 

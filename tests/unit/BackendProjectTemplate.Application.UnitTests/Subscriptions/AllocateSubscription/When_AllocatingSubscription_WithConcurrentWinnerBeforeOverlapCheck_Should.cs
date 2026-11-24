@@ -16,6 +16,7 @@ public sealed class When_AllocatingSubscription_WithConcurrentWinnerBeforeOverla
             context.TenantId,
             context.TenantBillingAccount.Id,
             context.Plan,
+            context.Plan.Prices.Single().BillingInterval,
             AdminSubscriptionTestContext.Now,
             AdminSubscriptionTestContext.Now.AddDays(10),
             AdminSubscriptionTestContext.Now,

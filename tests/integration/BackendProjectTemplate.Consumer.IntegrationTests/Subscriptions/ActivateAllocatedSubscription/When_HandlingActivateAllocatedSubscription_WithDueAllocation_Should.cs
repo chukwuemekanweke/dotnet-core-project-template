@@ -59,7 +59,7 @@ public sealed class When_HandlingActivateAllocatedSubscription_WithDueAllocation
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow();
         var operationId = Guid.CreateVersion7();
         var subscription = Domain.Subscriptions.Entities.Subscription.CreateAllocated(
-            _tenantId, billingAccount.Id, plan, now.AddMinutes(-30), now.AddDays(10), now.AddHours(-1), operationId, Guid.CreateVersion7().ToString(), "Scheduled grant");
+            _tenantId, billingAccount.Id, plan, plan.Prices.Single().BillingInterval, now.AddMinutes(-30), now.AddDays(10), now.AddHours(-1), operationId, Guid.CreateVersion7().ToString(), "Scheduled grant");
         var allocation = SubscriptionAllocation.Create(
             subscription, plan, SubscriptionAllocationSource.Promotion, "Scheduled grant", Guid.CreateVersion7().ToString(), operationId, new string('f', 64));
         plan.SetActive(false);
@@ -87,6 +87,7 @@ public sealed class When_HandlingActivateAllocatedSubscription_WithDueAllocation
         await db.Subscriptions.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
         await db.PaymentTransactions.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
         await db.BillingAccounts.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
+        await db.SubscriptionPlanPrices.Where(item => item.PlanId == _planId).ExecuteDeleteAsync();
         await db.SubscriptionPlans.Where(item => item.Id == _planId).ExecuteDeleteAsync();
         await db.Currencies.Where(item => item.Id == _currencyId).ExecuteDeleteAsync();
         await db.Stakeholders.Where(item => item.TenantId == _tenantId).ExecuteDeleteAsync();
