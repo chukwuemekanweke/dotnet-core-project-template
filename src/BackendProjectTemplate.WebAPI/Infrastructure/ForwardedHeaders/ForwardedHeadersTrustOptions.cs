@@ -14,4 +14,11 @@ public sealed class ForwardedHeadersTrustOptions
 
     /// <summary>Proxy networks in CIDR notation, for example "10.0.0.0/24".</summary>
     public string[] KnownNetworks { get; init; } = [];
+
+    /// <summary>
+    /// Maximum number of X-Forwarded-For entries processed from the right. Leave unset for the framework default
+    /// (1). Use 2 when a trusted server-side caller (such as a portal BFF on a trusted network) sits behind the
+    /// edge proxy, so the client address it forwarded is used instead of the caller's own address.
+    /// </summary>
+    public int? ForwardLimit { get; init; }
 }

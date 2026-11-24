@@ -27,9 +27,20 @@ public static class ServiceCollectionExtensions
                     $"Configuration value '{ForwardedHeadersTrustOptions.SectionName}:{nameof(ForwardedHeadersTrustOptions.KnownNetworks)}' contains an invalid CIDR network '{value}'."))
             .ToArray();
 
+        if (trust.ForwardLimit is < 1)
+        {
+            throw new InvalidOperationException(
+                $"Configuration value '{ForwardedHeadersTrustOptions.SectionName}:{nameof(ForwardedHeadersTrustOptions.ForwardLimit)}' must be at least 1 but was '{trust.ForwardLimit}'.");
+        }
+
         services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = HttpForwardedHeaders.XForwardedFor | HttpForwardedHeaders.XForwardedProto;
+
+            if (trust.ForwardLimit.HasValue)
+            {
+                options.ForwardLimit = trust.ForwardLimit.Value;
+            }
 
             foreach (var proxy in proxies)
             {

@@ -108,6 +108,13 @@ loopback-published container port connects from the Docker network gateway, so a
 network subnet and trust that gateway (development does; `compose.production.yml` does not yet). Never trust
 broad ranges: rate limiting partitions on `RemoteIpAddress`.
 
+`ForwardedHeaders:ForwardLimit` (default 1, must be ≥ 1) is raised only when a trusted server-side caller sits
+behind the edge proxy: frontend portal BFFs call the API through the public host, so the edge proxy sees the
+portal container and appends it (`client, portal`). Trusting the portal network with a limit of 2 resolves the
+browser address; each hop must be trusted for the walk to continue, so browser-supplied entries are never used.
+`ClientIpAddressNormalizationMiddleware` runs after `UseForwardedHeaders` and unwraps IPv4-mapped IPv6
+(`::ffff:a.b.c.d`) so stored IPs and rate-limit partitions use one form.
+
 ## CORS
 
 `Infrastructure/CrossOrigin` builds the default policy. In Production only `Cors:AllowedOrigins`

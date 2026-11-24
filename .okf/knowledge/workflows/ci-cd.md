@@ -115,6 +115,12 @@ own tests.
   publishing, so requests arrive from the `app` network gateway. That network is pinned to
   `172.30.231.0/24` and WebAPI sets `ForwardedHeaders__KnownProxies__0: 172.30.231.1`; keep the two in
   step, or client IPs (rate-limit partitions, audit IPs) collapse to the gateway.
+- Frontend portal BFFs (`frontendprojecttemplate-development_portals`, `172.21.0.0/16`, not yet pinned) call
+  `template-api.chidelu.com` through the same host Caddy and forward the browser IP in `X-Forwarded-For`. Host
+  Caddy (`/opt/pickly/Caddyfile`, owned by the pickly host, global `servers { trusted_proxies static
+  172.21.0.0/16 }`) appends instead of overwriting for that range, and WebAPI trusts it via
+  `ForwardedHeaders__KnownNetworks__0` with `ForwardedHeaders__ForwardLimit: 2`. If the portal network's subnet
+  changes, update Caddy and this setting together, or security activity records the portal container IP.
 - Docker cannot change an existing network's IPAM (subnet/gateway) or remove it while containers use it; a
   changed definition fails the deploy at the migration `docker compose run` ("migration container could not
   be started"). Change network IPAM only under a **new network name**, so Compose creates it and the rollout
