@@ -65,6 +65,9 @@ services:
       Payments__SafeHaven__SettlementAccountNumber: ${SAFEHAVEN_SETTLEMENT_ACCOUNT_NUMBER:-}
       Payments__SafeHaven__AutoSweepAccountNumber: ${SAFEHAVEN_AUTO_SWEEP_ACCOUNT_NUMBER:-}
       Payments__SafeHaven__SettlementBankCode: ${SAFEHAVEN_SETTLEMENT_BANK_CODE:-}
+      # Bachs checkout returns land on the user portal's PaymentReturn pages.
+      Payments__Bachs__SuccessUrl: ${BACHS_SUCCESS_URL:-}
+      Payments__Bachs__CancelUrl: ${BACHS_CANCEL_URL:-}
       OpenTelemetry__ServiceName: BackendProjectTemplate.WebAPI
       OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
