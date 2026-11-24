@@ -48,8 +48,10 @@ internal sealed class PaymentsFlowTestContext
             PaymentTransactionRepository,
             RecurringPaymentAuthorizationRepository,
             PaymentProviderServices,
+            EventPublisher,
             CustomTelemetryContext,
-            UnitOfWork));
+            UnitOfWork,
+            Clock));
 
     public GetStakeholderWalletTransactionsHandler CreateGetStakeholderWalletTransactionsHandler() =>
         new(WalletTransactionReadModelRepository);

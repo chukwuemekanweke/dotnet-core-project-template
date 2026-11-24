@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
 using BackendProjectTemplate.Application.Subscriptions.Features.PurchaseSubscription;
 using BackendProjectTemplate.Contracts.Payments;
 using BackendProjectTemplate.Domain.Common.Auditing;
+using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -101,8 +102,10 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
             paymentRepository,
             recurringAuthorizationRepository,
             [providerService],
+            Substitute.For<IEventPublisher>(),
             telemetry,
-            unitOfWork);
+            unitOfWork,
+            new FakeTimeProvider());
         var handler = new PurchaseSubscriptionHandler(
             planRepository,
             subscriptionRepository,

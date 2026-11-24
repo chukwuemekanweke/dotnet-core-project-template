@@ -46,8 +46,10 @@ internal sealed class PaymentsControllerTestContext
             PaymentTransactionRepository,
             RecurringPaymentAuthorizationRepository,
             PaymentProviderServices,
+            EventPublisher,
             CustomTelemetryContext,
-            UnitOfWork));
+            UnitOfWork,
+            Clock));
 
     public ActivatePaymentProviderHandler CreateActivatePaymentProviderHandler() =>
         new(PaymentProviderRepository, UnitOfWork);

@@ -104,8 +104,14 @@ status: stable
   `LastStatusCheckAtUtc`; it must not infer or manufacture historical transitions or reconciliation outcomes.
 - `SuccessfulPaymentConfirmed`, `UnsuccessfulPaymentConcluded`, `ActivateSubscriptionCommand`, `CreditWalletCommand` cross into `Consumer`/`Jobs` via `Contracts` and the outbox — see [[async-processing]].
   Every path that moves a subscription-intent payment to a terminal non-success state (webhook and reconciliation
-  Failed/Expired/Underpaid) must call `UnsuccessfulPaymentNotification.PublishAsync`, or the Pending subscription is
-  never released (see [[subscriptions]]).
+  Failed/Expired/Underpaid, and failed provider initiation) must call `UnsuccessfulPaymentNotification.PublishAsync`,
+  or the Pending subscription is never released (see [[subscriptions]]).
+- When `PaymentInitiationService` was given a correlation callback, the payment is committed *before* the provider
+  call. If that call throws (HTTP error, timeout, cancellation), it moves the payment `PendingInitiation → Failed`
+  (`MarkInitiationFailed`, reason `provider_initiation_failed`), publishes the unsuccessful-payment event and saves
+  with `CancellationToken.None`, then rethrows. The customer never got a checkout, so the payment can never succeed.
+  Without a correlation callback (wallet top-up) nothing is committed before the provider call, so there is nothing to undo.
+  Reconciliation only scans `Initiated` payments, so nothing else ever concludes a `PendingInitiation` payment.
 - The generic payment-initiation endpoint is wallet-top-up only. Subscription checkout goes through
   the dedicated [[subscriptions]] purchase slice so plan price/currency are server-authoritative and a
   durable purchase correlation exists before provider initiation.
