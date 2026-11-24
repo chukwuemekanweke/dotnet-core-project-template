@@ -83,6 +83,14 @@ services:
       # Caddy reaches the loopback-published port through Docker, so requests arrive from the app network
       # gateway. Trust only that address for X-Forwarded-For/Proto (see the pinned subnet below).
       ForwardedHeaders__KnownProxies__0: 172.30.231.1
+      # frontendprojecttemplate-development portals network: portal server-side calls reach the API through
+      # Caddy, which trusts this range and appends to X-Forwarded-For ("client, portal"). Trusting it with a
+      # limit of 2 records the browser's address instead of the portal container's. 172.30.233.0/24 is the
+      # frontend's pinned PORTALS_SUBNET; 172.21.0.0/16 is its old unpinned network, kept only until the
+      # portals are redeployed onto the pinned one (then remove it here and in host Caddy).
+      ForwardedHeaders__KnownNetworks__0: 172.30.233.0/24
+      ForwardedHeaders__KnownNetworks__1: 172.21.0.0/16
+      ForwardedHeaders__ForwardLimit: 2
       # Browser origins of the development frontends (DNS -> this VPS, TLS via host Caddy).
       Cors__AllowedOrigins__0: https://template-user.chidelu.com
       Cors__AllowedOrigins__1: https://template-admin.chidelu.com

@@ -93,7 +93,8 @@ own tests.
   (`DEPLOY_ALERT_WEBHOOK_URL`) is a repository secret used only by `notify-deployment-failure`.
 - `deploy/vps-deploy-stack.production.json` is a repository copy of the host registry; the host file wins,
   so update both together. `deploy/stack.env.example` must list every variable the production Compose file
-  requires (`${VAR:?…}`) with non-secret placeholders — a new required variable fails `release-config`
+  requires (`${VAR:?…}`) with non-secret placeholders (including `APP_NETWORK_SUBNET`/`APP_NETWORK_GATEWAY` for
+  the pinned `app` network; subnets must not overlap other stacks on the host) — a new required variable fails `release-config`
   until it is added there and to the host `stack.env`. Infrastructure stays external (managed
   PostgreSQL/Redis/RabbitMQ); an added infrastructure service must be digest-pinned and pass the host
   policy.
@@ -115,6 +116,13 @@ own tests.
   publishing, so requests arrive from the `app` network gateway. That network is pinned to
   `172.30.231.0/24` and WebAPI sets `ForwardedHeaders__KnownProxies__0: 172.30.231.1`; keep the two in
   step, or client IPs (rate-limit partitions, audit IPs) collapse to the gateway.
+- Frontend portal BFFs call `template-api.chidelu.com` through the same host Caddy and forward the browser IP
+  in `X-Forwarded-For`. Their network is pinned by the frontend's `PORTALS_SUBNET` (development
+  `172.30.233.0/24`; the old unpinned `172.21.0.0/16` is trusted only until the portals redeploy). Host Caddy
+  (`/opt/pickly/Caddyfile`, owned by the pickly host, global `servers { trusted_proxies static … }`) appends
+  instead of overwriting for those ranges, and WebAPI trusts them via `ForwardedHeaders__KnownNetworks__*` with
+  `ForwardedHeaders__ForwardLimit: 2`. Change the portal subnet, Caddy and these settings together, or security
+  activity records the portal container IP.
 - Docker cannot change an existing network's IPAM (subnet/gateway) or remove it while containers use it; a
   changed definition fails the deploy at the migration `docker compose run` ("migration container could not
   be started"). Change network IPAM only under a **new network name**, so Compose creates it and the rollout

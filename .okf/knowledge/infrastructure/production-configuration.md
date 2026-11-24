@@ -105,8 +105,18 @@ WebAPI applies `X-Forwarded-For`/`X-Forwarded-Proto` only from proxies listed in
 (IPs) or `ForwardedHeaders:KnownNetworks` (CIDR), plus the framework's loopback default
 (`Infrastructure/ForwardedHeaders`); invalid entries fail startup. A host proxy in front of a
 loopback-published container port connects from the Docker network gateway, so a deployment must pin its
-network subnet and trust that gateway (development does; `compose.production.yml` does not yet). Never trust
+network subnet and trust that gateway. Development pins `app` to `172.30.231.0/24`; production pins `app` from
+required `stack.env` `APP_NETWORK_SUBNET`/`APP_NETWORK_GATEWAY` and trusts the gateway, plus optional
+`PORTALS_SUBNET` when the frontend portals share the host. The host proxy config is host-owned;
+`deploy/Caddyfile.example` is the reference (global `trusted_proxies` for portal subnets). Never trust
 broad ranges: rate limiting partitions on `RemoteIpAddress`.
+
+`ForwardedHeaders:ForwardLimit` (default 1, must be ≥ 1) is raised only when a trusted server-side caller sits
+behind the edge proxy: frontend portal BFFs call the API through the public host, so the edge proxy sees the
+portal container and appends it (`client, portal`). Trusting the portal network with a limit of 2 resolves the
+browser address; each hop must be trusted for the walk to continue, so browser-supplied entries are never used.
+`ClientIpAddressNormalizationMiddleware` runs after `UseForwardedHeaders` and unwraps IPv4-mapped IPv6
+(`::ffff:a.b.c.d`) so stored IPs and rate-limit partitions use one form.
 
 ## CORS
 

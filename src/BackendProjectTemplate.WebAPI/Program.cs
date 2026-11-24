@@ -77,6 +77,7 @@ builder.Services.AddBackendTelemetry(builder.Configuration);
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.UseMiddleware<ClientIpAddressNormalizationMiddleware>();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors();
