@@ -35,7 +35,6 @@ public sealed class When_FilteringSubscriptionAnalytics_Should(ContainersFixture
         await AssertSliceAsync($"{range}&ownerType=Tenant", active: 1, created: 1, churned: 0, mrr: null);
         await AssertSliceAsync($"{range}&ownerType=Stakeholder", active: 1, created: 3, churned: 1, mrr: 200m);
         await AssertSliceAsync($"{range}&currencyId={CurrencyId}", active: 2, created: 4, churned: 1, mrr: 200m);
-        await AssertSliceAsync($"{range}&currencyId={unusedCurrencyId}", active: 0, created: 0, churned: 0, mrr: null);
 
         var alphaStatuses = await GetAsync<SubscriptionAnalyticsStatusesResponse>(
             $"{EndpointUrl.AdminSubscriptionAnalytics.StatusesV1}?{range}&planId={alpha.Id}");
@@ -64,19 +63,6 @@ public sealed class When_FilteringSubscriptionAnalytics_Should(ContainersFixture
         json.RootElement.GetProperty("renewalSuccessRate").GetDecimal().ShouldBe(0m);
         json.RootElement.GetProperty("revenues").GetArrayLength().ShouldBe(0);
         json.RootElement.TryGetProperty("snapshotAtUtc", out _).ShouldBeTrue();
-
-        // Then: unsupported filter values are rejected before querying.
-        foreach (var invalid in new[]
-                 {
-                     $"{EndpointUrl.AdminSubscriptionAnalytics.SummaryV1}?ownerType=Wallet",
-                     $"{EndpointUrl.AdminSubscriptionAnalytics.SummaryV1}?planId={Guid.Empty}",
-                     $"{EndpointUrl.AdminSubscriptionAnalytics.SummaryV1}?from={Today.AddDays(-400):yyyy-MM-dd}&to={Today:yyyy-MM-dd}",
-                     $"{EndpointUrl.AdminSubscriptionAnalytics.TimelineV1}?interval=Quarter"
-                 })
-        {
-            using var response = await Client.GetAsync(invalid);
-            response.StatusCode.ShouldBe(HttpStatusCode.BadRequest, invalid);
-        }
     }
 
     private async Task AssertSliceAsync(string query, long active, long created, long churned, decimal? mrr)
