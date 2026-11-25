@@ -25,7 +25,8 @@ source-controlled mapping:
 | `providers.manage` | Yes | No | No | No |
 
 `payments.manage` is separate from `payments.read`; a read capability never authorizes payment-provider
-activation. `providers.manage` is restricted to Administrator because general provider activation can
+activation. `PaymentProvidersController` therefore applies its policies per action: listing requires
+`payments.read`, while activation requires `payments.manage` and a step-up proof. `providers.manage` is restricted to Administrator because general provider activation can
 change non-payment infrastructure.
 
 ## Policy enforcement
@@ -59,6 +60,8 @@ Current protected operations are:
 | --- | --- |
 | General provider activation | `providers.manage` |
 | Payment-provider activation | `payments.manage` |
+| Payment-provider listing (`GET /payment-providers`) | `payments.read` |
+| Admin KYC list, detail and summary (`GET /admin/kyc`, `/admin/kyc/{id}`, `/admin/kyc/summary`) | `kyc.read` |
 | Admin subscription list and detail (`GET /admin/subscriptions[/{id}]`) | `subscriptions.read` |
 | Admin plan catalog including inactive plans (`GET /admin/subscription-plans`) | `subscriptions.read` |
 | Subscription allocation (`POST /admin/subscriptions/allocations`) | `subscriptions.allocate` |

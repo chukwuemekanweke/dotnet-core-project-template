@@ -10,4 +10,8 @@ public interface IKycAdministrationReadModelRepository
         Guid verificationId,
         int callbackHistoryLimit,
         CancellationToken cancellationToken);
+
+    Task<AdminKycSummaryReadModel> GetSummaryAsync(
+        AdminKycSummaryFilter filter,
+        CancellationToken cancellationToken);
 }

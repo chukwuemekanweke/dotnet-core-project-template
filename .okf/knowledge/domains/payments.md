@@ -39,6 +39,13 @@ status: stable
 - Payment providers: Bachs, Credo and SafeHaven, each with provider-specific payload types under
   `Infrastructure/Payments/{Bachs,Credo,SafeHaven}`. Provider activation/deactivation is a distinct feature
   (`ActivatePaymentProvider`) from initiating a payment.
+- `GET /api/v1/payment-providers` (`ListPaymentProviders`, `payments.read`) lists every non-deleted
+  `PaymentProvider`, active or inactive, as id/name/key/`IsActive` only, through
+  `IReadRepository<PaymentProvider>` and `PaymentProvidersByNameSpecification` (ProviderName, then Id;
+  no includes). `IsActive` is the administrative switch, never derived from transactions or health. It is
+  uncached so activation changes show on the next read, and it is distinct from the customer-facing
+  subscription eligible-provider list. `PaymentProvidersController` applies `payments.read` and
+  `payments.manage` per action; activation keeps its step-up proof.
 - Bachs supports hosted-checkout wallet top-ups and trusted subscription purchases. The generic
   payment endpoint remains wallet-top-up only; only the server-authoritative subscription purchase
   slice sets `IsTrustedSubscriptionPurchase`. Auto-renew purchases create a Bachs customer, send
