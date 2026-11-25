@@ -13,12 +13,6 @@ public sealed class SubscriptionAnalyticsCache(
     IJsonCache cache,
     ILogger<SubscriptionAnalyticsCache> logger)
 {
-    /// <summary>
-    /// Bump whenever a metric's meaning or calculation changes, so cached results computed under the previous
-    /// definition are never served after a deployment.
-    /// </summary>
-    public const string MetricDefinitionVersion = "v2";
-
     private static readonly AsyncKeyedLock SingleFlight = new();
 
     public async Task<T> GetOrCreateAsync<T>(
@@ -80,6 +74,6 @@ public sealed class SubscriptionAnalyticsCache(
             filter.CurrencyId?.ToString("D") ?? "-",
             "UTC");
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical))).ToLowerInvariant();
-        return $"subscriptions:analytics:{MetricDefinitionVersion}:{endpoint}:{hash}";
+        return $"subscriptions:analytics:v1:{endpoint}:{hash}";
     }
 }

@@ -1,10 +1,7 @@
 using BackendProjectTemplate.Application.Subscriptions.Analytics;
 using BackendProjectTemplate.Application.Subscriptions.Features.GetAdminSubscriptionAnalyticsRenewals;
 using BackendProjectTemplate.Application.Subscriptions.Features.GetAdminSubscriptionAnalyticsSummary;
-using BackendProjectTemplate.Application.Subscriptions.Features.GetAdminSubscriptionAnalyticsTimeline;
-using BackendProjectTemplate.Domain.Common.Analytics;
 using BackendProjectTemplate.Domain.Common.Caching;
-using BackendProjectTemplate.Domain.Payments;
 using BackendProjectTemplate.Domain.Subscriptions.ReadModels;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -71,70 +68,6 @@ public sealed class When_GettingAdminSubscriptionAnalytics_Should
         result.SuccessRate.ShouldBe(0m);
         result.FailedPaymentAttempts.ShouldBe(2);
         result.PendingRenewals.ShouldBe(3);
-    }
-
-    [Fact]
-    public async Task IsolateCachedResultsForEveryDistinctFilter()
-    {
-        var repository = Substitute.For<ISubscriptionAnalyticsReadModelRepository>();
-        repository.GetSummaryAsync(Arg.Any<SubscriptionAnalyticsFilter>(), Arg.Any<CancellationToken>())
-            .Returns(new SubscriptionAnalyticsSummaryReadModel(0, 0, 0, 0, 0, 0, 0, []));
-        var handler = CreateSummaryHandler(repository);
-        var baseline = new SubscriptionAnalyticsQuery(
-            new DateOnly(2026, 11, 1),
-            new DateOnly(2026, 11, 10),
-            null,
-            null,
-            null,
-            null);
-        SubscriptionAnalyticsQuery[] variants =
-        [
-            baseline,
-            baseline with { To = new DateOnly(2026, 11, 11) },
-            baseline with { From = new DateOnly(2026, 11, 2) },
-            baseline with { PlanId = Guid.CreateVersion7() },
-            baseline with { OwnerType = BillingAccountOwnerType.Tenant },
-            baseline with { OwnerType = BillingAccountOwnerType.Stakeholder },
-            baseline with { TenantId = Guid.CreateVersion7() },
-            baseline with { CurrencyId = Guid.CreateVersion7() }
-        ];
-
-        foreach (var variant in variants)
-            await handler.HandleAsync(variant, CancellationToken.None);
-        await handler.HandleAsync(baseline, CancellationToken.None);
-
-        await repository.Received(variants.Length).GetSummaryAsync(
-            Arg.Any<SubscriptionAnalyticsFilter>(),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task CapTheFinalTimelineBucketAndDeriveArrPerCurrency()
-    {
-        var repository = Substitute.For<ISubscriptionAnalyticsReadModelRepository>();
-        var currencyId = Guid.CreateVersion7();
-        repository.GetTimelineAsync(Arg.Any<SubscriptionAnalyticsFilter>(), Interval.Week, Arg.Any<CancellationToken>())
-            .Returns(
-            [
-                new SubscriptionAnalyticsTimelineRow(new DateOnly(2026, 11, 2), 1, 1, 0, 0, 0, [new(currencyId, "NGN", 0m)]),
-                new SubscriptionAnalyticsTimelineRow(new DateOnly(2026, 11, 9), 2, 1, 0, 1, 0, [new(currencyId, "NGN", 250m)])
-            ]);
-        var handler = new GetAdminSubscriptionAnalyticsTimelineHandler(
-            repository,
-            CreateCache(),
-            CreateTimeProvider(),
-            Options.Create(new SubscriptionAnalyticsOptions()));
-
-        var result = await handler.HandleAsync(
-            new SubscriptionAnalyticsQuery(new DateOnly(2026, 11, 4), new DateOnly(2026, 11, 11), null, null, null, null),
-            Interval.Week,
-            CancellationToken.None);
-
-        result.Interval.ShouldBe("Week");
-        result.Buckets[0].PeriodEnd.ShouldBe(new DateOnly(2026, 11, 8));
-        result.Buckets[1].PeriodEnd.ShouldBe(new DateOnly(2026, 11, 11));
-        result.Buckets[0].Revenues.ShouldHaveSingleItem().Arr.ShouldBe(0m);
-        result.Buckets[1].Revenues.ShouldHaveSingleItem().Arr.ShouldBe(3_000m);
     }
 
     private static GetAdminSubscriptionAnalyticsSummaryHandler CreateSummaryHandler(

@@ -239,9 +239,8 @@ minor-currency units without intermediate rounding, and revenue is always groupe
 conversion. Summary, timeline and plans share the activity projection so they reconcile (final bucket ==
 summary). The timeline aggregates every series in PostgreSQL per UTC day as baseline + daily start/end
 deltas and rolls days into buckets in memory, so it is bounded by the range (≤ 366 days) and never loads
-history or queries per bucket. Endpoint-specific cache keys include every effective filter and
-`SubscriptionAnalyticsCache.MetricDefinitionVersion` (bump it whenever a metric's meaning changes), and use
-short TTLs, Redis-failure fallback and keyed single-flight coordination.
+history or queries per bucket. Endpoint-specific cache keys include every effective filter and use short TTLs,
+Redis-failure fallback and keyed single-flight coordination.
 Each Application query handler owns its endpoint's repository orchestration, calculations and response
 mapping; only cache execution plus consistent date/filter and revenue normalization mechanics are shared,
 so handlers remain complete vertical slices rather than pass-through wrappers around an analytics facade.

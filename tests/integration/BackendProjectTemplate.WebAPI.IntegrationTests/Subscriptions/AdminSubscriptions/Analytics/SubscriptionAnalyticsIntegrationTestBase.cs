@@ -239,9 +239,9 @@ public abstract class SubscriptionAnalyticsIntegrationTestBase(ContainersFixture
 
     protected enum RenewalOutcome
     {
-        None,
-        RecoveredAfterFailure,
-        Exhausted
+        None = 1,
+        RecoveredAfterFailure = 2,
+        Exhausted = 3
     }
 
     protected sealed record PaidLifecycle(
