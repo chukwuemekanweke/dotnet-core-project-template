@@ -91,7 +91,9 @@ Successful mutations and `AdministrativeSecurityAudit` creation commit in the sa
 ## Current endpoint matrix
 
 General provider activation requires `providers.manage` (Administrator only). Payment-provider
-activation requires `payments.manage` (Administrator and FinanceOfficer). Customer payment initiation
+activation requires `payments.manage` (Administrator and FinanceOfficer); payment-provider listing on the
+same controller requires `payments.read`, so policies are applied per action rather than at controller
+level — never reintroduce a controller-level `payments.manage` that would make the read require it. Customer payment initiation
 and stakeholder-owned wallet history are not administrative operations and retain their existing
 active-session and resource scoping.
 
@@ -99,7 +101,7 @@ Administrative payment analytics requires the dedicated `payments.analytics.read
 only to Administrator and FinanceOfficer. These read-only reports are cross-tenant by design and may be
 narrowed with an explicit tenant filter; authorization is evaluated before any tenant-scoped cache read.
 
-Administrative KYC list/detail monitoring requires `kyc.read` and is cross-tenant by the same platform-admin
+Administrative KYC list/detail/summary monitoring requires `kyc.read` and is cross-tenant by the same platform-admin
 model; an explicit tenant filter narrows reporting but is not an authorization grant. These endpoints are
 read-only and do not require step-up MFA.
 

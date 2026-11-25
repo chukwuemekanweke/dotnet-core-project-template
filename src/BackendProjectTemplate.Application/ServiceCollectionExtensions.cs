@@ -44,6 +44,7 @@ using BackendProjectTemplate.Application.Authentication.Features.VerifyStepUpMfa
 using BackendProjectTemplate.Application.Authentication.Features.VerifyTwoFactorEnrollment;
 using BackendProjectTemplate.Application.Authentication.Stakeholders;
 using BackendProjectTemplate.Application.Common.FileUploads;
+using BackendProjectTemplate.Application.Kyc.Features.GetAdminKycSummary;
 using BackendProjectTemplate.Application.Kyc.Features.GetAdminKycVerificationDetail;
 using BackendProjectTemplate.Application.Kyc.Features.GetCurrentVerification;
 using BackendProjectTemplate.Application.Kyc.Features.ListAdminKycVerifications;
@@ -63,6 +64,7 @@ using BackendProjectTemplate.Application.Payments.Features.GetAdminPayments;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
+using BackendProjectTemplate.Application.Payments.Features.ListPaymentProviders;
 using BackendProjectTemplate.Application.Payments.Features.ProcessBachsWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
@@ -123,6 +125,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetCurrentKycVerificationHandler>();
         services.AddScoped<ListAdminKycVerificationsHandler>();
         services.AddScoped<GetAdminKycVerificationDetailHandler>();
+        services.AddScoped<GetAdminKycSummaryHandler>();
         services.AddScoped<ReceiveKycCallbackHandler>();
         services.AddScoped<KycReconciliationService>();
         services.AddScoped<CheckEmailExistenceHandler>();
@@ -175,6 +178,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UpdateProfileHandler>();
         services.AddScoped<ActivateProviderHandler>();
         services.AddScoped<ActivatePaymentProviderHandler>();
+        services.AddScoped<ListPaymentProvidersHandler>();
         services.AddScoped<GetCountriesHandler>();
         services.AddScoped<GetLanguagesHandler>();
         services.AddScoped<InitiatePaymentHandler>();

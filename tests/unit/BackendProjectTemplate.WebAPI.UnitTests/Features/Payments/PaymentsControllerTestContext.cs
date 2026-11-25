@@ -2,6 +2,7 @@ using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvid
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTopUpTransactionDetail;
 using BackendProjectTemplate.Application.Payments.Features.GetStakeholderWalletTransactions;
 using BackendProjectTemplate.Application.Payments.Features.InitiatePayment;
+using BackendProjectTemplate.Application.Payments.Features.ListPaymentProviders;
 using BackendProjectTemplate.Application.Payments.Features.ProcessBachsWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
@@ -21,6 +22,7 @@ internal sealed class PaymentsControllerTestContext
     public IRepository<Currency> CurrencyRepository { get; } = Substitute.For<IRepository<Currency>>();
     public IRepository<CountryCurrency> CountryCurrencyRepository { get; } = Substitute.For<IRepository<CountryCurrency>>();
     public IRepository<PaymentProvider> PaymentProviderRepository { get; } = Substitute.For<IRepository<PaymentProvider>>();
+    public IReadRepository<PaymentProvider> PaymentProviderReadRepository { get; } = Substitute.For<IReadRepository<PaymentProvider>>();
     public IRepository<PaymentProviderConfiguration> PaymentProviderConfigurationRepository { get; } = Substitute.For<IRepository<PaymentProviderConfiguration>>();
     public IRepository<PaymentTransaction> PaymentTransactionRepository { get; } = Substitute.For<IRepository<PaymentTransaction>>();
     public IRepository<PaymentWebhookInbox> PaymentWebhookInboxRepository { get; } = Substitute.For<IRepository<PaymentWebhookInbox>>();
@@ -53,6 +55,9 @@ internal sealed class PaymentsControllerTestContext
 
     public ActivatePaymentProviderHandler CreateActivatePaymentProviderHandler() =>
         new(PaymentProviderRepository, UnitOfWork);
+
+    public ListPaymentProvidersHandler CreateListPaymentProvidersHandler() =>
+        new(PaymentProviderReadRepository);
 
     public GetStakeholderWalletTransactionsHandler CreateGetStakeholderWalletTransactionsHandler() =>
         new(WalletTransactionReadModelRepository);

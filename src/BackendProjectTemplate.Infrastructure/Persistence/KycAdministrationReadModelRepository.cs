@@ -192,6 +192,54 @@ public sealed class KycAdministrationReadModelRepository(AppReadDbContext dbCont
             callbacks);
     }
 
+    /// <summary>
+    /// Single conditional-aggregate query. Visibility matches the list endpoint: soft-deleted attempts
+    /// are excluded by the global query filter and attempts whose stakeholder is soft-deleted are
+    /// excluded by the inner stakeholder join.
+    /// </summary>
+    public async Task<AdminKycSummaryReadModel> GetSummaryAsync(
+        AdminKycSummaryFilter filter,
+        CancellationToken cancellationToken)
+    {
+        var verifications = dbContext.KycVerifications.AsNoTracking();
+        if (filter.TenantId.HasValue)
+        {
+            verifications = verifications.Where(item => item.TenantId == filter.TenantId.Value);
+        }
+
+        if (filter.ProviderKey is not null)
+        {
+            verifications = verifications.Where(item => item.ProviderKey == filter.ProviderKey);
+        }
+
+        var rejectedFromUtc = filter.RejectedFromUtc;
+        var rejectedToUtc = filter.RejectedToUtc;
+        var totals = await (
+                from verification in verifications
+                join stakeholder in dbContext.Stakeholders.AsNoTracking()
+                    on new { verification.TenantId, Id = verification.StakeholderId }
+                    equals new { stakeholder.TenantId, stakeholder.Id }
+                where verification.Status == KycVerificationStatus.Pending ||
+                      verification.Status == KycVerificationStatus.InProgress ||
+                      (verification.Status == KycVerificationStatus.Rejected &&
+                       verification.CompletedAtUtc >= rejectedFromUtc &&
+                       verification.CompletedAtUtc < rejectedToUtc)
+                group verification by 1
+                into groupItems
+                select new
+                {
+                    PendingCount = groupItems.LongCount(item => item.Status == KycVerificationStatus.Pending),
+                    InProgressCount = groupItems.LongCount(item => item.Status == KycVerificationStatus.InProgress),
+                    RejectedCount = groupItems.LongCount(item => item.Status == KycVerificationStatus.Rejected)
+                })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return new AdminKycSummaryReadModel(
+            totals?.PendingCount ?? 0,
+            totals?.InProgressCount ?? 0,
+            totals?.RejectedCount ?? 0);
+    }
+
     private IQueryable<KycVerification> ApplyFilters(
         IQueryable<KycVerification> verifications,
         AdminKycVerificationListRequest request)

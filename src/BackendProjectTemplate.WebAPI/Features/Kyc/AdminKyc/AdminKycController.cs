@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using BackendProjectTemplate.Application.Kyc.Features.GetAdminKycSummary;
 using BackendProjectTemplate.Application.Kyc.Features.GetAdminKycVerificationDetail;
 using BackendProjectTemplate.Application.Kyc.Features.ListAdminKycVerifications;
 using BackendProjectTemplate.Domain.Common.Authorization;
@@ -17,8 +18,34 @@ namespace BackendProjectTemplate.WebAPI.Features.Kyc.AdminKyc;
 public sealed class AdminKycController(
     ListAdminKycVerificationsValidator listValidator,
     ListAdminKycVerificationsHandler listHandler,
-    GetAdminKycVerificationDetailHandler detailHandler) : ControllerBase
+    GetAdminKycVerificationDetailHandler detailHandler,
+    GetAdminKycSummaryValidator summaryValidator,
+    GetAdminKycSummaryHandler summaryHandler) : ControllerBase
 {
+    /// <summary>
+    /// Summarizes KYC attempts: current Pending and InProgress counts, and attempts rejected in the
+    /// rolling seven-day UTC window [asOfUtc - 7 days, asOfUtc). Counts are attempts, not stakeholders.
+    /// </summary>
+    [HttpGet("summary")]
+    [ProducesResponseType<GetAdminKycSummaryResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<GetAdminKycSummaryResponse>> GetSummary(
+        [FromQuery] GetAdminKycSummaryRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validation = await summaryValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+        }
+
+        return Ok(await summaryHandler.HandleAsync(
+            new GetAdminKycSummaryCommand(request.TenantId, request.ProviderKey),
+            cancellationToken));
+    }
+
     /// <summary>Lists KYC verification attempts for administrative monitoring.</summary>
     [HttpGet]
     [ProducesResponseType<ListAdminKycVerificationsResult>(StatusCodes.Status200OK)]

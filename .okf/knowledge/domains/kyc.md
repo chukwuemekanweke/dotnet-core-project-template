@@ -89,6 +89,16 @@ never load provider services or mutate verification state. The list uses determi
 `(StartedAtUtc, Id)` keyset pagination and server-side filters. Detail returns at most 50 callbacks and
 does not expose raw payloads, form URLs, external applicant identifiers, identity documents or credentials.
 
+`GET /api/v1/admin/kyc/summary` (`kyc.read`, optional `tenantId`/`providerKey` filters) returns current
+Pending and InProgress attempt counts plus attempts rejected in the rolling window
+`[asOfUtc - 7 days, asOfUtc)`, where `asOfUtc` is read once from `TimeProvider`. Rejections are dated by
+`CompletedAtUtc` (set by the aggregate on the Rejected transition), never by `StartedAtUtc`; Verified,
+Failed and Expired never count. Counts are attempts, not distinct stakeholders, and use the same
+visibility as the list (soft-deleted attempts excluded by the query filter, soft-deleted stakeholders by
+the inner stakeholder join). `KycAdministrationReadModelRepository.GetSummaryAsync` issues one
+uncached `count(*) FILTER (WHERE ...)` aggregate with no callback join; empty data returns zeros. No
+index was added for it — add one only with `EXPLAIN` evidence from realistic volumes.
+
 Callback-derived provider status is distinct from aggregate status and processing outcome. Reporting uses
 the same provider verification/session reference boundary as callback processing, additionally requiring
 that the references identify exactly one attempt and that supplied applicant references agree. Ambiguous,
