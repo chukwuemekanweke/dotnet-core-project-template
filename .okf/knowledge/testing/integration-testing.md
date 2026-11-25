@@ -50,4 +50,8 @@ endpoint/handler/background-service covering the most meaningful end-to-end path
   one-time challenge consumption/replay; native WebAuthn cryptography remains covered by the
   framework and eventual browser interoperability checks with an established authenticator, never
   by a custom test authenticator.
+- Historical subscription analytics scenarios (`Subscriptions/AdminSubscriptions/Analytics`) replay real domain
+  lifecycle methods at past instants, then backdate only `SubscriptionPeriod.CreatedAtUtc` with
+  `ExecuteUpdateAsync`, because the audit interceptor stamps it with the current time while analytics treats
+  it as the persistence instant. Never seed analytics state by writing mutable subscription columns directly.
 - Consumer and Jobs integration tests currently validate health endpoints and don't create application records, so cleanup there is normally limited to response/host disposal.

@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.ReadModels;
 
 namespace BackendProjectTemplate.Application.Subscriptions.Analytics;
@@ -30,5 +31,5 @@ internal static class SubscriptionAnalyticsHandlerSupport
             row.CurrencyId,
             row.CurrencyCode,
             row.Mrr,
-            row.Mrr * 12m)).ToArray();
+            SubscriptionRevenueMath.ToArr(row.Mrr))).ToArray();
 }

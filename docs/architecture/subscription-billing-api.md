@@ -4,6 +4,8 @@ This API keeps plan pricing, payment eligibility, payment outcome, and subscript
 
 All routes use `X-Tenant-Id`. Routes marked authenticated also require an active-session bearer token. `BillingAccountOwnerType` is `Tenant` or `Stakeholder`; ownership is derived from the authenticated actor and is never accepted as an arbitrary account id.
 
+Administrative subscription KPIs, timelines and breakdowns are documented in [subscription-analytics.md](subscription-analytics.md).
+
 ## Contracts
 
 ### Public plans
