@@ -206,28 +206,42 @@ Administrative subscription analytics is exposed as five independent read-only e
 `/api/v1/admin/subscriptions/analytics`: `summary`, `timeline`, `renewals`, `plans` and `statuses`.
 The inclusive UTC `DateOnly` range is converted to a half-open database range; summary state is sampled
 at the final instant of the selected end date and timeline state at each bucket's capped final instant.
-Filters support plan, BillingAccount owner type, tenant and currency, and timeline intervals reuse the
-shared `Day`/`Week`/`Month`/`Year` calendar utilities.
+Filters support plan, BillingAccount owner type, tenant and currency (the plan's immutable currency, so
+every endpoint selects the same subscriptions), and timeline intervals reuse the shared
+`Day`/`Week`/`Month`/`Year` calendar utilities.
 
-Active subscription snapshots require an actually persisted activation period and use the entitlement's
-half-open boundaries, so later cancellation does not erase earlier activity and renewal grace remains
-entitled until the lifecycle ends. New subscriptions use the first persisted activation; churn occurs at
-effective entitlement end only when no replacement entitlement for the BillingAccount is active at that
-instant. Cancellation-pending counts scheduled cancellation decisions that remain entitled. Past-due means
-an entitled subscription whose paid period boundary passed while its renewal is unresolved or exhausted
-during grace; a pending or failed attempt alone is not a terminal renewal failure.
+Analytics never derive history from mutable state (`Status`, `CurrentPeriodEndUtc`, renewal status). One
+shared activity projection gives each subscription that was ever entitled an activation instant
+(`max(EntitlementStartUtc, first period CreatedAtUtc)`) and an effective end
+(`EntitlementEndUtc ?? EndedAtUtc`). The fallback is required because `End()` does not close the open-ended
+window of an auto-renewing subscription (e.g. expiry after exhausted renewals). Entitlement windows are only
+ever closed at the moment of cancellation/expiry, so the projection is historically accurate. Active means
+`[activation, end)` covers the snapshot; never-entitled subscriptions (unpaid, lapsed or pre-start-cancelled)
+are excluded from active, new and churn. New uses the activation instant. Churn occurs at the effective end
+of an ended lifecycle when no other subscription of the same BillingAccount has an entitlement window
+(with a persisted period) covering that instant. The replacement search deliberately ignores plan, owner and
+currency filters, so plan switches are never churn in any slice. Cancellation-pending counts scheduled
+cancellation decisions that remain entitled. Past-due means active while the latest paid period persisted
+by the snapshot had already ended (renewal grace).
 
 Successful and failed renewal KPIs count distinct terminal `Fulfilled` and `Exhausted` renewals by their
 completion timestamps. `FulfillmentBlocked`, pending, charging, retrying and awaiting-reconciliation states
 do not enter the terminal success-rate denominator; failed payment attempts are reported separately.
+Pending and awaiting-reconciliation counts are the current backlog, not range-dependent.
 
-MRR uses the latest immutable paid `SubscriptionPeriod` snapshot effective for the subscription at the
-reporting instant. `PaidPurchase` and `PaidRenewal` are eligible regardless of `AutoRenew`; nominal
-`AdministrativeAllocation` prices are excluded. Monthly price maps directly to MRR, yearly price divides by
-12, and ARR is MRR multiplied by 12. Values remain decimal minor-currency units without intermediate
-rounding, and revenue is always grouped by currency with no conversion. The read repository issues bounded,
-no-tracking projections and never one query per timeline bucket. Endpoint-specific cache keys include every
-effective filter and use short TTLs, Redis-failure fallback and keyed single-flight coordination.
+MRR uses, per active subscription, the single paid `SubscriptionPeriod` snapshot effective at the instant:
+each period is effective from when it was persisted until the next paid period of that subscription was
+persisted or entitlement ended. `PaidPurchase` and `PaidRenewal` are eligible regardless of `AutoRenew`;
+nominal `AdministrativeAllocation` prices are excluded. `SubscriptionRevenueMath` is the only interval rule
+(`MonthsPerInterval`: Monthly 1, Yearly 12; ARR = MRR × 12). The database sums prices per currency and
+interval and the rule is applied to those sums, which is exact because it is linear. Values remain decimal
+minor-currency units without intermediate rounding, and revenue is always grouped by currency with no
+conversion. Summary, timeline and plans share the activity projection so they reconcile (final bucket ==
+summary). The timeline aggregates every series in PostgreSQL per UTC day as baseline + daily start/end
+deltas and rolls days into buckets in memory, so it is bounded by the range (≤ 366 days) and never loads
+history or queries per bucket. Endpoint-specific cache keys include every effective filter and
+`SubscriptionAnalyticsCache.MetricDefinitionVersion` (bump it whenever a metric's meaning changes), and use
+short TTLs, Redis-failure fallback and keyed single-flight coordination.
 Each Application query handler owns its endpoint's repository orchestration, calculations and response
 mapping; only cache execution plus consistent date/filter and revenue normalization mechanics are shared,
 so handlers remain complete vertical slices rather than pass-through wrappers around an analytics facade.

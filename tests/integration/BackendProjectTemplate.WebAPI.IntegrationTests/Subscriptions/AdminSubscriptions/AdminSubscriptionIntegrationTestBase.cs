@@ -37,6 +37,7 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
     private Guid _countryId;
     private readonly List<Guid> _stakeholderTypeIds = [];
     private readonly List<Guid> _paymentProviderIds = [];
+    private readonly List<Guid> _currencyIds = [];
 
     protected Guid AdminUserId { get; private set; }
     protected Guid AdminTenantId { get; private set; }
@@ -86,6 +87,7 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
         await dbContext.SubscriptionPeriods.Where(item => subscriptionIds.Contains(item.SubscriptionId)).ExecuteDeleteAsync();
         await dbContext.SubscriptionPurchases.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();
         await dbContext.Subscriptions.Where(item => subscriptionIds.Contains(item.Id)).ExecuteDeleteAsync();
+        await dbContext.RecurringPaymentAuthorizations.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();
         await dbContext.PaymentTransactions.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();
         await dbContext.PaymentProviders.IgnoreQueryFilters()
             .Where(item => _paymentProviderIds.Contains(item.Id))
@@ -96,7 +98,7 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
                 .Any(plan => plan.Id == price.PlanId && plan.Code.StartsWith(PlanCodePrefix)))
             .ExecuteDeleteAsync();
         await dbContext.SubscriptionPlans.IgnoreQueryFilters().Where(item => item.Code.StartsWith(PlanCodePrefix)).ExecuteDeleteAsync();
-        await dbContext.Currencies.Where(item => item.Id == CurrencyId).ExecuteDeleteAsync();
+        await dbContext.Currencies.Where(item => item.Id == CurrencyId || _currencyIds.Contains(item.Id)).ExecuteDeleteAsync();
         await dbContext.Stakeholders.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();
         await dbContext.StakeholderTypes.Where(item => _stakeholderTypeIds.Contains(item.Id)).ExecuteDeleteAsync();
         await dbContext.Countries.Where(item => item.Id == _countryId).ExecuteDeleteAsync();
@@ -200,6 +202,38 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
 
     protected void TrackPaymentProviderForCleanup(Guid paymentProviderId) =>
         _paymentProviderIds.Add(paymentProviderId);
+
+    /// <summary>Creates an additional currency that is removed after the plans referencing it.</summary>
+    protected async Task<Guid> CreateCurrencyAsync()
+    {
+        using var scope = CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // The leading characters of a version 7 GUID are a timestamp, so use the random tail for the code.
+        var currency = Currency.Create(Guid.CreateVersion7().ToString("N")[^3..].ToUpperInvariant(), "Admin Test Currency", true);
+        dbContext.Currencies.Add(currency);
+        await dbContext.SaveChangesAsync();
+        _currencyIds.Add(currency.Id);
+        return currency.Id;
+    }
+
+    /// <summary>
+    /// Adds another verified user and stakeholder to the target tenant, so a scenario can own several
+    /// stakeholder BillingAccounts (each owner may hold only one account).
+    /// </summary>
+    protected async Task<Guid> AddTargetStakeholderAsync()
+    {
+        using var scope = CreateScope();
+        var identityService = scope.ServiceProvider.GetRequiredService<IAuthenticationIdentityService>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var email = WebApiIntegrationTestData.Email();
+        var user = AppUser.Create(email, "Ada", "Lovelace");
+        (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
+        _emails.Add(email);
+        var stakeholder = Stakeholder.Create(user.Id, TargetTenantId, _countryId, _stakeholderTypeIds[1], "Ada", "Lovelace");
+        dbContext.Stakeholders.Add(stakeholder);
+        await dbContext.SaveChangesAsync();
+        return stakeholder.Id;
+    }
 
     private async Task SeedAsync()
     {
