@@ -1,4 +1,6 @@
 using BackendProjectTemplate.Domain.Analytics.ReadModels;
+using BackendProjectTemplate.Domain.Auditing;
+using BackendProjectTemplate.Domain.Auditing.ReadModels;
 using BackendProjectTemplate.Domain.Authentication.Administration;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Authentication.ReadModels;
@@ -46,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAdminUserAccountAdministration, AdminUserAccountAdministration>();
         services.AddScoped<IAdminUserSessionAdministration, AdminUserSessionAdministration>();
         services.AddScoped<IAdminUserRoleAdministration, AdminUserRoleAdministration>();
+        services.AddScoped<IAdministrativeAuditRecorder, AdministrativeAuditRecorder>();
 
         return services;
     }
@@ -72,6 +75,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAdminUserReadModelRepository, AdminUserReadModelRepository>();
         services.AddScoped<IRegistrationAnalyticsReadModelRepository, RegistrationAnalyticsReadModelRepository>();
         services.AddScoped<IActiveUserAnalyticsReadModelRepository, ActiveUserAnalyticsReadModelRepository>();
+        services.AddScoped<IAdministrativeAuditReadModelRepository, AdministrativeAuditReadModelRepository>();
 
         return services;
     }

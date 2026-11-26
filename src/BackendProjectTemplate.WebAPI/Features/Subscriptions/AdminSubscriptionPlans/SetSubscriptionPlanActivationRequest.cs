@@ -1,3 +1,4 @@
 namespace BackendProjectTemplate.WebAPI.Features.Subscriptions.AdminSubscriptionPlans;
 
-public sealed record SetSubscriptionPlanActivationRequest(bool IsActive);
+/// <summary>The optional reason is recorded in the administrative audit journal.</summary>
+public sealed record SetSubscriptionPlanActivationRequest(bool IsActive, string? Reason = null);

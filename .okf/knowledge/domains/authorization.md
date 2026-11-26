@@ -30,6 +30,7 @@ code_refs:
     - src/BackendProjectTemplate.WebAPI/Features/Subscriptions/AdminSubscriptionPlans/AdminSubscriptionPlansController.cs
     - src/BackendProjectTemplate.WebAPI/Features/Authentication/Security/StepUpMfaController.cs
     - src/BackendProjectTemplate.WebAPI/Infrastructure/StepUpMfa/**
+    - src/BackendProjectTemplate.WebAPI/Features/Auditing/AdminAuditLogs/AdminAuditLogsController.cs
     - tests/unit/BackendProjectTemplate.Domain.UnitTests/Authorization/**
     - tests/unit/BackendProjectTemplate.Infrastructure.UnitTests/Authorization/**
     - tests/integration/BackendProjectTemplate.WebAPI.IntegrationTests/Authorization/**
@@ -86,7 +87,8 @@ CAF-BE-017 administrative user security mutations share a PostgreSQL transaction
 Locking an Administrator and removing the Administrator role count usable (verified, non-deleted,
 non-administratively-locked) administrators while that lock is held, preventing concurrent requests from
 removing or locking the final usable Administrator. The bootstrap marker is never reset by these APIs.
-Successful mutations and `AdministrativeSecurityAudit` creation commit in the same database transaction.
+Successful mutations, `AdministrativeSecurityAudit` creation and the unified `AdministrativeAudit` record
+(see [[administrative-audit]]) commit in the same database transaction.
 
 ## Current endpoint matrix
 
@@ -133,6 +135,10 @@ role claims. Request fingerprints bind the target AppUser, session or role path 
 reason body. Account mutation resolves AppUser-to-Stakeholder relationships before session operations.
 Administrative lock is dedicated AppUser state rather than failed-login lockout; locking rotates the
 security stamp and revokes active sessions, while unlock never reactivates revoked sessions.
+
+Administrative audit history requires `audit.read` (list) or the separate `audit.export` (CSV), both granted
+only to Administrator. Holding a mutation permission never implies reading the audit journal. Both are
+read-only, cross-tenant, active-session-checked and free of step-up MFA; `tenantId` narrows, never grants.
 
 Administrative registration and active-user analytics require `users.analytics.read`, granted only to
 Administrator. These read-only endpoints follow the platform cross-tenant model: an optional tenant filter

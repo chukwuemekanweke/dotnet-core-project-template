@@ -215,6 +215,13 @@ public static class EndpointUrl
         public static string DetailV1(Guid userId) => $"{V1}/{userId}";
     }
 
+    public static class AdminAuditLogs
+    {
+        public const string Route = $"api/{Versions.V1Route}/admin/audit-logs";
+        public static readonly string V1 = ToV1(Route);
+        public static readonly string ExportV1 = $"{V1}/export";
+    }
+
     public static class AdminUserAnalytics
     {
         public const string Route = $"api/{Versions.V1Route}/admin/analytics";

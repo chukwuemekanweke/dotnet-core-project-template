@@ -1,0 +1,5 @@
+using BackendProjectTemplate.Domain.Auditing.ReadModels;
+
+namespace BackendProjectTemplate.Application.Auditing.Features.ExportAdministrativeAudits;
+
+public sealed record ExportAdministrativeAuditsQuery(AdministrativeAuditFilter Filter);

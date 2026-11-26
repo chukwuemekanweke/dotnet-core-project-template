@@ -8,6 +8,7 @@ using BackendProjectTemplate.Application.Subscriptions.Features.ListSubscription
 using BackendProjectTemplate.Application.Subscriptions.Features.RetrySubscriptionPurchaseFulfillment;
 using BackendProjectTemplate.Application.Subscriptions.Features.SetSubscriptionPlanActivation;
 using BackendProjectTemplate.Application.Subscriptions.Features.UpdateSubscriptionPlan;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -44,6 +45,7 @@ internal sealed class AdminSubscriptionsControllerTestContext
     public IBillingAccountResolver BillingAccountResolver { get; } = Substitute.For<IBillingAccountResolver>();
     public ISubscriptionAdministrationReadModelRepository ReadModels { get; } = Substitute.For<ISubscriptionAdministrationReadModelRepository>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+    public IAdministrativeAuditRecorder AuditRecorder { get; } = Substitute.For<IAdministrativeAuditRecorder>();
 
     public AdminSubscriptionsController CreateSubscriptionsController()
     {
@@ -62,6 +64,7 @@ internal sealed class AdminSubscriptionsControllerTestContext
                 AllocationRepository,
                 BillingAccountResolver,
                 commandSender,
+                AuditRecorder,
                 telemetry,
                 UnitOfWork,
                 TimeProvider.System,
@@ -71,16 +74,18 @@ internal sealed class AdminSubscriptionsControllerTestContext
                 SubscriptionRepository,
                 Substitute.For<IRepository<SubscriptionRenewal>>(),
                 lifecycle,
+                AuditRecorder,
                 telemetry,
                 UnitOfWork,
                 TimeProvider.System,
                 Substitute.For<ILogger<CancelSubscriptionImmediatelyHandler>>()),
-            new AdministrativelyCancelSubscriptionAtPeriodEndHandler(SubscriptionRepository, lifecycle, commandSender, telemetry, UnitOfWork, TimeProvider.System),
+            new AdministrativelyCancelSubscriptionAtPeriodEndHandler(SubscriptionRepository, lifecycle, commandSender, AuditRecorder, telemetry, UnitOfWork, TimeProvider.System),
             new RetryPurchaseFulfillmentValidator(),
             new RetrySubscriptionPurchaseFulfillmentHandler(
                 Substitute.For<IRepository<SubscriptionPurchase>>(),
                 Substitute.For<IRepository<PaymentTransaction>>(),
                 commandSender,
+                AuditRecorder,
                 telemetry,
                 UnitOfWork),
             CurrentActor);
@@ -95,10 +100,11 @@ internal sealed class AdminSubscriptionsControllerTestContext
         var controller = new AdminSubscriptionPlansController(
             new ListAdminSubscriptionPlansHandler(ReadModels),
             new CreateSubscriptionPlanValidator(),
-            new CreateSubscriptionPlanHandler(PlanRepository, CurrencyRepository, telemetry, UnitOfWork),
+            new CreateSubscriptionPlanHandler(PlanRepository, CurrencyRepository, AuditRecorder, telemetry, UnitOfWork),
             new UpdateSubscriptionPlanValidator(),
-            new UpdateSubscriptionPlanHandler(PlanRepository, CurrencyRepository, telemetry, UnitOfWork),
-            new SetSubscriptionPlanActivationHandler(PlanRepository, CurrencyRepository, telemetry, UnitOfWork),
+            new UpdateSubscriptionPlanHandler(PlanRepository, CurrencyRepository, AuditRecorder, telemetry, UnitOfWork),
+            new SetSubscriptionPlanActivationValidator(),
+            new SetSubscriptionPlanActivationHandler(PlanRepository, CurrencyRepository, AuditRecorder, telemetry, UnitOfWork),
             CurrentActor);
         controller.ProblemDetailsFactory = new TestProblemDetailsFactory();
         controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };

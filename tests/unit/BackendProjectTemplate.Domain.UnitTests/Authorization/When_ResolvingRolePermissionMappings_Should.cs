@@ -32,6 +32,15 @@ public sealed class When_ResolvingRolePermissionMappings_Should
         compliance.ShouldNotContain(ApplicationPermissions.Users.AnalyticsRead);
         finance.ShouldNotContain(ApplicationPermissions.Users.AnalyticsRead);
 
+        // Performing administrative mutations does not grant reading or exporting the audit journal.
+        administrator.ShouldContain(ApplicationPermissions.Audit.Read);
+        administrator.ShouldContain(ApplicationPermissions.Audit.Export);
+        foreach (var delegated in new[] { compliance, finance, support })
+        {
+            delegated.ShouldNotContain(ApplicationPermissions.Audit.Read);
+            delegated.ShouldNotContain(ApplicationPermissions.Audit.Export);
+        }
+
         var combined = RolePermissionMappings.ForRoles(
             [ApplicationRoles.ComplianceOfficer, ApplicationRoles.FinanceOfficer]);
         combined.ShouldContain(ApplicationPermissions.Kyc.Manage);

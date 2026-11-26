@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Subscriptions.Administration;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -14,6 +15,7 @@ namespace BackendProjectTemplate.Application.Subscriptions.Features.SetSubscript
 public sealed class SetSubscriptionPlanActivationHandler(
     IRepository<SubscriptionPlan> planRepository,
     IRepository<Currency> currencyRepository,
+    IAdministrativeAuditRecorder auditRecorder,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
 {
@@ -34,6 +36,19 @@ public sealed class SetSubscriptionPlanActivationHandler(
         if (changed)
         {
             plan.SetActive(command.IsActive);
+            await auditRecorder.RecordAsync(
+                new AdministrativeAuditEntry(
+                    command.ActorContext,
+                    command.IsActive
+                        ? AdministrativeAuditActions.SubscriptionPlans.Activated
+                        : AdministrativeAuditActions.SubscriptionPlans.Deactivated,
+                    AdministrativeAuditTargetTypes.SubscriptionPlan,
+                    plan.Id,
+                    plan.Name,
+                    null,
+                    command.Reason,
+                    new AdministrativeAuditChanges().Field("isActive", !command.IsActive, command.IsActive)),
+                cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Subscriptions.PlanActivationChanged,

@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Subscriptions.Features.CancelSubscriptionImmediately;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Subscriptions.Exceptions;
 using Shouldly;
 using SubscriptionAggregate = BackendProjectTemplate.Domain.Subscriptions.Entities.Subscription;
@@ -30,5 +31,7 @@ public sealed class When_CancellingSubscriptionImmediately_WithUnmatchedOrInvali
         context.ReturnSubscription(pending);
         (await handler.HandleAsync(new CancelSubscriptionImmediatelyCommand(pending.Id, context.TenantId, "x", context.Actor), CancellationToken.None))
             .Status.ShouldBe(CancelSubscriptionImmediatelyStatus.InvalidState);
+        // Only the conflicting attempt staged a record, and its save failed so nothing was committed.
+        await context.AuditRecorder.Received(1).RecordAsync(Arg.Any<AdministrativeAuditEntry>(), Arg.Any<CancellationToken>());
     }
 }

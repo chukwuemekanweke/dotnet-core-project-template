@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Authentication.Features.GetAdminUserRoles;
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Authentication;
 using BackendProjectTemplate.Domain.Authentication.Administration;
 using BackendProjectTemplate.Domain.Authentication.Entities;
@@ -180,6 +181,28 @@ public sealed class When_ManagingAdministrativeUsers_Should(ContainersFixture fi
         audits.Select(audit => audit.Action).ShouldContain(AdministrativeSecurityAction.LockUser);
         audits.Select(audit => audit.Action).ShouldContain(AdministrativeSecurityAction.UnlockUser);
         audits.Select(audit => audit.Action).ShouldContain(AdministrativeSecurityAction.RevokeAllSessions);
+
+        var unified = await verificationDb.AdministrativeAudits
+            .Where(audit => audit.TargetId == _targetUserId)
+            .OrderBy(audit => audit.OccurredAtUtc)
+            .ToListAsync();
+        unified.Select(audit => audit.Action).ShouldBe(
+        [
+            AdministrativeAuditActions.Users.RoleAssigned,
+            AdministrativeAuditActions.Users.AllSessionsRevoked,
+            AdministrativeAuditActions.Users.Locked,
+            AdministrativeAuditActions.Users.Unlocked
+        ]);
+        unified.ShouldAllBe(audit =>
+            audit.ActorUserId == AdminUserId &&
+            audit.ActorStakeholderId == AdminStakeholderId &&
+            audit.TargetType == AdministrativeAuditTargetTypes.User &&
+            audit.TargetTenantId == null &&
+            audit.ActorTenantId == AdminTenantId);
+        unified[0].Reason.ShouldBe("Support duties");
+        unified[0].Changes.ShouldBe("{\"roles\": {\"current\": [\"SupportAgent\"], \"previous\": []}}");
+        unified[2].Changes.ShouldBe("{\"isAdministrativelyLocked\": {\"current\": true, \"previous\": false}}");
+        unified[1].Changes.ShouldBeNull();
     }
 
     [Fact]

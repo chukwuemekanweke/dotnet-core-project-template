@@ -1,0 +1,3 @@
+namespace BackendProjectTemplate.WebAPI.Features.Auditing.AdminAuditLogs;
+
+public sealed class ExportAdministrativeAuditLogsValidator : AdministrativeAuditFilterValidator<ExportAdministrativeAuditLogsRequest>;

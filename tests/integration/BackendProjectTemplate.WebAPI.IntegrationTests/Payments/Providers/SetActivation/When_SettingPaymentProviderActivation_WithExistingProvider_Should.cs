@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -32,6 +33,7 @@ public sealed class When_SettingPaymentProviderActivation_WithExistingProvider_S
     private Guid _stakeholderId;
     private Guid _stakeholderTypeId;
     private Guid _paymentProviderId;
+    private Guid _userId;
     private HttpResponseMessage? _response;
 
     public async Task InitializeAsync()
@@ -73,6 +75,24 @@ public sealed class When_SettingPaymentProviderActivation_WithExistingProvider_S
             var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
             var provider = await dbContext.PaymentProviders.FirstAsync(item => item.Id == _paymentProviderId);
             provider.IsActive.ShouldBeTrue();
+
+            // The provider was already active, so the request changed nothing and is not audited.
+            (await dbContext.AdministrativeAudits.AnyAsync(audit => audit.ActorUserId == _userId)).ShouldBeFalse();
+
+            using var deactivation = await Client.PutAsJsonAsync(
+                $"{EndpointUrl.PaymentProviders.V1}/{_paymentProviderId}/activation",
+                new SetPaymentProviderActivationRequest(false, "Provider outage"));
+            deactivation.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+            var audit = await dbContext.AdministrativeAudits.SingleAsync(item => item.ActorUserId == _userId);
+            audit.Action.ShouldBe(AdministrativeAuditActions.PaymentProviders.Deactivated);
+            audit.TargetType.ShouldBe(AdministrativeAuditTargetTypes.PaymentProvider);
+            audit.TargetId.ShouldBe(_paymentProviderId);
+            audit.TargetDisplayName.ShouldBe("Credo");
+            audit.TargetTenantId.ShouldBeNull();
+            audit.ActorStakeholderId.ShouldBe(_stakeholderId);
+            audit.ActorDisplayName.ShouldBe("Ada Lovelace");
+            audit.Reason.ShouldBe("Provider outage");
+            audit.Changes.ShouldBe("{\"isActive\": {\"current\": false, \"previous\": true}}");
         }
     }
 
@@ -115,6 +135,7 @@ public sealed class When_SettingPaymentProviderActivation_WithExistingProvider_S
         _countryId = country.Id;
         _stakeholderTypeId = stakeholderType.Id;
         _stakeholderId = stakeholder.Id;
+        _userId = user.Id;
     }
 
     private async Task SeedPaymentProviderAsync()
@@ -134,6 +155,9 @@ public sealed class When_SettingPaymentProviderActivation_WithExistingProvider_S
         using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendProjectTemplate.Infrastructure.Persistence.AppDbContext>();
         var userRepository = scope.ServiceProvider.GetRequiredService<IAppUserRepository>();
+        await dbContext.AdministrativeAudits.IgnoreQueryFilters()
+            .Where(audit => audit.ActorUserId == _userId)
+            .ExecuteDeleteAsync();
 
         var provider = await dbContext.PaymentProviders.FirstOrDefaultAsync(item => item.Id == _paymentProviderId);
         if (provider is not null)

@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Subscriptions.Administration;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -16,6 +17,7 @@ namespace BackendProjectTemplate.Application.Subscriptions.Features.UpdateSubscr
 public sealed class UpdateSubscriptionPlanHandler(
     IRepository<SubscriptionPlan> planRepository,
     IRepository<Currency> currencyRepository,
+    IAdministrativeAuditRecorder auditRecorder,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
 {
@@ -29,6 +31,10 @@ public sealed class UpdateSubscriptionPlanHandler(
             return new UpdateSubscriptionPlanResult(UpdateSubscriptionPlanStatus.NotFound, null, $"Subscription plan '{command.PlanId}' was not found.");
         }
 
+        var previousName = plan.Name;
+        var previousDescription = plan.Description;
+        var previousFeatures = SubscriptionPlanAuditFields.Features(plan);
+        var previousPrices = SubscriptionPlanAuditFields.Prices(plan);
         bool changed;
         try
         {
@@ -41,6 +47,21 @@ public sealed class UpdateSubscriptionPlanHandler(
 
         if (changed)
         {
+            await auditRecorder.RecordAsync(
+                new AdministrativeAuditEntry(
+                    command.ActorContext,
+                    AdministrativeAuditActions.SubscriptionPlans.Updated,
+                    AdministrativeAuditTargetTypes.SubscriptionPlan,
+                    plan.Id,
+                    plan.Name,
+                    null,
+                    command.Reason,
+                    new AdministrativeAuditChanges()
+                        .Field("name", previousName, plan.Name)
+                        .Field("description", previousDescription, plan.Description)
+                        .Field("features", previousFeatures, SubscriptionPlanAuditFields.Features(plan))
+                        .Field("prices", previousPrices, SubscriptionPlanAuditFields.Prices(plan))),
+                cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             customTelemetryContext.AddCustomEvent(
                 Observability.EventNames.Subscriptions.PlanUpdated,

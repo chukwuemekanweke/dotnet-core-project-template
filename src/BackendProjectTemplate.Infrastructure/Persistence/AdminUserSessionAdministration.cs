@@ -69,7 +69,7 @@ internal sealed class AdminUserSessionAdministration(
             .ToArrayAsync(cancellationToken);
 
     private static AdminSecurityMutationContext ToContext(AdminUserSessionRequest request) =>
-        new(request.ActorUserId, request.TargetUserId, request.Reason, request.ActorContext);
+        new(request.ActorUserId, request.TargetUserId, request.Reason, request.ActorContext, request.SessionId);
 
     private static AdminSecurityMutationContext ToContext(AdminUserAccountRequest request) =>
         new(request.ActorUserId, request.TargetUserId, request.Reason, request.ActorContext);

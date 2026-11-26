@@ -1,4 +1,6 @@
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
+using BackendProjectTemplate.Domain.Auditing;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.WebAPI.Features.Providers;
 using Microsoft.AspNetCore.Http;
@@ -21,9 +23,13 @@ public sealed class When_ActivatingProvider_WithUnknownProviderKey_Should
                 Provider.Create(ProviderType.Email, "Primary", "primary", true)
             ]);
 
+        var currentActor = Substitute.For<ICurrentActor>();
+        currentActor.ActorId.Returns(Guid.CreateVersion7().ToString());
+        currentActor.CorrelationId.Returns("correlation");
         var sut = new ProvidersController(
-            new ActivateProviderHandler(repository, unitOfWork),
-            new ActivateProviderValidator());
+            new ActivateProviderHandler(repository, Substitute.For<IAdministrativeAuditRecorder>(), unitOfWork),
+            new ActivateProviderValidator(),
+            currentActor);
 
         var result = await sut.ActivateProvider(request, CancellationToken.None);
 

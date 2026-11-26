@@ -5,4 +5,5 @@ namespace BackendProjectTemplate.Application.Subscriptions.Features.RetrySubscri
 public sealed record RetrySubscriptionPurchaseFulfillmentCommand(
     Guid SubscriptionId,
     Guid TenantId,
-    ActorContext ActorContext);
+    ActorContext ActorContext,
+    string? Reason = null);

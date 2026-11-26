@@ -1,3 +1,4 @@
 namespace BackendProjectTemplate.WebAPI.Features.Providers;
 
-public sealed record ActivateProviderRequest(string ProviderType, string ProviderKey);
+/// <summary>The optional reason is recorded in the administrative audit journal.</summary>
+public sealed record ActivateProviderRequest(string ProviderType, string ProviderKey, string? Reason = null);

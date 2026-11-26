@@ -11,4 +11,5 @@ public sealed record CreateSubscriptionPlanCommand(
     bool IsActive,
     string? Description,
     IReadOnlyList<string> Features,
-    ActorContext ActorContext);
+    ActorContext ActorContext,
+    string? Reason = null);

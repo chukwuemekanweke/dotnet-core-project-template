@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Contracts.Commands.Subscriptions;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -16,9 +17,10 @@ namespace BackendProjectTemplate.Application.Subscriptions.Features.AllocateSubs
 /// <summary>
 /// Grants a complimentary, non-renewing subscription to a tenant- or stakeholder-owned BillingAccount.
 /// Transaction boundary: the BillingAccount is resolved (and, when new, committed idempotently by the resolver)
-/// before any subscription state is tracked; the subscription, allocation audit, initial period/history and
-/// the scheduled activation or expiry command then commit atomically in one SaveChanges through the outbox.
-/// A retry with the same idempotency key returns the original allocation without repeating side effects.
+/// before any subscription state is tracked; the subscription, allocation audit, administrative audit record,
+/// initial period/history and the scheduled activation or expiry command then commit atomically in one
+/// SaveChanges through the outbox. A retry with the same idempotency key returns the original allocation
+/// without repeating side effects or administrative audit records.
 /// </summary>
 public sealed class AllocateSubscriptionHandler(
     IRepository<SubscriptionPlan> planRepository,
@@ -26,6 +28,7 @@ public sealed class AllocateSubscriptionHandler(
     IRepository<SubscriptionAllocation> allocationRepository,
     IBillingAccountResolver billingAccountResolver,
     ICommandSender commandSender,
+    IAdministrativeAuditRecorder auditRecorder,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
@@ -168,6 +171,24 @@ public sealed class AllocateSubscriptionHandler(
                 allocation.EndAtUtc,
                 cancellationToken);
         }
+
+        await auditRecorder.RecordAsync(
+            new AdministrativeAuditEntry(
+                command.ActorContext,
+                AdministrativeAuditActions.Subscriptions.Allocated,
+                AdministrativeAuditTargetTypes.Subscription,
+                subscription.Id,
+                plan.Name,
+                subscription.TenantId,
+                allocation.Reason,
+                new AdministrativeAuditChanges()
+                    .Field("status", (string?)null, subscription.Status.ToString())
+                    .Field("planCode", (string?)null, plan.Code)
+                    .Field("billingInterval", (string?)null, billingInterval.Value.ToString())
+                    .Field("allocationSource", (string?)null, allocation.AllocationSource.ToString())
+                    .Field("startAtUtc", (DateTimeOffset?)null, allocation.StartAtUtc)
+                    .Field("endAtUtc", (DateTimeOffset?)null, allocation.EndAtUtc)),
+            cancellationToken);
 
         try
         {

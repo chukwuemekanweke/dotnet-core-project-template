@@ -6,6 +6,8 @@ using BackendProjectTemplate.Application.Payments.Features.ProcessBachsWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ReconcilePayments;
+using BackendProjectTemplate.Domain.Auditing;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -29,6 +31,8 @@ internal sealed class PaymentsFlowTestContext
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+    public IAdministrativeAuditRecorder AuditRecorder { get; } = Substitute.For<IAdministrativeAuditRecorder>();
+    public ActorContext Actor { get; } = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "correlation", "flow");
     public ICredoWebhookSignatureValidator CredoWebhookSignatureValidator { get; } = Substitute.For<ICredoWebhookSignatureValidator>();
     public IBachsWebhookSignatureValidator BachsWebhookSignatureValidator { get; } = Substitute.For<IBachsWebhookSignatureValidator>();
     public IRecurringPaymentAuthorizationProtector RecurringPaymentAuthorizationProtector { get; } = Substitute.For<IRecurringPaymentAuthorizationProtector>();
@@ -36,7 +40,7 @@ internal sealed class PaymentsFlowTestContext
     public List<IPaymentProviderService> PaymentProviderServices { get; } = [];
 
     public ActivatePaymentProviderHandler CreateActivatePaymentProviderHandler() =>
-        new(PaymentProviderRepository, UnitOfWork);
+        new(PaymentProviderRepository, AuditRecorder, UnitOfWork);
 
     public InitiatePaymentHandler CreateInitiatePaymentHandler() =>
         new(new PaymentInitiationService(

@@ -6,6 +6,7 @@ using BackendProjectTemplate.Application.Payments.Features.ListPaymentProviders;
 using BackendProjectTemplate.Application.Payments.Features.ProcessBachsWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessCredoWebhook;
 using BackendProjectTemplate.Application.Payments.Features.ProcessSafeHavenWebhook;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -13,6 +14,7 @@ using BackendProjectTemplate.Domain.Payments.Entities;
 using BackendProjectTemplate.Domain.Payments.ReadModels;
 using BackendProjectTemplate.Domain.Payments.Services;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.WebAPI.Features.Payments.Providers;
 
 namespace BackendProjectTemplate.WebAPI.UnitTests.Features.Payments;
 
@@ -31,6 +33,7 @@ internal sealed class PaymentsControllerTestContext
     public ICustomTelemetryContext CustomTelemetryContext { get; } = Substitute.For<ICustomTelemetryContext>();
     public ICurrentActor CurrentActor { get; } = Substitute.For<ICurrentActor>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+    public IAdministrativeAuditRecorder AuditRecorder { get; } = Substitute.For<IAdministrativeAuditRecorder>();
     public IEventPublisher EventPublisher { get; } = Substitute.For<IEventPublisher>();
     public IBachsWebhookSignatureValidator BachsWebhookSignatureValidator { get; } = Substitute.For<IBachsWebhookSignatureValidator>();
     public IRecurringPaymentAuthorizationProtector RecurringPaymentAuthorizationProtector { get; } = Substitute.For<IRecurringPaymentAuthorizationProtector>();
@@ -54,7 +57,20 @@ internal sealed class PaymentsControllerTestContext
             Clock));
 
     public ActivatePaymentProviderHandler CreateActivatePaymentProviderHandler() =>
-        new(PaymentProviderRepository, UnitOfWork);
+        new(PaymentProviderRepository, AuditRecorder, UnitOfWork);
+
+    public PaymentProvidersController CreatePaymentProvidersController()
+    {
+        var currentActor = Substitute.For<ICurrentActor>();
+        currentActor.ActorId.Returns(Guid.CreateVersion7().ToString());
+        currentActor.CorrelationId.Returns("correlation");
+        currentActor.FlowId.Returns("flow");
+        return new PaymentProvidersController(
+            CreateActivatePaymentProviderHandler(),
+            CreateListPaymentProvidersHandler(),
+            new SetPaymentProviderActivationValidator(),
+            currentActor);
+    }
 
     public ListPaymentProvidersHandler CreateListPaymentProvidersHandler() =>
         new(PaymentProviderReadRepository);

@@ -23,6 +23,8 @@ source-controlled mapping:
 | `subscriptions.allocate` | Yes | No | No | Yes |
 | `subscriptions.plans.manage` | Yes | No | No | No |
 | `providers.manage` | Yes | No | No | No |
+| `audit.read` | Yes | No | No | No |
+| `audit.export` | Yes | No | No | No |
 
 `payments.manage` is separate from `payments.read`; a read capability never authorizes payment-provider
 activation. `PaymentProvidersController` therefore applies its policies per action: listing requires
@@ -69,8 +71,12 @@ Current protected operations are:
 | Plan create, update, activation/deactivation | `subscriptions.plans.manage` |
 | Admin user list, detail, and role reads | `users.read` |
 | Admin user lock/unlock, session revocation, and seeded-role changes | `users.manage` |
+| Administrative audit history (`GET /admin/audit-logs`) | `audit.read` |
+| Administrative audit CSV export (`GET /admin/audit-logs/export`) | `audit.export` |
 
-All mutation rows in this table require step-up MFA. Their stable operations are
+The audit rows are reads and do not require step-up MFA. Being allowed to perform an administrative
+mutation never grants reading or exporting the audit history; see
+[administrative-audit.md](administrative-audit.md). All mutation rows in this table require step-up MFA. Their stable operations are
 `admin.providers.activate`, `admin.payment-providers.set-activation`,
 `admin.subscriptions.allocate`, `admin.subscriptions.cancel-immediately`,
 `admin.subscriptions.cancel-at-period-end`, `admin.subscriptions.retry-purchase-fulfillment`,

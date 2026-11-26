@@ -236,7 +236,11 @@ public sealed class AdminSubscriptionsController(
         }
 
         var result = await retrySubscriptionPurchaseFulfillmentHandler.HandleAsync(
-            new RetrySubscriptionPurchaseFulfillmentCommand(id, request.TenantId, ActorContext.FromCurrentActor(currentActor)),
+            new RetrySubscriptionPurchaseFulfillmentCommand(
+                id,
+                request.TenantId,
+                ActorContext.FromCurrentActor(currentActor),
+                request.Reason),
             cancellationToken);
         return result.Status switch
         {

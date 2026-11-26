@@ -1,8 +1,10 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Payments.Features.ActivatePaymentProvider;
 using BackendProjectTemplate.Application.Payments.Features.ListPaymentProviders;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Authorization;
+using BackendProjectTemplate.WebAPI.Infrastructure;
 using BackendProjectTemplate.WebAPI.Infrastructure.StepUpMfa;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +20,9 @@ namespace BackendProjectTemplate.WebAPI.Features.Payments.Providers;
 [Route(EndpointUrl.PaymentProviders.Route)]
 public sealed class PaymentProvidersController(
     ActivatePaymentProviderHandler handler,
-    ListPaymentProvidersHandler listHandler) : ControllerBase
+    ListPaymentProvidersHandler listHandler,
+    SetPaymentProviderActivationValidator activationValidator,
+    ICurrentActor currentActor) : ControllerBase
 {
     /// <summary>
     /// Lists every payment provider, active or inactive, ordered by name. <c>isActive</c> is the
@@ -45,8 +49,18 @@ public sealed class PaymentProvidersController(
         [FromBody] SetPaymentProviderActivationRequest request,
         CancellationToken cancellationToken)
     {
+        var validation = await activationValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+        }
+
         var result = await handler.HandleAsync(
-            new ActivatePaymentProviderCommand(id, request.IsActive),
+            new ActivatePaymentProviderCommand(
+                id,
+                request.IsActive,
+                ActorContext.FromCurrentActor(currentActor),
+                request.Reason),
             cancellationToken);
 
         return result.Status switch

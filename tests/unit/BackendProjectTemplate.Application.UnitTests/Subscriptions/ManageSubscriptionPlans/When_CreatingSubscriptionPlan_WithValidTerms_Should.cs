@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Subscriptions.Features.CreateSubscriptionPlan;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -19,7 +20,8 @@ public sealed class When_CreatingSubscriptionPlan_WithValidTerms_Should
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var currency = Currency.Create("NGN", "Naira", true);
         currencyRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<Currency>>(), Arg.Any<CancellationToken>()).Returns(currency);
-        var handler = new CreateSubscriptionPlanHandler(planRepository, currencyRepository, Substitute.For<ICustomTelemetryContext>(), unitOfWork);
+        var auditRecorder = Substitute.For<IAdministrativeAuditRecorder>();
+        var handler = new CreateSubscriptionPlanHandler(planRepository, currencyRepository, auditRecorder, Substitute.For<ICustomTelemetryContext>(), unitOfWork);
         var actor = new ActorContext(Guid.CreateVersion7(), Guid.CreateVersion7(), "c", "f");
         var command = new CreateSubscriptionPlanCommand(
             " gold ",
@@ -52,5 +54,12 @@ public sealed class When_CreatingSubscriptionPlan_WithValidTerms_Should
         raced.Status.ShouldBe(CreateSubscriptionPlanStatus.CodeConflict);
         unknownCurrency.Status.ShouldBe(CreateSubscriptionPlanStatus.CurrencyNotFound);
         invalid.Status.ShouldBe(CreateSubscriptionPlanStatus.Invalid);
+        // Only the created plan and the raced attempt staged a record; the raced save failed, so it never committed.
+        await auditRecorder.Received(2).RecordAsync(
+            Arg.Is<AdministrativeAuditEntry>(entry =>
+                entry.Action == AdministrativeAuditActions.SubscriptionPlans.Created &&
+                entry.TargetType == AdministrativeAuditTargetTypes.SubscriptionPlan &&
+                entry.TargetTenantId == null),
+            Arg.Any<CancellationToken>());
     }
 }

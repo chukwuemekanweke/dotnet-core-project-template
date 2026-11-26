@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Auditing.Entities;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using FluentValidation;
 
@@ -19,5 +20,6 @@ public sealed class UpdateSubscriptionPlanValidator : AbstractValidator<UpdateSu
         RuleForEach(request => request.Features)
             .NotEmpty()
             .MaximumLength(SubscriptionPlan.MaxFeatureLength);
+        RuleFor(request => request.Reason).MaximumLength(AdministrativeAudit.MaxReasonLength);
     }
 }

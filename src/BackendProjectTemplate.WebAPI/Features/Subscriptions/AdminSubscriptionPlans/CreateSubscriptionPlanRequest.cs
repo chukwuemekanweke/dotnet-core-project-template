@@ -7,4 +7,5 @@ public sealed record CreateSubscriptionPlanRequest(
     Guid CurrencyId,
     bool IsActive = true,
     string? Description = null,
-    IReadOnlyList<string>? Features = null);
+    IReadOnlyList<string>? Features = null,
+    string? Reason = null);

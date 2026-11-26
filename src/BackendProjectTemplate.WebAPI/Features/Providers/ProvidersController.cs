@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Authentication;
 using BackendProjectTemplate.Domain.Common.Authorization;
 using BackendProjectTemplate.WebAPI.Infrastructure;
@@ -15,7 +16,8 @@ namespace BackendProjectTemplate.WebAPI.Features.Providers;
 [Route(EndpointUrl.Providers.Route)]
 public sealed class ProvidersController(
     ActivateProviderHandler activateProviderHandler,
-    ActivateProviderValidator validator) : ControllerBase
+    ActivateProviderValidator validator,
+    ICurrentActor currentActor) : ControllerBase
 {
     [HttpPut("active")]
     [RequireStepUpMfa(StepUpMfaOperations.ActivateProvider)]
@@ -37,7 +39,11 @@ public sealed class ProvidersController(
         _ = Enum.TryParse(request.ProviderType, true, out Domain.Providers.Entities.ProviderType providerType);
 
         var result = await activateProviderHandler.HandleAsync(
-            new ActivateProviderCommand(providerType, request.ProviderKey),
+            new ActivateProviderCommand(
+                providerType,
+                request.ProviderKey,
+                ActorContext.FromCurrentActor(currentActor),
+                request.Reason),
             cancellationToken);
 
         return result.Status switch

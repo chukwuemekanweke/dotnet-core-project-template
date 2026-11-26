@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Subscriptions.Administration;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
@@ -12,6 +13,7 @@ namespace BackendProjectTemplate.Application.Subscriptions.Features.CreateSubscr
 public sealed class CreateSubscriptionPlanHandler(
     IRepository<SubscriptionPlan> planRepository,
     IRepository<Currency> currencyRepository,
+    IAdministrativeAuditRecorder auditRecorder,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
 {
@@ -53,6 +55,24 @@ public sealed class CreateSubscriptionPlanHandler(
         }
 
         await planRepository.AddAsync(plan, cancellationToken);
+        await auditRecorder.RecordAsync(
+            new AdministrativeAuditEntry(
+                command.ActorContext,
+                AdministrativeAuditActions.SubscriptionPlans.Created,
+                AdministrativeAuditTargetTypes.SubscriptionPlan,
+                plan.Id,
+                plan.Name,
+                null,
+                command.Reason,
+                new AdministrativeAuditChanges()
+                    .Field("planCode", (string?)null, plan.Code)
+                    .Field("name", (string?)null, plan.Name)
+                    .Field("currencyCode", (string?)null, currency.CurrencyCode)
+                    .Field("prices", (SortedDictionary<string, decimal>?)null, SubscriptionPlanAuditFields.Prices(plan))
+                    .Field("isActive", (bool?)null, plan.IsActive)
+                    .Field("description", (string?)null, plan.Description)
+                    .Field("features", (string[]?)null, plan.Features.Count == 0 ? null : SubscriptionPlanAuditFields.Features(plan))),
+            cancellationToken);
         try
         {
             await unitOfWork.SaveChangesAsync(cancellationToken);

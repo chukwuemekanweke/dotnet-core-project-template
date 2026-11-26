@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Subscriptions.Features.RetrySubscriptionPurchaseFulfillment;
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -28,10 +29,11 @@ public sealed class When_RetryingBlockedPurchaseFulfillment_Should
         var paymentRepository = Substitute.For<IRepository<PaymentTransaction>>();
         var commandSender = Substitute.For<ICommandSender>();
         var unitOfWork = Substitute.For<IUnitOfWork>();
+        var auditRecorder = Substitute.For<IAdministrativeAuditRecorder>();
         purchaseRepository.FirstOrDefaultAsync(Arg.Any<ISpecification<SubscriptionPurchase>>(), Arg.Any<CancellationToken>()).Returns(purchase);
         paymentRepository.GetByIdAsync(payment.Id, Arg.Any<CancellationToken>()).Returns(payment);
         var handler = new RetrySubscriptionPurchaseFulfillmentHandler(
-            purchaseRepository, paymentRepository, commandSender, Substitute.For<ICustomTelemetryContext>(), unitOfWork);
+            purchaseRepository, paymentRepository, commandSender, auditRecorder, Substitute.For<ICustomTelemetryContext>(), unitOfWork);
         var command = new RetrySubscriptionPurchaseFulfillmentCommand(purchase.SubscriptionId, tenantId, new ActorContext(Guid.CreateVersion7(), null, "c", "f"));
 
         var notBlocked = await handler.HandleAsync(command, CancellationToken.None);
@@ -50,5 +52,11 @@ public sealed class When_RetryingBlockedPurchaseFulfillment_Should
                 activation.MerchantReference == payment.MerchantReference),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await auditRecorder.Received(1).RecordAsync(
+            Arg.Is<AdministrativeAuditEntry>(entry =>
+                entry.Action == AdministrativeAuditActions.Subscriptions.PurchaseFulfillmentRetryRequested &&
+                entry.TargetId == purchase.SubscriptionId &&
+                entry.TargetTenantId == tenantId),
+            Arg.Any<CancellationToken>());
     }
 }
