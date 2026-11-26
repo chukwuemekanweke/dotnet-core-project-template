@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Authentication.Features.SignIn;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Authentication.Persistence;
 using BackendProjectTemplate.Domain.Common.Authentication;
@@ -7,10 +8,12 @@ using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using BackendProjectTemplate.Domain.ReferenceData.Entities;
 using BackendProjectTemplate.Domain.Stakeholders.Entities;
+using BackendProjectTemplate.Infrastructure.Persistence;
 using BackendProjectTemplate.WebAPI.Features.Authentication.Sessions;
 using BackendProjectTemplate.WebAPI.Features.Providers;
 using BackendProjectTemplate.WebAPI.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using System.Net;
@@ -29,6 +32,7 @@ public sealed class When_ActivatingProvider_WithExistingProvider_Should(Containe
     private Guid _countryId;
     private Guid _stakeholderId;
     private Guid _stakeholderTypeId;
+    private Guid _userId;
     private Guid _activeProviderId;
     private Guid _targetProviderId;
     private string _activeProviderKey = string.Empty;
@@ -64,7 +68,7 @@ public sealed class When_ActivatingProvider_WithExistingProvider_Should(Containe
         {
             _response = await Client.PutAsJsonAsync(
                 $"{EndpointUrl.Providers.V1}/active",
-                new ActivateProviderRequest("Email", _targetProviderKey));
+                new ActivateProviderRequest("Email", _targetProviderKey, "Failover to secondary"));
         }
 
         async Task ThenTheProviderIsActivated()
@@ -81,6 +85,19 @@ public sealed class When_ActivatingProvider_WithExistingProvider_Should(Containe
             targetProvider.ShouldNotBeNull();
             activeProvider.IsActive.ShouldBeFalse();
             targetProvider.IsActive.ShouldBeTrue();
+
+            var audits = await scope.ServiceProvider.GetRequiredService<AppDbContext>().AdministrativeAudits
+                .Where(audit => audit.ActorUserId == _userId)
+                .ToListAsync();
+            audits.Count.ShouldBe(2);
+            audits.Single(audit => audit.TargetId == _activeProviderId).Action.ShouldBe(AdministrativeAuditActions.Providers.Deactivated);
+            audits.Single(audit => audit.TargetId == _targetProviderId).Action.ShouldBe(AdministrativeAuditActions.Providers.Activated);
+            audits.ShouldAllBe(audit =>
+                audit.TargetType == AdministrativeAuditTargetTypes.Provider &&
+                audit.TargetTenantId == null &&
+                audit.ActorTenantId == _tenantId &&
+                audit.Reason == "Failover to secondary");
+            audits.Select(audit => audit.CorrelationId).Distinct().Count().ShouldBe(1);
         }
     }
 
@@ -122,6 +139,7 @@ public sealed class When_ActivatingProvider_WithExistingProvider_Should(Containe
 
         _stakeholderId = stakeholder.Id;
         _stakeholderTypeId = stakeholderType.Id;
+        _userId = user.Id;
     }
 
     private async Task SeedProvidersAsync()
@@ -171,6 +189,10 @@ public sealed class When_ActivatingProvider_WithExistingProvider_Should(Containe
         var providerRepository = scope.ServiceProvider.GetRequiredService<IRepository<Provider>>();
         var countryRepository = scope.ServiceProvider.GetRequiredService<IRepository<Country>>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        await scope.ServiceProvider.GetRequiredService<AppDbContext>().AdministrativeAudits
+            .IgnoreQueryFilters()
+            .Where(audit => audit.ActorUserId == _userId)
+            .ExecuteDeleteAsync();
 
         foreach (var providerId in new[] { _activeProviderId, _targetProviderId })
         {

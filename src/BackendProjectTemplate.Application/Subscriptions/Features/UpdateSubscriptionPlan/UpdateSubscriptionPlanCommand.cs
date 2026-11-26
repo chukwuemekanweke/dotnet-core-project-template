@@ -9,4 +9,5 @@ public sealed record UpdateSubscriptionPlanCommand(
     IReadOnlyDictionary<BillingInterval, decimal> Prices,
     string? Description,
     IReadOnlyList<string> Features,
-    ActorContext ActorContext);
+    ActorContext ActorContext,
+    string? Reason = null);

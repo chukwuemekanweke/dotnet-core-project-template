@@ -33,6 +33,7 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
 
     private readonly List<Guid> _tenantIds = [];
     private readonly List<string> _emails = [];
+    private readonly List<Guid> _userIds = [];
     private string _email = string.Empty;
     private Guid _countryId;
     private readonly List<Guid> _stakeholderTypeIds = [];
@@ -79,6 +80,10 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
             await dbContext.OutboxMessages.Where(item => item.Payload.Contains(tenantText)).ExecuteDeleteAsync();
         }
 
+        await dbContext.AdministrativeAudits.IgnoreQueryFilters()
+            .Where(item => _userIds.Contains(item.ActorUserId) ||
+                (item.TargetTenantId.HasValue && _tenantIds.Contains(item.TargetTenantId.Value)))
+            .ExecuteDeleteAsync();
         await dbContext.SubscriptionAllocations.Where(item => _tenantIds.Contains(item.TenantId)).ExecuteDeleteAsync();
         await dbContext.SubscriptionRenewalAttempts.Where(item => renewalIds.Contains(item.RenewalId)).ExecuteDeleteAsync();
         await dbContext.SubscriptionRenewals.Where(item => renewalIds.Contains(item.Id)).ExecuteDeleteAsync();
@@ -229,6 +234,7 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
         var user = AppUser.Create(email, "Ada", "Lovelace");
         (await identityService.CreateAsync(user, Password)).Succeeded.ShouldBeTrue();
         _emails.Add(email);
+        _userIds.Add(user.Id);
         var stakeholder = Stakeholder.Create(user.Id, TargetTenantId, _countryId, _stakeholderTypeIds[1], "Ada", "Lovelace");
         dbContext.Stakeholders.Add(stakeholder);
         await dbContext.SaveChangesAsync();
@@ -250,6 +256,7 @@ public abstract class AdminSubscriptionIntegrationTestBase(ContainersFixture fix
             tenantUser.MarkEmailVerified();
             (await identityService.UpdateAsync(tenantUser)).Succeeded.ShouldBeTrue();
             _emails.Add(email);
+            _userIds.Add(tenantUser.Id);
             users.Add(tenantUser);
         }
 

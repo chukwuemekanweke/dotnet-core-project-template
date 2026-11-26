@@ -12,10 +12,11 @@ public sealed class When_ActivatingPaymentProvider_WithUnknownProvider_Should
         var paymentProviderId = Guid.CreateVersion7();
 
         var result = await context.CreateActivatePaymentProviderHandler().HandleAsync(
-            new ActivatePaymentProviderCommand(paymentProviderId, true),
+            new ActivatePaymentProviderCommand(paymentProviderId, true, context.Actor),
             CancellationToken.None);
 
         result.Status.ShouldBe(ActivatePaymentProviderStatus.ProviderNotFound);
         await context.UnitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.AuditRecorder.DidNotReceiveWithAnyArgs().RecordAsync(default!, default);
     }
 }

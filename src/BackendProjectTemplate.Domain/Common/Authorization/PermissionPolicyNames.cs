@@ -18,6 +18,8 @@ public static class PermissionPolicyNames
     public const string SubscriptionsAllocate = Prefix + ApplicationPermissions.Subscriptions.Allocate;
     public const string SubscriptionPlansManage = Prefix + ApplicationPermissions.Subscriptions.ManagePlans;
     public const string ProvidersManage = Prefix + ApplicationPermissions.Providers.Manage;
+    public const string AuditRead = Prefix + ApplicationPermissions.Audit.Read;
+    public const string AuditExport = Prefix + ApplicationPermissions.Audit.Export;
 
     public static string For(string permission) =>
         ApplicationPermissions.All.Contains(permission)

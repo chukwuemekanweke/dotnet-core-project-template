@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Subscriptions.Administration;
 using BackendProjectTemplate.Contracts.Commands.Subscriptions;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -15,6 +16,7 @@ public sealed class AdministrativelyCancelSubscriptionAtPeriodEndHandler(
     IRepository<SubscriptionAggregate> subscriptionRepository,
     ISubscriptionLifecyclePersistence lifecyclePersistence,
     ICommandSender commandSender,
+    IAdministrativeAuditRecorder auditRecorder,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -43,6 +45,7 @@ public sealed class AdministrativelyCancelSubscriptionAtPeriodEndHandler(
         }
 
         var operationId = Guid.CreateVersion7();
+        var previousAutoRenew = subscription.AutoRenew;
         bool changed;
         try
         {
@@ -77,6 +80,20 @@ public sealed class AdministrativelyCancelSubscriptionAtPeriodEndHandler(
                 subscription.CurrentPeriodEndUtc.Value,
                 cancellationToken);
         }
+
+        await auditRecorder.RecordAsync(
+            new AdministrativeAuditEntry(
+                command.ActorContext,
+                AdministrativeAuditActions.Subscriptions.CancellationScheduled,
+                AdministrativeAuditTargetTypes.Subscription,
+                subscription.Id,
+                null,
+                subscription.TenantId,
+                reason,
+                new AdministrativeAuditChanges()
+                    .Field("cancelAtPeriodEnd", false, true)
+                    .Field("autoRenew", previousAutoRenew, subscription.AutoRenew)),
+            cancellationToken);
 
         try
         {

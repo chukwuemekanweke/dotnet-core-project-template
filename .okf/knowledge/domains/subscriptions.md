@@ -268,3 +268,9 @@ never deleted; code and currency are immutable after creation, while name, descr
 prices and newly offered intervals may change (a PUT replaces them and must keep every offered interval)
 without affecting purchase, period, renewal or allocation snapshots. Deactivating a plan blocks new
 purchases and allocations only.
+
+Administrative allocation, immediate/period-end cancellation, fulfillment retry and plan create/update/
+activation also stage an `AdministrativeAudit` record (target tenant = the subscription's tenant; plans are
+global) in the same SaveChanges as the domain history, only on the changed path — replays, unchanged
+updates and already-cancelled/scheduled requests record nothing. Plan and retry requests accept an optional
+audit `reason`. Customer and Consumer lifecycle operations never record. See [[administrative-audit]].

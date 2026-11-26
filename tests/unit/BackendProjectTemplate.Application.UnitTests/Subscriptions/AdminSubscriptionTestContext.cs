@@ -1,6 +1,7 @@
 using BackendProjectTemplate.Application.Subscriptions.Features.AdministrativelyCancelSubscriptionAtPeriodEnd;
 using BackendProjectTemplate.Application.Subscriptions.Features.AllocateSubscription;
 using BackendProjectTemplate.Application.Subscriptions.Features.CancelSubscriptionImmediately;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
@@ -39,6 +40,7 @@ internal sealed class AdminSubscriptionTestContext
     public IBillingAccountResolver BillingAccountResolver { get; } = Substitute.For<IBillingAccountResolver>();
     public ISubscriptionLifecyclePersistence LifecyclePersistence { get; } = Substitute.For<ISubscriptionLifecyclePersistence>();
     public ICommandSender CommandSender { get; } = Substitute.For<ICommandSender>();
+    public IAdministrativeAuditRecorder AuditRecorder { get; } = Substitute.For<IAdministrativeAuditRecorder>();
     public ICustomTelemetryContext Telemetry { get; } = Substitute.For<ICustomTelemetryContext>();
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
     public FakeTimeProvider Clock { get; } = new(Now);
@@ -72,6 +74,7 @@ internal sealed class AdminSubscriptionTestContext
             AllocationRepository,
             BillingAccountResolver,
             CommandSender,
+            AuditRecorder,
             Telemetry,
             UnitOfWork,
             Clock,
@@ -82,13 +85,14 @@ internal sealed class AdminSubscriptionTestContext
             SubscriptionRepository,
             RenewalRepository,
             LifecyclePersistence,
+            AuditRecorder,
             Telemetry,
             UnitOfWork,
             Clock,
             Substitute.For<ILogger<CancelSubscriptionImmediatelyHandler>>());
 
     public AdministrativelyCancelSubscriptionAtPeriodEndHandler CreatePeriodEndCancellationHandler() =>
-        new(SubscriptionRepository, LifecyclePersistence, CommandSender, Telemetry, UnitOfWork, Clock);
+        new(SubscriptionRepository, LifecyclePersistence, CommandSender, AuditRecorder, Telemetry, UnitOfWork, Clock);
 
     public SubscriptionAggregate CreateActiveAllocation(int days = 30) =>
         SubscriptionAggregate.CreateAllocated(

@@ -1,5 +1,7 @@
 using BackendProjectTemplate.Application.Analytics;
 using BackendProjectTemplate.Application.Analytics.Features;
+using BackendProjectTemplate.Application.Auditing.Features.ExportAdministrativeAudits;
+using BackendProjectTemplate.Application.Auditing.Features.ListAdministrativeAudits;
 using BackendProjectTemplate.Application.Authentication;
 using BackendProjectTemplate.Application.Authentication.Features.AssignAdminUserRole;
 using BackendProjectTemplate.Application.Authentication.Features.ChangePassword;
@@ -114,6 +116,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ListRegisteredUsersHandler>();
         services.AddScoped<GetActiveUserAnalyticsHandler>();
         services.AddScoped<ListActiveUsersHandler>();
+        services.AddScoped<ListAdministrativeAuditsHandler>();
+        services.AddScoped<ExportAdministrativeAuditsHandler>();
         services.AddScoped<StakeholderResolver>();
         services.AddScoped<RegistrationCountryValidator>();
         services.AddScoped<AuthenticationSessionIssuer>();

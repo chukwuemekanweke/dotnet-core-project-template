@@ -27,6 +27,7 @@ public sealed class AdminSubscriptionPlansController(
     CreateSubscriptionPlanHandler createSubscriptionPlanHandler,
     UpdateSubscriptionPlanValidator updateSubscriptionPlanValidator,
     UpdateSubscriptionPlanHandler updateSubscriptionPlanHandler,
+    SetSubscriptionPlanActivationValidator setSubscriptionPlanActivationValidator,
     SetSubscriptionPlanActivationHandler setSubscriptionPlanActivationHandler,
     ICurrentActor currentActor) : ControllerBase
 {
@@ -68,7 +69,8 @@ public sealed class AdminSubscriptionPlansController(
                 request.IsActive,
                 request.Description,
                 request.Features ?? [],
-                ActorContext.FromCurrentActor(currentActor)),
+                ActorContext.FromCurrentActor(currentActor),
+                request.Reason),
             cancellationToken);
         return result.Status switch
         {
@@ -105,7 +107,8 @@ public sealed class AdminSubscriptionPlansController(
                 SubscriptionPlanPricesValidator.ToPriceMap(request.Prices),
                 request.Description,
                 request.Features ?? [],
-                ActorContext.FromCurrentActor(currentActor)),
+                ActorContext.FromCurrentActor(currentActor),
+                request.Reason),
             cancellationToken);
         return result.Status switch
         {
@@ -119,6 +122,7 @@ public sealed class AdminSubscriptionPlansController(
     [Authorize(Policy = PermissionPolicyNames.SubscriptionPlansManage)]
     [RequireStepUpMfa(StepUpMfaOperations.SetSubscriptionPlanActivation)]
     [ProducesResponseType<AdminSubscriptionPlanResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -127,8 +131,18 @@ public sealed class AdminSubscriptionPlansController(
         [FromBody] SetSubscriptionPlanActivationRequest request,
         CancellationToken cancellationToken)
     {
+        var validation = await setSubscriptionPlanActivationValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return BadRequest(new ValidationProblemDetails(validation.ToValidationDictionary()));
+        }
+
         var result = await setSubscriptionPlanActivationHandler.HandleAsync(
-            new SetSubscriptionPlanActivationCommand(id, request.IsActive, ActorContext.FromCurrentActor(currentActor)),
+            new SetSubscriptionPlanActivationCommand(
+                id,
+                request.IsActive,
+                ActorContext.FromCurrentActor(currentActor),
+                request.Reason),
             cancellationToken);
         return result.Status == SetSubscriptionPlanActivationStatus.NotFound
             ? Problem(result.Error, statusCode: StatusCodes.Status404NotFound)

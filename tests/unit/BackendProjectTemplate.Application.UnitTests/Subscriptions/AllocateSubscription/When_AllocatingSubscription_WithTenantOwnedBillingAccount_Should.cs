@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Subscriptions.Features.AllocateSubscription;
 using BackendProjectTemplate.Contracts.Commands.Subscriptions;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using Shouldly;
@@ -42,5 +43,14 @@ public sealed class When_AllocatingSubscription_WithTenantOwnedBillingAccount_Sh
         await context.CommandSender.DidNotReceive().ScheduleSendAsync(
             Arg.Any<RenewSubscriptionCommand>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.AuditRecorder.Received(1).RecordAsync(
+            Arg.Is<AdministrativeAuditEntry>(entry =>
+                entry.Action == AdministrativeAuditActions.Subscriptions.Allocated &&
+                entry.TargetType == AdministrativeAuditTargetTypes.Subscription &&
+                entry.TargetId == subscription.Id &&
+                entry.TargetTenantId == context.TenantId &&
+                entry.ActorContext == command.ActorContext &&
+                entry.Reason == "Partner onboarding"),
+            Arg.Any<CancellationToken>());
     }
 }

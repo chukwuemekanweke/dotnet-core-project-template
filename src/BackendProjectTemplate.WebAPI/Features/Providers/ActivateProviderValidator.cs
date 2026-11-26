@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Auditing.Entities;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using FluentValidation;
 
@@ -15,5 +16,7 @@ public sealed class ActivateProviderValidator : AbstractValidator<ActivateProvid
             .NotEmpty()
             .Must(providerType => Enum.TryParse<ProviderType>(providerType, true, out _))
             .WithMessage("ProviderType must be one of: Email, FileStorage.");
+
+        RuleFor(request => request.Reason).MaximumLength(AdministrativeAudit.MaxReasonLength);
     }
 }

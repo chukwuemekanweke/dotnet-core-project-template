@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Domain.Analytics;
+using BackendProjectTemplate.Domain.Auditing.Entities;
 using BackendProjectTemplate.Domain.Authentication.Entities;
 using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Common.FileUploads.Entities;
@@ -72,6 +73,7 @@ public abstract class AppDbContextBase<TContext>(DbContextOptions<TContext> opti
     public DbSet<KycVerification> KycVerifications => Set<KycVerification>();
     public DbSet<KycWebhookInbox> KycWebhookInboxes => Set<KycWebhookInbox>();
     public DbSet<AdministrativeSecurityAudit> AdministrativeSecurityAudits => Set<AdministrativeSecurityAudit>();
+    public DbSet<AdministrativeAudit> AdministrativeAudits => Set<AdministrativeAudit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

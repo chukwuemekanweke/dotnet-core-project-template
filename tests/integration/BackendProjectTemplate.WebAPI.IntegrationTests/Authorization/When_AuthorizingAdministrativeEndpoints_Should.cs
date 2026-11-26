@@ -72,11 +72,15 @@ public sealed class When_AuthorizingAdministrativeEndpoints_Should(ContainersFix
     {
         (await ActivateProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         (await GetUserAnalyticsAsync()).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (await GetAuditLogsAsync()).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (await ExportAuditLogsAsync()).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         await AuthenticateAsync();
 
         (await ActivateProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await ActivatePaymentProviderAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await GetUserAnalyticsAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await GetAuditLogsAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await ExportAuditLogsAsync()).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
         await AssertRoleAsync(
             ApplicationRoles.ComplianceOfficer,
@@ -163,6 +167,9 @@ public sealed class When_AuthorizingAdministrativeEndpoints_Should(ContainersFix
         (await GetRegistrationAnalyticsAsync()).StatusCode.ShouldBe(expectedUserAnalyticsStatus);
         (await GetRegistrationUsersAsync()).StatusCode.ShouldBe(expectedUserAnalyticsStatus);
         (await GetActiveUserListAsync()).StatusCode.ShouldBe(expectedUserAnalyticsStatus);
+        // Only Administrator holds audit.read and audit.export, so they follow the user-analytics expectation.
+        (await GetAuditLogsAsync()).StatusCode.ShouldBe(expectedUserAnalyticsStatus);
+        (await ExportAuditLogsAsync()).StatusCode.ShouldBe(expectedUserAnalyticsStatus);
 
         (await userManager.RemoveFromRoleAsync(user, role)).Succeeded.ShouldBeTrue();
     }
@@ -181,6 +188,20 @@ public sealed class When_AuthorizingAdministrativeEndpoints_Should(ContainersFix
         var response = await Client.PutAsJsonAsync(
             $"{EndpointUrl.PaymentProviders.V1}/{Guid.CreateVersion7()}/activation",
             new SetPaymentProviderActivationRequest(true));
+        _responses.Add(response);
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> GetAuditLogsAsync()
+    {
+        var response = await Client.GetAsync($"{EndpointUrl.AdminAuditLogs.V1}?actorUserId={_user.Id}");
+        _responses.Add(response);
+        return response;
+    }
+
+    private async Task<HttpResponseMessage> ExportAuditLogsAsync()
+    {
+        var response = await Client.GetAsync($"{EndpointUrl.AdminAuditLogs.ExportV1}?actorUserId={_user.Id}");
         _responses.Add(response);
         return response;
     }

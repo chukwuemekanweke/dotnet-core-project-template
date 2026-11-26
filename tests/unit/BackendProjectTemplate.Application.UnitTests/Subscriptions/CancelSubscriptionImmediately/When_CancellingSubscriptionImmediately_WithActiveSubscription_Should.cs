@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Subscriptions.Features.CancelSubscriptionImmediately;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Subscriptions;
 using BackendProjectTemplate.Domain.Subscriptions.Entities;
 using Shouldly;
@@ -33,5 +34,13 @@ public sealed class When_CancellingSubscriptionImmediately_WithActiveSubscriptio
                 history.Details == "Fraud review"),
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.AuditRecorder.Received(1).RecordAsync(
+            Arg.Is<AdministrativeAuditEntry>(entry =>
+                entry.Action == AdministrativeAuditActions.Subscriptions.Cancelled &&
+                entry.TargetId == subscription.Id &&
+                entry.TargetTenantId == context.TenantId &&
+                entry.Reason == "Fraud review" &&
+                entry.Changes!.ToJson() == "{\"status\":{\"previous\":\"Active\",\"current\":\"Cancelled\"}}"),
+            Arg.Any<CancellationToken>());
     }
 }

@@ -34,6 +34,7 @@ public sealed class When_AllocatingSubscription_WithDuplicateIdempotencyKey_Shou
         reused.Status.ShouldBe(AllocateSubscriptionStatus.IdempotencyKeyReused);
         await context.SubscriptionRepository.DidNotReceive().AddAsync(Arg.Any<SubscriptionAggregate>(), Arg.Any<CancellationToken>());
         await context.UnitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.AuditRecorder.DidNotReceiveWithAnyArgs().RecordAsync(default!, default);
         await context.CommandSender.DidNotReceiveWithAnyArgs().ScheduleSendAsync<ExpireSubscriptionCommand>(default!, default, default);
     }
 }

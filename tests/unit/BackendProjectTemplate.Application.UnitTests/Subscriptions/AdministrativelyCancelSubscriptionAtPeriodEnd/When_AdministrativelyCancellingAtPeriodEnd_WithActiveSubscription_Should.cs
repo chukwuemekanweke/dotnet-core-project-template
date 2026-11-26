@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Application.Subscriptions.Features.AdministrativelyCancelSubscriptionAtPeriodEnd;
 using BackendProjectTemplate.Contracts.Commands.Subscriptions;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Subscriptions;
 using Shouldly;
 
@@ -29,5 +30,12 @@ public sealed class When_AdministrativelyCancellingAtPeriodEnd_WithActiveSubscri
             subscription.CurrentPeriodEndUtc!.Value,
             Arg.Any<CancellationToken>());
         await context.UnitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await context.AuditRecorder.Received(1).RecordAsync(
+            Arg.Is<AdministrativeAuditEntry>(entry =>
+                entry.Action == AdministrativeAuditActions.Subscriptions.CancellationScheduled &&
+                entry.TargetId == subscription.Id &&
+                entry.TargetTenantId == context.TenantId &&
+                entry.Reason == "Contract ended"),
+            Arg.Any<CancellationToken>());
     }
 }

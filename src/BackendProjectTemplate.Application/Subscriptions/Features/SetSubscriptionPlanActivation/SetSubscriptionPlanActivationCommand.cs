@@ -5,4 +5,5 @@ namespace BackendProjectTemplate.Application.Subscriptions.Features.SetSubscript
 public sealed record SetSubscriptionPlanActivationCommand(
     Guid PlanId,
     bool IsActive,
-    ActorContext ActorContext);
+    ActorContext ActorContext,
+    string? Reason = null);

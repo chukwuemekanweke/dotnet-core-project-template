@@ -3,6 +3,7 @@ namespace BackendProjectTemplate.Infrastructure.Persistence;
 public static class SchemaNames
 {
     public const string Analytics = "analytics";
+    public const string Auditing = "auditing";
     public const string Authentication = "authentication";
     public const string Infrastructure = "infrastructure";
     public const string ReferenceData = "reference_data";

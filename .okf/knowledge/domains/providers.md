@@ -30,4 +30,9 @@ separately under [[payments]] (`PaymentProvider`, `ActivatePaymentProvider`).
 
 When adding a new externally-swappable integration that needs an on/off or which-implementation-is-active switch, check whether it fits this generic `Provider` registry before inventing a parallel activation mechanism.
 
+Activation is a privileged administrative mutation: the deactivate-then-activate saves (required by the
+active-provider partial unique index) run inside one explicit unit-of-work transaction together with one
+`AdministrativeAudit` record per provider whose state changed; activating the already-active provider is a
+no-op with no record. Payment-provider activation records likewise. See [[administrative-audit]].
+
 Follows the standard [[vertical-slices]] feature-folder shape and the [[unit-testing]]/[[integration-testing]] conventions.

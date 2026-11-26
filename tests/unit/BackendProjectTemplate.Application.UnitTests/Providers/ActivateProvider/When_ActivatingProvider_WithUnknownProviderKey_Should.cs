@@ -1,4 +1,6 @@
 using BackendProjectTemplate.Application.Providers.Features.ActivateProvider;
+using BackendProjectTemplate.Domain.Auditing;
+using BackendProjectTemplate.Domain.Common.Auditing;
 using BackendProjectTemplate.Domain.Providers.Entities;
 using Shouldly;
 
@@ -16,14 +18,16 @@ public sealed class When_ActivatingProvider_WithUnknownProviderKey_Should
                 Provider.Create(ProviderType.Email, "Primary", "primary", true)
             ]);
 
-        var sut = new ActivateProviderHandler(providerRepository, unitOfWork);
+        var auditRecorder = Substitute.For<IAdministrativeAuditRecorder>();
+        var sut = new ActivateProviderHandler(providerRepository, auditRecorder, unitOfWork);
 
         var result = await sut.HandleAsync(
-            new ActivateProviderCommand(ProviderType.Email, "missing"),
+            new ActivateProviderCommand(ProviderType.Email, "missing", new ActorContext(Guid.CreateVersion7(), Guid.CreateVersion7(), "correlation", "flow")),
             CancellationToken.None);
 
         result.Status.ShouldBe(ActivateProviderStatus.ProviderNotFound);
         await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await auditRecorder.DidNotReceiveWithAnyArgs().RecordAsync(default!, default);
     }
 }
 

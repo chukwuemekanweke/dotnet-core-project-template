@@ -1,6 +1,5 @@
 using BackendProjectTemplate.Application.Payments.Features.ListPaymentProviders;
 using BackendProjectTemplate.Domain.Payments.Entities;
-using BackendProjectTemplate.WebAPI.Features.Payments.Providers;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;
 
@@ -17,9 +16,7 @@ public sealed class When_ListingPaymentProviders_WithProviders_Should
         context.PaymentProviderReadRepository
             .ListAsync(Arg.Any<ISpecification<PaymentProvider>>(), Arg.Any<CancellationToken>())
             .Returns([active, inactive]);
-        var sut = new PaymentProvidersController(
-            context.CreateActivatePaymentProviderHandler(),
-            context.CreateListPaymentProvidersHandler());
+        var sut = context.CreatePaymentProvidersController();
 
         var result = await sut.List(CancellationToken.None);
 

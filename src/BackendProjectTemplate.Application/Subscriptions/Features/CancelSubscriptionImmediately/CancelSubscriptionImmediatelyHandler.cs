@@ -1,4 +1,5 @@
 using BackendProjectTemplate.Application.Subscriptions.Administration;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Exceptions;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -21,6 +22,7 @@ public sealed class CancelSubscriptionImmediatelyHandler(
     IRepository<SubscriptionAggregate> subscriptionRepository,
     IRepository<SubscriptionRenewal> renewalRepository,
     ISubscriptionLifecyclePersistence lifecyclePersistence,
+    IAdministrativeAuditRecorder auditRecorder,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
@@ -45,6 +47,7 @@ public sealed class CancelSubscriptionImmediatelyHandler(
 
         var now = timeProvider.GetUtcNow();
         var operationId = Guid.CreateVersion7();
+        var previousStatus = subscription.Status;
         bool changed;
         try
         {
@@ -73,6 +76,18 @@ public sealed class CancelSubscriptionImmediatelyHandler(
         {
             renewal.MarkCancelled(now);
         }
+
+        await auditRecorder.RecordAsync(
+            new AdministrativeAuditEntry(
+                command.ActorContext,
+                AdministrativeAuditActions.Subscriptions.Cancelled,
+                AdministrativeAuditTargetTypes.Subscription,
+                subscription.Id,
+                null,
+                subscription.TenantId,
+                subscription.CancellationReason ?? command.Reason,
+                new AdministrativeAuditChanges().Field("status", previousStatus.ToString(), subscription.Status.ToString())),
+            cancellationToken);
 
         try
         {

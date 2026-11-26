@@ -11,9 +11,7 @@ public sealed class When_SettingPaymentProviderActivation_WithUnknownProvider_Sh
     public async Task ReturnNotFound()
     {
         var context = new PaymentsControllerTestContext();
-        var sut = new PaymentProvidersController(
-            context.CreateActivatePaymentProviderHandler(),
-            context.CreateListPaymentProvidersHandler());
+        var sut = context.CreatePaymentProvidersController();
 
         var result = await sut.SetActivation(Guid.CreateVersion7(), new SetPaymentProviderActivationRequest(true), CancellationToken.None);
 

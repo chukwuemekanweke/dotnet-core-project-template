@@ -1,3 +1,4 @@
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Persistence;
 using BackendProjectTemplate.Domain.Payments.Entities;
 
@@ -5,6 +6,7 @@ namespace BackendProjectTemplate.Application.Payments.Features.ActivatePaymentPr
 
 public sealed class ActivatePaymentProviderHandler(
     IRepository<PaymentProvider> paymentProviderRepository,
+    IAdministrativeAuditRecorder auditRecorder,
     IUnitOfWork unitOfWork)
 {
     public async Task<ActivatePaymentProviderResult> HandleAsync(
@@ -26,6 +28,19 @@ public sealed class ActivatePaymentProviderHandler(
 
         paymentProvider.SetActive(command.IsActive);
         paymentProviderRepository.Update(paymentProvider);
+        await auditRecorder.RecordAsync(
+            new AdministrativeAuditEntry(
+                command.ActorContext,
+                command.IsActive
+                    ? AdministrativeAuditActions.PaymentProviders.Activated
+                    : AdministrativeAuditActions.PaymentProviders.Deactivated,
+                AdministrativeAuditTargetTypes.PaymentProvider,
+                paymentProvider.Id,
+                paymentProvider.ProviderName,
+                null,
+                command.Reason,
+                new AdministrativeAuditChanges().Field("isActive", !command.IsActive, command.IsActive)),
+            cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new ActivatePaymentProviderResult(ActivatePaymentProviderStatus.Success);

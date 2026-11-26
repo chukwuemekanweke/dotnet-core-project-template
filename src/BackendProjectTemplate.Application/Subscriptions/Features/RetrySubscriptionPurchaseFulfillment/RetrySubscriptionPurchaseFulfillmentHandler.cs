@@ -1,5 +1,6 @@
 using BackendProjectTemplate.Contracts.Commands.Payments;
 using BackendProjectTemplate.Contracts.Payments;
+using BackendProjectTemplate.Domain.Auditing;
 using BackendProjectTemplate.Domain.Common.Messaging;
 using BackendProjectTemplate.Domain.Common.Observability;
 using BackendProjectTemplate.Domain.Common.Persistence;
@@ -19,6 +20,7 @@ public sealed class RetrySubscriptionPurchaseFulfillmentHandler(
     IRepository<SubscriptionPurchase> purchaseRepository,
     IRepository<PaymentTransaction> paymentTransactionRepository,
     ICommandSender commandSender,
+    IAdministrativeAuditRecorder auditRecorder,
     ICustomTelemetryContext customTelemetryContext,
     IUnitOfWork unitOfWork)
 {
@@ -63,6 +65,17 @@ public sealed class RetrySubscriptionPurchaseFulfillmentHandler(
                 TenantId = payment.TenantId,
                 StakeholderId = payment.StakeholderId
             },
+            cancellationToken);
+        await auditRecorder.RecordAsync(
+            new AdministrativeAuditEntry(
+                command.ActorContext,
+                AdministrativeAuditActions.Subscriptions.PurchaseFulfillmentRetryRequested,
+                AdministrativeAuditTargetTypes.Subscription,
+                purchase.SubscriptionId,
+                null,
+                purchase.TenantId,
+                command.Reason,
+                null),
             cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -36,6 +36,12 @@ public static class ApplicationPermissions
         public const string Manage = "providers.manage";
     }
 
+    public static class Audit
+    {
+        public const string Read = "audit.read";
+        public const string Export = "audit.export";
+    }
+
     public static IReadOnlySet<string> All { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
         Users.Read,
@@ -51,6 +57,8 @@ public static class ApplicationPermissions
         Subscriptions.Manage,
         Subscriptions.Allocate,
         Subscriptions.ManagePlans,
-        Providers.Manage
+        Providers.Manage,
+        Audit.Read,
+        Audit.Export
     };
 }
