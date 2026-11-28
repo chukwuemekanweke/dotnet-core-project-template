@@ -25,7 +25,8 @@ public sealed class When_InitiatingBachsSubscriptionWithAutoRenew_Should
             Guid.CreateVersion7(),
             Guid.CreateVersion7(),
             true,
-            true);
+            true,
+            Guid.CreateVersion7());
         stakeholders.GetByStakeholderIdAsync(stakeholderId, Arg.Any<CancellationToken>()).Returns(
             new StakeholderReadModel(
                 stakeholderId,
@@ -51,7 +52,20 @@ public sealed class When_InitiatingBachsSubscriptionWithAutoRenew_Should
                 request.MerchantReference,
                 DateTimeOffset.UtcNow.AddHours(1),
                 null));
-        var sut = new BachsPaymentProviderService(client, stakeholders, Options.Create(new BachsOptions()));
+        var sut = new BachsPaymentProviderService(
+            client,
+            stakeholders,
+            Options.Create(new BachsOptions
+            {
+                ReturnUrls = new BachsOptions.BachsReturnUrlsOptions
+                {
+                    SubscriptionPurchase = new BachsOptions.BachsCheckoutReturnUrlsOptions
+                    {
+                        SuccessUrl = "https://app.example.com/billing/checkout/success?source=bachs",
+                        CancelUrl = "https://app.example.com/billing/checkout/cancelled"
+                    }
+                }
+            }));
 
         var result = await sut.InitiatePaymentAsync(request, CancellationToken.None);
 
@@ -61,7 +75,9 @@ public sealed class When_InitiatingBachsSubscriptionWithAutoRenew_Should
             Arg.Is<BachsCreateCheckoutSessionRequest>(payload =>
                 payload.SavePaymentMethod &&
                 payload.Customer.CustomerId == "cust_123" &&
-                payload.Customer.Email == null),
+                payload.Customer.Email == null &&
+                payload.SuccessUrl == $"https://app.example.com/billing/checkout/success?source=bachs&purchaseId={request.CheckoutReturnCorrelationId}" &&
+                payload.CancelUrl == $"https://app.example.com/billing/checkout/cancelled?purchaseId={request.CheckoutReturnCorrelationId}"),
             request.MerchantReference,
             Arg.Any<CancellationToken>());
     }

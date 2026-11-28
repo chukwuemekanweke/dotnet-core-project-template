@@ -53,7 +53,19 @@ public sealed class When_InitiatingBachsPayment_WithValidRequest_Should
         var sut = new BachsPaymentProviderService(
             client,
             stakeholderRepository,
-            Options.Create(new BachsOptions()));
+            Options.Create(new BachsOptions
+            {
+                SuccessUrl = "https://legacy.example.com/success",
+                CancelUrl = "https://legacy.example.com/cancelled",
+                ReturnUrls = new BachsOptions.BachsReturnUrlsOptions
+                {
+                    WalletTopUp = new BachsOptions.BachsCheckoutReturnUrlsOptions
+                    {
+                        SuccessUrl = "https://app.example.com/wallet/success",
+                        CancelUrl = "https://app.example.com/wallet/cancelled"
+                    }
+                }
+            }));
 
         var result = await sut.InitiatePaymentAsync(request, CancellationToken.None);
 
@@ -65,7 +77,9 @@ public sealed class When_InitiatingBachsPayment_WithValidRequest_Should
                 payload.Pricing.Amount == "25.00" &&
                 payload.Pricing.Currency == "NGN" &&
                 payload.Reference == request.MerchantReference &&
-                payload.Customer.Email == "ada@example.com"),
+                payload.Customer.Email == "ada@example.com" &&
+                payload.SuccessUrl == "https://app.example.com/wallet/success" &&
+                payload.CancelUrl == "https://app.example.com/wallet/cancelled"),
             request.MerchantReference,
             Arg.Any<CancellationToken>());
     }

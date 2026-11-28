@@ -135,6 +135,7 @@ public sealed class When_PurchasingSubscription_WithActivePlan_Should
         providerRequest.IsTrustedSubscriptionPurchase.ShouldBeTrue();
         providerRequest.SavePaymentMethod.ShouldBeTrue();
         capturedPurchase.ShouldNotBeNull();
+        providerRequest.CheckoutReturnCorrelationId.ShouldBe(capturedPurchase.Id);
         capturedPurchase.ExpectedAmount.ShouldBe(9000000m);
         capturedPurchase.BillingInterval.ShouldBe(BillingInterval.Yearly);
         capturedPurchase.ExpectedCurrencyId.ShouldBe(plan.CurrencyId);

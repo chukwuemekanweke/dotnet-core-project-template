@@ -44,6 +44,7 @@ internal sealed class BachsPaymentProviderService(
             new[] { stakeholder.FirstName, stakeholder.LastName }
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Select(value => value.Trim()));
+        var returnUrls = ResolveReturnUrls(request);
 
         string? customerId = null;
         if (request.SavePaymentMethod)
@@ -70,8 +71,8 @@ internal sealed class BachsPaymentProviderService(
                 request.SavePaymentMethod
                     ? new BachsCheckoutCustomer(null, null, customerId)
                     : new BachsCheckoutCustomer(email, string.IsNullOrWhiteSpace(customerName) ? null : customerName),
-                NormalizeOptional(_options.SuccessUrl),
-                NormalizeOptional(_options.CancelUrl),
+                returnUrls.SuccessUrl,
+                returnUrls.CancelUrl,
                 request.MerchantReference,
                 new Dictionary<string, string>
                 {
@@ -116,6 +117,56 @@ internal sealed class BachsPaymentProviderService(
                 [BachsKnownKeys.PaymentInstruction.MerchantReference] = responseReference
             },
             customerId is null ? null : new RecurringPaymentSetupResult(customerId));
+    }
+
+    private (string? SuccessUrl, string? CancelUrl) ResolveReturnUrls(PaymentProviderInitiationRequest request)
+    {
+        var configured = request.PaymentIntent == PaymentIntent.Subscription
+            ? _options.ReturnUrls.SubscriptionPurchase
+            : _options.ReturnUrls.WalletTopUp;
+        var successUrl = NormalizeOptional(configured.SuccessUrl) ?? NormalizeOptional(_options.SuccessUrl);
+        var cancelUrl = NormalizeOptional(configured.CancelUrl) ?? NormalizeOptional(_options.CancelUrl);
+
+        if (request.PaymentIntent != PaymentIntent.Subscription)
+        {
+            return (successUrl, cancelUrl);
+        }
+
+        if (!request.CheckoutReturnCorrelationId.HasValue)
+        {
+            throw new InvalidOperationException("Bachs subscription checkout requires a persisted purchase correlation id.");
+        }
+
+        return (
+            AppendQueryParameter(successUrl, "purchaseId", request.CheckoutReturnCorrelationId.Value),
+            AppendQueryParameter(cancelUrl, "purchaseId", request.CheckoutReturnCorrelationId.Value));
+    }
+
+    private static string? AppendQueryParameter(string? value, string name, Guid correlationId)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+        {
+            throw new InvalidOperationException("Bachs checkout return URLs must be absolute HTTP(S) URLs.");
+        }
+
+        var builder = new UriBuilder(uri);
+        var query = builder.Query.TrimStart('?');
+        if (query.Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split('=', 2)[0])
+            .Any(key => string.Equals(Uri.UnescapeDataString(key), name, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException($"Bachs checkout return URL must not predefine the '{name}' query parameter.");
+        }
+
+        var encodedPair = $"{Uri.EscapeDataString(name)}={Uri.EscapeDataString(correlationId.ToString())}";
+        builder.Query = string.IsNullOrEmpty(query) ? encodedPair : $"{query}&{encodedPair}";
+        return builder.Uri.AbsoluteUri;
     }
 
     public async Task<RecurringChargeResult> ChargeAsync(

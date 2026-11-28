@@ -121,6 +121,7 @@ public sealed class PurchaseSubscriptionHandler(
                         requestFingerprint);
                     await subscriptionRepository.AddAsync(subscription, token);
                     await purchaseRepository.AddAsync(purchase, token);
+                    return purchase.Id;
                 },
                 cancellationToken);
         }
