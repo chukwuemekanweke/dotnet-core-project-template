@@ -11,4 +11,5 @@ public sealed record PaymentProviderInitiationRequest(
     Guid TenantId,
     Guid CountryId,
     bool IsTrustedSubscriptionPurchase = false,
-    bool SavePaymentMethod = false);
+    bool SavePaymentMethod = false,
+    Guid? CheckoutReturnCorrelationId = null);

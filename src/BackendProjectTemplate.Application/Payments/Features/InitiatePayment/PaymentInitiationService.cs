@@ -28,7 +28,7 @@ public sealed class PaymentInitiationService(
 {
     public async Task<InitiatePaymentResult> InitiateAsync(
         InitiatePaymentCommand command,
-        Func<PaymentTransaction, CancellationToken, Task>? persistCorrelation,
+        Func<PaymentTransaction, CancellationToken, Task<Guid?>>? persistCorrelation,
         CancellationToken cancellationToken)
     {
         if (command.Amount <= 0 || decimal.Truncate(command.Amount) != command.Amount)
@@ -84,9 +84,10 @@ public sealed class PaymentInitiationService(
             stakeholder.TenantId);
         await paymentTransactionRepository.AddAsync(paymentTransaction, cancellationToken);
 
+        Guid? checkoutReturnCorrelationId = null;
         if (persistCorrelation is not null)
         {
-            await persistCorrelation(paymentTransaction, cancellationToken);
+            checkoutReturnCorrelationId = await persistCorrelation(paymentTransaction, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -103,7 +104,8 @@ public sealed class PaymentInitiationService(
                     stakeholder.TenantId,
                     stakeholder.CountryId,
                     command.TrustedSubscriptionContext is not null,
-                    command.TrustedSubscriptionContext?.SavePaymentMethod == true),
+                    command.TrustedSubscriptionContext?.SavePaymentMethod == true,
+                    checkoutReturnCorrelationId),
                 cancellationToken);
         }
         catch (Exception exception) when (persistCorrelation is not null)

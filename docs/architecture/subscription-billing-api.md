@@ -16,12 +16,16 @@ Administrative subscription KPIs, timelines and breakdowns are documented in [su
 [
   {
     "id": "019...",
-    "code": "PRO_MONTHLY",
-    "name": "Pro Monthly",
-    "price": 750000,
+    "code": "PRO",
+    "name": "Pro",
+    "description": "For growing teams.",
+    "features": ["Core features"],
+    "prices": [
+      { "billingInterval": "Monthly", "price": 750000 },
+      { "billingInterval": "Yearly", "price": 7500000 }
+    ],
     "currencyId": "019...",
-    "currencyCode": "NGN",
-    "billingInterval": "Monthly"
+    "currencyCode": "NGN"
   }
 ]
 ```
@@ -52,6 +56,7 @@ An unknown or inactive plan returns `404`; invalid owner input returns `400`; mi
 ```json
 {
   "planId": "019...",
+  "billingInterval": "Monthly",
   "paymentProviderId": "019...",
   "billingAccountOwnerType": "Stakeholder",
   "autoRenew": true
@@ -165,9 +170,14 @@ It returns `found`, `changed`, and `entitledUntilUtc`. Repeated requests are saf
 2. After authentication, query eligible providers for that plan and billing owner type.
 3. Generate and persist one UUID idempotency key for the user's checkout action.
 4. Submit the purchase, then render or follow the returned instruction fields.
-5. On redirect/return, ignore provider query parameters as evidence and poll the purchase-status route.
+5. On redirect/return, use the backend-appended `purchaseId` only to select the owner-scoped purchase-status
+   route. Ignore it and every provider query parameter as evidence, and poll the returned backend status.
 6. Stop on `isTerminal`, or when the frontend's polling bound is reached; continue showing a pending state when the bound expires.
 7. Load the current subscription and paginated billing history for the dashboard.
 8. Schedule period-end cancellation and use `entitledUntilUtc`/`cancellationEffectiveAtUtc` as the effective date.
 
 Upgrades, downgrades, proration, refunds, invoices, receipts, and immediate customer cancellation are not supported by these contracts.
+
+For Bachs, configure intent-specific return routes under
+`Payments:Bachs:ReturnUrls:SubscriptionPurchase`. The backend appends the persisted purchase ID to both the
+success and cancellation URL. A browser return does not change payment or subscription state.

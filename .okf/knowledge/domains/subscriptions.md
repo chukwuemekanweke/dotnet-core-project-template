@@ -73,6 +73,10 @@ The generic `/payments/initiate` flow accepts wallet top-ups only. Subscription 
 interval and the BillingAccount, derives price and
 currency server-side, and saves the pending `PaymentTransaction`, pending `Subscription`, and
 `SubscriptionPurchase` correlation before invoking the provider.
+The correlation callback returns the persisted purchase id to payment initiation so hosted providers may put
+it on intent-specific browser return URLs. This does not change settlement authority: the frontend uses the id
+only with the owner-scoped purchase-status endpoint, while webhooks/reconciliation and asynchronous
+fulfillment remain authoritative.
 
 Verified `SuccessfulPaymentConfirmed` events retain the existing command/outbox/Consumer flow.
 `ActivateSubscriptionHandler` distinguishes a `SubscriptionPurchase` from a durably correlated

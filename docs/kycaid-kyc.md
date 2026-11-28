@@ -21,13 +21,19 @@ Kyc__Kycaid__Enabled=true
 Kyc__Kycaid__BaseUrl=https://api.kycaid.com
 Kyc__Kycaid__ApiKey=<secret>
 Kyc__Kycaid__FormId=<dashboard form id>
-Kyc__Kycaid__RedirectUrl=https://app.example.com/kyc/complete
+Kyc__Kycaid__RedirectUrl=https://app.example.com/verification
 Kyc__Kycaid__RequestTimeoutSeconds=15
 Kyc__Kycaid__TrustedFormHosts__0=forms.kycaid.com
 ```
 
 Add documented custom form domains to `TrustedFormHosts`; untrusted or non-HTTPS returned URLs are rejected.
 Options are validated at startup when the integration is enabled.
+
+Use the authenticated frontend `/verification` page as the canonical redirect in every environment. For
+example, development/staging/production may use different public frontend hosts, but the path remains
+`/verification`. Do not accept a redirect URL from the browser. Landing on that page never verifies the
+stakeholder; the page must re-read `GET /api/v1/stakeholders/me/kyc` while callbacks and reconciliation remain
+authoritative.
 
 ## KYCAID Dashboard
 

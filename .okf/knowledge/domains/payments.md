@@ -132,6 +132,11 @@ status: stable
   uses `paymentMethodType: PaymentLink` with `instructionFields.paymentLink`; SafeHaven bank transfer uses
   `accountNumber`, `bankName`, `accountName` and `providerReference`. Frontends never construct provider URLs
   and always query authoritative purchase status after returning from a provider.
+- Bachs return URLs are selected by payment intent. `Payments:Bachs:ReturnUrls:WalletTopUp` and
+  `Payments:Bachs:ReturnUrls:SubscriptionPurchase` keep wallet and billing journeys independent, with the
+  legacy top-level URLs retained only as fallbacks. Subscription checkout appends the already-persisted
+  `SubscriptionPurchase.Id` as `purchaseId` to success and cancellation URLs. It is an owner-scoped status
+  lookup key only; redirects never confirm or fulfil a payment.
 - `Subscription` is the entitlement/lifecycle source of truth. `SubscriptionActivation` remains an
   immutable compatibility fulfillment record and links new fulfillments to the subscription and
   period; its new linkage columns are nullable for historical rows and no historical plan data is
